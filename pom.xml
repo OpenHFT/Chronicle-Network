@@ -17,13 +17,15 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
         <groupId>net.openhft</groupId>
         <artifactId>java-parent-pom</artifactId>
         <version>1.1.2</version>
-        <relativePath />
+        <relativePath/>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -42,7 +44,11 @@
                 <version>3.4.18</version>
                 <scope>import</scope>
             </dependency>
-
+            <dependency>
+                <groupId>net.openhft</groupId>
+                <artifactId>lang</artifactId>
+                <version>6.4.22</version>
+            </dependency>
 
         </dependencies>
 
@@ -59,6 +65,10 @@
             <artifactId>annotations</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>net.openhft</groupId>
+            <artifactId>lang</artifactId>
+        </dependency>
 
         <!-- test dependencies -->
 
@@ -139,7 +149,8 @@
     <scm>
         <url>scm:git:git@github.com:OpenHFT/Chronicle-Network.git</url>
         <connection>scm:git:git@github.com:OpenHFT/Chronicle-Network.git</connection>
-        <developerConnection>scm:git:git@github.com:OpenHFT/Chronicle-Network.git</developerConnection>
+        <developerConnection>scm:git:git@github.com:OpenHFT/Chronicle-Network.git
+        </developerConnection>
         <tag>master</tag>
     </scm>
 
