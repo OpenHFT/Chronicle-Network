@@ -48,7 +48,6 @@ abstract class AbstractNetwork implements Closeable {
     public static final int BITS_IN_A_BYTE = 8;
 
 
-
     private static final Logger LOG = LoggerFactory.getLogger(AbstractNetwork.class);
 
     // currently this is not safe to use as it wont work with the stateless client
@@ -274,10 +273,13 @@ abstract class AbstractNetwork implements Closeable {
 
         Object attachment = key.attachment();
 
-        if (attachment!=null) {
-            NioCallback userAttached = ((NetworkHub.Attached) attachment).getUserAttached();
-            if (userAttached!=null)
-                userAttached.onClose();
+        if (attachment != null) {
+            NetworkHub.Attached attachment1 = (NetworkHub.Attached) attachment;
+            NioCallback userAttached = attachment1.getUserAttached();
+            if (userAttached != null)
+                userAttached.onEvent(attachment1.entryReader.out, attachment1.entryWriter.in(),
+                        NioCallback.EventType.CLOSED);
+
         }
         if (throttler != null)
             throttler.remove(channel);

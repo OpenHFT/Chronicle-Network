@@ -47,11 +47,11 @@ import static net.openhft.chronicle.network.internal.NetworkHub.EventId.HEARTBEA
 
 
 /**
- * Work in progress -  an= NIO API abstraction
+ * Work in progress -  an NIO API abstraction
  *
  * @author Rob Austin.
  */
-final class NetworkHub<T> extends AbstractNetwork implements Closeable {
+public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
     @NotNull
     private final NioCallbackFactory nioCallbackFactory;
@@ -70,30 +70,23 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
     public static final long SPIN_LOOP_TIME_IN_NONOSECONDS = TimeUnit.MICROSECONDS.toNanos(500);
 
-
-    // used to instruct the selector thread to set OP_WRITE on a key correlated by the bit index
-    // in the bitset
-
-    private final KeyInterestUpdater opWriteUpdater = new KeyInterestUpdater(OP_WRITE, selector
-    );
+    private final KeyInterestUpdater opWriteUpdater = new KeyInterestUpdater(OP_WRITE, selector);
 
     private final long heartBeatIntervalMillis;
     private long largestEntrySoFar = 128;
 
 
     @NotNull
-    private final TcpTransportAndNetworkConfig replicationConfig;
-
+    private final NetworkConfig replicationConfig;
 
     private final String name;
-
     private long selectorTimeout;
 
 
     /**
      * @throws java.io.IOException on an io error.
      */
-    public NetworkHub(@NotNull final TcpTransportAndNetworkConfig replicationConfig,
+    public NetworkHub(@NotNull final NetworkConfig replicationConfig,
                       @NotNull final NioCallbackFactory nioCallbackFactory)
             throws IOException {
 
@@ -110,6 +103,7 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
         this.replicationConfig = replicationConfig;
         defaultBufferSize = replicationConfig.tcpBufferSize();
+        assert defaultBufferSize > 128;
         this.name = replicationConfig.name();
 
         start();
@@ -118,8 +112,9 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
     @Override
     void processEvent() throws IOException {
         try {
-            final InetSocketAddress serverInetSocketAddress =
-                    new InetSocketAddress(replicationConfig.serverPort());
+            final InetSocketAddress serverInetSocketAddress = replicationConfig
+                    .inetSocketAddress();
+
             final Details serverDetails = new Details(serverInetSocketAddress);
             new ServerConnector(serverDetails).connect();
 
@@ -322,9 +317,15 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
     private void enableOpWrite(@NotNull SelectionKey key) {
         int ops = key.interestOps();
-        if ((ops & (OP_CONNECT | OP_ACCEPT)) == 0)
-            key.interestOps(ops | OP_WRITE);
+        key.interestOps(ops | OP_WRITE);
     }
+
+
+    private void enableOpRead(@NotNull SelectionKey key) {
+        int ops = key.interestOps();
+        key.interestOps(ops | OP_READ);
+    }
+
 
     /**
      * check to see if we have lost connection with the remote node and if we have attempts a
@@ -391,12 +392,13 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         }
 
         final Attached attached = (Attached) key.attachment();
-        NioCallback userAttached = nioCallbackFactory.onCreate(attached);
+
         try {
             if (!channel.finishConnect())
                 return;
 
         } catch (SocketException e) {
+
             quietClose(key, e);
 
             // when node discovery is used ( by nodes broadcasting out their host:port over UDP ),
@@ -419,15 +421,25 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         channel.socket().setSoTimeout(0);
         channel.socket().setSoLinger(false, 0);
 
-        attached.entryReader = new TcpSocketChannelEntryReader(defaultBufferSize);
-        attached.entryWriter = new TcpSocketChannelEntryWriter(tcpBufferSize);
+        attached.entryReader = new EntryReader(defaultBufferSize, name);
+        attached.entryWriter = new EntryWriter(tcpBufferSize);
 
-        key.interestOps(OP_WRITE | OP_READ);
+        key.interestOps(OP_READ);
 
         throttle(channel);
 
-        userAttached.onConnect();
+        NioCallback userAttached = nioCallbackFactory.onCreate(attached);
+        attached.setUserAttached(userAttached);
 
+
+        Bytes writer = attached.entryWriter.in();
+        long start = writer.position();
+        attached.getUserAttached().onEvent(attached.entryReader.out, writer,
+                NioCallback.EventType.OP_CONNECT);
+
+
+        if (writer.position() > start)
+            enableOpWrite(key);
 
     }
 
@@ -464,16 +476,22 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         channel.socket().setSoLinger(false, 0);
 
         final Attached attached = new Attached(opWriteUpdater, heartBeatIntervalMillis);
-        attached.entryReader = new TcpSocketChannelEntryReader(defaultBufferSize);
-        attached.entryWriter = new TcpSocketChannelEntryWriter(tcpBufferSize);
+        attached.entryReader = new EntryReader(defaultBufferSize, name);
+        attached.entryWriter = new EntryWriter(tcpBufferSize);
         attached.isServer = true;
 
         NioCallback userAttached = nioCallbackFactory.onCreate(attached);
         attached.setUserAttached(userAttached);
 
-        userAttached.onAccept();
-
         channel.register(selector, OP_READ, attached);
+
+        Bytes writer = attached.entryWriter.in();
+        long start = writer.position();
+        attached.getUserAttached().onEvent(attached.entryReader.out, writer,
+                NioCallback.EventType.OP_ACCEPT);
+
+        if (writer.position() > start)
+            enableOpWrite(key);
 
         throttle(channel);
     }
@@ -493,8 +511,7 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
             return;
         }
 
-        TcpSocketChannelEntryWriter writer = attached.entryWriter;
-        ((Attached) key.attachment()).getUserAttached().onWrite(writer.in());
+        EntryWriter writer = attached.entryWriter;
 
 
         try {
@@ -536,6 +553,7 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         try {
 
             int len = attached.entryReader.readSocketToBuffer(socketChannel, largestEntrySoFar);
+            System.out.println("len=" + len);
             if (len == -1) {
                 socketChannel.register(selector, 0);
                 if (replicationConfig.autoReconnectedUponDroppedConnection()) {
@@ -550,6 +568,10 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
             if (len == 0)
                 return;
 
+            if (len > largestEntrySoFar) {
+                largestEntrySoFar = len;
+            }
+
         } catch (IOException e) {
             if (!attached.isServer)
                 attached.connector.connectLater();
@@ -561,7 +583,16 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
         attached.entryReader.lastHeartBeatReceived = approxTime;
 
-        attached.getUserAttached().onRead(attached.entryReader.out);
+
+        Bytes writer = attached.entryWriter.in();
+        long start = writer.position();
+        //noinspection ConstantConditions
+        attached.getUserAttached().onEvent(attached.entryReader.out, writer,
+                NioCallback.EventType.OP_READ);
+
+        if (writer.position() > start)
+            enableOpWrite(key);
+
     }
 
     @Nullable
@@ -579,9 +610,9 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
     /**
      * sets interestOps to "selector keys",The change to interestOps much be on the same thread as
-     * the selector. This class, allows via {@link AbstractNetwork
-     * .KeyInterestUpdater#set(int)}  to holds a pending change  in interestOps ( via a bitset ),
-     * this change is processed later on the same thread as the selector
+     * the selector. This class, allows via {@link AbstractNetwork .KeyInterestUpdater#set(int)}  to
+     * holds a pending change  in interestOps ( via a bitset ), this change is processed later on
+     * the same thread as the selector
      */
     private static class KeyInterestUpdater {
 
@@ -601,8 +632,15 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
             if (wasChanged.getAndSet(false)) {
                 for (SelectionKey selectionKey : selector.keys()) {
-                    if (((Attached) selectionKey.attachment()).isDirty())
+
+                    Attached attached = (Attached) selectionKey.attachment();
+                    if (attached.isDirty()) {
                         selectionKey.interestOps(selectionKey.interestOps() | op);
+                        //noinspection ConstantConditions
+                        attached.getUserAttached().onEvent(attached.entryReader.out, attached.entryWriter.in(),
+                                NioCallback.EventType.OP_WRITE);
+                    }
+
                 }
             }
 
@@ -637,10 +675,9 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
                 IOException, InterruptedException {
 
             final ServerSocketChannel serverChannel = openServerSocketChannel();
-
             serverChannel.socket().setReceiveBufferSize(BUFFER_SIZE);
             serverChannel.configureBlocking(false);
-            serverChannel.register(NetworkHub.this.selector, 0);
+            //  serverChannel.register(NetworkHub.this.selector, 0);
             ServerSocket serverSocket = null;
 
             try {
@@ -651,7 +688,6 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
             }
 
             serverSocket.setReuseAddress(true);
-
             serverSocket.bind(details.address());
 
             // these can be run on this thread
@@ -768,8 +804,9 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
             remoteHeartbeatInterval = heartBeatIntervalMillis;
         }
 
-        public TcpSocketChannelEntryReader entryReader;
-        public TcpSocketChannelEntryWriter entryWriter;
+        public EntryReader entryReader;
+        public EntryWriter entryWriter;
+
         private NioCallback userAttached;
 
         private volatile boolean isDirty;
@@ -797,7 +834,7 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
         @Override
         public void setDirty(boolean isDirty) {
-            setDirty(isDirty);
+            this.isDirty = isDirty;
             opWriteUpdater.onChange();
         }
 
@@ -820,7 +857,7 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
     /**
      * @author Rob Austin.
      */
-    static class TcpSocketChannelEntryWriter {
+    static class EntryWriter {
 
         @NotNull
         private ByteBufferBytes in;
@@ -830,7 +867,7 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
         private long lastSentTime;
 
-        private TcpSocketChannelEntryWriter(final int tcpBufferSize1) {
+        private EntryWriter(final int tcpBufferSize1) {
             out = ByteBuffer.allocateDirect(tcpBufferSize1);
             in = new ByteBufferBytes(out);
         }
@@ -890,11 +927,11 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         }
 
         Bytes in() {
-            return in();
+            return in;
         }
 
         private ByteBuffer out() {
-            return out();
+            return out;
         }
 
 
@@ -983,14 +1020,27 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
     /**
      * Reads map entries from a socket, this could be a client or server socket
      */
-    static class TcpSocketChannelEntryReader {
+    static class EntryReader {
 
+        private final String name;
         public long lastHeartBeatReceived = System.currentTimeMillis();
         ByteBuffer in;
         ByteBufferBytes out;
 
 
-        private TcpSocketChannelEntryReader(final int defaultBufferSize) {
+        @Override
+        public String toString() {
+            return "TcpSocketChannelEntryReader{" +
+                    "name='" + name + '\'' +
+                    ", lastHeartBeatReceived=" + lastHeartBeatReceived +
+                    ", in=" + in +
+                    ", out=" + out +
+                    '}';
+        }
+
+        private EntryReader(final int defaultBufferSize, final String name) {
+            this.name = name;
+            assert defaultBufferSize > 128;
             in = ByteBuffer.allocateDirect(defaultBufferSize);
             out = new ByteBufferBytes(in.slice());
             out.limit(0);
@@ -1038,6 +1088,7 @@ final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
             compactBuffer(largestEntrySoFar);
             final int len = socketChannel.read(in);
+            System.out.println("the len =" + len);
             out.limit(in.position());
             return len;
         }

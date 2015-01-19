@@ -1,40 +1,18 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.lang.io.Bytes;
+import net.openhft.lang.model.constraints.NotNull;
 
 /**
  * @author Rob Austin.
  */
 public interface NioCallback {
 
-    /**
-     * called when a client establish a connection with a server
-     */
-    void onConnect();
+    enum EventType {OP_WRITE, OP_READ, OP_ACCEPT, OP_CONNECT, CLOSED}
 
     /**
-     * called whenever a server receive a connection from a client
+     * called when there is a NIO Event
      */
-    void onAccept();
+    void onEvent(@NotNull Bytes in, @NotNull Bytes out, @NotNull EventType eventType);
 
-
-    /**
-     * called to allow you to write data, if you have finished writing data the you should {@code
-     * setDirty(false)}
-     *
-     * @see net.openhft.chronicle.network.internal.Actions#setDirty(boolean)
-     */
-    void onWrite(Bytes out);
-
-    /**
-     * called when there is data to read
-     */
-    void onRead(Bytes in);
-
-    /**
-     * an opportunity to clean up, as the socket connection has closed It the connection was dropped
-     * due to a heartbeat failure, the connection will be re-establish automatically, as such the
-     * {@code NioCallbackFactory} will be called.
-     */
-    void onClose();
 }
