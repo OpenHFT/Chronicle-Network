@@ -277,7 +277,7 @@ abstract class AbstractNetwork implements Closeable {
             NetworkHub.Attached attachment1 = (NetworkHub.Attached) attachment;
             NioCallback userAttached = attachment1.getUserAttached();
             if (userAttached != null)
-                userAttached.onEvent(attachment1.entryReader.out, attachment1.entryWriter.in(),
+                userAttached.onEvent(attachment1.entryReader.out, attachment1.writer.in(),
                         NioCallback.EventType.CLOSED);
 
         }

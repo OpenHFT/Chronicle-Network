@@ -10,4 +10,6 @@ public interface Actions {
     void setReceiveHeartbeat(boolean receivesHeartbeat);
 
     void setSendHeartbeat(boolean sendHeartbeat);
+
+    void close();
 }

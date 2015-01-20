@@ -151,4 +151,8 @@ public final class NetworkConfig implements Serializable {
     public String name() {
         return name;
     }
+
+    public boolean enableHeartbeats() {
+        return false;
+    }
 }
