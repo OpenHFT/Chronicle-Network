@@ -19,6 +19,7 @@
 package net.openhft.chronicle.network.internal;
 
 import net.openhft.chronicle.network.NioCallback;
+import net.openhft.chronicle.network.NioCallback.EventType;
 import net.openhft.chronicle.network.NioCallbackFactory;
 import net.openhft.lang.io.ByteBufferBytes;
 import net.openhft.lang.io.Bytes;
@@ -434,14 +435,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         attached.setUserAttached(userAttached);
 
 
-        Bytes writer = attached.writer.in();
-        long start = writer.position();
-        attached.getUserAttached().onEvent(attached.entryReader.out, writer,
-                NioCallback.EventType.OP_CONNECT);
-
-
-        if (writer.position() > start)
-            enableOpWrite(key);
+        onEvent(key, attached, EventType.OP_CONNECT);
 
     }
 
@@ -488,10 +482,11 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
         Bytes writer = attached.writer.in();
         long start = writer.position();
-        attached.getUserAttached().onEvent(attached.entryReader.out, writer,
-                NioCallback.EventType.OP_ACCEPT);
 
-        if (writer.position() > start)
+        attached.getUserAttached().onEvent(attached.entryReader.out, writer,
+                EventType.OP_ACCEPT);
+
+        if (attached.writer.in().position() > start)
             channel.register(selector, OP_READ | OP_WRITE, attached);
         else
             channel.register(selector, OP_READ, attached);
@@ -517,10 +512,9 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
         Writer writer = attached.writer;
 
-      /*  System.out.println(writer.in().position());
         attached.getUserAttached().onEvent(attached.entryReader.out, writer.in(),
-                NioCallback.EventType.OP_WRITE);
-*/
+                EventType.OP_WRITE);
+
         try {
             final int len = writer.writeBufferToSocket(socketChannel, approxTime);
 
@@ -588,15 +582,18 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         attached.entryReader.lastHeartBeatReceived = approxTime;
 
 
-        Bytes writer = attached.writer.in();
-        long start = writer.position();
-        //noinspection ConstantConditions
-        attached.getUserAttached().onEvent(attached.entryReader.out, writer,
-                NioCallback.EventType.OP_READ);
+        onEvent(key, attached, EventType.OP_READ);
 
-        if (writer.position() > start)
+    }
+
+    private void onEvent(SelectionKey key, Attached attached, final EventType type) {
+        long start = attached.writer.in().position();
+
+
+        attached.getUserAttached().onEvent(attached.entryReader.out, attached.writer.in(), type);
+
+        if (attached.writer.in().position() > start)
             enableOpWrite(key);
-
     }
 
     @Nullable
@@ -639,7 +636,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
                         selectionKey.interestOps(selectionKey.interestOps() | OP_WRITE);
                         //noinspection ConstantConditions
                         attached.getUserAttached().onEvent(attached.entryReader.out, attached.writer.in(),
-                                NioCallback.EventType.OP_WRITE);
+                                EventType.OP_WRITE);
                     }
 
                 }
@@ -855,6 +852,15 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
             throw new UnsupportedOperationException("todo");
         }
 
+        @Override
+        public Bytes outWithSize(int size) {
+
+            long additional = size - writer.in().remaining();
+            assert additional <= Integer.MAX_VALUE;
+            return (additional > 0) ? writer.increaseBufferBy((int) additional) : writer.in();
+
+        }
+
         boolean isDirty() {
             return isDirty;
         }
@@ -1020,6 +1026,11 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
         public boolean hasBytesToWrite() {
             return in().position() > 0;
+        }
+
+        public Bytes increaseBufferBy(int additionalBytes) {
+            resizeBuffer(out.capacity() + additionalBytes);
+            return in();
         }
     }
 

@@ -88,14 +88,14 @@ public class ClientConnectorTest {
         final CountDownLatch finished = new CountDownLatch(1);
         final AtomicReference<Exception> e = new AtomicReference<Exception>();
 
-        final NetworkConfig echoConf = port(9026).name("ping").tcpBufferSize(256 * 1024);
+        final NetworkConfig echoConf = port(9026).name("ping").tcpBufferSize(64 * 1024);
 
         final NetworkConfig pingConf = port(9027).name("pong")
                 .setEndpoints(new InetSocketAddress("localhost", 9026))
-                .tcpBufferSize(256 * 1024);
+                .tcpBufferSize(64 * 1024);
 
         System.out.println("Starting throughput test");
-        int bufferSize = 128 * 1024;
+        int bufferSize = 512 * 1024;
         byte[] bytes = new byte[bufferSize];
 
 
@@ -124,30 +124,35 @@ public class ClientConnectorTest {
                     @Override
                     public void onEvent(@NotNull Bytes in, @NotNull Bytes out, @NotNull EventType eventType) {
 
+                        try {
+                            switch (eventType) {
 
-                        switch (eventType) {
-
-                            case OP_CONNECT:
-                                // 1. start by sending a ping message
-                                out.writeObject(bytes);
-                                start = System.nanoTime();
-                                return;
+                                case OP_CONNECT:
+                                    // 1. start by sending a ping message
+                                    out.writeObject(bytes);
+                                    start = System.nanoTime();
+                                    return;
 
 
-                            case OP_READ:
+                                case OP_READ:
 
-                                in.read(bytes);
-                                out.write(bytes);
+                                    in.read(bytes);
 
-                                count++;
+                                    count++;
 
-                                if (System.nanoTime() - start > 5e9) {
-                                    long time = System.nanoTime() - start;
-                                    System.out.printf("Throughput was %.1f MB/s%n", 1e3 * count *
-                                            bufferSize / time);
-                                    finished.countDown();
-                                }
+                                    if (System.nanoTime() - start > 5e9) {
+                                        long time = System.nanoTime() - start;
+                                        System.out.printf("Throughput was %.1f MB/s%n", 1e3 * count *
+                                                bufferSize / time);
+                                        finished.countDown();
+                                    }
 
+                                    withActions.outWithSize(bytes.length).write(bytes);
+
+                            }
+                        } catch (Exception e1) {
+                            e.set(e1);
+                            finished.countDown();
                         }
                     }
                 });
