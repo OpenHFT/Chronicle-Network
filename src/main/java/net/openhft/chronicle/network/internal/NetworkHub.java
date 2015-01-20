@@ -70,7 +70,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
     public static final long SPIN_LOOP_TIME_IN_NONOSECONDS = TimeUnit.MICROSECONDS.toNanos(500);
 
-    private final OpWriteInterestUpdater opWriteUpdater = new OpWriteInterestUpdater(selector);
+    private final OpWriteInterestUpdater opWriteUpdater = new OpWriteInterestUpdater();
 
     private final long heartBeatIntervalMillis;
     private long largestEntrySoFar = 128;
@@ -138,7 +138,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
                     heartBeatMonitor(approxTime);
 
                 // set the OP_WRITE when data is ready to send
-                opWriteUpdater.applyUpdates();
+                opWriteUpdater.applyUpdates(selector);
 
                 if (useJavaNIOSelectionKeys) {
                     // use the standard java nio selector
@@ -318,9 +318,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
     private void enableOpWrite(@NotNull SelectionKey key) {
         int ops = key.interestOps();
-        if ((ops & OP_WRITE) == 0) {
-            key.interestOps(ops | OP_WRITE);
-        }
+        key.interestOps(ops | OP_WRITE);
     }
 
 
@@ -350,7 +348,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         final SocketChannel channel = (SocketChannel) key.channel();
 
         if (approxTimeOutTime >
-                attached.entryReader.lastHeartBeatReceived + attached.remoteHeartbeatInterval) {
+                attached.reader.lastHeartBeatReceived + attached.remoteHeartbeatInterval) {
             if (LOG.isDebugEnabled())
                 LOG.debug("lost connection, attempting to reconnect. " +
                         "missed heartbeat from identifier=" + attached.remoteIdentifier);
@@ -424,10 +422,9 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         channel.socket().setSoTimeout(0);
         channel.socket().setSoLinger(false, 0);
 
-        attached.entryReader = new EntryReader(defaultBufferSize, name);
+        attached.reader = new Reader(defaultBufferSize, name);
         attached.writer = new Writer(defaultBufferSize);
 
-        key.interestOps(OP_READ);
 
         throttle(channel);
 
@@ -436,6 +433,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
 
         onEvent(key, attached, EventType.OP_CONNECT);
+        enableOpRead(key);
 
     }
 
@@ -472,7 +470,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         channel.socket().setSoLinger(false, 0);
 
         final Attached attached = new Attached(opWriteUpdater, heartBeatIntervalMillis);
-        attached.entryReader = new EntryReader(defaultBufferSize, name);
+        attached.reader = new Reader(defaultBufferSize, name);
         attached.writer = new Writer(defaultBufferSize);
         attached.isServer = true;
 
@@ -483,7 +481,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         Bytes writer = attached.writer.in();
         long start = writer.position();
 
-        attached.getUserAttached().onEvent(attached.entryReader.out, writer,
+        attached.getUserAttached().onEvent(attached.reader.out, writer,
                 EventType.OP_ACCEPT);
 
         if (attached.writer.in().position() > start)
@@ -512,7 +510,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
         Writer writer = attached.writer;
 
-        attached.getUserAttached().onEvent(attached.entryReader.out, writer.in(),
+        attached.getUserAttached().onEvent(attached.reader.out, writer.in(),
                 EventType.OP_WRITE);
 
         try {
@@ -553,7 +551,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
         try {
 
-            int len = attached.entryReader.readSocketToBuffer(socketChannel, largestEntrySoFar);
+            int len = attached.reader.readSocketToBuffer(socketChannel, largestEntrySoFar);
 
             if (len == -1) {
                 socketChannel.register(selector, 0);
@@ -564,6 +562,10 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
                 } else
                     socketChannel.close();
                 return;
+            }
+
+            if (attached.reader.out.remaining() > 0) {
+                onEvent(key, attached, EventType.OP_READ);
             }
 
             if (len == 0)
@@ -579,18 +581,16 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         if (LOG.isDebugEnabled())
             LOG.debug("heartbeat or data received.");
 
-        attached.entryReader.lastHeartBeatReceived = approxTime;
+        attached.reader.lastHeartBeatReceived = approxTime;
 
-
-        onEvent(key, attached, EventType.OP_READ);
 
     }
 
     private void onEvent(SelectionKey key, Attached attached, final EventType type) {
+
         long start = attached.writer.in().position();
 
-
-        attached.getUserAttached().onEvent(attached.entryReader.out, attached.writer.in(), type);
+        attached.getUserAttached().onEvent(attached.reader.out, attached.writer.in(), type);
 
         if (attached.writer.in().position() > start)
             enableOpWrite(key);
@@ -619,23 +619,18 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
         private final AtomicBoolean wasChanged = new AtomicBoolean();
 
-        @NotNull
-        private final Selector selector;
 
-        OpWriteInterestUpdater(@NotNull final Selector selector) {
-            this.selector = selector;
-        }
-
-        public void applyUpdates() {
+        public void applyUpdates(final Selector selector1) {
 
             if (wasChanged.getAndSet(false)) {
-                for (SelectionKey selectionKey : selector.keys()) {
+
+                for (SelectionKey selectionKey : selector1.keys()) {
 
                     Attached attached = (Attached) selectionKey.attachment();
                     if (attached.isDirty()) {
                         selectionKey.interestOps(selectionKey.interestOps() | OP_WRITE);
                         //noinspection ConstantConditions
-                        attached.getUserAttached().onEvent(attached.entryReader.out, attached.writer.in(),
+                        attached.getUserAttached().onEvent(attached.reader.out, attached.writer.in(),
                                 EventType.OP_WRITE);
                     }
 
@@ -802,7 +797,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
             remoteHeartbeatInterval = heartBeatIntervalMillis;
         }
 
-        public EntryReader entryReader;
+        public Reader reader;
         public Writer writer;
 
         private NioCallback userAttached;
@@ -1037,7 +1032,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
     /**
      * Reads map entries from a socket, this could be a client or server socket
      */
-    static class EntryReader {
+    static class Reader {
 
         private final String name;
         public long lastHeartBeatReceived = System.currentTimeMillis();
@@ -1055,9 +1050,10 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
                     '}';
         }
 
-        private EntryReader(final int defaultBufferSize, final String name) {
+        private Reader(final int defaultBufferSize, final String name) {
             this.name = name;
             assert defaultBufferSize > 128;
+
             in = ByteBuffer.allocateDirect(defaultBufferSize);
             out = new ByteBufferBytes(in.slice());
             out.limit(0);
@@ -1103,7 +1099,10 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
                                        final long largestEntrySoFar)
                 throws IOException {
 
+//            assert out.limit() != out.capacity();
             compactBuffer(largestEntrySoFar);
+            in.position((int) out.limit());
+
             final int len = socketChannel.read(in);
             out.limit(in.position());
             return len;
