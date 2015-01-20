@@ -129,11 +129,7 @@ public class ClientConnectorTest {
                                         return;
                                     }
 
-                                    // write as much as you can
-                                    while (out.remaining() >= bytes.length)
-                                        out.write(bytes);
-
-                                    // read as much as you can
+                                    // read in much as you can
                                     while (in.remaining() >= bytes.length) {
                                         in.read(bytes);
                                         count++;
@@ -146,8 +142,10 @@ public class ClientConnectorTest {
                                         finished.countDown();
                                     }
 
-                                    // cause the OP_WRITE to be called
-                                    withActions.setDirty(true);
+                                    // write as much as you can
+                                    while (out.remaining() >= bytes.length)
+                                        out.write(bytes);
+
 
                                 } catch (Exception e1) {
                                     e.set(e1);
