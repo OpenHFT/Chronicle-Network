@@ -177,8 +177,6 @@ public class ClientConnectorTest {
     public void testEchoLatencyPutTest() throws Exception {
 
 
-
-
         final CountDownLatch finished = new CountDownLatch(1);
         final AtomicReference<Exception> e = new AtomicReference<Exception>();
 
@@ -191,21 +189,14 @@ public class ClientConnectorTest {
 
         try (
                 NetworkHub echo = Network.of(echoConf, withActions -> (in, out, eventType) -> {
-
-                            while (in.remaining() > 0 && out.remaining() > 0) {
-                                if (in.remaining() > 8 && out.remaining() > 8)
-                                    out.writeLong(in.readLong());
-                                else
-                                    out.writeByte(in.readByte());
-                            }
-
+                            if (in.remaining() >= 8 && out.remaining() >= 8)
+                                out.writeLong(in.readLong());
                         }
 
                 );
 
 
                 NetworkHub ping = Network.of(pingConf, withActions -> new NioCallback() {
-
 
 
                     @Override
@@ -226,7 +217,7 @@ public class ClientConnectorTest {
                                 if (in.remaining() >= 8) {
                                     long l = in.readLong();
                                     System.out.println(TimeUnit.NANOSECONDS.toMicros(System
-                                            .nanoTime() - l)+"us");
+                                            .nanoTime() - l) + "us");
                                 }
                                 return;
 
