@@ -43,6 +43,7 @@ public class EchoServerMain {
         while (true) {
             final SocketChannel socket = ssc.accept();
             socket.socket().setTcpNoDelay(true);
+            socket.configureBlocking(false);
             new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -50,7 +51,7 @@ public class EchoServerMain {
                     try {
                         System.out.println("Connected " + socket);
                         ByteBuffer bb = ByteBuffer.allocateDirect(64*1024);
-                        while (socket.read(bb) > 0) {
+                        while (socket.read(bb) >= 0) {
                             bb.flip();
                             if (socket.write(bb) < 0)
                                 throw new EOFException();

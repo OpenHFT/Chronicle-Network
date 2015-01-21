@@ -33,8 +33,8 @@ import java.util.Arrays;
  */
 /*
 On a E5-2650 v2 over loopback with onload
-Throughput was 2872.7 MB/s
-Loop back echo latency was 11.8/12.4 24.6/25.7 30.3us for 50/90 99/99.9 99.99%tile
+Throughput was 2880.4 MB/s
+Loop back echo latency was 5.8/6.3 18.6/20.1 25.1us for 50/90 99/99.9 99.99%tile
 */
 
 
@@ -51,14 +51,15 @@ public class EchoClientMain {
         for (int j = 0; j < repeats; j++) {
             sockets[j] = SocketChannel.open(new InetSocketAddress(hostname, port));
             sockets[j].socket().setTcpNoDelay(true);
+            sockets[j].configureBlocking(false);
         }
-        testThroughput( sockets);
-        testLatency( sockets);
+        testThroughput(sockets);
+        testLatency(sockets);
         for (Closeable socket : sockets)
             socket.close();
     }
 
-    private static void testThroughput( SocketChannel[] sockets) throws IOException {
+    private static void testThroughput(SocketChannel[] sockets) throws IOException {
         System.out.println("Starting throughput test");
         int bufferSize = 32 * 1024;
         ByteBuffer bb = ByteBuffer.allocateDirect(bufferSize);
@@ -68,19 +69,19 @@ public class EchoClientMain {
             for (SocketChannel socket : sockets) {
                 bb.clear();
                 if (socket.write(bb) < 0)
-                    throw new AssertionError("Socket "+socket+" unable to write in one go.");
+                    throw new AssertionError("Socket " + socket + " unable to write in one go.");
             }
             if (count >= window)
                 for (SocketChannel socket : sockets) {
                     bb.clear();
-                    while(socket.read(bb) > 0 && bb.remaining() > 0);
+                    while (socket.read(bb) >= 0 && bb.remaining() > 0) ;
                 }
             count++;
         }
         for (int end = 0; end < Math.min(count, window); end++)
             for (SocketChannel socket : sockets) {
                 bb.clear();
-                while(socket.read(bb) > 0 && bb.remaining() > 0);
+                while (socket.read(bb) >= 0 && bb.remaining() > 0) ;
             }
         long time = System.nanoTime() - start;
         System.out.printf("Throughput was %.1f MB/s%n", 1e3 * count * bufferSize * sockets.length / time);
@@ -102,9 +103,9 @@ public class EchoClientMain {
             }
             for (SocketChannel socket : sockets) {
                 bb.clear();
-                socket.read(bb);
-                if (bb.remaining() > 0)
-                    throw new AssertionError("Unable to read in one go.");
+                while (bb.remaining() > 0)
+                    if (socket.read(bb) < 0)
+                        throw new AssertionError("Unable to read in one go.");
                 if (i >= 0)
                     times[count++] = System.nanoTime() - now;
             }
