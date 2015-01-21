@@ -40,8 +40,8 @@ Throughput was 3728.4 MB/s
 Loop back echo latency was 4.8/5.2 5.6/7.4 9.6us for 50/90 99/99.9 99.99%tile
 
 Between two servers via Solarflare with onload
-Throughput was 1136.2 MB/s
-Loop back echo latency was 12.4/12.7 23.0/26.0 32.7us for 50/90 99/99.9 99.99%tile
+Throughput was 1159.8 MB/s
+Loop back echo latency was 12.4/12.6 13.2/24.2 26.4us for 50/90 99/99.9 99.99%tile
 */
 
 
