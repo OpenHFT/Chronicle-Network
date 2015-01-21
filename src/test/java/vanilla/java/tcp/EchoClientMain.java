@@ -20,10 +20,9 @@ package vanilla.java.tcp;
 
 import net.openhft.affinity.AffinitySupport;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
@@ -36,6 +35,11 @@ On a E5-2650 v2 over loopback with onload
 Throughput was 2880.4 MB/s
 Loop back echo latency was 5.8/6.2 9.6/19.4 23.2us for 50/90 99/99.9 99.99%tile
 
+On an i7-3970X over loopback
+Throughput was 3728.4 MB/s
+Loop back echo latency was 4.8/5.2 5.6/7.4 9.6us for 50/90 99/99.9 99.99%tile
+
+Between two servers via Solarflare with onload
 Throughput was 1136.2 MB/s
 Loop back echo latency was 12.4/12.7 23.0/26.0 32.7us for 50/90 99/99.9 99.99%tile
 */

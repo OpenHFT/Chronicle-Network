@@ -1140,7 +1140,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
                     return;
 
                 // compact the buffer
-                in.limit((int) out.limit());
+                in.limit((int) out.capacity());
                 in.position((int) out.position());
                 in.compact();
 
