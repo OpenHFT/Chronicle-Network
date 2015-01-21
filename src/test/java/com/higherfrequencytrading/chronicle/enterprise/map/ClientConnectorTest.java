@@ -10,14 +10,12 @@ import net.openhft.lang.io.Bytes;
 import net.openhft.lang.model.constraints.NotNull;
 import org.junit.Test;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static net.openhft.chronicle.network.NioCallback.EventType.OP_CONNECT;
 import static net.openhft.chronicle.network.internal.NetworkConfig.port;
 
 public class ClientConnectorTest {
@@ -91,11 +89,11 @@ public class ClientConnectorTest {
         final CountDownLatch finished = new CountDownLatch(1);
         final AtomicReference<Exception> e = new AtomicReference<Exception>();
 
-        final NetworkConfig echoConf = port(9066).name("ping").tcpBufferSize(10 * bufferSize);
+        final NetworkConfig echoConf = port(9566).name("echo").tcpBufferSize(300 * bufferSize);
 
-        final NetworkConfig pingConf = port(9067).name("pong")
-                .setEndpoints(new InetSocketAddress("localhost", 9066))
-                .tcpBufferSize(10 * bufferSize);
+        final NetworkConfig pingConf = port(9567).name("ping")
+                .setEndpoints(new InetSocketAddress("localhost", 9566))
+                .tcpBufferSize(512 * bufferSize);
 
         System.out.println("Starting throughput test");
 
@@ -106,9 +104,13 @@ public class ClientConnectorTest {
                 NetworkHub echo = Network.of(echoConf, withActions -> (in, out, eventType) -> {
 
                     if (in.remaining() > 0) {
-                        // resize the buffer if required
-                        withActions.outWithSize((int) in.remaining()).write(in);
-                        in.position(in.limit());
+
+                        while (in.remaining() > 0 && out.remaining() > 0) {
+                            if (in.remaining() > 8 && out.remaining() > 8)
+                                out.writeLong(in.readLong());
+                            else
+                                out.writeByte(in.readByte());
+                        }
                     }
                 });
 
@@ -117,12 +119,13 @@ public class ClientConnectorTest {
                             long start;
                             long count;
 
+
                             @Override
                             public void onEvent(@NotNull Bytes in, @NotNull Bytes out, @NotNull EventType eventType) {
 
                                 try {
 
-                                    if (eventType == EventType.OP_CONNECT) {
+                                    if (eventType == OP_CONNECT) {
                                         // 1. start by sending a ping message
                                         out.writeObject(bytes);
                                         start = System.nanoTime();
@@ -140,6 +143,7 @@ public class ClientConnectorTest {
                                         System.out.printf("Throughput was %.1f MB/s%n", 1e3 * count *
                                                 bufferSize / time);
                                         finished.countDown();
+                                        return;
                                     }
 
                                     // write as much as you can
@@ -172,96 +176,117 @@ public class ClientConnectorTest {
     @Test
     public void testEchoLatencyPutTest() throws Exception {
 
+        final int repeats = 2;
+        int tests = 200000;
+
+
         final CountDownLatch finished = new CountDownLatch(1);
         final AtomicReference<Exception> e = new AtomicReference<Exception>();
 
-        final NetworkConfig echoConf = port(9026).name("ping").tcpBufferSize(1024);
 
-        final NetworkConfig pingConf = port(9027).name("pong")
-                .setEndpoints(new InetSocketAddress("localhost", 9026))
-                .tcpBufferSize(1024);
+        final NetworkConfig echoConf = port(9066).name("echo").tcpBufferSize(128);
 
-        System.out.println("Starting latency test");
-
+        final NetworkConfig pingConf = port(9067).name("ping")
+                .setEndpoints(new InetSocketAddress("localhost", 9066))
+                .tcpBufferSize(128);
 
         try (
                 NetworkHub echo = Network.of(echoConf, withActions -> (in, out, eventType) -> {
 
-                    if (in.remaining() > 0) {
-                        // resize the buffer if required
-                        withActions.outWithSize((int) in.remaining()).write(in);
-                        in.position(in.limit());
-                    }
+                            while (in.remaining() > 0 && out.remaining() > 0) {
+                                if (in.remaining() > 8 && out.remaining() > 8)
+                                    out.writeLong(in.readLong());
+                                else
+                                    out.writeByte(in.readByte());
+                            }
 
-                });
+                        }
+
+                );
 
 
                 NetworkHub ping = Network.of(pingConf, withActions -> new NioCallback() {
 
-                    int tests = 200000;
-                    long start;
-                    int count = 0;
-                    long[] times = new long[tests];
+                            int tests = 200000;
+                            long[] times = new long[tests * repeats];
+                            int count = 0;
+                            int i;
 
-                    @Override
-                    public void onEvent(@NotNull Bytes in, @NotNull Bytes out, @NotNull EventType eventType) {
+                            @Override
+                            public void onEvent(@NotNull Bytes in, @NotNull Bytes out, @NotNull EventType eventType) {
 
-                        try {
+                                try {
 
-                            switch (eventType) {
+                                    if (i % 1000 == 0)
+                                        System.out.print(".");
+
+                                    switch (eventType) {
+                                        case OP_CONNECT:
+
+                                            // 1. start by sending a ping message
+                                            System.out.println("Starting latency test");
+                                            i = -20000;
+
+                                            // this causes the OP_WRITE to be called
+                                            withActions.setDirty(true);
+                                            return;
+
+                                        case OP_READ:
+
+                                            if (in.remaining() < 8 * repeats)
+                                                return;
+
+                                            for (int j = 0; j < repeats; j++) {
+                                                long time = System.nanoTime() - in.readLong();
+
+                                                if (count >= times.length)
+                                                    break;
+
+                                                if (i >= 0)
+                                                    times[count++] = time;
+                                            }
 
 
-                                case OP_CONNECT:
-                                    // 1. start by sending a ping message
+                                            // causes the OP_WRITE to be called
+                                            withActions.setDirty(true);
 
-                                    start = System.nanoTime();
-                                    long now = System.nanoTime();
-                                    out.writeLong(now);
-                                    return;
+                                            if (i == tests) {
 
-
-                              /*  case OP_WRITE:
-                                    while (out.remaining() >= 8)
-                                        out.writeLong(System.nanoTime());
-*/
-                                case OP_READ:
+                                                Arrays.sort(times);
+                                                System.out.printf("Loop back echo latency was %.1f/%.1f %.1f/%.1f %.1fus for 50/90 99/99.9 99.99%%tile%n",
+                                                        times[tests / 2] / 1e3, times[tests * 9 / 10] / 1e3,
+                                                        times[tests - tests / 100] / 1e3, times[tests - tests / 1000] / 1e3,
+                                                        times[tests - tests / 10000] / 1e3);
+                                                finished.countDown();
 
 
-                                    while (in.remaining() >= 8) {
-                                        if (count == tests)
-                                            break;
+                                            }
+                                            return;
 
-                                        times[count++] = System.nanoTime() - in.readLong();
+                                        case OP_WRITE:
+
+                                            if (out.remaining() < 8 * repeats)
+                                                return;
+
+
+                                            i++;
+
+                                            for (int j = 0; j < repeats; j++) {
+                                                out.writeLong(System.nanoTime());
+                                            }
 
                                     }
-
-                                    withActions.outWithSize(8).writeLong(System.nanoTime());
-
-
-                                    if (count >= tests) {
-
-                                        Arrays.sort(times);
-                                        System.out.printf("Loop back echo latency was %.1f/%.1f %.1f/%.1f %.1fus for 50/90 99/99.9 99.99%%tile%n",
-                                                times[tests / 2] / 1e3, times[tests * 9 / 10] / 1e3,
-                                                times[tests - tests / 100] / 1e3, times[tests - tests / 1000] / 1e3,
-                                                times[tests - tests / 10000] / 1e3);
-                                        finished.countDown();
-                                    }
-
-
+                                } catch (Exception e1) {
+                                    e.set(e1);
+                                    finished.countDown();
+                                }
                             }
-
-                            // forces write to be called
-                            //  withActions.setDirty(true);
-
-
-                        } catch (Exception e1) {
-                            e.set(e1);
-                            finished.countDown();
                         }
-                    }
-                });
-        ) {
+
+                );
+        )
+
+        {
 
             finished.await();
             Exception exception = e.get();
@@ -270,33 +295,10 @@ public class ClientConnectorTest {
                 throw exception;
 
         }
+
     }
 
 
-    private static void testLatency(int repeats, DataInputStream[] in, DataOutputStream[] out) throws IOException {
-        System.out.println("Starting latency test");
-        int tests = 200000;
-        long[] times = new long[tests * repeats];
-        int count = 0;
-        for (int i = -20000; i < tests; i++) {
-            long now = System.nanoTime();
-            for (int j = 0; j < repeats; j++) {
-                out[j].writeLong(now);
-                out[j].flush();
-            }
-
-            for (int j = 0; j < repeats; j++) {
-                long time = System.nanoTime() - in[j].readLong();
-                if (i >= 0)
-                    times[count++] = time;
-            }
-        }
-        Arrays.sort(times);
-        System.out.printf("Loop back echo latency was %.1f/%.1f %.1f/%.1f %.1fus for 50/90 99/99.9 99.99%%tile%n",
-                times[tests / 2] / 1e3, times[tests * 9 / 10] / 1e3,
-                times[tests - tests / 100] / 1e3, times[tests - tests / 1000] / 1e3,
-                times[tests - tests / 10000] / 1e3);
-    }
 }
 
 

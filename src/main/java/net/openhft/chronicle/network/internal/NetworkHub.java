@@ -103,7 +103,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
         this.replicationConfig = replicationConfig;
         defaultBufferSize = replicationConfig.tcpBufferSize();
-        assert defaultBufferSize > 128;
+
         this.name = replicationConfig.name();
 
         start();
@@ -126,6 +126,10 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
             while (selector.isOpen()) {
                 registerPendingRegistrations();
 
+                // set the OP_WRITE when data is ready to send
+                opWriteUpdater.applyUpdates(selector);
+
+
                 final int nSelectedKeys = select();
 
                 // its less resource intensive to set this less frequently and use an approximation
@@ -137,8 +141,6 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
                 if (replicationConfig.enableHeartbeats())
                     heartBeatMonitor(approxTime);
 
-                // set the OP_WRITE when data is ready to send
-                opWriteUpdater.applyUpdates(selector);
 
                 if (useJavaNIOSelectionKeys) {
                     // use the standard java nio selector
@@ -316,7 +318,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         }
     }
 
-    private void enableOpWrite(@NotNull SelectionKey key) {
+    private static void enableOpWrite(@NotNull SelectionKey key) {
         int ops = key.interestOps();
         key.interestOps(ops | OP_WRITE);
     }
@@ -508,13 +510,14 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
             return;
         }
 
-        Writer writer = attached.writer;
+        attached.getUserAttached().onEvent(attached.reader.out, attached.writer.in(), EventType.OP_WRITE);
+        attached.writer.out.limit((int) attached.writer.in().position());
 
-        attached.getUserAttached().onEvent(attached.reader.out, writer.in(),
-                EventType.OP_WRITE);
+        Writer writer = attached.writer;
 
         try {
             final int len = writer.writeBufferToSocket(socketChannel, approxTime);
+
 
             if (len == -1)
                 socketChannel.close();
@@ -522,9 +525,14 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
             if (len > 0)
                 contemplateThrottleWrites(len);
 
-            if (!writer.hasBytesToWrite())
+            if (writer.out.remaining() == 0) {
+
                 // TURN OP_WRITE_OFF
                 key.interestOps(key.interestOps() & ~OP_WRITE);
+            }
+
+            attached.writer.out.limit(attached.writer.out.capacity());
+
         } catch (IOException e) {
             quietClose(key, e);
             if (!attached.isServer)
@@ -586,14 +594,15 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
     }
 
-    private void onEvent(SelectionKey key, Attached attached, final EventType type) {
+    private static void onEvent(SelectionKey key, Attached attached, final EventType type) {
+
 
         long start = attached.writer.in().position();
-
         attached.getUserAttached().onEvent(attached.reader.out, attached.writer.in(), type);
 
-        if (attached.writer.in().position() > start)
+        if ( attached.writer.in().position() >0 ) {
             enableOpWrite(key);
+        }
     }
 
     @Nullable
@@ -628,10 +637,11 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
                     Attached attached = (Attached) selectionKey.attachment();
                     if (attached.isDirty()) {
+
                         selectionKey.interestOps(selectionKey.interestOps() | OP_WRITE);
-                        //noinspection ConstantConditions
-                        attached.getUserAttached().onEvent(attached.reader.out, attached.writer.in(),
-                                EventType.OP_WRITE);
+                        // selectionKey.interestOps(OP_READ | OP_WRITE);
+
+
                     }
 
                 }
@@ -980,6 +990,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
                 out.clear();
             }
 
+
             return len;
         }
 
@@ -1019,10 +1030,6 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         }
 
 
-        public boolean hasBytesToWrite() {
-            return in().position() > 0;
-        }
-
         public Bytes increaseBufferBy(int additionalBytes) {
             resizeBuffer(out.capacity() + additionalBytes);
             return in();
@@ -1052,7 +1059,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
         private Reader(final int defaultBufferSize, final String name) {
             this.name = name;
-            assert defaultBufferSize > 128;
+
 
             in = ByteBuffer.allocateDirect(defaultBufferSize);
             out = new ByteBufferBytes(in.slice());
@@ -1101,7 +1108,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
 //            assert out.limit() != out.capacity();
             compactBuffer(largestEntrySoFar);
-            in.position((int) out.limit());
+            //   in.position((int) out.limit());
 
             final int len = socketChannel.read(in);
             out.limit(in.position());
@@ -1122,8 +1129,9 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
                 return;
 
 
-            if (out.position() == out.limit()) {
+            if (out.remaining() == 0) {
                 out.position(0);
+                out.limit(0);
                 in.position(0);
             } else {
 
@@ -1135,7 +1143,11 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
                 in.limit((int) out.limit());
                 in.position((int) out.position());
                 in.compact();
-                in.clear();
+
+                out.position(0);
+                out.limit((int) in.position());
+
+
             }
 
 
