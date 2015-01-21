@@ -34,7 +34,7 @@ import java.util.Arrays;
 /*
 On a E5-2650 v2 over loopback with onload
 Throughput was 2880.4 MB/s
-Loop back echo latency was 5.8/6.3 18.6/20.1 25.1us for 50/90 99/99.9 99.99%tile
+Loop back echo latency was 5.8/6.2 9.6/19.4 23.2us for 50/90 99/99.9 99.99%tile
 
 Throughput was 1136.2 MB/s
 Loop back echo latency was 12.4/12.7 23.0/26.0 32.7us for 50/90 99/99.9 99.99%tile
