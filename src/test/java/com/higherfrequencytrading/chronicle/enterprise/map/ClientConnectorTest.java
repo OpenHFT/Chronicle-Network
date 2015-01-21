@@ -13,6 +13,7 @@ import org.junit.Test;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static net.openhft.chronicle.network.NioCallback.EventType.OP_CONNECT;
@@ -238,7 +239,8 @@ public class ClientConnectorTest {
 
                                             for (int j = 0; j < repeats; j++) {
                                                 long time = System.nanoTime() - in.readLong();
-
+                                                System.out.println(TimeUnit.NANOSECONDS.toMicros
+                                                        (time) + "us");
                                                 if (count >= times.length)
                                                     break;
 
