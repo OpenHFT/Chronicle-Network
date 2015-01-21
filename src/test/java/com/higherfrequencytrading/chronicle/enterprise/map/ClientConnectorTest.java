@@ -11,7 +11,6 @@ import net.openhft.lang.model.constraints.NotNull;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -177,19 +176,18 @@ public class ClientConnectorTest {
     @Test
     public void testEchoLatencyPutTest() throws Exception {
 
-        final int repeats = 2;
-        int tests = 200000;
+
 
 
         final CountDownLatch finished = new CountDownLatch(1);
         final AtomicReference<Exception> e = new AtomicReference<Exception>();
 
 
-        final NetworkConfig echoConf = port(9066).name("echo").tcpBufferSize(128);
+        final NetworkConfig echoConf = port(9066).name("echo").tcpBufferSize(8);
 
         final NetworkConfig pingConf = port(9067).name("ping")
                 .setEndpoints(new InetSocketAddress("localhost", 9066))
-                .tcpBufferSize(128);
+                .tcpBufferSize(8);
 
         try (
                 NetworkHub echo = Network.of(echoConf, withActions -> (in, out, eventType) -> {
@@ -208,99 +206,44 @@ public class ClientConnectorTest {
 
                 NetworkHub ping = Network.of(pingConf, withActions -> new NioCallback() {
 
-                            int tests = 200000;
-                            long[] times = new long[tests * repeats];
-                            int count = 0;
-                            int i;
-
-                            @Override
-                            public void onEvent(@NotNull Bytes in, @NotNull Bytes out, @NotNull EventType eventType) {
-
-                                try {
-
-                                    if (i % 1000 == 0)
-                                        System.out.print(".");
-
-                                    switch (eventType) {
-                                        case OP_CONNECT:
-
-                                            // 1. start by sending a ping message
-                                            System.out.println("Starting latency test");
-                                            i = -20000;
-
-                                            // this causes the OP_WRITE to be called
-                                            withActions.setDirty(true);
-                                            return;
-
-                                        case OP_READ:
-
-                                            if (in.remaining() < 8 * repeats)
-                                                return;
-
-                                            for (int j = 0; j < repeats; j++) {
-                                                long time = System.nanoTime() - in.readLong();
-                                                System.out.println(TimeUnit.NANOSECONDS.toMicros
-                                                        (time) + "us");
-                                                if (count >= times.length)
-                                                    break;
-
-                                                if (i >= 0)
-                                                    times[count++] = time;
-                                            }
 
 
-                                            // causes the OP_WRITE to be called
-                                            withActions.setDirty(true);
-
-                                            if (i == tests) {
-
-                                                Arrays.sort(times);
-                                                System.out.printf("Loop back echo latency was %.1f/%.1f %.1f/%.1f %.1fus for 50/90 99/99.9 99.99%%tile%n",
-                                                        times[tests / 2] / 1e3, times[tests * 9 / 10] / 1e3,
-                                                        times[tests - tests / 100] / 1e3, times[tests - tests / 1000] / 1e3,
-                                                        times[tests - tests / 10000] / 1e3);
-                                                finished.countDown();
+                    @Override
+                    public void onEvent(@NotNull Bytes in, @NotNull Bytes out, @NotNull EventType eventType) {
 
 
-                                            }
-                                            return;
+                        switch (eventType) {
+                            case OP_CONNECT:
 
-                                        case OP_WRITE:
+                                // 1. start by sending a ping message
+                                System.out.println("Starting latency test");
 
-                                            if (out.remaining() < 8 * repeats)
-                                                return;
+                                // this causes the OP_WRITE to be called
+                                withActions.setDirty(true);
+                                return;
 
-
-                                            i++;
-
-                                            for (int j = 0; j < repeats; j++) {
-                                                out.writeLong(System.nanoTime());
-                                            }
-
-                                    }
-                                } catch (Exception e1) {
-                                    e.set(e1);
-                                    finished.countDown();
+                            case OP_READ:
+                                if (in.remaining() >= 8) {
+                                    long l = in.readLong();
+                                    System.out.println(TimeUnit.NANOSECONDS.toMicros(System
+                                            .nanoTime() - l)+"us");
                                 }
-                            }
+                                return;
+
+                            case OP_WRITE:
+                                if (out.remaining() >= 8)
+                                    out.writeLong(System.nanoTime());
+
+
                         }
+                    }
 
-                );
-        )
 
-        {
-
+                })) {
             finished.await();
-            Exception exception = e.get();
-
-            if (exception != null)
-                throw exception;
-
+            // auto close
         }
-
     }
-
-
 }
 
 
