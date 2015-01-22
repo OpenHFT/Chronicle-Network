@@ -24,6 +24,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 
@@ -40,33 +41,43 @@ Throughput was 3728.4 MB/s
 Loop back echo latency was 4.8/5.2 5.6/7.4 9.6us for 50/90 99/99.9 99.99%tile
 
 Between two servers via Solarflare with onload
-Throughput was 1159.8 MB/s
-Loop back echo latency was 12.4/12.6 13.2/24.2 26.4us for 50/90 99/99.9 99.99%tile
+Throughput was 1156.0 MB/s
+Loop back echo latency was 12.2/12.5 21/25 28/465 us for 50/90 99/99.9 99.99/worst %tile
 */
 
 
 public class EchoClientMain {
-    public static final int PORT = 8007;
+    static final int PORT = 8007;
 
-    public static void main(String... args) throws IOException {
+    public static void main(String... args) throws IOException, InterruptedException {
         AffinitySupport.setAffinity(1L << 3);
         String hostname = args[0];
         int port = args.length < 2 ? PORT : Integer.parseInt(args[1]);
         int repeats = 1;
 
         SocketChannel[] sockets = new SocketChannel[repeats];
-        for (int j = 0; j < repeats; j++) {
+        openConnections(hostname, port, sockets);
+        testThroughput(sockets);
+        closeConnections(sockets);
+        openConnections(hostname, port, sockets);
+        testLatency(sockets);
+        closeConnections(sockets);
+    }
+
+    private static void openConnections(String hostname, int port, SocketChannel[] sockets) throws IOException {
+        for (int j = 0; j < sockets.length; j++) {
             sockets[j] = SocketChannel.open(new InetSocketAddress(hostname, port));
             sockets[j].socket().setTcpNoDelay(true);
             sockets[j].configureBlocking(false);
         }
-        testThroughput(sockets);
-        testLatency(sockets);
+    }
+
+    private static void closeConnections(SocketChannel[] sockets) throws IOException {
         for (Closeable socket : sockets)
             socket.close();
     }
 
-    private static void testThroughput(SocketChannel[] sockets) throws IOException {
+    private static void testThroughput(SocketChannel[] sockets) throws IOException, InterruptedException {
         System.out.println("Starting throughput test");
         int bufferSize = 32 * 1024;
         ByteBuffer bb = ByteBuffer.allocateDirect(bufferSize);
@@ -85,11 +96,14 @@ public class EchoClientMain {
                 }
             count++;
         }
-        for (int end = 0; end < Math.min(count, window); end++)
-            for (SocketChannel socket : sockets) {
-                bb.clear();
-                while (socket.read(bb) >= 0 && bb.remaining() > 0) ;
+        for (SocketChannel socket : sockets) {
+            try {
+                do {
+                    bb.clear();
+                } while (socket.read(bb) > 0);
+            } catch (ClosedChannelException expected) {
             }
+        }
         long time = System.nanoTime() - start;
         System.out.printf("Throughput was %.1f MB/s%n", 1e3 * count * bufferSize * sockets.length / time);
     }
@@ -118,7 +132,7 @@ public class EchoClientMain {
             }
         }
         Arrays.sort(times);
-        System.out.printf("Loop back echo latency was %.1f/%.1f %,d/%,d %,d/%dus for 50/90 99/99.9 99.99/worst%%tile%n",
+        System.out.printf("Loop back echo latency was %.1f/%.1f %,d/%,d %,d/%d us for 50/90 99/99.9 99.99/worst %%tile%n",
                 times[tests / 2] / 1e3,
                 times[tests * 9 / 10] / 1e3,
                 times[tests - tests / 100] / 1000,
