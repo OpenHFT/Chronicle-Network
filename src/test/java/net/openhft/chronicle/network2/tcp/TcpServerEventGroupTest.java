@@ -106,12 +106,12 @@ public class TcpServerEventGroupTest {
         }
         Arrays.sort(times);
         System.out.printf("Loop back echo latency was %.1f/%.1f %,d/%,d %,d/%d us for 50/90 99/99.9 99.99/worst %%tile%n",
-                times[tests / 2] / 1e3,
-                times[tests * 9 / 10] / 1e3,
-                times[tests - tests / 100] / 1000,
-                times[tests - tests / 1000] / 1000,
-                times[tests - tests / 10000] / 1000,
-                times[tests - 1] / 1000
+                times[times.length / 2] / 1e3,
+                times[times.length * 9 / 10] / 1e3,
+                times[times.length - times.length / 100] / 1000,
+                times[times.length - times.length / 1000] / 1000,
+                times[times.length - times.length / 10000] / 1000,
+                times[times.length - 1] / 1000
         );
     }
 
