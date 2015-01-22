@@ -1,9 +1,10 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.network.internal.NetworkConfig;
-import net.openhft.chronicle.network.internal.NetworkHub;
+import net.openhft.chronicle.network.internal.netty.NettyBasedNetworkHub;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 /**
@@ -16,10 +17,12 @@ public class Network {
     }
 
 
-    public static NetworkHub of(@NotNull final NetworkConfig replicationConfig,
+    public static Closeable of(@NotNull final NetworkConfig replicationConfig,
                                 @NotNull final NioCallbackFactory nioCallbackFactory) throws IOException {
 
-        return new NetworkHub(replicationConfig, nioCallbackFactory);
+
+        return new NettyBasedNetworkHub(replicationConfig, nioCallbackFactory);
+        //  return new NetworkHub(replicationConfig, nioCallbackFactory);
 
     }
 

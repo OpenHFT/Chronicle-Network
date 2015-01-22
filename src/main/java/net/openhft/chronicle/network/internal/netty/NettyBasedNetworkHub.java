@@ -16,11 +16,20 @@
  * limitations under the License.
  */
 
-package net.openhft.chronicle.network.internal;
+package net.openhft.chronicle.network.internal.netty;
 
+import io.netty.channel.ChannelException;
+import io.netty.channel.EventLoopException;
+import io.netty.channel.nio.NioTask;
+import io.netty.util.internal.PlatformDependent;
+import io.netty.util.internal.SystemPropertyUtil;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
+import net.openhft.chronicle.network.NetworkI;
 import net.openhft.chronicle.network.NioCallback;
 import net.openhft.chronicle.network.NioCallback.EventType;
 import net.openhft.chronicle.network.NioCallbackFactory;
+import net.openhft.chronicle.network.internal.*;
 import net.openhft.lang.io.ByteBufferBytes;
 import net.openhft.lang.io.Bytes;
 import org.jetbrains.annotations.NotNull;
@@ -30,7 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.ConnectException;
+import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.SocketException;
@@ -38,6 +47,9 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.*;
+import java.nio.channels.spi.SelectorProvider;
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -52,7 +64,7 @@ import static net.openhft.chronicle.network.internal.NetworkHub.EventId.HEARTBEA
  *
  * @author Rob Austin.
  */
-public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
+public final class NettyBasedNetworkHub<T> extends AbstractNetwork implements Closeable, NetworkI {
 
     @NotNull
     private final NioCallbackFactory nioCallbackFactory;
@@ -60,13 +72,13 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
     private final int defaultBufferSize;
 
 
-    public static enum EventId {
+    static enum EventId {
         HEARTBEAT,
         DATA,
     }
 
-    private static final Logger LOG = LoggerFactory.getLogger(NetworkHub.class.getName());
-    private static final int BUFFER_SIZE = 0x100000; // 1MB
+    private static final Logger LOG = LoggerFactory.getLogger(NettyBasedNetworkHub.class.getName());
+    private static final int BUFFER_SIZE = 128 * 1024; // 1MB
 
     public static final long SPIN_LOOP_TIME_IN_NONOSECONDS = TimeUnit.MICROSECONDS.toNanos(500);
 
@@ -86,8 +98,8 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
     /**
      * @throws java.io.IOException on an io error.
      */
-    public NetworkHub(@NotNull final NetworkConfig replicationConfig,
-                      @NotNull final NioCallbackFactory nioCallbackFactory)
+    public NettyBasedNetworkHub(@NotNull final NetworkConfig replicationConfig,
+                                @NotNull final NioCallbackFactory nioCallbackFactory)
             throws IOException {
 
         super("TcpReplicator-" + replicationConfig.name(), replicationConfig.throttlingConfig());
@@ -106,6 +118,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
         this.name = replicationConfig.name();
 
+        selector = openSelector();
         start();
     }
 
@@ -123,61 +136,83 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
                 new ClientConnector(clientDetails).connect();
             }
 
-            while (selector.isOpen()) {
 
-                registerPendingRegistrations();
+            while (selector.isOpen()) {
+                if (hasPendingRegistrations.getAndSet(false))
+                    registerPendingRegistrations();
 
                 // set the WRITE when data is ready to send
                 opWriteUpdater.applyUpdates(selector);
 
-
-                final int nSelectedKeys = select();
-
-                // its less resource intensive to set this less frequently and use an approximation
-                final long approxTime = System.currentTimeMillis();
-
-                checkThrottleInterval();
-
-                // check that we have sent and received heartbeats
-                if (replicationConfig.enableHeartbeats())
-                    heartBeatMonitor(approxTime);
-
-
-                if (useJavaNIOSelectionKeys) {
-                    // use the standard java nio selector
-
-                    if (nSelectedKeys == 0)
-                        continue;    // go back and check pendingRegistrations
-
-                    final Set<SelectionKey> selectionKeys = selector.selectedKeys();
-                    for (final SelectionKey key : selectionKeys) {
-                        processKey(approxTime, key);
-                    }
-                    selectionKeys.clear();
+                boolean oldWakenUp = wakenUp.getAndSet(false);
+                //  try {
+                if (opWriteUpdater.wasChanged()) {
+                    selectNow();
                 } else {
+                    select(oldWakenUp);
 
-                    // use the netty like selector
-                    final SelectionKey[] keys = selectedKeys.flip();
+                    // 'wakenUp.compareAndSet(false, true)' is always evaluated
+                    // before calling 'selector.wakeup()' to reduce the wake-up
+                    // overhead. (Selector.wakeup() is an expensive operation.)
+                    //
+                    // However, there is a race condition in this approach.
+                    // The race condition is triggered when 'wakenUp' is set to
+                    // true too early.
+                    //
+                    // 'wakenUp' is set to true too early if:
+                    // 1) Selector is waken up between 'wakenUp.set(false)' and
+                    //    'selector.select(...)'. (BAD)
+                    // 2) Selector is waken up between 'selector.select(...)' and
+                    //    'if (wakenUp.get()) { ... }'. (OK)
+                    //
+                    // In the first case, 'wakenUp' is set to true and the
+                    // following 'selector.select(...)' will wake up immediately.
+                    // Until 'wakenUp' is set to false again in the next round,
+                    // 'wakenUp.compareAndSet(false, true)' will fail, and therefore
+                    // any attempt to wake up the Selector will fail, too, causing
+                    // the following 'selector.select(...)' call to block
+                    // unnecessarily.
+                    //
+                    // To fix this problem, we wake up the selector again if wakenUp
+                    // is true immediately after selector.select(...).
+                    // It is inefficient in that it wakes up the selector for both
+                    // the first case (BAD - wake-up required) and the second case
+                    // (OK - no wake-up required).
 
-                    try {
-                        for (int i = 0; i < keys.length && keys[i] != null; i++) {
-                            final SelectionKey key = keys[i];
-
-                            try {
-                                processKey(approxTime, key);
-                            } catch (BufferUnderflowException e) {
-                                if (!isClosed)
-                                    LOG.error("", e);
-                            }
-                        }
-                    } finally {
-                        for (int i = 0; i < keys.length && keys[i] != null; i++) {
-                            keys[i] = null;
-                        }
+                    if (wakenUp.get()) {
+                        selector.wakeup();
                     }
                 }
+
+                cancelledKeys = 0;
+                needsToSelectAgain = false;
+                final int ioRatio = this.ioRatio;
+                if (ioRatio == 100) {
+                    processSelectedKeys();
+
+                } else {
+                    final long ioStartTime = System.nanoTime();
+
+                    processSelectedKeys();
+
+                }
+
+
+               /* } catch (Throwable t) {
+                    logger.warn("Unexpected exception in the selector loop.", t);
+
+                    // Prevent possible consecutive immediate failures that lead to
+                    // excessive CPU consumption.
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        // Ignore.
+                    }
+                }*/
             }
-        } catch (CancelledKeyException | ConnectException | ClosedChannelException |
+
+
+        } catch (CancelledKeyException | ClosedChannelException |
                 ClosedSelectorException e) {
             if (LOG.isDebugEnabled())
                 LOG.debug("", e);
@@ -472,7 +507,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         channel.socket().setSoTimeout(0);
         channel.socket().setSoLinger(false, 0);
 
-        final Attached attached = new Attached(opWriteUpdater, heartBeatIntervalMillis);
+        final Attached attached = new Attached(opWriteUpdater, heartBeatIntervalMillis, this);
         attached.reader = new Reader(defaultBufferSize, name);
         attached.writer = new Writer(defaultBufferSize);
         attached.isServer = true;
@@ -488,6 +523,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
                 EventType.ACCEPT);
 
         if (attached.writer.in().position() > start)
+
             channel.register(selector, OP_READ | OP_WRITE, attached);
         else
             channel.register(selector, OP_READ, attached);
@@ -511,28 +547,27 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
             return;
         }
 
-        attached.getUserAttached().onEvent(attached.reader.out, attached.writer.in(), EventType.WRITE);
-        attached.writer.out.limit((int) attached.writer.in().position());
+        if (attached.writer.in().remaining() > 0)
+            attached.getUserAttached().onEvent(attached.reader.out, attached.writer.in(), EventType.WRITE);
+
 
         Writer writer = attached.writer;
 
         try {
             final int len = writer.writeBufferToSocket(socketChannel, approxTime);
 
-
             if (len == -1)
                 socketChannel.close();
 
-            if (len > 0)
-                contemplateThrottleWrites(len);
+            //  if (len > 0)
+            //      contemplateThrottleWrites(len);
 
-            if (writer.out.remaining() == 0) {
+            if (writer.in.position() == 0) {
 
                 // TURN OP_WRITE_OFF
                 key.interestOps(key.interestOps() & ~OP_WRITE);
             }
 
-            attached.writer.out.limit(attached.writer.out.capacity());
 
         } catch (IOException e) {
             quietClose(key, e);
@@ -580,7 +615,6 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
             if (len == 0)
                 return;
 
-
         } catch (IOException e) {
             if (!attached.isServer)
                 attached.connector.connectLater();
@@ -601,7 +635,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         long start = attached.writer.in().position();
         attached.getUserAttached().onEvent(attached.reader.out, attached.writer.in(), type);
 
-        if (attached.writer.in().position() > 0) {
+        if (attached.writer.in().position() > start) {
             enableOpWrite(key);
         }
     }
@@ -621,9 +655,9 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
     /**
      * sets interestOps to "selector keys",The change to interestOps much be on the same thread as
-     * the selector. This class, allows via {@link AbstractNetwork .KeyInterestUpdater#set(int)}  to
-     * holds a pending change  in interestOps ( via a bitset ), this change is processed later on
-     * the same thread as the selector
+     * the selector. This class, allows via {@link net.openhft.chronicle.network.internal.AbstractNetwork
+     * .KeyInterestUpdater#set(int)}  to holds a pending change  in interestOps ( via a bitset ),
+     * this change is processed later on the same thread as the selector
      */
     private static class OpWriteInterestUpdater {
 
@@ -638,11 +672,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
                     Attached attached = (Attached) selectionKey.attachment();
                     if (attached.isDirty()) {
-
                         selectionKey.interestOps(selectionKey.interestOps() | OP_WRITE);
-                        // selectionKey.interestOps(OP_READ | WRITE);
-
-
                     }
 
                 }
@@ -654,9 +684,13 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
             wasChanged.set(true);
         }
 
+        public boolean wasChanged() {
+            return wasChanged.get();
+        }
+
     }
 
-    private class ServerConnector extends AbstractConnector {
+    class ServerConnector extends AbstractConnector {
 
         @NotNull
         private final Details details;
@@ -681,6 +715,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
             final ServerSocketChannel serverChannel = openServerSocketChannel();
             serverChannel.socket().setReceiveBufferSize(BUFFER_SIZE);
             serverChannel.configureBlocking(false);
+
             //  serverChannel.register(NetworkHub.this.selector, 0);
             ServerSocket serverSocket = null;
 
@@ -692,16 +727,18 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
             }
 
             serverSocket.setReuseAddress(true);
+            serverSocket.setSoTimeout(0);
             serverSocket.bind(details.address());
 
             // these can be run on this thread
             addPendingRegistration(new Runnable() {
                 @Override
                 public void run() {
-                    final Attached attached = new Attached(opWriteUpdater, heartBeatIntervalMillis);
+                    final Attached attached = new Attached(opWriteUpdater,
+                            heartBeatIntervalMillis, NettyBasedNetworkHub.this);
                     attached.connector = ServerConnector.this;
                     try {
-                        serverChannel.register(NetworkHub.this.selector, OP_ACCEPT, attached);
+                        serverChannel.register(NettyBasedNetworkHub.this.selector, OP_ACCEPT, attached);
                     } catch (ClosedChannelException e) {
                         LOG.debug("", e);
                     }
@@ -737,13 +774,14 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         protected SelectableChannel doConnect() throws IOException, InterruptedException {
             boolean success = false;
 
-            final SocketChannel socketChannel = openSocketChannel(NetworkHub.this.closeables);
+            final SocketChannel socketChannel = openSocketChannel(NettyBasedNetworkHub.this.closeables);
 
             try {
                 socketChannel.configureBlocking(false);
                 socketChannel.socket().setReuseAddress(true);
                 socketChannel.socket().setSoLinger(false, 0);
                 socketChannel.socket().setSoTimeout(0);
+                socketChannel.socket().setTcpNoDelay(true);
 
                 try {
                     socketChannel.connect(details.address());
@@ -759,7 +797,8 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
                 addPendingRegistration(new Runnable() {
                     @Override
                     public void run() {
-                        final Attached attached = new Attached(opWriteUpdater, heartBeatIntervalMillis);
+                        final Attached attached = new Attached(opWriteUpdater,
+                                heartBeatIntervalMillis, NettyBasedNetworkHub.this);
                         attached.connector = ClientConnector.this;
 
                         try {
@@ -794,18 +833,21 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
     /**
      * Attached to the NIO selection key via methods such as {@link java.nio.channels.SelectionKey#attach(Object)}
      */
-    static class Attached<T> implements Actions, NioCallbackProvider {
+    public static class Attached<T> implements Actions, NioCallbackProvider {
 
 
         private final OpWriteInterestUpdater opWriteUpdater;
         private final long heartBeatIntervalMillis;
 
         public long remoteHeartbeatInterval;
+        private final Closeable closeable;
 
-        Attached(OpWriteInterestUpdater opWriteUpdater, long heartBeatIntervalMillis) {
+        public Attached(OpWriteInterestUpdater opWriteUpdater, long heartBeatIntervalMillis,
+                        Closeable closeable) {
             this.heartBeatIntervalMillis = heartBeatIntervalMillis;
             this.opWriteUpdater = opWriteUpdater;
             remoteHeartbeatInterval = heartBeatIntervalMillis;
+            this.closeable = closeable;
         }
 
         public Reader reader;
@@ -855,7 +897,13 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
         @Override
         public void close() {
-            throw new UnsupportedOperationException("todo");
+
+            try {
+
+                closeable.close();
+            } catch (IOException e) {
+                LOG.error("", e);
+            }
         }
 
         @Override
@@ -966,29 +1014,30 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
             final Bytes in = in();
             final ByteBuffer out = out();
 
-            if (in.position() == 0)
+            if (out.limit() == 0)
                 return 0;
 
             // if we still have some unwritten writer from last time
             lastSentTime = approxTime;
             assert in.position() <= Integer.MAX_VALUE;
-            int size = (int) in.position();
+            int expectedSize = (int) in.position();
 
-            out.limit(size);
+            out.limit(expectedSize);
+            out.position(0);
 
             final int len = socketChannel.write(out);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("bytes-written=" + len);
 
-            if (len == size) {
+            if (len == expectedSize) {
                 out.clear();
                 in.clear();
             } else {
                 out.compact();
                 in.position(out.position());
                 in.limit(in.capacity());
-                out.clear();
+                out.limit(out.capacity());
             }
 
 
@@ -1167,6 +1216,531 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         }
 
 
+    }
+
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(NioEventLoop.class);
+
+    private static final int CLEANUP_INTERVAL = 256; // XXX Hard-coded value, but won't need customization.
+
+    private static final boolean DISABLE_KEYSET_OPTIMIZATION =
+            SystemPropertyUtil.getBoolean("io.netty.noKeySetOptimization", false);
+
+    private static final int MIN_PREMATURE_SELECTOR_RETURNS = 3;
+    private static final int SELECTOR_AUTO_REBUILD_THRESHOLD;
+
+    // Workaround for JDK NIO bug.
+    //
+    // See:
+    // - http://bugs.sun.com/view_bug.do?bug_id=6427854
+    // - https://github.com/netty/netty/issues/203
+    static {
+        String key = "sun.nio.ch.bugLevel";
+        try {
+            String buglevel = SystemPropertyUtil.get(key);
+            if (buglevel == null) {
+                System.setProperty(key, "");
+            }
+        } catch (SecurityException e) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Unable to get/set System Property: {}", key, e);
+            }
+        }
+
+        int selectorAutoRebuildThreshold = SystemPropertyUtil.getInt("io.netty.selectorAutoRebuildThreshold", 512);
+        if (selectorAutoRebuildThreshold < MIN_PREMATURE_SELECTOR_RETURNS) {
+            selectorAutoRebuildThreshold = 0;
+        }
+
+        SELECTOR_AUTO_REBUILD_THRESHOLD = selectorAutoRebuildThreshold;
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("-Dio.netty.noKeySetOptimization: {}", DISABLE_KEYSET_OPTIMIZATION);
+            logger.debug("-Dio.netty.selectorAutoRebuildThreshold: {}", SELECTOR_AUTO_REBUILD_THRESHOLD);
+        }
+    }
+
+    /**
+     * The NIO {@link Selector}.
+     */
+
+    private SelectedSelectionKeySet selectedKeys;
+
+    private final SelectorProvider provider = SelectorProvider.provider();
+
+    /**
+     * Boolean that controls determines if a blocked Selector.select should break out of its
+     * selection process. In our case we use a timeout for the select method and the select method
+     * will block for that time unless waken up.
+     */
+    private final AtomicBoolean wakenUp = new AtomicBoolean();
+
+    private volatile int ioRatio = 50;
+    private int cancelledKeys;
+    private boolean needsToSelectAgain;
+
+
+    private Selector openSelector() {
+        final Selector selector;
+        try {
+            selector = provider.openSelector();
+        } catch (IOException e) {
+            throw new ChannelException("failed to open a new selector", e);
+        }
+
+        if (DISABLE_KEYSET_OPTIMIZATION) {
+            return selector;
+        }
+
+        try {
+            SelectedSelectionKeySet selectedKeySet = new SelectedSelectionKeySet();
+
+            Class<?> selectorImplClass =
+                    Class.forName("sun.nio.ch.SelectorImpl", false, PlatformDependent.getSystemClassLoader());
+
+            // Ensure the current selector implementation is what we can instrument.
+            if (!selectorImplClass.isAssignableFrom(selector.getClass())) {
+                return selector;
+            }
+
+            Field selectedKeysField = selectorImplClass.getDeclaredField("selectedKeys");
+            Field publicSelectedKeysField = selectorImplClass.getDeclaredField("publicSelectedKeys");
+
+            selectedKeysField.setAccessible(true);
+            publicSelectedKeysField.setAccessible(true);
+
+            selectedKeysField.set(selector, selectedKeySet);
+            publicSelectedKeysField.set(selector, selectedKeySet);
+
+            selectedKeys = selectedKeySet;
+            logger.trace("Instrumented an optimized java.util.Set into: {}", selector);
+        } catch (Throwable t) {
+            selectedKeys = null;
+            logger.trace("Failed to instrument an optimized java.util.Set into: {}", selector, t);
+        }
+
+        return selector;
+    }
+
+
+    /**
+     * Registers an arbitrary {@link SelectableChannel}, not necessarily created by Netty, to the
+     * {@link Selector} of this event loop.  Once the specified {@link SelectableChannel} is
+     * registered, the specified {@code task} will be executed by this event loop when the {@link
+     * SelectableChannel} is ready.
+     */
+    public void register(final SelectableChannel ch, final int interestOps, final NioTask<?> task) {
+        if (ch == null) {
+            throw new NullPointerException("ch");
+        }
+        if (interestOps == 0) {
+            throw new IllegalArgumentException("interestOps must be non-zero.");
+        }
+        if ((interestOps & ~ch.validOps()) != 0) {
+            throw new IllegalArgumentException(
+                    "invalid interestOps: " + interestOps + "(validOps: " + ch.validOps() + ')');
+        }
+        if (task == null) {
+            throw new NullPointerException("task");
+        }
+
+
+        try {
+            ch.register(selector, interestOps, task);
+        } catch (Exception e) {
+            throw new EventLoopException("failed to register a channel", e);
+        }
+    }
+
+    /**
+     * Returns the percentage of the desired amount of time spent for I/O in the event loop.
+     */
+    public int getIoRatio() {
+        return ioRatio;
+    }
+
+    /**
+     * Sets the percentage of the desired amount of time spent for I/O in the event loop.  The
+     * default value is {@code 50}, which means the event loop will try to spend the same amount of
+     * time for I/O as for non-I/O tasks.
+     */
+    public void setIoRatio(int ioRatio) {
+        if (ioRatio <= 0 || ioRatio > 100) {
+            throw new IllegalArgumentException("ioRatio: " + ioRatio + " (expected: 0 < ioRatio <= 100)");
+        }
+        this.ioRatio = ioRatio;
+    }
+
+
+    private void processSelectedKeys() {
+
+
+        SelectionKey[] selectedKeys1 = selectedKeys.flip();
+        for (int i = 0; ; i++) {
+            final SelectionKey k = selectedKeys1[i];
+            if (k == null) {
+                break;
+            }
+            // null out entry in the array to allow to have it GC'ed once the Channel close
+            // See https://github.com/netty/netty/issues/2363
+            selectedKeys1[i] = null;
+
+            processSelectedKey(k);
+
+            if (needsToSelectAgain) {
+                // null out entries in the array to allow to have it GC'ed once the Channel close
+                // See https://github.com/netty/netty/issues/2363
+                for (; ; ) {
+                    if (selectedKeys1[i] == null) {
+                        break;
+                    }
+                    selectedKeys1[i] = null;
+                    i++;
+                }
+
+                selectAgain();
+                // Need to flip the optimized selectedKeys to get the right reference to the array
+                // and reset the index to -1 which will then set to 0 on the for loop
+                // to start over again.
+                //
+                // See https://github.com/netty/netty/issues/1523
+                selectedKeys1 = this.selectedKeys.flip();
+                i = -1;
+            }
+        }
+
+    }
+
+
+    private void processSelectedKey(SelectionKey k) {
+        int state = 0;
+        try {
+            processKey(System.currentTimeMillis(), k);
+            state = 1;
+        } catch (Exception e) {
+            k.cancel();
+            state = 2;
+        } finally {
+
+            switch (state) {
+                case 0:
+                    k.cancel();
+                    break;
+
+            }
+        }
+    }
+
+
+    void cancel(SelectionKey key) {
+        key.cancel();
+        cancelledKeys++;
+        if (cancelledKeys >= CLEANUP_INTERVAL) {
+            cancelledKeys = 0;
+            needsToSelectAgain = true;
+        }
+    }
+
+
+    private void processSelectedKeysPlain(Set<SelectionKey> selectedKeys) {
+        // check if the set is empty and if so just return to not create garbage by
+        // creating a new Iterator every time even if there is nothing to process.
+        // See https://github.com/netty/netty/issues/597
+        if (selectedKeys.isEmpty()) {
+            return;
+        }
+
+        Iterator<SelectionKey> i = selectedKeys.iterator();
+        for (; ; ) {
+            final SelectionKey k = i.next();
+            final Object a = k.attachment();
+            i.remove();
+
+            if (a instanceof AbstractNioChannel) {
+                processSelectedKey(k, (AbstractNioChannel) a);
+            } else {
+                @SuppressWarnings("unchecked")
+                NioTask<SelectableChannel> task = (NioTask<SelectableChannel>) a;
+                processSelectedKey(k, task);
+            }
+
+            if (!i.hasNext()) {
+                break;
+            }
+
+            if (needsToSelectAgain) {
+                selectAgain();
+                selectedKeys = selector.selectedKeys();
+
+                // Create the iterator again to avoid ConcurrentModificationException
+                if (selectedKeys.isEmpty()) {
+                    break;
+                } else {
+                    i = selectedKeys.iterator();
+                }
+            }
+        }
+    }
+
+
+    private static void processSelectedKey(SelectionKey k, AbstractNioChannel ch) {
+        final AbstractNioChannel.NioUnsafe unsafe = ch.unsafe();
+        if (!k.isValid()) {
+            // close the channel if the key is not valid anymore
+            unsafe.close(unsafe.voidPromise());
+            return;
+        }
+
+        try {
+            int readyOps = k.readyOps();
+            // Also check for readOps of 0 to workaround possible JDK bug which may otherwise lead
+            // to a spin loop
+            if ((readyOps & (SelectionKey.OP_READ | SelectionKey.OP_ACCEPT)) != 0 || readyOps == 0) {
+                unsafe.read();
+                if (!ch.isOpen()) {
+                    // Connection already closed - no need to handle write.
+                    return;
+                }
+            }
+            if ((readyOps & SelectionKey.OP_WRITE) != 0) {
+                // Call forceFlush which will also take care of clear the WRITE once there is nothing left to write
+                ch.unsafe().forceFlush();
+            }
+            if ((readyOps & SelectionKey.OP_CONNECT) != 0) {
+
+                // remove OP_CONNECT as otherwise Selector.select(..) will always return without blocking
+                // See https://github.com/netty/netty/issues/924
+                int ops = k.interestOps();
+                ops &= ~SelectionKey.OP_CONNECT;
+                k.interestOps(ops);
+
+                unsafe.finishConnect();
+            }
+        } catch (CancelledKeyException ignored) {
+            unsafe.close(unsafe.voidPromise());
+        }
+    }
+
+    private static void processSelectedKey(SelectionKey k, NioTask<SelectableChannel> task) {
+        int state = 0;
+        try {
+            task.channelReady(k.channel(), k);
+            state = 1;
+        } catch (Exception e) {
+            k.cancel();
+            invokeChannelUnregistered(task, k, e);
+            state = 2;
+        } finally {
+            switch (state) {
+                case 0:
+                    k.cancel();
+                    invokeChannelUnregistered(task, k, null);
+                    break;
+                case 1:
+                    if (!k.isValid()) { // Cancelled by channelReady()
+                        invokeChannelUnregistered(task, k, null);
+                    }
+                    break;
+            }
+        }
+    }
+
+    @Override
+    public void close() {
+        try {
+            selector.close();
+        } catch (IOException e) {
+            LOG.error("", e);
+        }
+        super.close();
+    }
+
+
+    private static void invokeChannelUnregistered(NioTask<SelectableChannel> task, SelectionKey k, Throwable cause) {
+        try {
+            task.channelUnregistered(k.channel(), cause);
+        } catch (Exception e) {
+            logger.warn("Unexpected exception while running NioTask.channelUnregistered()", e);
+        }
+    }
+
+
+    protected void wakeup(boolean inEventLoop) {
+        if (!inEventLoop && wakenUp.compareAndSet(false, true)) {
+            selector.wakeup();
+        }
+    }
+
+    void selectNow() throws IOException {
+        try {
+            selector.selectNow();
+        } finally {
+            // restore wakup state if needed
+            if (wakenUp.get()) {
+                selector.wakeup();
+            }
+        }
+    }
+
+    private void select(boolean oldWakenUp) throws IOException {
+        Selector selector = this.selector;
+        try {
+            int selectCnt = 0;
+            long currentTimeNanos = System.nanoTime();
+            long selectDeadLineNanos = currentTimeNanos + 10000;
+            for (; ; ) {
+                long timeoutMillis = (selectDeadLineNanos - currentTimeNanos + 500000L) / 1000000L;
+                if (timeoutMillis <= 0) {
+                    if (selectCnt == 0) {
+                        selector.selectNow();
+                        selectCnt = 1;
+                    }
+                    break;
+                }
+
+                int selectedKeys = selector.select(timeoutMillis);
+                selectCnt++;
+
+                if (selectedKeys != 0 || oldWakenUp || wakenUp.get() || opWriteUpdater.wasChanged()) {
+                    // - Selected something,
+                    // - waken up by user, or
+                    // - the task queue has a pending task.
+                    // - a scheduled task is ready for processing
+                    break;
+                }
+                if (Thread.interrupted()) {
+                    // Thread was interrupted so reset selected keys and break so we not run into a busy loop.
+                    // As this is most likely a bug in the handler of the user or it's client library we will
+                    // also log it.
+                    //
+                    // See https://github.com/netty/netty/issues/2426
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Selector.select() returned prematurely because " +
+                                "Thread.currentThread().interrupt() was called. Use " +
+                                "NioEventLoop.shutdownGracefully() to shutdown the NioEventLoop.");
+                    }
+                    selectCnt = 1;
+                    break;
+                }
+
+                long time = System.nanoTime();
+                if (time - TimeUnit.MILLISECONDS.toNanos(timeoutMillis) >= currentTimeNanos) {
+                    // timeoutMillis elapsed without anything selected.
+                    selectCnt = 1;
+                } else if (SELECTOR_AUTO_REBUILD_THRESHOLD > 0 &&
+                        selectCnt >= SELECTOR_AUTO_REBUILD_THRESHOLD) {
+                    // The selector returned prematurely many times in a row.
+                    // Rebuild the selector to work around the problem.
+                    logger.warn(
+                            "Selector.select() returned prematurely {} times in a row; rebuilding selector.",
+                            selectCnt);
+
+                    rebuildSelector();
+                    selector = this.selector;
+
+                    // Select again to populate selectedKeys.
+                    selector.selectNow();
+                    selectCnt = 1;
+                    break;
+                }
+
+                currentTimeNanos = time;
+            }
+
+            if (selectCnt > MIN_PREMATURE_SELECTOR_RETURNS) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Selector.select() returned prematurely {} times in a row.", selectCnt - 1);
+                }
+            }
+        } catch (CancelledKeyException e) {
+            if (logger.isDebugEnabled()) {
+                logger.debug(CancelledKeyException.class.getSimpleName() + " raised by a Selector - JDK bug?", e);
+            }
+            // Harmless exception - log anyway
+        }
+    }
+
+    /**
+     * Replaces the current {@link Selector} of this event loop with newly created {@link Selector}s
+     * to work around the infamous epoll 100% CPU bug.
+     */
+    void rebuildSelector() {
+
+
+        final Selector oldSelector = selector;
+        final Selector newSelector;
+
+        if (oldSelector == null) {
+            return;
+        }
+
+        try {
+            newSelector = openSelector();
+        } catch (Exception e) {
+            logger.warn("Failed to create a new Selector.", e);
+            return;
+        }
+
+        // Register all channels to the new Selector.
+        int nChannels = 0;
+        for (; ; ) {
+            try {
+                for (SelectionKey key : oldSelector.keys()) {
+                    Object a = key.attachment();
+                    try {
+                        if (!key.isValid() || key.channel().keyFor(newSelector) != null) {
+                            continue;
+                        }
+
+                        int interestOps = key.interestOps();
+                        key.cancel();
+                        SelectionKey newKey = key.channel().register(newSelector, interestOps, a);
+                        if (a instanceof AbstractNioChannel) {
+                            // Update SelectionKey
+                            ((AbstractNioChannel) a).selectionKey = newKey;
+                        }
+                        nChannels++;
+                    } catch (Exception e) {
+                        logger.warn("Failed to re-register a Channel to the new Selector.", e);
+                        if (a instanceof AbstractNioChannel) {
+                            AbstractNioChannel ch = (AbstractNioChannel) a;
+                            ch.unsafe().close(ch.unsafe().voidPromise());
+                        } else {
+                            @SuppressWarnings("unchecked")
+                            NioTask<SelectableChannel> task = (NioTask<SelectableChannel>) a;
+                            invokeChannelUnregistered(task, key, e);
+                        }
+                    }
+                }
+            } catch (ConcurrentModificationException e) {
+                // Probably due to concurrent modification of the key set.
+                continue;
+            }
+
+            break;
+        }
+
+        selector = newSelector;
+
+        try {
+            // time to close the old selector as everything else is registered to the new one
+            oldSelector.close();
+        } catch (Throwable t) {
+            if (logger.isWarnEnabled()) {
+                logger.warn("Failed to close the old Selector.", t);
+            }
+        }
+
+        logger.info("Migrated " + nChannels + " channel(s) to the new Selector.");
+    }
+
+
+    private void selectAgain() {
+        needsToSelectAgain = false;
+        try {
+            selector.selectNow();
+        } catch (Throwable t) {
+            logger.warn("Failed to update SelectionKeys.", t);
+        }
     }
 
 

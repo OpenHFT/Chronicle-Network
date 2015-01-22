@@ -42,8 +42,6 @@ public final class NetworkConfig implements Serializable {
     private Set<InetSocketAddress> endpoints = new HashSet<InetSocketAddress>();
 
     private InetSocketAddress inetSocketAddress;
-    ;
-
 
     private NetworkConfig(InetSocketAddress inetSocketAddress) {
         this.inetSocketAddress = inetSocketAddress;

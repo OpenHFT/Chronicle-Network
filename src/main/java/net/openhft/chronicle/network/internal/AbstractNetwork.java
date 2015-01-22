@@ -34,6 +34,7 @@ import java.security.PrivilegedAction;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.lang.Math.round;
 import static java.nio.channels.SelectionKey.OP_WRITE;
@@ -43,7 +44,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 /**
  * @author Rob Austin.
  */
-abstract class AbstractNetwork implements Closeable {
+public abstract class AbstractNetwork implements Closeable {
 
     public static final int BITS_IN_A_BYTE = 8;
 
@@ -51,24 +52,26 @@ abstract class AbstractNetwork implements Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractNetwork.class);
 
     // currently this is not safe to use as it wont work with the stateless client
-    static boolean useJavaNIOSelectionKeys = Boolean.valueOf(System.getProperty("useJavaNIOSelectionKeys"));
+    protected static boolean useJavaNIOSelectionKeys = Boolean.valueOf(System.getProperty("useJavaNIOSelectionKeys"));
 
-    final SelectedSelectionKeySet selectedKeys = new SelectedSelectionKeySet();
+    protected SelectedSelectionKeySet selectedKeys;
 
-    final CloseablesManager closeables = new CloseablesManager();
-    final Selector selector = openSelector(closeables);
+    protected final CloseablesManager closeables = new CloseablesManager();
+    protected Selector selector;
     private final ExecutorService executorService;
     private volatile Thread lastThread;
     private Throwable startedHere;
     private Future<?> future;
     private final Queue<Runnable> pendingRegistrations = new ConcurrentLinkedQueue<Runnable>();
+    protected final AtomicBoolean hasPendingRegistrations = new AtomicBoolean(false);
+
     @Nullable
     private final Throttler throttler;
 
-    volatile boolean isClosed = false;
+    protected volatile boolean isClosed = false;
 
 
-    AbstractNetwork(String name, ThrottlingConfig throttlingConfig)
+    public AbstractNetwork(String name, ThrottlingConfig throttlingConfig)
             throws IOException {
         executorService = Executors.newSingleThreadExecutor(
                 new NamedThreadFactory(name, true) {
@@ -86,7 +89,7 @@ abstract class AbstractNetwork implements Closeable {
         startedHere = new Throwable("Started here");
     }
 
-    Selector openSelector(final CloseablesManager closeables) throws IOException {
+    public Selector openSelector(final CloseablesManager closeables) throws IOException {
 
         Selector result = Selector.open();
         closeables.add(result);
@@ -116,7 +119,7 @@ abstract class AbstractNetwork implements Closeable {
         return result;
     }
 
-    static SocketChannel openSocketChannel(final CloseablesManager closeables) throws IOException {
+    protected static SocketChannel openSocketChannel(final CloseablesManager closeables) throws IOException {
         SocketChannel result = null;
 
         try {
@@ -182,11 +185,12 @@ abstract class AbstractNetwork implements Closeable {
         }
     }
 
-    void addPendingRegistration(Runnable registration) {
+    protected void addPendingRegistration(Runnable registration) {
         pendingRegistrations.add(registration);
+        hasPendingRegistrations.set(true);
     }
 
-    void registerPendingRegistrations() throws ClosedChannelException {
+    protected void registerPendingRegistrations() throws ClosedChannelException {
         for (Runnable runnable = pendingRegistrations.poll(); runnable != null;
              runnable = pendingRegistrations.poll()) {
             try {
@@ -197,9 +201,9 @@ abstract class AbstractNetwork implements Closeable {
         }
     }
 
-    abstract void processEvent() throws IOException;
+    protected abstract void processEvent() throws IOException;
 
-    final void start() {
+    protected final void start() {
         future = executorService.submit(
                 new Runnable() {
                     @Override
@@ -268,17 +272,16 @@ abstract class AbstractNetwork implements Closeable {
         }
     }
 
-    void closeEarlyAndQuietly(SelectionKey key) {
+    protected void closeEarlyAndQuietly(SelectionKey key) {
         SelectableChannel channel = key.channel();
 
         Object attachment = key.attachment();
 
         if (attachment != null) {
-            NetworkHub.Attached attachment1 = (NetworkHub.Attached) attachment;
+            NioCallbackProvider attachment1 = (NioCallbackProvider) attachment;
             NioCallback userAttached = attachment1.getUserAttached();
             if (userAttached != null)
-                userAttached.onEvent(attachment1.reader.out, attachment1.writer.in(),
-                        NioCallback.EventType.CLOSED);
+                userAttached.onEvent(null, null, NioCallback.EventType.CLOSED);
 
         }
         if (throttler != null)
@@ -286,17 +289,17 @@ abstract class AbstractNetwork implements Closeable {
         closeables.closeQuietly(channel);
     }
 
-    void checkThrottleInterval() throws ClosedChannelException {
+    protected void checkThrottleInterval() throws ClosedChannelException {
         if (throttler != null)
             throttler.checkThrottleInterval();
     }
 
-    void contemplateThrottleWrites(int bytesJustWritten) throws ClosedChannelException {
+    protected void contemplateThrottleWrites(int bytesJustWritten) throws ClosedChannelException {
         if (throttler != null)
             throttler.contemplateThrottleWrites(bytesJustWritten);
     }
 
-    void throttle(SelectableChannel channel) {
+    protected void throttle(SelectableChannel channel) {
         if (throttler != null)
             throttler.add(channel);
     }
@@ -382,11 +385,11 @@ abstract class AbstractNetwork implements Closeable {
     /**
      * details about the socket connection
      */
-    static class Details {
+    public static class Details {
 
         private final InetSocketAddress address;
 
-        Details(@NotNull final InetSocketAddress address) {
+        public Details(@NotNull final InetSocketAddress address) {
             this.address = address;
 
         }
@@ -404,7 +407,7 @@ abstract class AbstractNetwork implements Closeable {
     }
 
 
-    abstract class AbstractConnector {
+    protected abstract class AbstractConnector {
 
         private final String name;
         private int connectionAttempts = 0;
@@ -414,7 +417,7 @@ abstract class AbstractNetwork implements Closeable {
             this.name = name;
         }
 
-        abstract SelectableChannel doConnect() throws IOException, InterruptedException;
+        protected abstract SelectableChannel doConnect() throws IOException, InterruptedException;
 
         /**
          * connects or reconnects, but first waits a period of time proportional to the {@code
