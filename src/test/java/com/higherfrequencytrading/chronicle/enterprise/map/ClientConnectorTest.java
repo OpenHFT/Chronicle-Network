@@ -5,17 +5,17 @@ import junit.framework.Assert;
 import net.openhft.chronicle.network.Network;
 import net.openhft.chronicle.network.NioCallback;
 import net.openhft.chronicle.network.internal.NetworkConfig;
-import net.openhft.chronicle.network.internal.NetworkHub;
 import net.openhft.lang.io.Bytes;
 import net.openhft.lang.model.constraints.NotNull;
 import org.junit.Test;
 
+import java.io.Closeable;
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static net.openhft.chronicle.network.NioCallback.EventType.*;
+import static net.openhft.chronicle.network.NioCallback.EventType.CONNECT;
 import static net.openhft.chronicle.network.internal.NetworkConfig.port;
 
 public class ClientConnectorTest {
@@ -32,7 +32,7 @@ public class ClientConnectorTest {
 
 
         try (
-                NetworkHub pong = Network.of(pongConf, withActions -> (in, out, eventType) -> {
+                Closeable pong = Network.of(pongConf, withActions -> (in, out, eventType) -> {
 
                     if (in.remaining() >= "ping".length() + 1) {
                         // 2. when you receive the ping message, send back pong
@@ -41,7 +41,7 @@ public class ClientConnectorTest {
                     }
                 });
 
-                NetworkHub ping = Network.of(pingConf,
+                Closeable ping = Network.of(pingConf,
                         withActions -> (in, out, eventType) -> {
 
                             switch (eventType) {
@@ -64,6 +64,8 @@ public class ClientConnectorTest {
                                     } catch (Exception e1) {
                                         e.set(e1);
                                     } finally {
+
+                                        withActions.close();
                                         finished.countDown();
                                     }
                                     out.writeObject("ping");
@@ -101,7 +103,7 @@ public class ClientConnectorTest {
 
 
         try (
-                NetworkHub echo = Network.of(echoConf, withActions -> (in, out, eventType) -> {
+                Closeable echo = Network.of(echoConf, withActions -> (in, out, eventType) -> {
 
                     if (in.remaining() > 0) {
 
@@ -114,7 +116,7 @@ public class ClientConnectorTest {
                     }
                 });
 
-                NetworkHub ping = Network.of(pingConf, withActions -> new NioCallback() {
+                Closeable ping = Network.of(pingConf, withActions -> new NioCallback() {
 
                             long start;
                             long count;
@@ -142,6 +144,8 @@ public class ClientConnectorTest {
                                         long time = System.nanoTime() - start;
                                         System.out.printf("Throughput was %.1f MB/s%n", 1e3 * count *
                                                 bufferSize / time);
+
+                                        withActions.close();
                                         finished.countDown();
                                         return;
                                     }
@@ -153,6 +157,7 @@ public class ClientConnectorTest {
 
                                 } catch (Exception e1) {
                                     e.set(e1);
+                                    withActions.close();
                                     finished.countDown();
                                 }
                             }
@@ -188,15 +193,19 @@ public class ClientConnectorTest {
                 .tcpBufferSize(8);
 
         try (
-                NetworkHub echo = Network.of(echoConf, withActions -> (in, out, eventType) -> {
+                Closeable echo = Network.of(echoConf, withActions -> (in, out, eventType) -> {
                             if (in.remaining() >= 8 && out.remaining() >= 8)
-                                out.writeLong(in.readLong());
+                                try {
+                                    out.writeLong(in.readLong());
+                                } catch (Exception e2) {
+                                    out.writeLong(in.readLong());
+                                }
                         }
 
                 );
 
 
-                NetworkHub ping = Network.of(pingConf, withActions -> new NioCallback() {
+                Closeable ping = Network.of(pingConf, withActions -> new NioCallback() {
 
 
                     @Override
@@ -219,6 +228,8 @@ public class ClientConnectorTest {
                                     System.out.println(TimeUnit.NANOSECONDS.toMicros(System
                                             .nanoTime() - l) + "us");
                                 }
+                                // this will cause the WRITE to be called
+                                withActions.setDirty(true);
                                 return;
 
                             case WRITE:
