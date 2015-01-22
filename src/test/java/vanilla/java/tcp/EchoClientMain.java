@@ -46,7 +46,7 @@ Loop back echo latency was 12.4/12.6 13.2/24.2 26.4us for 50/90 99/99.9 99.99%ti
 
 
 public class EchoClientMain {
-    static final int PORT = 54321;
+    public static final int PORT = 8007;
 
     public static void main(String... args) throws IOException {
         AffinitySupport.setAffinity(1L << 3);
