@@ -72,7 +72,7 @@ public class EchoClientMain {
         ByteBuffer bb = ByteBuffer.allocateDirect(bufferSize);
         int count = 0, window = 2;
         long start = System.nanoTime();
-        while (System.nanoTime() - start < 5e9) {
+        while (System.nanoTime() - start < 10e9) {
             for (SocketChannel socket : sockets) {
                 bb.clear();
                 if (socket.write(bb) < 0)
@@ -96,11 +96,11 @@ public class EchoClientMain {
 
     private static void testLatency(SocketChannel[] sockets) throws IOException {
         System.out.println("Starting latency test");
-        int tests = 200000;
+        int tests = 500000;
         long[] times = new long[tests * sockets.length];
         int count = 0;
         ByteBuffer bb = ByteBuffer.allocateDirect(64);
-        for (int i = -20000; i < tests; i++) {
+        for (int i = -50000; i < tests; i++) {
             long now = System.nanoTime();
             for (SocketChannel socket : sockets) {
                 bb.clear();
@@ -118,9 +118,13 @@ public class EchoClientMain {
             }
         }
         Arrays.sort(times);
-        System.out.printf("Loop back echo latency was %.1f/%.1f %.1f/%.1f %.1fus for 50/90 99/99.9 99.99%%tile%n",
-                times[tests / 2] / 1e3, times[tests * 9 / 10] / 1e3,
-                times[tests - tests / 100] / 1e3, times[tests - tests / 1000] / 1e3,
-                times[tests - tests / 10000] / 1e3);
+        System.out.printf("Loop back echo latency was %.1f/%.1f %,d/%,d %,d/%dus for 50/90 99/99.9 99.99/worst%%tile%n",
+                times[tests / 2] / 1e3,
+                times[tests * 9 / 10] / 1e3,
+                times[tests - tests / 100] / 1000,
+                times[tests - tests / 1000] / 1000,
+                times[tests - tests / 10000] / 1000,
+                times[tests - 1] / 1000
+        );
     }
 }
