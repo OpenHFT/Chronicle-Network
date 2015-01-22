@@ -28,14 +28,13 @@ import io.netty.util.ReferenceCountUtil;
 import vanilla.java.tcp.EchoClientMain;
 
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Sends one message when a connection is open and echoes back any received data to the server.
  * Simply put, the echo client initiates the ping-pong traffic between the echo client and server by
  * sending the first message to the server.
  */
-public final class NettyEchoClientThroughPutTest {
+public final class NettyEchoClientLatencyTest {
 
     static final boolean SSL = System.getProperty("ssl") != null;
     static final String HOST = System.getProperty("host", "127.0.0.1");
@@ -46,54 +45,61 @@ public final class NettyEchoClientThroughPutTest {
     static class MyChannelInboundHandler extends ChannelInboundHandlerAdapter {
         private final ByteBuf firstMessage;
 
-
-        final int bufferSize = 32 * 1024;
-
-        byte[] payload = new byte[bufferSize];
-        private ByteBuf buf;
-        long bytesReceived = 0;
         long startTime;
-        int i = 0;
+        int count = -50_000; // for warn up - we will skip the first 50_000
+        long[] times = new long[500_000];
 
         {
-            Arrays.fill(payload, (byte) 'X');
-            firstMessage = Unpooled.buffer(bufferSize);
-            firstMessage.writeBytes(payload);
-
-
+            firstMessage = Unpooled.buffer(8);
+            firstMessage.writeLong(System.nanoTime());
         }
-
 
         @Override
         public void channelActive(ChannelHandlerContext ctx) {
             startTime = System.nanoTime();
             ctx.writeAndFlush(firstMessage);
 
-            System.out.print("Running throughput test ( for 10 seconds ) ");
+            System.out.print("Running latency test ( for about 25 seconds ) ");
         }
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
+
             try {
-                bytesReceived += ((ByteBuf) msg).readableBytes();
 
-                if (i++ % 10000 == 0)
-                    System.out.print(".");
-                if (TimeUnit.NANOSECONDS.toSeconds(System
-                        .nanoTime() - startTime) >= 10) {
-                    long time = System.nanoTime() - startTime;
-                    System.out.printf("\nThroughput was %.1f MB/s%n", 1e3 *
-                            bytesReceived / time);
-                    return;
+                if (((ByteBuf) msg).readableBytes() >= 8) {
+
+                    if (count % 10000 == 0)
+                        System.out.print(".");
+
+                    if (count >= 0) {
+                        times[count] = System.nanoTime() - ((ByteBuf) msg).readLong();
+
+
+                        if (count == times.length - 1) {
+                            Arrays.sort(times);
+                            System.out.printf("\nLoop back echo latency was %.1f/%.1f %,d/%,d %," +
+                                            "d/%d us for 50/90 99/99.9 99.99/worst %%tile%n",
+                                    times[count / 2] / 1e3,
+                                    times[count * 9 / 10] / 1e3,
+                                    times[count - count / 100] / 1000,
+                                    times[count - count / 1000] / 1000,
+                                    times[count - count / 10000] / 1000,
+                                    times[count - 1] / 1000
+                            );
+                            return;
+                        }
+                    }
+
+                    count++;
                 }
-
             } finally {
                 ReferenceCountUtil.release(msg); // (2)
             }
 
 
-            final ByteBuf outMsg = ctx.alloc().buffer(bufferSize); // (2)
-            outMsg.writeBytes(payload);
+            final ByteBuf outMsg = ctx.alloc().buffer(8); // (2)
+            outMsg.writeLong(System.nanoTime());
 
             ctx.writeAndFlush(outMsg); // (3)
 

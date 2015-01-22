@@ -68,7 +68,7 @@ public class EchoClientMain {
 
     public static void main(String... args) throws IOException, InterruptedException {
         AffinitySupport.setAffinity(1L << 3);
-        String hostname = args[0];
+        String hostname = (args.length == 0) ? "localhost" : args[0];
         int port = args.length < 2 ? PORT : Integer.parseInt(args[1]);
         int repeats = 1;
 
