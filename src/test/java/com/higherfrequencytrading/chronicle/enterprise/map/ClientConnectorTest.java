@@ -11,8 +11,8 @@ import org.junit.Test;
 
 import java.io.Closeable;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static net.openhft.chronicle.network.NioCallback.EventType.CONNECT;
@@ -87,15 +87,15 @@ public class ClientConnectorTest {
 
     @Test
     public void testEchoTroughPutTest() throws Exception {
-        int bufferSize = 64 * 1024;
+        int bufferSize = 32 * 1024;
         final CountDownLatch finished = new CountDownLatch(1);
         final AtomicReference<Exception> e = new AtomicReference<Exception>();
 
-        final NetworkConfig echoConf = port(9566).name("echo").tcpBufferSize(300 * bufferSize);
+        final NetworkConfig echoConf = port(9166).name("echo").tcpBufferSize(100 * bufferSize);
 
-        final NetworkConfig pingConf = port(9567).name("ping")
-                .setEndpoints(new InetSocketAddress("localhost", 9566))
-                .tcpBufferSize(512 * bufferSize);
+        final NetworkConfig pingConf = port(9167).name("ping")
+                .setEndpoints(new InetSocketAddress("localhost", 9166))
+                .tcpBufferSize(10 * bufferSize);
 
         System.out.println("Starting throughput test");
 
@@ -105,22 +105,24 @@ public class ClientConnectorTest {
         try (
                 Closeable echo = Network.of(echoConf, withActions -> (in, out, eventType) -> {
 
-                    if (in.remaining() > 0) {
+                    if (eventType == NioCallback.EventType.CLOSED)
+                        return;
 
-                        while (in.remaining() > 0 && out.remaining() > 0) {
-                            if (in.remaining() > 8 && out.remaining() > 8)
-                                out.writeLong(in.readLong());
-                            else
-                                out.writeByte(in.readByte());
-                        }
+                    while (in.remaining() > 0 && out.remaining() > 0) {
+                        if (in.remaining() > 8 && out.remaining() > 8)
+                            out.writeLong(in.readLong());
+                        else
+                            out.writeByte(in.readByte());
                     }
+
                 });
 
                 Closeable ping = Network.of(pingConf, withActions -> new NioCallback() {
 
                             long start;
-                            long count;
+                            long bytesRead;
 
+                            int i = 0;
 
                             @Override
                             public void onEvent(@NotNull Bytes in, @NotNull Bytes out, @NotNull EventType eventType) {
@@ -135,24 +137,35 @@ public class ClientConnectorTest {
                                     }
 
                                     // read in much as you can
-                                    while (in.remaining() >= bytes.length) {
-                                        in.read(bytes);
-                                        count++;
-                                    }
+
+                                    i++;
+                                    bytesRead += in.limit();
+                                    in.position(in.limit());
+
+                                    if (i % 1000 == 0)
+                                        System.out.print(".");
+
 
                                     if (System.nanoTime() - start > 5e9) {
                                         long time = System.nanoTime() - start;
-                                        System.out.printf("Throughput was %.1f MB/s%n", 1e3 * count *
-                                                bufferSize / time);
+                                        System.out.printf("\nThroughput was %.1f MB/s%n", 1e3 *
+                                                bytesRead / time);
 
                                         withActions.close();
                                         finished.countDown();
                                         return;
                                     }
 
+                                    boolean wasWritten = false;
+
                                     // write as much as you can
-                                    while (out.remaining() >= bytes.length)
+                                    while (out.remaining() >= bytes.length) {
+                                        wasWritten = true;
                                         out.write(bytes);
+                                    }
+
+                                    if (!wasWritten)
+                                        withActions.setDirty(true);
 
 
                                 } catch (Exception e1) {
@@ -207,6 +220,10 @@ public class ClientConnectorTest {
 
                 Closeable ping = Network.of(pingConf, withActions -> new NioCallback() {
 
+                    int i = 0;
+                    int count = -50_000; // for warn up - we will skip the first 50_000
+                    long[] times = new long[500_000];
+
 
                     @Override
                     public void onEvent(@NotNull Bytes in, @NotNull Bytes out, @NotNull EventType eventType) {
@@ -223,11 +240,35 @@ public class ClientConnectorTest {
                                 return;
 
                             case READ:
+
                                 if (in.remaining() >= 8) {
-                                    long l = in.readLong();
-                                    System.out.println(TimeUnit.NANOSECONDS.toMicros(System
-                                            .nanoTime() - l) + "us");
+
+                                    if (count % 10000 == 0)
+                                        System.out.print(".");
+
+                                    if (count >= 0) {
+                                        times[count] = System.nanoTime() - in.readLong();
+
+
+                                        if (count == times.length - 1) {
+                                            Arrays.sort(times);
+                                            System.out.printf("\nLoop back echo latency was %.1f/%.1f %,d/%,d %," +
+                                                            "d/%d us for 50/90 99/99.9 99.99/worst %%tile%n",
+                                                    times[count / 2] / 1e3,
+                                                    times[count * 9 / 10] / 1e3,
+                                                    times[count - count / 100] / 1000,
+                                                    times[count - count / 1000] / 1000,
+                                                    times[count - count / 10000] / 1000,
+                                                    times[count - 1] / 1000
+                                            );
+                                            return;
+                                        }
+                                    }
+
+                                    count++;
                                 }
+
+
                                 // this will cause the WRITE to be called
                                 withActions.setDirty(true);
                                 return;
@@ -235,7 +276,6 @@ public class ClientConnectorTest {
                             case WRITE:
                                 if (out.remaining() >= 8)
                                     out.writeLong(System.nanoTime());
-
 
                         }
                     }

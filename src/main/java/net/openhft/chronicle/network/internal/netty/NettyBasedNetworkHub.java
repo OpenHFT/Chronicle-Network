@@ -507,6 +507,7 @@ public final class NettyBasedNetworkHub<T> extends AbstractNetwork implements Cl
         channel.socket().setSoTimeout(0);
         channel.socket().setSoLinger(false, 0);
 
+
         final Attached attached = new Attached(opWriteUpdater, heartBeatIntervalMillis, this);
         attached.reader = new Reader(defaultBufferSize, name);
         attached.writer = new Writer(defaultBufferSize);
@@ -713,7 +714,7 @@ public final class NettyBasedNetworkHub<T> extends AbstractNetwork implements Cl
                 IOException, InterruptedException {
 
             final ServerSocketChannel serverChannel = openServerSocketChannel();
-            serverChannel.socket().setReceiveBufferSize(BUFFER_SIZE);
+         //   serverChannel.socket().setReceiveBufferSize(BUFFER_SIZE);
             serverChannel.configureBlocking(false);
 
             //  serverChannel.register(NetworkHub.this.selector, 0);
