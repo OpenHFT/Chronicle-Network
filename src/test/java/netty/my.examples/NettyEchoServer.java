@@ -5,6 +5,7 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import vanilla.java.tcp.EchoClientMain;
 
 /**
  * Discards any incoming data.
@@ -67,7 +68,7 @@ public class NettyEchoServer {
         if (args.length > 0) {
             port = Integer.parseInt(args[0]);
         } else {
-            port = 8007;
+            port = EchoClientMain.PORT;
         }
         new NettyEchoServer(port).run();
     }
