@@ -31,7 +31,9 @@ import java.util.Arrays;
 /**
  * @author peter.lawrey
  */
-/*
+/* Both ends are run with -Xmx64m -verbose:gc
+
+///////// EchoServerMain
 On a E5-2650 v2 over loopback with onload
 Throughput was 2880.4 MB/s
 Loop back echo latency was 5.8/6.2 9.6/19.4 23.2us for 50/90 99/99.9 99.99%tile
@@ -40,14 +42,29 @@ On an i7-3970X over loopback
 Throughput was 3728.4 MB/s
 Loop back echo latency was 4.8/5.2 5.6/7.4 9.6us for 50/90 99/99.9 99.99%tile
 
-Between two servers via Solarflare with onload
+Between two servers via Solarflare with onload on server & client (no minor GCs)
 Throughput was 1156.0 MB/s
 Loop back echo latency was 12.2/12.5 21/25 28/465 us for 50/90 99/99.9 99.99/worst %tile
+
+Between two servers via Solarflare with onload on client (no minor GCs)
+Throughput was 867.5 MB/s
+Loop back echo latency was 15.0/15.7 21/27 30/398 us for 50/90 99/99.9 99.99/worst %tile
+
+//////// NettyEchoServer
+Between two servers via Solarflare with onload on server & client (16 minor GCs)
+Throughput was 968.7 MB/s
+Loop back echo latency was 18.4/19.0 26/31 33/1236 us for 50/90 99/99.9 99.99/worst %tile
+
+Between two servers via Solarflare with onload on client (16 minor GCs)
+Throughput was 643.6 MB/s
+Loop back echo latency was 20.8/21.8 29/34 38/2286 us for 50/90 99/99.9 99.99/worst %tile
+
+
 */
 
 
 public class EchoClientMain {
-    static final int PORT = 8007;
+    public static final int PORT = 8007;
 
     public static void main(String... args) throws IOException, InterruptedException {
         AffinitySupport.setAffinity(1L << 3);
