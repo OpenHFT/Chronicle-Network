@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package net.openhft.chronicle.network.internal;
+package net.openhft.chronicle.network.internal.netty;
 
 
 import io.netty.channel.Channel;
@@ -26,6 +26,7 @@ import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.SystemPropertyUtil;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
+import net.openhft.chronicle.network.internal.SelectedSelectionKeySet;
 
 import java.io.IOException;
 import java.lang.reflect.Field;

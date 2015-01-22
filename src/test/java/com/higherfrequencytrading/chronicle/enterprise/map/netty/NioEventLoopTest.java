@@ -1,7 +1,7 @@
-package com.higherfrequencytrading.chronicle.enterprise.map;
+package com.higherfrequencytrading.chronicle.enterprise.map.netty;
 
 import io.netty.channel.nio.NioEventLoopGroup;
-import net.openhft.chronicle.network.internal.NioEventLoop;
+import net.openhft.chronicle.network.internal.netty.NioEventLoop;
 import org.junit.Test;
 
 import java.nio.channels.spi.SelectorProvider;
@@ -24,7 +24,11 @@ public class NioEventLoopTest {
                 return thread;
             }
         };
-        NioEventLoop eventExecutors = new NioEventLoop(new NioEventLoopGroup(), f, SelectorProvider.provider());
+
+        NioEventLoop eventExecutors = new NioEventLoop(new NioEventLoopGroup(1), f,
+                SelectorProvider.provider());
+
+        eventExecutors.rebuildSelector();
 
 
     }

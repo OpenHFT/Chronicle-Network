@@ -30,21 +30,6 @@ public class NettyEchoServer {
                         public void initChannel(SocketChannel ch) throws Exception {
                             ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
 
-                                // log out response
-                              /*  @Override
-                                public void channelRead(ChannelHandlerContext ctx, Object msg) { // (2)
-                                    ByteBuf in = (ByteBuf) msg;
-                                    try {
-                                        while (in.isReadable()) { // (1)
-                                            System.out.print((char) in.readByte());
-                                            System.out.flush();
-                                        }
-                                    } finally {
-                                        ReferenceCountUtil.release(msg); // (2)
-                                    }
-                                }*/
-
-
                                 // echo server
                                 @Override
                                 public void channelRead(ChannelHandlerContext ctx, Object msg) { // (2)
