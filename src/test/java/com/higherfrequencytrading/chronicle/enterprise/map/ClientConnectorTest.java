@@ -15,7 +15,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static net.openhft.chronicle.network.NioCallback.EventType.OP_CONNECT;
+import static net.openhft.chronicle.network.NioCallback.EventType.*;
 import static net.openhft.chronicle.network.internal.NetworkConfig.port;
 
 public class ClientConnectorTest {
@@ -46,12 +46,12 @@ public class ClientConnectorTest {
 
                             switch (eventType) {
 
-                                case OP_CONNECT:
+                                case CONNECT:
                                     // 1. start by sending a ping message
                                     out.writeObject("ping");
                                     return;
 
-                                case OP_READ:
+                                case READ:
 
                                     if (in.remaining() < "pong".length() + 1) {
                                         return;
@@ -125,7 +125,7 @@ public class ClientConnectorTest {
 
                                 try {
 
-                                    if (eventType == OP_CONNECT) {
+                                    if (eventType == CONNECT) {
                                         // 1. start by sending a ping message
                                         out.writeObject(bytes);
                                         start = System.nanoTime();
@@ -204,7 +204,7 @@ public class ClientConnectorTest {
 
 
                         switch (eventType) {
-                            case OP_CONNECT:
+                            case CONNECT:
 
                                 // 1. start by sending a ping message
                                 System.out.println("Starting latency test");
@@ -213,7 +213,7 @@ public class ClientConnectorTest {
                                 withActions.setDirty(true);
                                 return;
 
-                            case OP_READ:
+                            case READ:
                                 if (in.remaining() >= 8) {
                                     long l = in.readLong();
                                     System.out.println(TimeUnit.NANOSECONDS.toMicros(System
@@ -221,7 +221,7 @@ public class ClientConnectorTest {
                                 }
                                 return;
 
-                            case OP_WRITE:
+                            case WRITE:
                                 if (out.remaining() >= 8)
                                     out.writeLong(System.nanoTime());
 

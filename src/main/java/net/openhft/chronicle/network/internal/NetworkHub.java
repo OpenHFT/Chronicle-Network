@@ -126,7 +126,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
             while (selector.isOpen()) {
                 registerPendingRegistrations();
 
-                // set the OP_WRITE when data is ready to send
+                // set the WRITE when data is ready to send
                 opWriteUpdater.applyUpdates(selector);
 
 
@@ -434,7 +434,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         attached.setUserAttached(userAttached);
 
 
-        onEvent(key, attached, EventType.OP_CONNECT);
+        onEvent(key, attached, EventType.CONNECT);
         enableOpRead(key);
 
     }
@@ -484,7 +484,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         long start = writer.position();
 
         attached.getUserAttached().onEvent(attached.reader.out, writer,
-                EventType.OP_ACCEPT);
+                EventType.ACCEPT);
 
         if (attached.writer.in().position() > start)
             channel.register(selector, OP_READ | OP_WRITE, attached);
@@ -497,7 +497,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
 
 
     /**
-     * called when the selector receives a OP_WRITE message
+     * called when the selector receives a WRITE message
      */
     private void onWrite(@NotNull final SelectionKey key,
                          final long approxTime) throws IOException {
@@ -510,7 +510,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
             return;
         }
 
-        attached.getUserAttached().onEvent(attached.reader.out, attached.writer.in(), EventType.OP_WRITE);
+        attached.getUserAttached().onEvent(attached.reader.out, attached.writer.in(), EventType.WRITE);
         attached.writer.out.limit((int) attached.writer.in().position());
 
         Writer writer = attached.writer;
@@ -573,7 +573,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
             }
 
             if (attached.reader.out.remaining() > 0) {
-                onEvent(key, attached, EventType.OP_READ);
+                onEvent(key, attached, EventType.READ);
             }
 
             if (len == 0)
@@ -639,7 +639,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
                     if (attached.isDirty()) {
 
                         selectionKey.interestOps(selectionKey.interestOps() | OP_WRITE);
-                        // selectionKey.interestOps(OP_READ | OP_WRITE);
+                        // selectionKey.interestOps(OP_READ | WRITE);
 
 
                     }
@@ -1009,7 +1009,7 @@ public final class NetworkHub<T> extends AbstractNetwork implements Closeable {
         }
 
         /**
-         * removes back in the OP_WRITE from the selector, otherwise it'll spin loop. The OP_WRITE
+         * removes back in the WRITE from the selector, otherwise it'll spin loop. The WRITE
          * will get added back in as soon as we have data to write
          *
          * @param socketChannel the socketChannel we wish to stop writing to

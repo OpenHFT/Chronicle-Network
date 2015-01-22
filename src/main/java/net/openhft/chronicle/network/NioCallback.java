@@ -8,7 +8,7 @@ import net.openhft.lang.model.constraints.NotNull;
  */
 public interface NioCallback {
 
-    enum EventType {OP_WRITE, OP_READ, OP_ACCEPT, OP_CONNECT, CLOSED}
+    enum EventType {WRITE, READ, ACCEPT, CONNECT, CLOSED}
 
     /**
      * called when there is a NIO Event

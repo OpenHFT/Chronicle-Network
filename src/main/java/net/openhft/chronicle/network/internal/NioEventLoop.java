@@ -511,7 +511,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                 }
             }
             if ((readyOps & SelectionKey.OP_WRITE) != 0) {
-                // Call forceFlush which will also take care of clear the OP_WRITE once there is nothing left to write
+                // Call forceFlush which will also take care of clear the WRITE once there is nothing left to write
                 ch.unsafe().forceFlush();
             }
             if ((readyOps & SelectionKey.OP_CONNECT) != 0) {
