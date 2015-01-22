@@ -9,7 +9,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
-import java.io.StreamCorruptedException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
@@ -79,7 +78,7 @@ public class WireTcpHandlerTest {
         }
 
         @Override
-        public void readMarshallable(Wire wire) throws StreamCorruptedException {
+        public void readMarshallable(Wire wire) {
             wire.read(TestKey.key1).int32(i -> key1 = i)
                     .read(TestKey.key2).int64(i -> key2 = i)
                     .read(TestKey.key3).float64(i -> key3 = i);
@@ -160,7 +159,7 @@ public class WireTcpHandlerTest {
         }
 
         @Override
-        protected void process(Wire inWire, Wire outWire) throws StreamCorruptedException {
+        protected void process(Wire inWire, Wire outWire) {
             td.readMarshallable(inWire);
             td.writeMarshallable(outWire);
         }
