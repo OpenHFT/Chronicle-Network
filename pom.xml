@@ -56,6 +56,11 @@
             <artifactId>lang</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>net.openhft</groupId>
+            <artifactId>chronicle-wire</artifactId>
+        </dependency>
+
         <!-- test dependencies -->
 
         <dependency>
@@ -99,6 +104,12 @@
                 <groupId>net.openhft</groupId>
                 <artifactId>lang</artifactId>
                 <version>6.5-SNAPSHOT</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.openhft</groupId>
+                <artifactId>chronicle-wire</artifactId>
+                <version>1.0.0a-SNAPSHOT</version>
             </dependency>
 
             <dependency>

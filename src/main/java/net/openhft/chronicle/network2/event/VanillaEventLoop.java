@@ -165,7 +165,7 @@ public class VanillaEventLoop implements EventLoop, Runnable {
                 if (!ste[last].getClassName().startsWith("java"))
                     break;
             for (int i = 0; i <= last; i++)
-                out.append("\n\tat ").append(ste[last]);
+                out.append("\n\tat ").append(ste[i]);
         }
         // TODO use a logger.
         System.out.println(out);

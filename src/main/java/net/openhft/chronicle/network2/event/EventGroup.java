@@ -2,8 +2,6 @@ package net.openhft.chronicle.network2.event;
 
 import net.openhft.lang.thread.LightPauser;
 
-import java.util.Date;
-
 import static java.util.concurrent.TimeUnit.*;
 import static net.openhft.chronicle.network2.event.References.or;
 
@@ -17,7 +15,7 @@ public class EventGroup implements EventLoop {
     final VanillaEventLoop core = new VanillaEventLoop("core", new LightPauser(200000, NANOSECONDS.convert(100, MICROSECONDS)) {
         @Override
         protected void doPause(long maxPauseNS) {
-            System.out.println(new Date() + " - pause");
+//            System.out.println(new Date() + " - pause");
             super.doPause(maxPauseNS);
         }
     });

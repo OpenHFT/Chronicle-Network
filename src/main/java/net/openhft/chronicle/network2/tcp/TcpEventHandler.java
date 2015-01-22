@@ -8,6 +8,7 @@ import net.openhft.lang.io.Bytes;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -107,6 +108,9 @@ public class TcpEventHandler implements EventHandler {
                     invokeHandler();
                     tryWrite();
                 }
+            } catch (ClosedChannelException cce) {
+                closeSC();
+                
             } catch (IOException e) {
                 handleIOE(e);
             }

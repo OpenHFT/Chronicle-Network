@@ -1,8 +1,6 @@
-package net.openhft.chronicle.network2.event;
+package net.openhft.chronicle.network2.tcp;
 
-import net.openhft.chronicle.network2.tcp.AcceptorEventHandler;
-import net.openhft.chronicle.network2.tcp.TcpHandler;
-import net.openhft.lang.io.Bytes;
+import net.openhft.chronicle.network2.event.EventGroup;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -44,16 +42,6 @@ public class TcpServerEventGroupTest {
         testLatency(sc[0]);
 
         eg.stop();
-    }
-
-    static class EchoHandler implements TcpHandler {
-        @Override
-        public void process(Bytes in, Bytes out) {
-            if (in.remaining() == 0)
-                return;
-//            System.out.println("P - " + in.readLong(in.position()) + " " + in.toDebugString());
-            out.write(in);
-        }
     }
 
     private static void testThroughput(SocketChannel... sockets) throws IOException, InterruptedException {
