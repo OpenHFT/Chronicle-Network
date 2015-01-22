@@ -22,11 +22,7 @@ import net.openhft.affinity.AffinitySupport;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -51,14 +47,18 @@ public class EchoServerMain {
                     try {
                         System.out.println("Connected " + socket);
                         ByteBuffer bb = ByteBuffer.allocateDirect(64*1024);
+                        ByteBuffer bb2 = ByteBuffer.allocateDirect(64 * 1024);
                         while (socket.read(bb) >= 0) {
                             bb.flip();
-                            if (socket.write(bb) < 0)
+                            bb2.put(bb);
+                            bb2.flip();
+                            if (socket.write(bb2) < 0)
                                 throw new EOFException();
-                            if (bb.remaining() > 0)
-                                bb.compact();
+                            if (bb2.remaining() > 0)
+                                bb2.compact();
                             else
-                                bb.clear();
+                                bb2.clear();
+                            bb.clear();
                         }
                     } catch (IOException ignored) {
                     } finally {
