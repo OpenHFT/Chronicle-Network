@@ -25,7 +25,6 @@ import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.SystemPropertyUtil;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
-import net.openhft.chronicle.network.NetworkI;
 import net.openhft.chronicle.network.NioCallback;
 import net.openhft.chronicle.network.NioCallback.EventType;
 import net.openhft.chronicle.network.NioCallbackFactory;
@@ -56,7 +55,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.nio.channels.SelectionKey.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static net.openhft.chronicle.network.internal.NetworkHub.EventId.HEARTBEAT;
 
 
 /**
@@ -64,21 +62,14 @@ import static net.openhft.chronicle.network.internal.NetworkHub.EventId.HEARTBEA
  *
  * @author Rob Austin.
  */
-public final class NettyBasedNetworkHub<T> extends AbstractNetwork implements Closeable, NetworkI {
+public final class NettyBasedNetworkHub<T> extends AbstractNetwork implements Closeable {
 
     @NotNull
     private final NioCallbackFactory nioCallbackFactory;
 
     private final int defaultBufferSize;
-
-
-    static enum EventId {
-        HEARTBEAT,
-        DATA,
-    }
-
     private static final Logger LOG = LoggerFactory.getLogger(NettyBasedNetworkHub.class.getName());
-    private static final int BUFFER_SIZE = 128 * 1024; // 1MB
+
 
     public static final long SPIN_LOOP_TIME_IN_NONOSECONDS = TimeUnit.MICROSECONDS.toNanos(500);
 
@@ -187,15 +178,10 @@ public final class NettyBasedNetworkHub<T> extends AbstractNetwork implements Cl
                 cancelledKeys = 0;
                 needsToSelectAgain = false;
                 final int ioRatio = this.ioRatio;
-                if (ioRatio == 100) {
-                    processSelectedKeys();
 
-                } else {
-                    final long ioStartTime = System.nanoTime();
 
-                    processSelectedKeys();
+                processSelectedKeys();
 
-                }
 
 
                /* } catch (Throwable t) {
@@ -714,7 +700,7 @@ public final class NettyBasedNetworkHub<T> extends AbstractNetwork implements Cl
                 IOException, InterruptedException {
 
             final ServerSocketChannel serverChannel = openServerSocketChannel();
-         //   serverChannel.socket().setReceiveBufferSize(BUFFER_SIZE);
+            //   serverChannel.socket().setReceiveBufferSize(BUFFER_SIZE);
             serverChannel.configureBlocking(false);
 
             //  serverChannel.register(NetworkHub.this.selector, 0);
@@ -1053,7 +1039,7 @@ public final class NettyBasedNetworkHub<T> extends AbstractNetwork implements Cl
         private void writeHeartbeatToBuffer() {
 
             // denotes the state - 0 for a heartbeat
-            in().writeByte(HEARTBEAT.ordinal());
+            in().writeByte(0);
 
             // denotes the size in bytes
             in().writeInt(0);
