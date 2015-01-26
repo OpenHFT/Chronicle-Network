@@ -32,28 +32,16 @@ public class MinaClientLatencyTest {
     public static void main(String[] args) throws Throwable {
         NioSocketConnector connector = new NioSocketConnector();
 
-        long startTime;
-        int count = -50_000; // for warn up - we will skip the first 50_000
-        long[] times = new long[500_000];
-
-
+        final long[] times = new long[500_000];
         final int bufferSize = 32 * 1024;
 
-        byte[] payload = new byte[bufferSize];
-        long bytesReceived = 0;
-
-        int i = 0;
-
-        IoBuffer ioBuffer = IoBuffer.allocate(bufferSize);
+        final IoBuffer ioBuffer = IoBuffer.allocate(bufferSize);
         connector.setConnectTimeoutMillis(CONNECT_TIMEOUT);
-
 
         connector.setHandler(new IoHandlerAdapter() {
 
             long startTime;
-            final int bufferSize = 64;
-
-            int count;
+            int count = -50_000; // for warn up - we will skip the first 50_000
             int i;
 
 
@@ -121,23 +109,27 @@ public class MinaClientLatencyTest {
                 session.close(true);
             }
         });
-        IoSession session;
-
-        for (; ; ) {
-            try {
-                ConnectFuture future = connector.connect(new InetSocketAddress(HOST, PORT));
-                future.awaitUninterruptibly();
-                session = future.getSession();
-                break;
-            } catch (RuntimeIoException e) {
-                e.printStackTrace();
-                Thread.sleep(5000);
+        IoSession session = null;
+        try {
+            for (; ; ) {
+                try {
+                    ConnectFuture future = connector.connect(new InetSocketAddress(HOST, PORT));
+                    future.awaitUninterruptibly();
+                    session = future.getSession();
+                    break;
+                } catch (RuntimeIoException e) {
+                    e.printStackTrace();
+                    Thread.sleep(5000);
+                }
             }
+
+        } finally {
+            if (session != null)
+                // wait until the summation is done
+                session.getCloseFuture().awaitUninterruptibly();
+            connector.dispose();
         }
 
-        // wait until the summation is done
-        session.getCloseFuture().awaitUninterruptibly();
-        connector.dispose();
     }
 
 }

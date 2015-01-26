@@ -235,7 +235,7 @@ public class NioSelectorBasedTest {
                             case CONNECT:
 
                                 // 1. start by sending a ping message
-                                System.out.println("Starting latency test");
+                                System.out.println("Starting Selector NIO latency test");
 
                                 // this causes the OP_WRITE to be called
                                 withActions.setDirty(true);
