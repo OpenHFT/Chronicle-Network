@@ -14,24 +14,18 @@ import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 
-/**
- * (<strong>Entry Point</strong>) Starts SumUp client.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
- */
+
 public class MinaClientLatencyTest {
 
     public static final String DEFAULT_PORT = Integer.toString(MinaEchoServer.PORT);
     static final int PORT = Integer.parseInt(System.getProperty("port", DEFAULT_PORT));
 
-    static final String HOST = System.getProperty("host", "127.0.0.1");
-
+    private static final String HOST = System.getProperty("host", "127.0.0.1");
     private static final long CONNECT_TIMEOUT = 30 * 1000L; // 30 seconds
 
-
     public static void main(String[] args) throws Throwable {
-        NioSocketConnector connector = new NioSocketConnector();
 
+        final NioSocketConnector connector = new NioSocketConnector();
         final long[] times = new long[500_000];
         final int bufferSize = 32 * 1024;
 

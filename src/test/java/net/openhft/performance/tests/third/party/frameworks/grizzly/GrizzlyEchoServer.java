@@ -2,12 +2,13 @@ package net.openhft.performance.tests.third.party.frameworks.grizzly;
 
 import org.glassfish.grizzly.filterchain.*;
 import org.glassfish.grizzly.nio.transport.TCPNIOTransport;
-import org.glassfish.grizzly.nio.transport.TCPNIOTransportBuilder;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+
+import static org.glassfish.grizzly.nio.transport.TCPNIOTransportBuilder.newInstance;
 
 /**
  * Class initializes and starts the echo server, based on Grizzly 2.3
@@ -29,17 +30,8 @@ public class GrizzlyEchoServer {
 
         // EchoFilter is responsible for echoing received messages
         filterChainBuilder.add(new BaseFilter() {
-            /**
-             * Handle just read operation, when some message has come and ready to be
-             * processed.
-             *
-             * @param ctx Context of {@link org.glassfish.grizzly.filterchain.FilterChainContext} processing
-             * @return the next action
-             * @throws java.io.IOException
-             */
             @Override
-            public NextAction handleRead(FilterChainContext ctx)
-                    throws IOException {
+            public NextAction handleRead(FilterChainContext ctx) throws IOException {
                 // Peer address is used for non-connected UDP Connection :)
                 final Object peerAddress = ctx.getAddress();
                 final Object message = ctx.getMessage();
@@ -47,13 +39,11 @@ public class GrizzlyEchoServer {
                 ctx.write(peerAddress, message, null);
 
                 return ctx.getStopAction();
-
             }
         });
 
         // Create TCP transport
-        final TCPNIOTransport transport =
-                TCPNIOTransportBuilder.newInstance().build();
+        final TCPNIOTransport transport = newInstance().build();
 
         transport.setProcessor(filterChainBuilder.build());
         try {

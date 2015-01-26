@@ -10,7 +10,6 @@ import org.glassfish.grizzly.nio.transport.TCPNIOTransportBuilder;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -54,9 +53,6 @@ public class GrizzlyClientThroughPutTest {
         final AtomicLong bytesReceived = new AtomicLong();
 
 
-        // StringFilter is responsible for Buffer <-> String conversion
-        //    filterChainBuilder.add(new StringFilter(Charset.forName("UTF-8")));
-        // ClientFilter is responsible for redirecting server responses to the standard output
         filterChainBuilder.add(new BaseFilter() {
 
             int i;
@@ -97,10 +93,8 @@ public class GrizzlyClientThroughPutTest {
             // start the transport
             transport.start();
 
-            // perform async. connect to the server
-            Future<Connection> future = transport.connect(HOST, PORT);
             // wait for connect operation to complete
-            connection = future.get(10, TimeUnit.SECONDS);
+            connection = transport.connect(HOST, PORT).get(10, TimeUnit.SECONDS);
 
             assert connection != null;
 

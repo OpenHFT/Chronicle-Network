@@ -15,20 +15,13 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-/**
- * (<strong>Entry Point</strong>) Starts SumUp client.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
- */
+
 public class MinaClientThroughPutTest {
 
-    static final String DEFAULT_PORT = Integer.toString(MinaEchoServer.PORT);
-    static final int PORT = Integer.parseInt(System.getProperty("port", DEFAULT_PORT));
-
-    static final String HOST = System.getProperty("host", "127.0.0.1");
-
+    private static final String DEFAULT_PORT = Integer.toString(MinaEchoServer.PORT);
+    private static final int PORT = Integer.parseInt(System.getProperty("port", DEFAULT_PORT));
+    private static final String HOST = System.getProperty("host", "127.0.0.1");
     private static final long CONNECT_TIMEOUT = 30 * 1000L; // 30 seconds
-
 
     public static void main(String[] args) throws Throwable {
 
@@ -42,7 +35,6 @@ public class MinaClientThroughPutTest {
             long startTime;
             final int bufferSize = 64;
             byte[] payload = new byte[bufferSize];
-
             int i;
 
             {
@@ -94,7 +86,9 @@ public class MinaClientThroughPutTest {
                 cause.printStackTrace();
                 session.close(true);
             }
+
         });
+
         IoSession session;
 
         for (; ; ) {

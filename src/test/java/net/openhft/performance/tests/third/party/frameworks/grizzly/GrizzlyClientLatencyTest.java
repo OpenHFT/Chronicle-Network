@@ -9,7 +9,10 @@ import org.glassfish.grizzly.nio.transport.TCPNIOTransportBuilder;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -17,12 +20,9 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class GrizzlyClientLatencyTest {
 
-    static final String DEFAULT_PORT = Integer.toString(GrizzlyEchoServer.PORT);
-    static final int PORT = Integer.parseInt(System.getProperty("port", DEFAULT_PORT));
-    static final String HOST = System.getProperty("host", "127.0.0.1");
-
-    final static MemoryManager GRIZZLY_MM =
-            MemoryManager.DEFAULT_MEMORY_MANAGER;
+    private static final String DEFAULT_PORT = Integer.toString(GrizzlyEchoServer.PORT);
+    private static final int PORT = Integer.parseInt(System.getProperty("port", DEFAULT_PORT));
+    private static final String HOST = System.getProperty("host", "127.0.0.1");
 
 
     public static void main(String[] args) throws IOException,
@@ -31,7 +31,7 @@ public class GrizzlyClientLatencyTest {
         System.out.println("Starting Grizzly latency test");
 
         final CountDownLatch finished = new CountDownLatch(1);
-        final Buffer buffer = GRIZZLY_MM.allocate(8);
+        final Buffer buffer = MemoryManager.DEFAULT_MEMORY_MANAGER.allocate(8);
 
         Connection connection = null;
 
@@ -45,17 +45,13 @@ public class GrizzlyClientLatencyTest {
         final long startTime = System.nanoTime();
         final AtomicLong bytesReceived = new AtomicLong();
 
-
-        // StringFilter is responsible for Buffer <-> String conversion
-        //    filterChainBuilder.add(new StringFilter(Charset.forName("UTF-8")));
-        // ClientFilter is responsible for redirecting server responses to the standard output
         filterChainBuilder.add(new BaseFilter() {
 
             final long[] times = new long[500_000];
             int count = -50_000; // for warn up - we will skip the first 50_000
 
             int i;
-            final Buffer buffer2 = GRIZZLY_MM.allocate(8);
+            final Buffer buffer2 = MemoryManager.DEFAULT_MEMORY_MANAGER.allocate(8);
 
             /**
              * Handle just read operation, when some message has come and ready to be
@@ -127,11 +123,8 @@ public class GrizzlyClientLatencyTest {
             // start the transport
             transport.start();
 
-            // perform async. connect to the server
-            Future<Connection> future = transport.connect(HOST, PORT);
-
             // wait for connect operation to complete
-            connection = future.get(10, TimeUnit.SECONDS);
+            connection = transport.connect(HOST, PORT).get(10, TimeUnit.SECONDS);
 
             assert connection != null;
 

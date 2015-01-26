@@ -15,12 +15,11 @@ import java.net.InetSocketAddress;
 
 public class MinaEchoServer {
 
-
     static final int PORT = Integer.parseInt(System.getProperty("port", "9120"));
 
     public static void main(String[] args) throws IOException {
 
-        IoAcceptor acceptor = new NioSocketAcceptor();
+        final IoAcceptor acceptor = new NioSocketAcceptor();
 
         acceptor.setHandler(new IoHandlerAdapter() {
             @Override
@@ -41,7 +40,6 @@ public class MinaEchoServer {
 
         acceptor.getSessionConfig().setReadBufferSize(2048);
         acceptor.getSessionConfig().setIdleTime(IdleStatus.BOTH_IDLE, 10);
-
         acceptor.bind(new InetSocketAddress(PORT));
     }
 }
