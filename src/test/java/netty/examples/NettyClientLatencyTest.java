@@ -34,7 +34,7 @@ import java.util.Arrays;
  * Simply put, the echo client initiates the ping-pong traffic between the echo client and server by
  * sending the first message to the server.
  */
-public final class NettyEchoClientLatencyTest {
+public final class NettyClientLatencyTest {
 
     static final boolean SSL = System.getProperty("ssl") != null;
     static final String HOST = System.getProperty("host", "127.0.0.1");

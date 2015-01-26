@@ -13,16 +13,15 @@ import org.apache.mina.transport.socket.nio.NioSocketConnector;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 
 /**
  * (<strong>Entry Point</strong>) Starts SumUp client.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class MinaClientThroughPutTest {
+public class MinaClientLatencyTest {
 
-    static final String DEFAULT_PORT = Integer.toString(MinaEchoServer.PORT);
+    public static final String DEFAULT_PORT = Integer.toString(MinaEchoServer.PORT);
     static final int PORT = Integer.parseInt(System.getProperty("port", DEFAULT_PORT));
 
     static final String HOST = System.getProperty("host", "127.0.0.1");
@@ -31,58 +30,85 @@ public class MinaClientThroughPutTest {
 
 
     public static void main(String[] args) throws Throwable {
+        NioSocketConnector connector = new NioSocketConnector();
 
-        final NioSocketConnector connector = new NioSocketConnector();
-        final IoBuffer ioBuffer = IoBuffer.allocate(1024);
+        long startTime;
+        int count = -50_000; // for warn up - we will skip the first 50_000
+        long[] times = new long[500_000];
+
+
+        final int bufferSize = 32 * 1024;
+
+        byte[] payload = new byte[bufferSize];
+        long bytesReceived = 0;
+
+        int i = 0;
+
+        IoBuffer ioBuffer = IoBuffer.allocate(bufferSize);
         connector.setConnectTimeoutMillis(CONNECT_TIMEOUT);
+
 
         connector.setHandler(new IoHandlerAdapter() {
 
-            int bytesReceived = 0;
             long startTime;
             final int bufferSize = 64;
-            byte[] payload = new byte[bufferSize];
 
+            int count;
             int i;
 
-            {
-                Arrays.fill(payload, (byte) 'X');
-            }
 
             @Override
             public void sessionOpened(IoSession session) {
                 startTime = System.nanoTime();
                 ioBuffer.clear();
-                ioBuffer.put(payload);
+                ioBuffer.putLong(System.nanoTime());
 
                 session.write(ioBuffer);
             }
 
             @Override
             public void sessionClosed(IoSession session) {
+
             }
 
             @Override
-            public void messageReceived(IoSession session, Object message) {
+            public void messageReceived(IoSession session, Object msg) {
 
-                bytesReceived += ((IoBuffer) message).remaining();
-                ((IoBuffer) message).clear();
+                if (((IoBuffer) msg).remaining() >= 8) {
 
-                if (i++ % 10000 == 0)
-                    System.out.print(".");
+                    if (count % 10000 == 0)
+                        System.out.print(".");
 
-                ((IoBuffer) message).put(payload);
-                session.write(message);
+                    if (count >= 0) {
+                        times[count] = System.nanoTime() - ((IoBuffer) msg).getLong();
 
-                if (TimeUnit.NANOSECONDS.toSeconds(System
-                        .nanoTime() - startTime) >= 10) {
-                    long time = System.nanoTime() - startTime;
-                    System.out.printf("\nThroughput was %.1f MB/s%n", 1e3 *
-                            bytesReceived / time);
-                    session.close(true);
+
+                        if (count == times.length - 1) {
+                            Arrays.sort(times);
+                            System.out.printf("\nLoop back echo latency was %.1f/%.1f %,d/%,d %," +
+                                            "d/%d us for 50/90 99/99.9 99.99/worst %%tile%n",
+                                    times[count / 2] / 1e3,
+                                    times[count * 9 / 10] / 1e3,
+                                    times[count - count / 100] / 1000,
+                                    times[count - count / 1000] / 1000,
+                                    times[count - count / 10000] / 1000,
+                                    times[count - 1] / 1000
+                            );
+                            session.close(true);
+                            return;
+                        }
+                    }
+
+                    count++;
                 }
 
+                ioBuffer.clear();
+                ioBuffer.putLong(System.nanoTime());
+
+                session.write(ioBuffer); // (3)
+
             }
+
 
             @Override
             public void messageSent(IoSession session, Object message) {
