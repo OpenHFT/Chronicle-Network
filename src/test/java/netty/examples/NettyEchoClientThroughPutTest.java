@@ -50,7 +50,6 @@ public final class NettyEchoClientThroughPutTest {
         final int bufferSize = 32 * 1024;
 
         byte[] payload = new byte[bufferSize];
-        private ByteBuf buf;
         long bytesReceived = 0;
         long startTime;
         int i = 0;
@@ -59,8 +58,6 @@ public final class NettyEchoClientThroughPutTest {
             Arrays.fill(payload, (byte) 'X');
             firstMessage = Unpooled.buffer(bufferSize);
             firstMessage.writeBytes(payload);
-
-
         }
 
 

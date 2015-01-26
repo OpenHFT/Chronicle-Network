@@ -7,6 +7,7 @@ import net.openhft.chronicle.network.NioCallback;
 import net.openhft.chronicle.network.internal.NetworkConfig;
 import net.openhft.lang.io.Bytes;
 import net.openhft.lang.model.constraints.NotNull;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.Closeable;
@@ -191,6 +192,7 @@ public class ClientConnectorTest {
 
     }
 
+    @Ignore
     @Test
     public void testEchoLatencyPutTest() throws Exception {
 
