@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package vanilla.java.tcp;
+package com.higherfrequencytrading.chronicle.enterprise.map.performance.tests.vanilla.tcp;
 
 import net.openhft.affinity.AffinitySupport;
 

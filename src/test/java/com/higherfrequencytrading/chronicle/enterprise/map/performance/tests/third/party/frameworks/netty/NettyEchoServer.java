@@ -5,7 +5,7 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import vanilla.java.tcp.EchoClientMain;
+import com.higherfrequencytrading.chronicle.enterprise.map.performance.tests.vanilla.tcp.EchoClientMain;
 
 /**
  * Discards any incoming data.

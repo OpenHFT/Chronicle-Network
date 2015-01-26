@@ -1,4 +1,4 @@
-package mina.examples;
+package com.higherfrequencytrading.chronicle.enterprise.map.performance.tests.third.party.frameworks.mina;
 
 /**
  * @author Rob Austin.

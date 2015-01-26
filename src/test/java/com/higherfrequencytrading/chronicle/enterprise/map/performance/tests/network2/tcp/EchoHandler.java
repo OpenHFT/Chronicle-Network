@@ -1,8 +1,8 @@
-package net.openhft.chronicle.network2.tcp;
+package com.higherfrequencytrading.chronicle.enterprise.map.performance.tests.network2.tcp;
 
 import net.openhft.chronicle.network2.event.EventGroup;
 import net.openhft.lang.io.Bytes;
-import vanilla.java.tcp.EchoClientMain;
+import com.higherfrequencytrading.chronicle.enterprise.map.performance.tests.vanilla.tcp.EchoClientMain;
 
 import java.io.IOException;
 

@@ -1,4 +1,4 @@
-package com.higherfrequencytrading.chronicle.enterprise.map;
+package com.higherfrequencytrading.chronicle.enterprise.map.performance.tests.network1.tcp;
 
 
 import junit.framework.Assert;
