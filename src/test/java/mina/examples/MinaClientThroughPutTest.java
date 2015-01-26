@@ -5,15 +5,14 @@ package mina.examples;
  */
 
 import org.apache.mina.core.RuntimeIoException;
+import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
-import org.apache.mina.filter.codec.ProtocolCodecFilter;
-import org.apache.mina.filter.codec.prefixedstring.PrefixedStringCodecFactory;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -21,22 +20,18 @@ import java.util.concurrent.TimeUnit;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class Client {
+public class MinaClientThroughPutTest {
     private static final String HOSTNAME = "localhost";
 
-    private static final int PORT = 9123;
+    private static final int PORT = 9120;
 
     private static final long CONNECT_TIMEOUT = 30 * 1000L; // 30 seconds
 
 
     public static void main(String[] args) throws Throwable {
         NioSocketConnector connector = new NioSocketConnector();
-
+        IoBuffer allocate = IoBuffer.allocate(1024);
         connector.setConnectTimeoutMillis(CONNECT_TIMEOUT);
-
-        connector.getFilterChain().addLast("codec", new ProtocolCodecFilter(new
-                PrefixedStringCodecFactory(Charset.forName("ISO-8859-1"))));
-
 
         connector.setHandler(new IoHandlerAdapter() {
 
@@ -44,14 +39,20 @@ public class Client {
             long startTime;
             final int bufferSize = 64;
             byte[] payload = new byte[bufferSize];
-            final String payloadStr = new String(payload);
 
             int i;
+
+            {
+                Arrays.fill(payload, (byte) 'X');
+            }
 
             @Override
             public void sessionOpened(IoSession session) {
                 startTime = System.nanoTime();
-                session.write(payloadStr);
+                allocate.clear();
+                allocate.put(payload);
+
+                session.write(allocate);
             }
 
             @Override
@@ -62,12 +63,14 @@ public class Client {
             @Override
             public void messageReceived(IoSession session, Object message) {
 
-                bytesReceived += message.toString().length();
+                bytesReceived += ((IoBuffer) message).remaining();
+                ((IoBuffer) message).clear();
 
                 if (i++ % 10000 == 0)
                     System.out.print(".");
 
-                session.write(payloadStr);
+                ((IoBuffer) message).put(payload);
+                session.write(message);
 
                 if (TimeUnit.NANOSECONDS.toSeconds(System
                         .nanoTime() - startTime) >= 10) {
@@ -108,4 +111,5 @@ public class Client {
         session.getCloseFuture().awaitUninterruptibly();
         connector.dispose();
     }
+
 }

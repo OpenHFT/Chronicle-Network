@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package netty.my.examples;
+package netty.examples;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
  * Simply put, the echo client initiates the ping-pong traffic between the echo client and server by
  * sending the first message to the server.
  */
-public final class NettyEchoClientThroughPutTest {
+public final class NettyClientThroughPutTest {
 
     static final boolean SSL = System.getProperty("ssl") != null;
     static final String HOST = System.getProperty("host", "127.0.0.1");

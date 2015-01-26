@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package netty.my.examples;
+package netty.examples;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
