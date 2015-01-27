@@ -11,6 +11,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
@@ -53,7 +55,9 @@ public class WireTcpHandlerTest {
 
         SocketChannel[] sc = new SocketChannel[1];
         for (int i = 0; i < sc.length; i++) {
-            sc[i] = SocketChannel.open(eah.getLocalAddress());
+            SocketAddress localAddress = new InetSocketAddress("localhost", eah.getLocalPort());
+            System.out.println("Connecting to " + localAddress);
+            sc[i] = SocketChannel.open(localAddress);
             sc[i].configureBlocking(false);
         }
 //        testThroughput(sc);

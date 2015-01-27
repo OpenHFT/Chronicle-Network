@@ -6,6 +6,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
@@ -35,10 +37,11 @@ public class TcpServerEventGroupTest {
         AcceptorEventHandler eah = new AcceptorEventHandler(0, EchoHandler::new);
         eg.addHandler(eah);
 
-
         SocketChannel[] sc = new SocketChannel[2];
         for (int i = 0; i < sc.length; i++) {
-            sc[i] = SocketChannel.open(eah.getLocalAddress());
+            SocketAddress localAddress = new InetSocketAddress("localhost", eah.getLocalPort());
+            System.out.println("Connecting to " + localAddress);
+            sc[i] = SocketChannel.open(localAddress);
             sc[i].configureBlocking(false);
         }
         testThroughput(sc);
@@ -51,22 +54,22 @@ public class TcpServerEventGroupTest {
         System.out.println("Starting throughput test");
         int bufferSize = 32 * 1024;
         ByteBuffer bb = ByteBuffer.allocateDirect(bufferSize);
-        int count = 1, window = 2;
+        int count = 1, window = 0;
         long start = System.nanoTime();
         while (System.nanoTime() - start < 10e9) {
             for (SocketChannel socket : sockets) {
                 bb.clear();
                 bb.putLong(0, count);
-//                System.out.println("w1");
+                System.out.println("w1");
                 if (socket.write(bb) < 0)
                     throw new AssertionError("Socket " + socket + " unable to write in one go.");
             }
             if (count > window)
                 for (SocketChannel socket : sockets) {
                     bb.clear();
-//                    System.out.println("r1");
                     while (socket.read(bb) >= 0 && bb.remaining() > 0) ;
                     long ts2 = bb.getLong(0);
+                    System.out.println("r1 " + ts2);
                     if (count - window != ts2)
                         assertEquals(count - window, ts2);
                 }

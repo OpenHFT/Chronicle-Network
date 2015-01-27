@@ -30,6 +30,10 @@ public class TcpEventHandler implements EventHandler {
         this.handler = handler;
         // there is nothing which needs to be written by default.
         outBB.limit(0);
+
+        // allow these to be used by another thread.
+        inBBB.clearThreadAssociation();
+        outBBB.clearThreadAssociation();
     }
 
     @Override

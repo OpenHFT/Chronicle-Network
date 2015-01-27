@@ -14,11 +14,13 @@ import java.util.concurrent.Executors;
 public class MonitorEventLoop implements EventLoop, Runnable {
     final ExecutorService service = Executors.newSingleThreadExecutor(new NamedThreadFactory("event-loop-monitor", true));
 
+    private final EventLoop parent;
     private final List<EventHandler> handlers = new ArrayList<>();
     private final Pauser pauser;
     private volatile boolean running = true;
 
-    public MonitorEventLoop(Pauser pauser) {
+    public MonitorEventLoop(EventLoop parent, Pauser pauser) {
+        this.parent = parent;
         this.pauser = pauser;
     }
 
@@ -34,7 +36,7 @@ public class MonitorEventLoop implements EventLoop, Runnable {
     public void addHandler(EventHandler handler) {
         synchronized (handler) {
             handlers.add(handler);
-            handler.eventLoop(this);
+            handler.eventLoop(parent);
         }
     }
 

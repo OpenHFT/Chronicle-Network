@@ -15,7 +15,8 @@ import java.net.InetSocketAddress;
 
 public class MinaEchoServer {
 
-    static final int PORT = Integer.parseInt(System.getProperty("port", "9120"));
+
+    static final int PORT = Integer.getInteger("port", 9120);
 
     public static void main(String[] args) throws IOException {
 

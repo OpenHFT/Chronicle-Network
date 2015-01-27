@@ -11,17 +11,23 @@ import static net.openhft.chronicle.network2.event.References.or;
 public class EventGroup implements EventLoop {
     static final long MONITOR_INTERVAL = NANOSECONDS.convert(100, MILLISECONDS);
 
-    final EventLoop monitor = new MonitorEventLoop(new LightPauser(-1, NANOSECONDS.convert(1, SECONDS)));
-    final VanillaEventLoop core = new VanillaEventLoop("core", new LightPauser(200000, NANOSECONDS.convert(100, MICROSECONDS)) {
+    final EventLoop monitor = new MonitorEventLoop(this, new LightPauser(LightPauser.NO_BUSY_PERIOD, NANOSECONDS.convert(1, SECONDS)));
+    final VanillaEventLoop core = new VanillaEventLoop(this, "core", new LightPauser(NANOSECONDS.convert(20, MICROSECONDS), NANOSECONDS.convert(200, MICROSECONDS)) {
         @Override
         protected void doPause(long maxPauseNS) {
-//            System.out.println(new Date() + " - pause");
+/*
+            boolean debug = false;
+            assert debug = true;
+            if (debug)
+                System.out.println(new Date() + " - " + Thread.currentThread().getName() + " - pause");
+*/
             super.doPause(maxPauseNS);
         }
     });
+    final BlockingEventLoop blocking = new BlockingEventLoop(this, "blocking");
 
     public void addHandler(EventHandler handler) {
-        switch (or(handler.priority(), HandlerPriority.LOW)) {
+        switch (or(handler.priority(), HandlerPriority.BLOCKING)) {
             case HIGH:
             case LOW:
             case DAEMON:
@@ -30,6 +36,11 @@ public class EventGroup implements EventLoop {
             case MONITOR:
                 monitor.addHandler(handler);
                 break;
+            case BLOCKING:
+                blocking.addHandler(handler);
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown priority " + handler.priority());
         }
     }
 

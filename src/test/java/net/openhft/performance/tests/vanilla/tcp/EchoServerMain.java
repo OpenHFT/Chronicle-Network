@@ -48,6 +48,8 @@ public class EchoServerMain {
                     AffinitySupport.setAffinity(1 << 2L);
                 try {
                     System.out.println("Connected " + socket);
+                    // simulate copying the data. 
+                    // obviously faster if you don't touch the data but no real service would do that.
                     ByteBuffer bb = ByteBuffer.allocateDirect(64 * 1024);
                     ByteBuffer bb2 = ByteBuffer.allocateDirect(64 * 1024);
                     while (socket.read(bb) >= 0) {

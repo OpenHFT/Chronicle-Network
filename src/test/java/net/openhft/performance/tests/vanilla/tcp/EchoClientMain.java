@@ -139,7 +139,7 @@ public class EchoClientMain {
 
     private static void testLatency(SocketChannel... sockets) throws IOException {
         System.out.println("Starting latency test");
-        int tests = 500000;
+        int tests = 1000000;
         long[] times = new long[tests * sockets.length];
         int count = 0;
         ByteBuffer bb = ByteBuffer.allocateDirect(64);

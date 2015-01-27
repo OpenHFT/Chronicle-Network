@@ -15,8 +15,8 @@ import static net.openhft.chronicle.network2.event.References.or;
  * Created by peter on 22/01/15.
  */
 public class VanillaEventLoop implements EventLoop, Runnable {
-    final ExecutorService service;
-
+    private final EventLoop parent;
+    private final ExecutorService service;
     private final List<EventHandler> highHandlers = new ArrayList<>();
     private final List<EventHandler> lowHandlers = new ArrayList<>();
     private final List<EventHandler> daemonHandlers = new ArrayList<>();
@@ -27,7 +27,8 @@ public class VanillaEventLoop implements EventLoop, Runnable {
     private volatile boolean running = true;
     private volatile Thread thread = null;
 
-    public VanillaEventLoop(String name, Pauser pauser) {
+    public VanillaEventLoop(EventLoop parent, String name, Pauser pauser) {
+        this.parent = parent;
         this.name = name;
         this.pauser = pauser;
         service = Executors.newSingleThreadExecutor(new NamedThreadFactory(name));
@@ -61,6 +62,7 @@ public class VanillaEventLoop implements EventLoop, Runnable {
     public void run() {
         try {
             thread = Thread.currentThread();
+            int count = 0;
             while (running) {
                 boolean busy = false;
                 for (int i = 0; i < 10; i++) {
@@ -70,8 +72,11 @@ public class VanillaEventLoop implements EventLoop, Runnable {
                 }
                 acceptNewHandlers();
                 if (busy) {
+                    System.out.println("b " + count);
+                    count = 0;
                     pauser.reset();
                 } else {
+                    count++;
                     runDaemonHandlers();
                     pauser.pause();
                 }
@@ -147,7 +152,7 @@ public class VanillaEventLoop implements EventLoop, Runnable {
                 daemonHandlers.add(handler);
                 break;
         }
-        handler.eventLoop(this);
+        handler.eventLoop(parent);
     }
 
     public String name() {

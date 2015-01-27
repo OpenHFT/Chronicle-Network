@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.function.Supplier;
@@ -28,11 +27,10 @@ public class AcceptorEventHandler implements EventHandler {
         ssc = ServerSocketChannel.open();
         ssc.socket().setReuseAddress(true);
         ssc.bind(new InetSocketAddress(port));
-        ssc.configureBlocking(false);
     }
 
-    public SocketAddress getLocalAddress() throws IOException {
-        return ssc.getLocalAddress();
+    public int getLocalPort() throws IOException {
+        return ssc.socket().getLocalPort();
     }
 
     @Override
@@ -59,7 +57,7 @@ public class AcceptorEventHandler implements EventHandler {
 
     @Override
     public HandlerPriority priority() {
-        return HandlerPriority.DAEMON;
+        return HandlerPriority.BLOCKING;
     }
 
     @Override
