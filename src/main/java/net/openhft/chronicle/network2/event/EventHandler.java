@@ -8,7 +8,7 @@ public interface EventHandler {
     }
 
     default HandlerPriority priority() {
-        return HandlerPriority.LOW;
+        return HandlerPriority.MEDIUM;
     }
 
     /**

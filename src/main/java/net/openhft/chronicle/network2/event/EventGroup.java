@@ -12,24 +12,16 @@ public class EventGroup implements EventLoop {
     static final long MONITOR_INTERVAL = NANOSECONDS.convert(100, MILLISECONDS);
 
     final EventLoop monitor = new MonitorEventLoop(this, new LightPauser(LightPauser.NO_BUSY_PERIOD, NANOSECONDS.convert(1, SECONDS)));
-    final VanillaEventLoop core = new VanillaEventLoop(this, "core", new LightPauser(NANOSECONDS.convert(20, MICROSECONDS), NANOSECONDS.convert(200, MICROSECONDS)) {
-        @Override
-        protected void doPause(long maxPauseNS) {
-/*
-            boolean debug = false;
-            assert debug = true;
-            if (debug)
-                System.out.println(new Date() + " - " + Thread.currentThread().getName() + " - pause");
-*/
-            super.doPause(maxPauseNS);
-        }
-    });
+    final VanillaEventLoop core = new VanillaEventLoop(this, "core",
+            new LightPauser(NANOSECONDS.convert(20, MICROSECONDS), NANOSECONDS.convert(200, MICROSECONDS)),
+            NANOSECONDS.convert(100, MICROSECONDS));
     final BlockingEventLoop blocking = new BlockingEventLoop(this, "blocking");
 
     public void addHandler(EventHandler handler) {
         switch (or(handler.priority(), HandlerPriority.BLOCKING)) {
             case HIGH:
-            case LOW:
+            case MEDIUM:
+            case TIMER:
             case DAEMON:
                 core.addHandler(handler);
                 break;

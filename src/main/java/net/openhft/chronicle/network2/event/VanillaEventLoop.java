@@ -18,19 +18,23 @@ public class VanillaEventLoop implements EventLoop, Runnable {
     private final EventLoop parent;
     private final ExecutorService service;
     private final List<EventHandler> highHandlers = new ArrayList<>();
-    private final List<EventHandler> lowHandlers = new ArrayList<>();
+    private final List<EventHandler> mediumHandlers = new ArrayList<>();
+    private final List<EventHandler> timerHandlers = new ArrayList<>();
     private final List<EventHandler> daemonHandlers = new ArrayList<>();
     private final AtomicReference<EventHandler> newHandler = new AtomicReference<>();
     private final Pauser pauser;
+    private final long timerIntervalNS;
     private final String name;
     private long loopStartNS;
+    private long lastTimerNS;
     private volatile boolean running = true;
     private volatile Thread thread = null;
 
-    public VanillaEventLoop(EventLoop parent, String name, Pauser pauser) {
+    public VanillaEventLoop(EventLoop parent, String name, Pauser pauser, long timerIntervalNS) {
         this.parent = parent;
         this.name = name;
         this.pauser = pauser;
+        this.timerIntervalNS = timerIntervalNS;
         service = Executors.newSingleThreadExecutor(new NamedThreadFactory(name));
     }
 
@@ -70,6 +74,10 @@ public class VanillaEventLoop implements EventLoop, Runnable {
                     busy |= runAllHighHandlers();
                     busy |= runOneTenthLowHandler(i);
                 }
+                if (lastTimerNS + timerIntervalNS < loopStartNS) {
+                    lastTimerNS = loopStartNS;
+                    runTimerHandlers();
+                }
                 acceptNewHandlers();
                 if (busy) {
                     System.out.println("b " + count);
@@ -105,17 +113,31 @@ public class VanillaEventLoop implements EventLoop, Runnable {
     @HotMethod
     private boolean runOneTenthLowHandler(int i) {
         boolean busy = false;
-        for (int j = i; j < lowHandlers.size(); j += 10) {
-            EventHandler handler = lowHandlers.get(i);
+        for (int j = i; j < mediumHandlers.size(); j += 10) {
+            EventHandler handler = mediumHandlers.get(i);
             try {
                 busy |= handler.runOnce();
             } catch (Exception e) {
                 e.printStackTrace();
             }
             if (handler.isDead())
-                lowHandlers.remove(i--);
+                mediumHandlers.remove(i--);
         }
         return busy;
+    }
+
+    @HotMethod
+    private void runTimerHandlers() {
+        for (int i = 0; i < timerHandlers.size(); i++) {
+            EventHandler handler = timerHandlers.get(i);
+            try {
+                handler.runOnce();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            if (handler.isDead())
+                timerHandlers.remove(i--);
+        }
     }
 
     @HotMethod
@@ -141,16 +163,19 @@ public class VanillaEventLoop implements EventLoop, Runnable {
     }
 
     private void addNewHandler(EventHandler handler) {
-        switch (or(handler.priority(), HandlerPriority.LOW)) {
+        switch (or(handler.priority(), HandlerPriority.MEDIUM)) {
             case HIGH:
                 highHandlers.add(handler);
                 break;
-            case LOW:
-                lowHandlers.add(handler);
+            case MEDIUM:
+                mediumHandlers.add(handler);
                 break;
+            case TIMER:
             case DAEMON:
                 daemonHandlers.add(handler);
                 break;
+            default:
+                throw new IllegalArgumentException("Cannot add a " + handler.priority() + " task to a busy waiting thread");
         }
         handler.eventLoop(parent);
     }
