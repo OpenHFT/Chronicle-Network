@@ -1,11 +1,11 @@
-package netty.my.examples;
+package net.openhft.performance.tests.third.party.frameworks.netty;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import vanilla.java.tcp.EchoClientMain;
+import net.openhft.performance.tests.vanilla.tcp.EchoClientMain;
 
 /**
  * Discards any incoming data.
@@ -30,21 +30,6 @@ public class NettyEchoServer {
                         @Override
                         public void initChannel(SocketChannel ch) throws Exception {
                             ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-
-                                // log out response
-                              /*  @Override
-                                public void channelRead(ChannelHandlerContext ctx, Object msg) { // (2)
-                                    ByteBuf in = (ByteBuf) msg;
-                                    try {
-                                        while (in.isReadable()) { // (1)
-                                            System.out.print((char) in.readByte());
-                                            System.out.flush();
-                                        }
-                                    } finally {
-                                        ReferenceCountUtil.release(msg); // (2)
-                                    }
-                                }*/
-
 
                                 // echo server
                                 @Override

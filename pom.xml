@@ -37,6 +37,21 @@
     <dependencies>
 
         <dependency>
+            <groupId>org.glassfish.grizzly</groupId>
+            <artifactId>grizzly-framework</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>uk.co.real-logic</groupId>
+            <artifactId>Agrona</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.mina</groupId>
+            <artifactId>mina-core</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
         </dependency>
@@ -54,6 +69,11 @@
         <dependency>
             <groupId>net.openhft</groupId>
             <artifactId>lang</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>net.openhft</groupId>
+            <artifactId>chronicle-wire</artifactId>
         </dependency>
 
         <!-- test dependencies -->
@@ -96,9 +116,33 @@
             </dependency>
 
             <dependency>
+                <groupId>org.glassfish.grizzly</groupId>
+                <artifactId>grizzly-framework</artifactId>
+                <version>2.3.14</version>
+            </dependency>
+
+            <dependency>
+                <groupId>uk.co.real-logic</groupId>
+                <artifactId>Agrona</artifactId>
+                <version>0.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.mina</groupId>
+                <artifactId>mina-core</artifactId>
+                <version>2.0.9</version>
+            </dependency>
+
+            <dependency>
                 <groupId>net.openhft</groupId>
                 <artifactId>lang</artifactId>
-                <version>6.4.23-SNAPSHOT</version>
+                <version>6.5.1-SNAPSHOT</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.openhft</groupId>
+                <artifactId>chronicle-wire</artifactId>
+                <version>1.0.0a-SNAPSHOT</version>
             </dependency>
 
             <dependency>

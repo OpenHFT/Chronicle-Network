@@ -16,20 +16,17 @@
  * limitations under the License.
  */
 
-package vanilla.java.tcp;
+package net.openhft.performance.tests.vanilla.tcp;
 
 import net.openhft.affinity.AffinitySupport;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author peter.lawrey
@@ -40,34 +37,42 @@ public class EchoServerMain {
         ServerSocketChannel ssc = ServerSocketChannel.open();
         ssc.bind(new InetSocketAddress(port));
         System.out.println("listening on " + ssc);
+        ReentrantLock lock = new ReentrantLock();
         while (true) {
             final SocketChannel socket = ssc.accept();
             socket.socket().setTcpNoDelay(true);
             socket.configureBlocking(false);
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
+            new Thread(() -> {
+                boolean locked = lock.tryLock();
+                if (locked)
                     AffinitySupport.setAffinity(1 << 2L);
-                    try {
-                        System.out.println("Connected " + socket);
-                        ByteBuffer bb = ByteBuffer.allocateDirect(64*1024);
-                        while (socket.read(bb) >= 0) {
-                            bb.flip();
-                            if (socket.write(bb) < 0)
-                                throw new EOFException();
-                            if (bb.remaining() > 0)
-                                bb.compact();
-                            else
-                                bb.clear();
-                        }
-                    } catch (IOException ignored) {
-                    } finally {
-                        System.out.println("... disconnected " + socket);
-                        try {
-                            socket.close();
-                        } catch (IOException ignored) {
-                        }
+                try {
+                    System.out.println("Connected " + socket);
+                    // simulate copying the data. 
+                    // obviously faster if you don't touch the data but no real service would do that.
+                    ByteBuffer bb = ByteBuffer.allocateDirect(64 * 1024);
+                    ByteBuffer bb2 = ByteBuffer.allocateDirect(64 * 1024);
+                    while (socket.read(bb) >= 0) {
+                        bb.flip();
+                        bb2.put(bb);
+                        bb2.flip();
+                        if (socket.write(bb2) < 0)
+                            throw new EOFException();
+                        if (bb2.remaining() > 0)
+                            bb2.compact();
+                        else
+                            bb2.clear();
+                        bb.clear();
                     }
+                } catch (IOException ignored) {
+                } finally {
+                    System.out.println("... disconnected " + socket);
+                    try {
+                        socket.close();
+                    } catch (IOException ignored) {
+                    }
+                    if (locked)
+                        lock.unlock();
                 }
             }).start();
         }
