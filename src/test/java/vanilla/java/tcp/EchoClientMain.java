@@ -59,31 +59,29 @@ Between two servers via Solarflare with onload on client (16 minor GCs)
 Throughput was 643.6 MB/s
 Loop back echo latency was 20.8/21.8 29/34 38/2286 us for 50/90 99/99.9 99.99/worst %tile
 
-
 */
 
 
 public class EchoClientMain {
-    public static final int PORT = 8007;
+    public static final int PORT = Integer.getInteger("port", 8007);
 
     public static void main(String... args) throws IOException, InterruptedException {
         AffinitySupport.setAffinity(1L << 3);
-        String hostname = args[0];
-        int port = args.length < 2 ? PORT : Integer.parseInt(args[1]);
-        int repeats = 1;
+        String[] hostnames = args;
+        int repeats = args.length;
 
         SocketChannel[] sockets = new SocketChannel[repeats];
-        openConnections(hostname, port, sockets);
+        openConnections(hostnames, PORT, sockets);
         testThroughput(sockets);
         closeConnections(sockets);
-        openConnections(hostname, port, sockets);
+        openConnections(hostnames, PORT, sockets);
         testLatency(sockets);
         closeConnections(sockets);
     }
 
-    private static void openConnections(String hostname, int port, SocketChannel[] sockets) throws IOException {
+    private static void openConnections(String[] hostnames, int port, SocketChannel[] sockets) throws IOException {
         for (int j = 0; j < sockets.length; j++) {
-            sockets[j] = SocketChannel.open(new InetSocketAddress(hostname, port));
+            sockets[j] = SocketChannel.open(new InetSocketAddress(hostnames[j % hostnames.length], port));
             sockets[j].socket().setTcpNoDelay(true);
             sockets[j].configureBlocking(false);
         }
