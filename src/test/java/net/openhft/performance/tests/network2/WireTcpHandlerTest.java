@@ -77,14 +77,14 @@ public class WireTcpHandlerTest {
 
 
         @Override
-        public void writeMarshallable(Wire wire) {
+        public void writeMarshallable(WireOut wire) {
             wire.write(TestKey.key1).int32(key1)
                     .write(TestKey.key2).int64(key2)
                     .write(TestKey.key3).float64(key3);
         }
 
         @Override
-        public void readMarshallable(Wire wire) {
+        public void readMarshallable(WireIn wire) {
             wire.read(TestKey.key1).int32(i -> key1 = i)
                     .read(TestKey.key2).int64(i -> key2 = i)
                     .read(TestKey.key3).float64(i -> key3 = i);
