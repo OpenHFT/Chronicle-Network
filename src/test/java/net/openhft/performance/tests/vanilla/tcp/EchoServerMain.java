@@ -51,13 +51,20 @@ public class EchoServerMain {
                     // simulate copying the data. 
                     // obviously faster if you don't touch the data but no real service would do that.
                     ByteBuffer bb = ByteBuffer.allocateDirect(64 * 1024);
-                    ByteBuffer bb2 = ByteBuffer.allocateDirect(64 * 1024);
+                    ByteBuffer bb2 = ByteBuffer.allocateDirect(256 * 1024);
                     while (socket.read(bb) >= 0) {
                         bb.flip();
                         bb2.put(bb);
                         bb2.flip();
+                        // make sure there is enough space to do a full read the next time.
                         if (socket.write(bb2) < 0)
                             throw new EOFException();
+                        while (freeSpace(bb2) < bb.capacity()) {
+                            System.out.println("Write blocking");
+                            if (socket.write(bb2) < 0)
+                                throw new EOFException();
+                        }
+
                         if (bb2.remaining() > 0)
                             bb2.compact();
                         else
@@ -76,5 +83,9 @@ public class EchoServerMain {
                 }
             }).start();
         }
+    }
+
+    static int freeSpace(ByteBuffer bb2) {
+        return bb2.capacity() - bb2.remaining();
     }
 }
