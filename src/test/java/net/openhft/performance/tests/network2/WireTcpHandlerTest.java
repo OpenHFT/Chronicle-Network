@@ -3,7 +3,10 @@ package net.openhft.performance.tests.network2;
 import net.openhft.chronicle.network2.AcceptorEventHandler;
 import net.openhft.chronicle.network2.WireTcpHandler;
 import net.openhft.chronicle.network2.event.EventGroup;
-import net.openhft.chronicle.wire.*;
+import net.openhft.chronicle.wire.BinaryWire;
+import net.openhft.chronicle.wire.RawWire;
+import net.openhft.chronicle.wire.TextWire;
+import net.openhft.chronicle.wire.Wire;
 import net.openhft.lang.io.ByteBufferBytes;
 import net.openhft.lang.io.Bytes;
 import org.junit.Test;
@@ -64,31 +67,6 @@ public class WireTcpHandlerTest {
         testLatency(desc, wireWrapper, sc[0]);
 
         eg.stop();
-    }
-
-    enum TestKey implements WireKey {
-        key1, key2, key3;
-    }
-
-    static class TestData implements Marshallable {
-        int key1;
-        long key2;
-        double key3;
-
-
-        @Override
-        public void writeMarshallable(WireOut wire) {
-            wire.write(TestKey.key1).int32(key1)
-                    .write(TestKey.key2).int64(key2)
-                    .write(TestKey.key3).float64(key3);
-        }
-
-        @Override
-        public void readMarshallable(WireIn wire) {
-            wire.read(TestKey.key1).int32(i -> key1 = i)
-                    .read(TestKey.key2).int64(i -> key2 = i)
-                    .read(TestKey.key3).float64(i -> key3 = i);
-        }
     }
 
     private static void testLatency(String desc, Function<Bytes, Wire> wireWrapper, SocketChannel... sockets) throws IOException {
