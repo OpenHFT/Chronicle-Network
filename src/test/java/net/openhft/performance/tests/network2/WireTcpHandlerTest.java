@@ -69,6 +69,9 @@ public class WireTcpHandlerTest {
         eg.stop();
     }
 
+
+
+
     private static void testLatency(String desc, Function<Bytes, Wire> wireWrapper, SocketChannel... sockets) throws IOException {
 //        System.out.println("Starting latency test");
         int tests = 500000;

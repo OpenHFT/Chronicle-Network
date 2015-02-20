@@ -42,6 +42,7 @@ public class AcceptorEventHandler implements EventHandler {
     public boolean runOnce()  {
         try {
             SocketChannel sc = ssc.accept();
+
             if (sc != null)
                 eventLoop.addHandler(new TcpEventHandler(sc, tcpHandlerSupplier.get()));
         } catch (Exception e) {
