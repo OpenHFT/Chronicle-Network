@@ -6,7 +6,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Event "Loop" for blocking tasks. Created by peter on 26/01/15.
+ * Event "Loop" for blocking tasks. Created by peter.lawrey on 26/01/15.
  */
 public class BlockingEventLoop implements EventLoop {
     private final EventLoop parent;

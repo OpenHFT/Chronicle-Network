@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static net.openhft.chronicle.network2.event.References.or;
 
 /**
- * Created by peter on 22/01/15.
+ * Created by peter.lawrey on 22/01/15.
  */
 public class VanillaEventLoop implements EventLoop, Runnable {
     private final EventLoop parent;

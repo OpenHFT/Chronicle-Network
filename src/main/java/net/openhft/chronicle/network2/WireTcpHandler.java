@@ -7,7 +7,7 @@ import net.openhft.lang.io.Bytes;
 import java.io.StreamCorruptedException;
 
 /**
- * Created by peter on 22/01/15.
+ * Created by peter.lawrey on 22/01/15.
  */
 public abstract class WireTcpHandler implements TcpHandler {
     protected Wire inWire, outWire;

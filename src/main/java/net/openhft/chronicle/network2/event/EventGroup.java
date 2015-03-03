@@ -6,7 +6,7 @@ import static java.util.concurrent.TimeUnit.*;
 import static net.openhft.chronicle.network2.event.References.or;
 
 /**
- * Created by peter on 22/01/15.
+ * Created by peter.lawrey on 22/01/15.
  */
 public class EventGroup implements EventLoop {
     static final long MONITOR_INTERVAL = NANOSECONDS.convert(100, MILLISECONDS);

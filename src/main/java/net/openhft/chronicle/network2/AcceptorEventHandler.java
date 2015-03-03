@@ -13,7 +13,7 @@ import java.nio.channels.SocketChannel;
 import java.util.function.Supplier;
 
 /**
- * Created by peter on 22/01/15.
+ * Created by peter.lawrey on 22/01/15.
  */
 public class AcceptorEventHandler implements EventHandler {
     private final Supplier<TcpHandler> tcpHandlerSupplier;

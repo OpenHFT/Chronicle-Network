@@ -9,7 +9,7 @@ import net.openhft.performance.tests.vanilla.tcp.EchoClientMain;
 import java.io.IOException;
 
 /**
- * Created by peter on 22/01/15.
+ * Created by peter.lawrey on 22/01/15.
  */
 class EchoHandler implements TcpHandler {
     @Override
