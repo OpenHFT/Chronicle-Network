@@ -1,6 +1,7 @@
 package net.openhft.chronicle.network2;
 
-import net.openhft.lang.io.Bytes;
+
+import net.openhft.chronicle.bytes.Bytes;
 
 /**
  * Created by peter.lawrey on 22/01/15.

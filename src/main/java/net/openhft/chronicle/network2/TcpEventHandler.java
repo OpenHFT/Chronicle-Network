@@ -1,10 +1,9 @@
 package net.openhft.chronicle.network2;
 
+import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network2.event.EventHandler;
 import net.openhft.chronicle.network2.event.EventLoop;
 import net.openhft.chronicle.network2.event.HandlerPriority;
-import net.openhft.lang.io.ByteBufferBytes;
-import net.openhft.lang.io.Bytes;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -19,9 +18,9 @@ public class TcpEventHandler implements EventHandler {
     private final SocketChannel sc;
     private final TcpHandler handler;
     private final ByteBuffer inBB = ByteBuffer.allocateDirect(CAPACITY);
-    private final Bytes inBBB = ByteBufferBytes.wrap(inBB.slice());
+    private final Bytes inBBB = Bytes.wrap(inBB.slice());
     private final ByteBuffer outBB = ByteBuffer.allocateDirect(CAPACITY);
-    private final Bytes outBBB = ByteBufferBytes.wrap(outBB.slice());
+    private final Bytes outBBB = Bytes.wrap(outBB.slice());
 
     public TcpEventHandler(SocketChannel sc, TcpHandler handler) throws IOException {
         this.sc = sc;
@@ -32,8 +31,9 @@ public class TcpEventHandler implements EventHandler {
         outBB.limit(0);
 
         // allow these to be used by another thread.
-        inBBB.clearThreadAssociation();
-        outBBB.clearThreadAssociation();
+        // todo check that this can be commented out
+        // inBBB.clearThreadAssociation();
+        //  outBBB.clearThreadAssociation();
     }
 
     @Override

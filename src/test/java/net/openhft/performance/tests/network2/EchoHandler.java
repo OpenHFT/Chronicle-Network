@@ -1,9 +1,10 @@
 package net.openhft.performance.tests.network2;
 
+import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network2.AcceptorEventHandler;
 import net.openhft.chronicle.network2.TcpHandler;
 import net.openhft.chronicle.network2.event.EventGroup;
-import net.openhft.lang.io.Bytes;
+
 import net.openhft.performance.tests.vanilla.tcp.EchoClientMain;
 
 import java.io.IOException;

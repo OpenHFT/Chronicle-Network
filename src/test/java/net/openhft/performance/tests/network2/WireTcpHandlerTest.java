@@ -1,5 +1,6 @@
 package net.openhft.performance.tests.network2;
 
+import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network2.AcceptorEventHandler;
 import net.openhft.chronicle.network2.WireTcpHandler;
 import net.openhft.chronicle.network2.event.EventGroup;
@@ -8,7 +9,6 @@ import net.openhft.chronicle.wire.RawWire;
 import net.openhft.chronicle.wire.TextWire;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.lang.io.ByteBufferBytes;
-import net.openhft.lang.io.Bytes;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -78,11 +78,11 @@ public class WireTcpHandlerTest {
         long[] times = new long[tests * sockets.length];
         int count = 0;
         ByteBuffer out = ByteBuffer.allocateDirect(64 * 1024);
-        Bytes outBytes = ByteBufferBytes.wrap(out);
+        Bytes outBytes = Bytes.wrap(out);
         Wire outWire = wireWrapper.apply(outBytes);
 
         ByteBuffer in = ByteBuffer.allocateDirect(64 * 1024);
-        Bytes inBytes = ByteBufferBytes.wrap(in);
+        Bytes inBytes = Bytes.wrap(in);
         Wire inWire = wireWrapper.apply(inBytes);
         TestData td = new TestData();
         TestData td2 = new TestData();

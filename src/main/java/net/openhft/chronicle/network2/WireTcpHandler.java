@@ -2,7 +2,8 @@ package net.openhft.chronicle.network2;
 
 import net.openhft.chronicle.wire.TextWire;
 import net.openhft.chronicle.wire.Wire;
-import net.openhft.lang.io.Bytes;
+import net.openhft.chronicle.bytes.Bytes;
+
 
 import java.io.StreamCorruptedException;
 
