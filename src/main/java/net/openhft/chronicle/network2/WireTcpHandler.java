@@ -1,9 +1,8 @@
 package net.openhft.chronicle.network2;
 
+import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.wire.TextWire;
 import net.openhft.chronicle.wire.Wire;
-import net.openhft.chronicle.bytes.Bytes;
-
 
 import java.io.StreamCorruptedException;
 
@@ -45,16 +44,34 @@ public abstract class WireTcpHandler implements TcpHandler {
         } while (in.remaining() >= 2 && out.remaining() > out.capacity() / 2);
     }
 
+    private boolean recreateWire;
+
+    protected void recreateWire(boolean recreateWire) {
+        this.recreateWire = recreateWire;
+    }
+
     private void checkWires(Bytes in, Bytes out) {
-        if (inWire == null || inWire.bytes() != in)
+
+        if (recreateWire) {
+            recreateWire = false;
             inWire = createWriteFor(in);
-        if (outWire == null || outWire.bytes() != out)
             outWire = createWriteFor(out);
+            return;
+        }
+
+        if ((inWire == null || inWire.bytes() != in)) {
+            inWire = createWriteFor(in);
+            recreateWire = false;
+        }
+
+        if ((outWire == null || outWire.bytes() != out)) {
+            outWire = createWriteFor(out);
+            recreateWire = false;
+        }
     }
 
     protected Wire createWriteFor(Bytes bytes) {
         return new TextWire(bytes);
-
     }
 
     /**
