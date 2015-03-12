@@ -11,6 +11,10 @@ import static net.openhft.chronicle.network2.event.References.or;
 public class EventGroup implements EventLoop {
     static final long MONITOR_INTERVAL = NANOSECONDS.convert(100, MILLISECONDS);
 
+
+    public static boolean IS_DEBUG = java.lang.management.ManagementFactory.getRuntimeMXBean().
+            getInputArguments().toString().indexOf("jdwp") >= 0;
+
     final EventLoop monitor = new MonitorEventLoop(this, new LightPauser(LightPauser.NO_BUSY_PERIOD, NANOSECONDS.convert(1, SECONDS)));
     final VanillaEventLoop core = new VanillaEventLoop(this, "core",
             new LightPauser(NANOSECONDS.convert(20, MICROSECONDS), NANOSECONDS.convert(200, MICROSECONDS)),
@@ -56,7 +60,8 @@ public class EventGroup implements EventLoop {
         public boolean runOnce() {
             long blockingTime = System.nanoTime() - core.loopStartNS();
             long blockingInterval = blockingTime / (MONITOR_INTERVAL / 2);
-            if (blockingInterval > lastInterval) {
+
+            if (blockingInterval > lastInterval && !IS_DEBUG) {
                 core.dumpRunningState(core.name() + " thread has blocked for " + MILLISECONDS.convert(blockingTime, NANOSECONDS) + " ms.");
             } else {
                 lastInterval = Math.max(1, blockingInterval);
