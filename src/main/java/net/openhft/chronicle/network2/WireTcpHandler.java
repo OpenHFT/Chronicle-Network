@@ -12,11 +12,24 @@ import java.io.StreamCorruptedException;
 public abstract class WireTcpHandler implements TcpHandler {
     protected Wire inWire, outWire;
 
+
+
+
     @Override
     public void process(Bytes in, Bytes out) {
         checkWires(in, out);
         if (in.remaining() < 2) {
+            long outPos = out.position();
+            out.skip(2);
             publish(outWire);
+
+            long written = out.position() - outPos - 2;
+            if (written == 0) {
+                out.position(outPos);
+                return;
+            }
+            assert written < 1 << 16;
+            out.writeUnsignedShort(outPos, (int) written);
             return;
         }
         // process all messages in this batch, provided there is plenty of output space.

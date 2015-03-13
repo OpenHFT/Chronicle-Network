@@ -16,18 +16,13 @@
  * limitations under the License.
  */
 
-package net.openhft.chronicle.network2;
+package net.openhft.chronicle.network2.event;
 
-import net.openhft.chronicle.wire.Wire;
-
-import java.io.StreamCorruptedException;
+import net.openhft.chronicle.network2.WireHandler;
 
 /**
  * Created by Rob Austin
  */
-public interface WireHandler {
-
-    void process(Wire in, Wire out) throws StreamCorruptedException;
-
-
+public interface WireHandlers {
+    void add(WireHandler handler);
 }
