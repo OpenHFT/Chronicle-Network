@@ -26,8 +26,5 @@ import java.io.StreamCorruptedException;
  * Created by Rob Austin
  */
 public interface WireHandler {
-
     void process(Wire in, Wire out) throws StreamCorruptedException;
-
-
 }
