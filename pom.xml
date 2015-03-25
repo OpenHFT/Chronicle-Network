@@ -71,12 +71,6 @@
             </dependency>
 
             <dependency>
-                <groupId>net.openhft</groupId>
-                <artifactId>lang</artifactId>
-                <version>6.6.1</version>
-            </dependency>
-
-            <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-all</artifactId>
                 <version>4.0.25.Final</version>
@@ -94,6 +88,11 @@
                 <version>1.0.1-alpha-SNAPSHOT</version>
             </dependency>
 
+            <dependency>
+                <groupId>net.openhft</groupId>
+                <artifactId>lang</artifactId>
+                <version>6.6.1</version>
+            </dependency>
         </dependencies>
 
     </dependencyManagement>
@@ -107,23 +106,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.glassfish.grizzly</groupId>
-            <artifactId>grizzly-framework</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>uk.co.real-logic</groupId>
-            <artifactId>Agrona</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.mina</groupId>
-            <artifactId>mina-core</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-all</artifactId>
+            <groupId>net.openhft</groupId>
+            <artifactId>lang</artifactId>
         </dependency>
 
         <dependency>
@@ -134,11 +118,6 @@
         <dependency>
             <groupId>com.intellij</groupId>
             <artifactId>annotations</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>net.openhft</groupId>
-            <artifactId>lang</artifactId>
         </dependency>
 
         <dependency>
@@ -172,7 +151,29 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.glassfish.grizzly</groupId>
+            <artifactId>grizzly-framework</artifactId>
+            <scope>test</scope>
+        </dependency>
 
+        <dependency>
+            <groupId>uk.co.real-logic</groupId>
+            <artifactId>Agrona</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.mina</groupId>
+            <artifactId>mina-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
 
