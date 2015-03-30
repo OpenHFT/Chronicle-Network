@@ -93,12 +93,22 @@
                 <artifactId>lang</artifactId>
                 <version>6.6.1</version>
             </dependency>
+
+            <dependency>
+                <groupId>net.openhft</groupId>
+                <artifactId>chronicle-core</artifactId>
+                <version>1.0.0-alpha-SNAPSHOT</version>
+            </dependency>
         </dependencies>
 
     </dependencyManagement>
 
     <dependencies>
 
+        <dependency>
+            <groupId>net.openhft</groupId>
+            <artifactId>chronicle-core</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>net.openhft</groupId>
