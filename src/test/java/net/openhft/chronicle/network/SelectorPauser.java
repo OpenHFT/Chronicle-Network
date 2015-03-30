@@ -1,4 +1,4 @@
-package net.openhft.chronicle.network2;
+package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.network.internal.netty.NettyBasedNetworkHub;
 import net.openhft.lang.thread.Pauser;
