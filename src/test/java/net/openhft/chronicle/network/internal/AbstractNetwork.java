@@ -97,7 +97,7 @@ public abstract class AbstractNetwork implements Closeable {
         if (!useJavaNIOSelectionKeys) {
             closeables.add(new Closeable() {
                                @Override
-                               public void close() throws IOException {
+                               public void close() {
                                    {
                                        SelectionKey[] keys = selectedKeys.flip();
                                        for (int i = 0; i < keys.length && keys[i] != null; i++) {
