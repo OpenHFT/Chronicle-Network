@@ -43,14 +43,26 @@ public abstract class WireTcpHandler implements TcpHandler {
                 try {
                     out.skip(2);
                     in.limit(end);
-                    process(inWire, outWire);
+
+                    final long position = inWire.bytes().position();
+                    try {
+                        process(inWire, outWire);
+                    } finally {
+                        inWire.bytes().position(position + length);
+                    }
+
+
                     long written = out.position() - outPos - 2;
+
                     if (written == 0) {
                         out.position(outPos);
                         return;
                     }
-                    assert written < 1 << 16;
+
+
+                    assert written < 1024;
                     out.writeUnsignedShort(outPos, (int) written);
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
