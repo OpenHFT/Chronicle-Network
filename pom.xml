@@ -50,7 +50,7 @@
                 <groupId>net.openhft</groupId>
                 <artifactId>chronicle-bom</artifactId>
                 <type>pom</type>
-                <version>1.0.0</version>
+                <version>1.0.1</version>
                 <scope>import</scope>
             </dependency>
 
@@ -63,7 +63,6 @@
         <dependency>
             <groupId>net.openhft</groupId>
             <artifactId>chronicle-threads</artifactId>
-            <version>1.0.0-alpha-SNAPSHOT</version>
         </dependency>
 
         <dependency>
