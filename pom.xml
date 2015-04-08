@@ -24,7 +24,7 @@
     <parent>
         <groupId>net.openhft</groupId>
         <artifactId>java-parent-pom</artifactId>
-        <version>1.1.3</version>
+        <version>1.1.4</version>
         <relativePath/>
     </parent>
 
@@ -33,7 +33,6 @@
     <version>1.0.0-alpha-SNAPSHOT</version>
     <name>OpenHFT/Chronicle-Network</name>
     <description>Chronicle-Network</description>
-
 
     <dependencyManagement>
         <dependencies>
@@ -50,7 +49,7 @@
                 <groupId>net.openhft</groupId>
                 <artifactId>chronicle-bom</artifactId>
                 <type>pom</type>
-                <version>1.0.1</version>
+                <version>1.0.2-SNAPSHOT</version>
                 <scope>import</scope>
             </dependency>
 
@@ -60,14 +59,15 @@
 
     <dependencies>
 
-        <dependency>
-            <groupId>net.openhft</groupId>
-            <artifactId>chronicle-threads</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>net.openhft</groupId>
             <artifactId>chronicle-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>net.openhft</groupId>
+            <artifactId>chronicle-threads</artifactId>
         </dependency>
 
         <dependency>
@@ -79,7 +79,6 @@
             <groupId>net.openhft</groupId>
             <artifactId>chronicle-wire</artifactId>
         </dependency>
-
 
         <dependency>
             <groupId>org.slf4j</groupId>
