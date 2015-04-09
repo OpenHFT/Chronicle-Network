@@ -6,6 +6,7 @@ import net.openhft.chronicle.network.event.HandlerPriority;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
@@ -15,7 +16,7 @@ import java.util.function.Supplier;
 /**
  * Created by peter.lawrey on 22/01/15.
  */
-public class AcceptorEventHandler implements EventHandler {
+public class AcceptorEventHandler implements EventHandler,Closeable {
     private final Supplier<TcpHandler> tcpHandlerSupplier;
     private EventLoop eventLoop;
     private final ServerSocketChannel ssc;
@@ -64,5 +65,10 @@ public class AcceptorEventHandler implements EventHandler {
     @Override
     public boolean isDead() {
         return !ssc.isOpen();
+    }
+
+    @Override
+    public void close() throws IOException {
+        ssc.close();
     }
 }
