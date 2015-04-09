@@ -1,2 +1,5 @@
+net.openhft.chronicle.engine.client
+net.openhft.chronicle.hash
+net.openhft.chronicle.hash.impl.util
 net.openhft.chronicle.network
 net.openhft.chronicle.network.event
