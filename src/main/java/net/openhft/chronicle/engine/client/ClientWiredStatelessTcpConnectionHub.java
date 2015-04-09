@@ -18,7 +18,6 @@
 
 package net.openhft.chronicle.engine.client;
 
-import com.sun.jdi.connect.spi.ClosedConnectionException;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.hash.RemoteCallTimeoutException;
 import net.openhft.chronicle.hash.impl.util.CloseablesManager;
@@ -82,7 +81,6 @@ public class ClientWiredStatelessTcpConnectionHub {
     // set up in the header
     private long startTime;
     private boolean doHandShaking;
-
 
 
     public ClientWiredStatelessTcpConnectionHub(
@@ -296,8 +294,7 @@ public class ClientWiredStatelessTcpConnectionHub {
                     writeSocket(wire, timeoutTime);
                     break;
 
-                } catch (@NotNull java.nio.channels.ClosedChannelException |
-                        ClosedConnectionException e) {
+                } catch (java.nio.channels.ClosedChannelException e) {
                     checkTimeout(timeoutTime);
                     lazyConnect(timeoutMs, remoteAddress);
                 }
@@ -695,7 +692,7 @@ public class ClientWiredStatelessTcpConnectionHub {
     }
 
 
-    public  Wire outWire() {
+    public Wire outWire() {
         assert outBytesLock().isHeldByCurrentThread();
         return outWire;
     }
