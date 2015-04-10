@@ -1,10 +1,9 @@
 package net.openhft.chronicle.network.event;
 
 
-import com.sun.xml.internal.ws.Closeable;
 import net.openhft.chronicle.threads.LightPauser;
 
-import javax.xml.ws.WebServiceException;
+import java.io.IOException;
 
 import static java.util.concurrent.TimeUnit.*;
 import static net.openhft.chronicle.network.event.References.or;
@@ -58,7 +57,7 @@ public class EventGroup implements EventLoop  {
     }
 
     @Override
-    public void close() throws WebServiceException {
+    public void close() throws IOException {
         stop();
         monitor.close();
         blocking.close();

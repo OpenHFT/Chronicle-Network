@@ -1,11 +1,11 @@
 package net.openhft.chronicle.network.event;
 
 
-import com.sun.xml.internal.ws.Closeable;
 import net.openhft.chronicle.threads.NamedThreadFactory;
 import net.openhft.chronicle.threads.Pauser;
 
 import javax.xml.ws.WebServiceException;
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;

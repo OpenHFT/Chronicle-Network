@@ -1,11 +1,9 @@
 package net.openhft.chronicle.network.event;
 
 
-
 import net.openhft.chronicle.threads.NamedThreadFactory;
 import net.openhft.chronicle.threads.Pauser;
 
-import javax.xml.ws.WebServiceException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -206,7 +204,7 @@ public class VanillaEventLoop implements EventLoop, Runnable {
     }
 
     @Override
-    public void close() throws WebServiceException {
+    public void close() {
         service.shutdown();
         try {
             if (service.awaitTermination(1000, TimeUnit.MILLISECONDS))
