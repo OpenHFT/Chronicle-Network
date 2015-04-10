@@ -149,7 +149,7 @@ public class ClientWiredStatelessTcpConnectionHub {
 
     private void checkTimeout(long timeoutTime) {
         if (timeoutTime < System.currentTimeMillis() && !IS_DEBUG)
-            throw new RemoteCallTimeoutException();
+            throw new RemoteCallTimeoutException("timeout=" + timeoutTime + "ms");
     }
 
     protected synchronized void lazyConnect(final long timeoutMs,
@@ -715,7 +715,7 @@ public class ClientWiredStatelessTcpConnectionHub {
     /**
      * mark the location of the outWire size
      *
-     * @param outWire
+     * @param outWire the wire to be marked
      */
     public void markSize(Wire outWire) {
 

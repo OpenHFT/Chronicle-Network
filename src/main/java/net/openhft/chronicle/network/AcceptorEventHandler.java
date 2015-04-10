@@ -70,6 +70,7 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
         try {
 
             ssc.close();
+
         } catch (IOException ignored) {
 
         }

@@ -105,6 +105,11 @@ public abstract class WireTcpHandler implements TcpHandler {
      * Process an incoming request
      */
 
+    /**
+     * @param in the wire to be processed
+     * @param out the result of processing the {@code in}
+     * @throws StreamCorruptedException if the wire is corrupt
+     */
     protected abstract void process(Wire in, Wire out) throws StreamCorruptedException;
 
     /**
