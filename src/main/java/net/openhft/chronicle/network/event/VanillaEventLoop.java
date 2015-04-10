@@ -39,7 +39,7 @@ public class VanillaEventLoop implements EventLoop, Runnable {
         this.name = name;
         this.pauser = pauser;
         this.timerIntervalNS = timerIntervalNS;
-        service = Executors.newSingleThreadExecutor(new NamedThreadFactory(name));
+        service = Executors.newSingleThreadExecutor(new NamedThreadFactory(name,true));
     }
 
     public void start() {
