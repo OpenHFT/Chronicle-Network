@@ -1,19 +1,21 @@
 package net.openhft.chronicle.network.event;
 
 
-
+import com.sun.xml.internal.ws.Closeable;
 import net.openhft.chronicle.threads.NamedThreadFactory;
 import net.openhft.chronicle.threads.Pauser;
 
+import javax.xml.ws.WebServiceException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by peter.lawrey on 22/01/15.
  */
-public class MonitorEventLoop implements EventLoop, Runnable {
+public class MonitorEventLoop implements EventLoop, Runnable, Closeable {
     final ExecutorService service = Executors.newSingleThreadExecutor(new NamedThreadFactory("event-loop-monitor", true));
 
     private final EventLoop parent;
@@ -76,5 +78,17 @@ public class MonitorEventLoop implements EventLoop, Runnable {
                 handlers.remove(i--);
         }
         return busy;
+    }
+
+    @Override
+    public void close() throws WebServiceException {
+        service.shutdown();
+        try {
+            if (service.awaitTermination(1000, TimeUnit.MILLISECONDS))
+                service.shutdownNow();
+            service.awaitTermination(100, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            service.shutdownNow();
+        }
     }
 }

@@ -52,7 +52,6 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
         } catch (AsynchronousCloseException e) {
             closeSocket();
         } catch (Exception e) {
-
             LOG.error("", e);
             closeSocket();
         }
@@ -62,15 +61,12 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
     private void closeSocket() {
         try {
             ssc.socket().close();
-
         } catch (IOException ignored) {
 
         }
 
         try {
-
             ssc.close();
-
         } catch (IOException ignored) {
 
         }

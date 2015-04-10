@@ -233,6 +233,7 @@ public class ClientWiredStatelessTcpConnectionHub {
         if (closeables != null)
             closeables.closeQuietly();
 
+
         closeables = null;
         clientChannel = null;
 

@@ -5,10 +5,12 @@ package net.openhft.chronicle.network.event;
 import net.openhft.chronicle.threads.NamedThreadFactory;
 import net.openhft.chronicle.threads.Pauser;
 
+import javax.xml.ws.WebServiceException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static net.openhft.chronicle.network.event.References.or;
@@ -201,5 +203,17 @@ public class VanillaEventLoop implements EventLoop, Runnable {
         }
         // TODO use a logger.
         System.out.println(out);
+    }
+
+    @Override
+    public void close() throws WebServiceException {
+        service.shutdown();
+        try {
+            if (service.awaitTermination(1000, TimeUnit.MILLISECONDS))
+                service.shutdownNow();
+             service.awaitTermination(100, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            service.shutdownNow();
+        }
     }
 }
