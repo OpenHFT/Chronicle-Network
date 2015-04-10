@@ -1,6 +1,7 @@
 package net.openhft.chronicle.network.event;
 
-import com.sun.xml.internal.ws.Closeable;
+
+import java.io.Closeable;
 
 /**
  * Created by peter.lawrey on 22/01/15.
