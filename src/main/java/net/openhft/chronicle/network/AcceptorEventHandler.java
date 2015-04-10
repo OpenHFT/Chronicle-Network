@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.function.Supplier;
@@ -42,19 +43,36 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
     @Override
     public boolean runOnce()  {
         try {
+
             SocketChannel sc = ssc.accept();
 
             if (sc != null)
                 eventLoop.addHandler(new TcpEventHandler(sc, tcpHandlerSupplier.get()));
-        } catch (Exception e) {
-            LOG.error("", e);
-            try {
-                ssc.close();
-            } catch (IOException ignored) {
 
-            }
+        } catch (AsynchronousCloseException e) {
+            closeSocket();
+        } catch (Exception e) {
+
+            LOG.error("", e);
+            closeSocket();
         }
         return false;
+    }
+
+    private void closeSocket() {
+        try {
+            ssc.socket().close();
+
+        } catch (IOException ignored) {
+
+        }
+
+        try {
+
+            ssc.close();
+        } catch (IOException ignored) {
+
+        }
     }
 
     @Override
@@ -69,6 +87,6 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
 
     @Override
     public void close() throws IOException {
-        ssc.close();
+        closeSocket();
     }
 }

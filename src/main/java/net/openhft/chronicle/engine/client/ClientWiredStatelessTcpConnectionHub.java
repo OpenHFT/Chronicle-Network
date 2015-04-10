@@ -114,7 +114,6 @@ public class ClientWiredStatelessTcpConnectionHub {
             if (socketChannel.connect(remoteAddress))
                 clientChannel = socketChannel;
 
-
         } catch (IOException e) {
             LOG.error("", e);
             if (closeables != null) closeables.closeQuietly();
