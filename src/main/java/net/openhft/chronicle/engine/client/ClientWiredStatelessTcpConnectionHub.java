@@ -333,11 +333,6 @@ public class ClientWiredStatelessTcpConnectionHub {
 
             final Wire wire = proxyReplyThrowable(timeoutTime, tid);
 
-            // handle an exception if the message contains the isException field
-            //  if (wire.read(() -> "isException").bool()) {
-            //     final String text = wire.read(() -> "exception").text();
-            //    throw new RuntimeException(text);
-            // }
             return wire;
         } catch (IOException e) {
             close();
@@ -380,29 +375,24 @@ public class ClientWiredStatelessTcpConnectionHub {
 
                 try {
                     assert messageSize > 0 : "Invalid message size " + messageSize;
-                    assert messageSize < 1024 : "Invalid message size " + messageSize;
+                    assert messageSize < 1<<30 : "Invalid message size " + messageSize;
                 } catch (AssertionError e) {
-                    assert messageSize < 1024 : "Invalid message size " + messageSize;
+                    assert messageSize < 1<<30 : "Invalid message size " + messageSize;
                 }
+
                 final int remainingBytes0 = messageSize;
                 readSocket(remainingBytes0, timeoutTime);
-
 
                 bytes.skip(SIZE_OF_SIZE);
                 bytes.limit(bytes.position() + messageSize);
 
-
                 System.out.println("\n--------------------------------\nclient reads\n" +
-
                         Wires.fromSizePrefixedBlobs(bytes));
-
 
                 int headerlen = bytes.readVolatileInt();
 
                 assert !Wires.isData(headerlen);
-
                 long tid0 = intWire.read(CoreFields.tid).int64();
-
 
                 // if the transaction id is for this thread process it
                 if (tid0 == tid) {
@@ -469,7 +459,7 @@ public class ClientWiredStatelessTcpConnectionHub {
         /// don't call inBytesLock.isHeldByCurrentThread() as it not atomic
         inBytesLock().unlock();
 
-        // allows another thread to enter hear
+        // allows another thread to enter here
         inBytesLock().lock();
     }
 

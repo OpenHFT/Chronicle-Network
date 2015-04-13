@@ -1,5 +1,6 @@
 package net.openhft.chronicle.map;
 
+import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.engine.client.ClientWiredStatelessTcpConnectionHub;
 import net.openhft.chronicle.engine.client.ClientWiredStatelessTcpConnectionHub.CoreFields;
 import net.openhft.chronicle.engine.client.ParameterizeWireKey;
@@ -80,10 +81,10 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
     protected void checkIsData(Wire wireIn) {
         int datalen = wireIn.bytes().readVolatileInt();
 
-        //  if (Wires.isData(datalen))
-        //    throw new IllegalStateException("expecting a data blob, from ->" + Bytes.toDebugString
-        //          (wireIn.bytes(), 0, wireIn.bytes().limit()));
-        //
+        if (!Wires.isData(datalen))
+            throw new IllegalStateException("expecting a data blob, from ->" + Bytes.toDebugString
+                    (wireIn.bytes(), 0, wireIn.bytes().limit()));
+
     }
 
     protected void writeField(ValueOut wireOut, Object value) {
