@@ -162,10 +162,10 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
 
     @SuppressWarnings("SameParameterValue")
     protected boolean proxyReturnBoolean(
-            @NotNull final WireKey eventId, Object... args) {
+            @NotNull final E eventId, Object... args) {
         final long startTime = System.currentTimeMillis();
 
-        final long tid = sendEvent(startTime, eventId, toParameters((E) eventId, args));
+        final long tid = sendEvent(startTime, eventId, toParameters(eventId, args));
         return readBoolean(tid, startTime);
     }
 
@@ -236,5 +236,5 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         }
     }
 
-    abstract protected Consumer<ValueOut> toParameters(@NotNull final ParameterizeWireKey eventId, Object... args);
+    abstract protected Consumer<ValueOut> toParameters(@NotNull final E eventId, Object... args);
 }
