@@ -16,15 +16,28 @@ import java.util.function.Consumer;
 public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
 
     protected final ClientWiredStatelessTcpConnectionHub hub;
+    private final long cid;
+    protected final String channelName;
     protected String csp;
 
     static final WriteMarshallable EMPTY = wire -> {
         // nothing
     };
 
-    public AbstactStatelessClient(@NotNull final String channelName, ClientWiredStatelessTcpConnectionHub hub) {
-        this.csp = "//" + channelName + "#MAP";
+    /**
+     * @param channelName
+     * @param hub
+     * @param type        the type of wire handler for example "MAP" or "QUEUE"
+     * @param cid         used by proxies such as the entry-set
+     */
+    public AbstactStatelessClient(@NotNull final String channelName,
+                                  @NotNull final ClientWiredStatelessTcpConnectionHub hub,
+                                  @NotNull final String type,
+                                  long cid) {
+        this.cid = cid;
+        this.csp = "//" + channelName + "#" + type;
         this.hub = hub;
+        this.channelName = channelName;
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -32,6 +45,20 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         final long startTime = System.currentTimeMillis();
         long tid = sendEvent(startTime, eventId, null);
         return readLong(tid, startTime);
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    protected int proxyReturnInt(@NotNull final WireKey eventId) {
+        final long startTime = System.currentTimeMillis();
+        long tid = sendEvent(startTime, eventId, null);
+        return readInt(tid, startTime);
+    }
+
+    public void proxyReturnWireConsumer(@NotNull final WireKey eventId,
+                                        @NotNull final Consumer<WireIn> consumer) {
+        final long startTime = System.currentTimeMillis();
+        long tid = sendEvent(startTime, eventId, null);
+        readWire(tid, startTime, consumer);
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -75,7 +102,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
     }
 
     protected long writeHeader(long startTime) {
-        return hub.writeHeader(startTime, hub.outWire(), csp);
+        return hub.writeHeader(startTime, hub.outWire(), csp, cid);
     }
 
     protected void checkIsData(Wire wireIn) {
@@ -137,11 +164,20 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
     protected boolean proxyReturnBoolean(
             @NotNull final WireKey eventId, Object... args) {
         final long startTime = System.currentTimeMillis();
+
         final long tid = sendEvent(startTime, eventId, toParameters((E) eventId, args));
+        return readBoolean(tid, startTime);
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    protected boolean proxyReturnBoolean(@NotNull final WireKey eventId) {
+        final long startTime = System.currentTimeMillis();
+
+
+        final long tid = sendEvent(startTime, eventId, null);
         return readBoolean(tid, startTime);
 
     }
-
 
     protected void readVoid(long tid, long startTime) {
         long timeoutTime = startTime + hub.timeoutMs;
@@ -170,6 +206,35 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         }
     }
 
+    private int readInt(long tid, long startTime) {
+        assert !hub.outBytesLock().isHeldByCurrentThread();
+        final long timeoutTime = startTime + hub.timeoutMs;
+
+        // receive
+        hub.inBytesLock().lock();
+        try {
+            final Wire wire = hub.proxyReply(timeoutTime, tid);
+            checkIsData(wire);
+            return wire.read(CoreFields.reply).int32();
+        } finally {
+            hub.inBytesLock().unlock();
+        }
+    }
+
+    private void readWire(long tid, long startTime, Consumer<WireIn> c) {
+        assert !hub.outBytesLock().isHeldByCurrentThread();
+        final long timeoutTime = startTime + hub.timeoutMs;
+
+        // receive
+        hub.inBytesLock().lock();
+        try {
+            final Wire wire = hub.proxyReply(timeoutTime, tid);
+            checkIsData(wire);
+            c.accept(wire);
+        } finally {
+            hub.inBytesLock().unlock();
+        }
+    }
 
     abstract protected Consumer<ValueOut> toParameters(@NotNull final ParameterizeWireKey eventId, Object... args);
 }

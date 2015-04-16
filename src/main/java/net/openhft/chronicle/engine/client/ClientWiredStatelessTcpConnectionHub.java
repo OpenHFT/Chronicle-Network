@@ -86,7 +86,6 @@ public class ClientWiredStatelessTcpConnectionHub {
     public ClientWiredStatelessTcpConnectionHub(
             byte localIdentifier,
             boolean doHandShaking,
-            String cspType,
             InetSocketAddress remoteAddress,
             int tcpBufferSize,
             long timeout) {
@@ -96,9 +95,9 @@ public class ClientWiredStatelessTcpConnectionHub {
 
         this.tcpBufferSize = tcpBufferSize;
         this.remoteAddress = remoteAddress;
-        this.name = cspType + " connected to " + remoteAddress.toString();
+        this.name = " connected to " + remoteAddress.toString();
         this.timeoutMs = timeout;
-        this.type = cspType;
+
         attemptConnect(remoteAddress);
 
     }
@@ -259,7 +258,7 @@ public class ClientWiredStatelessTcpConnectionHub {
     @NotNull
     public String serverApplicationVersion(@NotNull String csp) {
         TextWire wire = new TextWire(Bytes.elasticByteBuffer());
-        String result = proxyReturnString(Events.getApplicationVersion, wire, csp);
+        String result = proxyReturnString(Events.getApplicationVersion, wire, csp, 0);
         return (result == null) ? "" : result;
     }
 
@@ -375,9 +374,9 @@ public class ClientWiredStatelessTcpConnectionHub {
 
                 try {
                     assert messageSize > 0 : "Invalid message size " + messageSize;
-                    assert messageSize < 1<<30 : "Invalid message size " + messageSize;
+                    assert messageSize < 1 << 30 : "Invalid message size " + messageSize;
                 } catch (AssertionError e) {
-                    assert messageSize < 1<<30 : "Invalid message size " + messageSize;
+                    assert messageSize < 1 << 30 : "Invalid message size " + messageSize;
                 }
 
                 final int remainingBytes0 = messageSize;
@@ -617,10 +616,19 @@ public class ClientWiredStatelessTcpConnectionHub {
     }
 
 
-    private long proxySend(@NotNull final WireKey methodName,
+    /**
+     * @param eventName the event name
+     * @param startTime  the time the message was sent
+     * @param wire
+     * @param csp        the csp describing this nammed channel
+     * @param cid        if the cid != 0 the cid will be used instead of the csp
+     * @return the tid
+     */
+    private long proxySend(@NotNull final WireKey eventName,
                            final long startTime,
                            @NotNull final Wire wire,
-                           @NotNull final String csp) {
+                           @NotNull final String csp,
+                           long cid) {
 
         assert outBytesLock().isHeldByCurrentThread();
         assert !inBytesLock().isHeldByCurrentThread();
@@ -628,9 +636,9 @@ public class ClientWiredStatelessTcpConnectionHub {
         // send
         outBytesLock().lock();
         try {
-            long tid = writeHeader(startTime, wire, csp);
+            long tid = writeHeader(startTime, wire, csp, cid);
             wire.writeDocument(false, wireOut -> {
-                wireOut.writeEventName(methodName);
+                wireOut.writeEventName(eventName);
                 wireOut.writeValue().marshallable(w -> {
                 });
             });
@@ -644,19 +652,19 @@ public class ClientWiredStatelessTcpConnectionHub {
 
     @SuppressWarnings("SameParameterValue")
     @Nullable
-    public String proxyReturnString(@NotNull final WireKey messageId, String csp) {
-        return proxyReturnString(messageId, outWire, csp);
+    public String proxyReturnString(@NotNull final WireKey messageId, String csp, long cid) {
+        return proxyReturnString(messageId, outWire, csp, cid);
     }
 
     @SuppressWarnings("SameParameterValue")
     @Nullable
-    String proxyReturnString(@NotNull final WireKey eventId, Wire outWire, String csp) {
+    String proxyReturnString(@NotNull final WireKey eventId, Wire outWire, String csp, long cid) {
         final long startTime = System.currentTimeMillis();
         long tid;
 
         outBytesLock().lock();
         try {
-            tid = proxySend(eventId, startTime, outWire, csp);
+            tid = proxySend(eventId, startTime, outWire, csp, cid);
         } finally {
             outBytesLock().unlock();
         }
@@ -687,7 +695,7 @@ public class ClientWiredStatelessTcpConnectionHub {
         return outWire;
     }
 
-    public long writeHeader(long startTime, Wire wire, String csp) {
+    public long writeHeader(long startTime, Wire wire, String csp, long cid) {
 
         assert outBytesLock().isHeldByCurrentThread();
         markSize(wire);
@@ -695,7 +703,10 @@ public class ClientWiredStatelessTcpConnectionHub {
 
         long tid = nextUniqueTransaction(startTime);
         wire.writeDocument(true, wireOut -> {
-            wireOut.write(CoreFields.csp).text(csp);
+            if (cid == 0)
+                wireOut.write(CoreFields.csp).text(csp);
+            else
+                wireOut.write(CoreFields.cid).int64(cid);
             wireOut.write(CoreFields.tid).int64(tid);
         });
 
@@ -731,6 +742,6 @@ public class ClientWiredStatelessTcpConnectionHub {
     public enum CoreFields implements WireKey {
         tid,
         csp,
-        reply
+        cid, reply
     }
 }
