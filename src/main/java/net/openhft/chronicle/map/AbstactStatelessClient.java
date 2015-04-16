@@ -161,7 +161,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
     }
 
     @SuppressWarnings("SameParameterValue")
-    protected boolean proxyReturnBoolean(
+    protected boolean proxyReturnBooleanArgs(
             @NotNull final E eventId, Object... args) {
         final long startTime = System.currentTimeMillis();
 
