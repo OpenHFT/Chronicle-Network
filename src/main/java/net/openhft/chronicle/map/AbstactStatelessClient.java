@@ -114,15 +114,11 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
 
     }
 
-    protected void writeField(ValueOut wireOut, Object value) {
+    protected static void writeField(ValueOut wireOut, Object value) {
         writeField(value, wireOut);
     }
 
-    private void writeField(Object value, ValueOut valueOut) {
-
-        assert hub.outBytesLock().isHeldByCurrentThread();
-        assert !hub.inBytesLock().isHeldByCurrentThread();
-
+    private static void writeField(Object value, ValueOut valueOut) {
 
         if (value instanceof Byte)
             valueOut.int8((Byte) value);
@@ -236,5 +232,33 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         }
     }
 
-    abstract protected Consumer<ValueOut> toParameters(@NotNull final E eventId, Object... args);
+
+    public static <E extends ParameterizeWireKey> Consumer<ValueOut> toParameters
+            (@NotNull E eventId,
+             @Nullable Object... args) {
+
+        return out -> {
+            final WireKey[] paramNames = eventId.params();
+
+            if (paramNames.length == 1) {
+                writeField(out, args[0]);
+                return;
+            }
+
+            assert args.length == paramNames.length :
+                    "methodName=" + eventId +
+                            ", args.length=" + args.length +
+                            ", paramNames.length=" + paramNames.length;
+
+            out.marshallable(m -> {
+
+                for (int i = 0; i < paramNames.length; i++) {
+                    final ValueOut vo = m.write(paramNames[i]);
+                    writeField(vo, args[i]);
+                }
+
+            });
+
+        };
+    }
 }
