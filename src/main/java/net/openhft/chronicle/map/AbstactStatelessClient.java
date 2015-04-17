@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Created by Rob Austin
@@ -54,20 +55,20 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         return readInt(tid, startTime);
     }
 
-    public void proxyReturnWireConsumer(@NotNull final WireKey eventId,
-                                        @NotNull final Consumer<WireIn> consumer) {
+    public <T>T proxyReturnWireConsumer(@NotNull final WireKey eventId,
+                                        @NotNull final Function<WireIn, T> consumer) {
         final long startTime = System.currentTimeMillis();
         long tid = sendEvent(startTime, eventId, null);
-        readWire(tid, startTime, consumer);
+        return readWire(tid, startTime, consumer);
     }
 
 
-    public void proxyReturnWireConsumerInOut(@NotNull final WireKey eventId,
+    public <T>T proxyReturnWireConsumerInOut(@NotNull final WireKey eventId,
                                         @Nullable final Consumer<ValueOut> consumerOut,
-                                        @NotNull final Consumer<WireIn> consumerIn) {
+                                        @NotNull final Function<WireIn, T> consumerIn) {
         final long startTime = System.currentTimeMillis();
         long tid = sendEvent(startTime, eventId, consumerOut);
-        readWire(tid, startTime, consumerIn);
+        return readWire(tid, startTime, consumerIn);
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -100,11 +101,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
 
     @SuppressWarnings("SameParameterValue")
     protected Marshallable proxyReturnMarshallable(@NotNull final WireKey eventId) {
-        Marshallable[] marshallable = {null};
-
-        proxyReturnWireConsumerInOut(eventId,null, wireIn -> marshallable[0] = wireIn.read(()->"reply").typedMarshallable());
-
-        return marshallable[0];
+        return proxyReturnWireConsumerInOut(eventId,null, wireIn -> wireIn.read(()->"reply").typedMarshallable());
     }
 
     protected long sendEvent(final long startTime,
@@ -303,7 +300,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         }
     }
 
-    private void readWire(long tid, long startTime, Consumer<WireIn> c) {
+    private <T> T readWire(long tid, long startTime, Function<WireIn, T> c) {
         assert !hub.outBytesLock().isHeldByCurrentThread();
         final long timeoutTime = startTime + hub.timeoutMs;
 
@@ -312,7 +309,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         try {
             final Wire wire = hub.proxyReply(timeoutTime, tid);
             checkIsData(wire);
-            c.accept(wire);
+            return c.apply(wire);
         } finally {
             hub.inBytesLock().unlock();
         }
