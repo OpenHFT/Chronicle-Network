@@ -44,7 +44,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
     protected long proxyReturnLong(@NotNull final WireKey eventId) {
         final long startTime = System.currentTimeMillis();
         long tid = sendEvent(startTime, eventId, null);
-        return readLong(tid, startTime);
+        return readLong(tid, startTime, CoreFields.reply);
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -61,6 +61,15 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         readWire(tid, startTime, consumer);
     }
 
+
+    public void proxyReturnWireConsumerInOut(@NotNull final WireKey eventId,
+                                        @Nullable final Consumer<ValueOut> consumerOut,
+                                        @NotNull final Consumer<WireIn> consumerIn) {
+        final long startTime = System.currentTimeMillis();
+        long tid = sendEvent(startTime, eventId, consumerOut);
+        readWire(tid, startTime, consumerIn);
+    }
+
     @SuppressWarnings("SameParameterValue")
     protected void proxyReturnVoid(@NotNull final WireKey eventId,
                                    @Nullable final Consumer<ValueOut> consumer) {
@@ -69,9 +78,33 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         readVoid(tid, startTime);
     }
 
+    protected long proxyBytesReturnLong(@NotNull final WireKey eventId,
+                                        @Nullable final Bytes bytes, WireKey reply) {
+        final long startTime = System.currentTimeMillis();
+        long tid = sendEventBytes(startTime, eventId, bytes);
+        return readLong(tid, startTime, reply);
+    }
+
     @SuppressWarnings("SameParameterValue")
     protected void proxyReturnVoid(@NotNull final WireKey eventId) {
         proxyReturnVoid(eventId, null);
+    }
+
+//    @SuppressWarnings("SameParameterValue")
+//    protected Marshallable proxyReturnMarshallable(@NotNull final WireKey eventId,
+//                                                   @Nullable final Consumer<ValueOut> consumer) {
+//        final long startTime = System.currentTimeMillis();
+//        long tid = sendEvent(startTime, eventId, consumer);
+//        return proxyReturnWireConsumer(tid, startTime);
+//    }
+
+    @SuppressWarnings("SameParameterValue")
+    protected Marshallable proxyReturnMarshallable(@NotNull final WireKey eventId) {
+        Marshallable[] marshallable = {null};
+
+        proxyReturnWireConsumerInOut(eventId,null, wireIn -> marshallable[0] = wireIn.read(()->"reply").typedMarshallable());
+
+        return marshallable[0];
     }
 
     protected long sendEvent(final long startTime,
@@ -92,6 +125,32 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
                     consumer.accept(valueOut);
 
             });
+
+            hub.writeSocket(hub.outWire());
+
+        } finally {
+            hub.outBytesLock().unlock();
+        }
+        return tid;
+    }
+
+
+    protected long sendEventBytes(final long startTime,
+                                  @NotNull final WireKey eventId,
+                                  @Nullable final Bytes c) {
+        long tid;
+        hub.outBytesLock().lock();
+        try {
+
+            tid = writeHeader(startTime);
+
+
+            hub.outWire().writeDocument(false, wireOut -> {
+
+                final ValueOut valueOut = wireOut.writeEventName(eventId);
+                wireOut.bytes().write(c);
+            });
+
 
             hub.writeSocket(hub.outWire());
 
@@ -187,7 +246,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         }
     }
 
-    private long readLong(long tid, long startTime) {
+    private long readLong(long tid, long startTime, WireKey replyId) {
         assert !hub.outBytesLock().isHeldByCurrentThread();
         final long timeoutTime = startTime + hub.timeoutMs;
 
@@ -196,12 +255,39 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         try {
             final Wire wire = hub.proxyReply(timeoutTime, tid);
             checkIsData(wire);
-            return wire.read(CoreFields.reply).int64();
+            return wire.read(replyId).int64();
         } finally {
             hub.inBytesLock().unlock();
         }
     }
 
+//    private Marshallable readMarshallable(long tid, long startTime) {
+//        assert !hub.outBytesLock().isHeldByCurrentThread();
+//        final long timeoutTime = startTime + hub.timeoutMs;
+//
+//        // receive
+//        hub.inBytesLock().lock();
+//        try {
+//            final Wire wire = hub.proxyReply(timeoutTime, tid);
+//            checkIsData(wire);
+//            return wire.read(CoreFields.reply).typedMarshallable();
+//        } finally {
+//            hub.inBytesLock().unlock();
+//        }
+//    }
+
+
+    @Nullable
+     long proxyLongObject(
+            @NotNull final WireKey eventId, Class<Object> resultType,
+            @Nullable final Consumer<ValueOut> consumer) {
+
+        final long startTime = System.currentTimeMillis();
+        final long tid = sendEvent(startTime, eventId, consumer);
+
+        return readLong(tid, startTime, CoreFields.reply);
+
+    }
     private int readInt(long tid, long startTime) {
         assert !hub.outBytesLock().isHeldByCurrentThread();
         final long timeoutTime = startTime + hub.timeoutMs;
