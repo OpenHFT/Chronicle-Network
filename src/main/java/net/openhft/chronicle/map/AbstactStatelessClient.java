@@ -86,6 +86,12 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         return readLong(tid, startTime, reply);
     }
 
+    protected void proxyBytesReturnVoid(@NotNull final WireKey eventId,
+                                        @Nullable final Bytes bytes, WireKey reply) {
+        final long startTime = System.currentTimeMillis();
+        sendEventBytes(startTime, eventId, bytes);
+    }
+
     @SuppressWarnings("SameParameterValue")
     protected void proxyReturnVoid(@NotNull final WireKey eventId) {
         proxyReturnVoid(eventId, null);
