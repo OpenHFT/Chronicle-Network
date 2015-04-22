@@ -52,11 +52,18 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         if (valueIn.isNull())
             return null;
 
+        return readObject(valueIn, usingValue, clazz);
+    }
+
+    @Nullable
+    static <E> E readObject(@NotNull final ValueIn valueIn,
+                            @Nullable E usingValue,
+                            @NotNull Class<E> clazz) {
+
         if (StringBuilder.class.isAssignableFrom(clazz)) {
             valueIn.text((StringBuilder) usingValue);
             return usingValue;
         } else if (Marshallable.class.isAssignableFrom(clazz)) {
-
 
             final E v;
             if (usingValue == null)
@@ -68,11 +75,17 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
             else
                 v = usingValue;
 
-
             valueIn.marshallable((Marshallable) v);
             return v;
 
-        } else if (String.class.isAssignableFrom(clazz)) {
+        } else if (StringBuilder.class.isAssignableFrom(clazz)) {
+            StringBuilder builder = (usingValue == null)
+                    ? Wires.acquireStringBuilder()
+                    : (StringBuilder) usingValue;
+            valueIn.text(builder);
+            return usingValue;
+
+        } else if (CharSequence.class.isAssignableFrom(clazz)) {
             //noinspection unchecked
             return (E) valueIn.text();
 
@@ -251,22 +264,22 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         writeField(value, wireOut);
     }
 
-     static void writeField(Object value, ValueOut valueOut) {
+    static WireOut writeField(Object value, ValueOut valueOut) {
 
         if (value instanceof Byte)
-            valueOut.int8((Byte) value);
+            return valueOut.int8((Byte) value);
         else if (value instanceof Character)
-            valueOut.text(value.toString());
+            return valueOut.text(value.toString());
         else if (value instanceof Short)
-            valueOut.int16((Short) value);
+            return valueOut.int16((Short) value);
         else if (value instanceof Integer)
-            valueOut.int32((Integer) value);
+            return valueOut.int32((Integer) value);
         else if (value instanceof Long)
-            valueOut.int64((Long) value);
+            return valueOut.int64((Long) value);
         else if (value instanceof CharSequence) {
-            valueOut.text((CharSequence) value);
+            return valueOut.text((CharSequence) value);
         } else if (value instanceof Marshallable) {
-            valueOut.marshallable((Marshallable) value);
+            return valueOut.marshallable((Marshallable) value);
         } else {
             throw new IllegalStateException("type=" + value.getClass() +
                     " is unsupported, it must either be of type Marshallable or CharSequence");
@@ -382,22 +395,23 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
     }
 
 
-    public static <E extends ParameterizeWireKey> Consumer<ValueOut> toParameters
-            (@NotNull E eventId,
-             @Nullable Object... args) {
+    public static <E extends ParameterizeWireKey>
+    Consumer<ValueOut> toParameters(@NotNull final E eventId,
+                                    @Nullable final Object... args) {
 
         return out -> {
             final WireKey[] paramNames = eventId.params();
+
+            assert args.length == paramNames.length :
+                    "methodName=" + eventId +
+                            ", args.length=" + args.length +
+                            ", paramNames.length=" + paramNames.length;
 
             if (paramNames.length == 1) {
                 writeField(out, args[0]);
                 return;
             }
 
-            assert args.length == paramNames.length :
-                    "methodName=" + eventId +
-                            ", args.length=" + args.length +
-                            ", paramNames.length=" + paramNames.length;
 
             out.marshallable(m -> {
 
