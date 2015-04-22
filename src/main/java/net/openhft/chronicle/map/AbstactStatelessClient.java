@@ -25,6 +25,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         // nothing
     };
 
+
     /**
      * @param channelName
      * @param hub
@@ -39,6 +40,76 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         this.csp = "//" + channelName + "#" + type;
         this.hub = hub;
         this.channelName = channelName;
+
+    }
+
+    static <E> E readObject(@NotNull final WireKey argName,
+                            @NotNull final Wire wireIn,
+                            @Nullable final E usingValue,
+                            @NotNull final Class<E> clazz) {
+
+        final ValueIn valueIn = wireIn.read(argName);
+        if (valueIn.isNull())
+            return null;
+
+        if (StringBuilder.class.isAssignableFrom(clazz)) {
+            valueIn.text((StringBuilder) usingValue);
+            return usingValue;
+        } else if (Marshallable.class.isAssignableFrom(clazz)) {
+
+
+            final E v;
+            if (usingValue == null)
+                try {
+                    v = clazz.newInstance();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            else
+                v = usingValue;
+
+
+            valueIn.marshallable((Marshallable) v);
+            return v;
+
+        } else if (String.class.isAssignableFrom(clazz)) {
+            //noinspection unchecked
+            return (E) valueIn.text();
+
+        } else if (Long.class.isAssignableFrom(clazz)) {
+            //noinspection unchecked
+            return (E) (Long) valueIn.int64();
+        } else if (Double.class.isAssignableFrom(clazz)) {
+            //noinspection unchecked
+            return (E) (Double) valueIn.float64();
+
+        } else if (Integer.class.isAssignableFrom(clazz)) {
+            //noinspection unchecked
+            return (E) (Integer) valueIn.int32();
+
+        } else if (Float.class.isAssignableFrom(clazz)) {
+            //noinspection unchecked
+            return (E) (Float) valueIn.float32();
+
+        } else if (Short.class.isAssignableFrom(clazz)) {
+            //noinspection unchecked
+            return (E) (Short) valueIn.int16();
+
+        } else if (Character.class.isAssignableFrom(clazz)) {
+            //noinspection unchecked
+            final String text = valueIn.text();
+            if (text == null || text.length() == 0)
+                return null;
+            return (E) (Character) text.charAt(0);
+
+        } else if (Byte.class.isAssignableFrom(clazz)) {
+            //noinspection unchecked
+            return (E) (Byte) valueIn.int8();
+
+
+        } else {
+            throw new IllegalStateException("unsupported type");
+        }
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -174,7 +245,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         writeField(value, wireOut);
     }
 
-    private static void writeField(Object value, ValueOut valueOut) {
+     static void writeField(Object value, ValueOut valueOut) {
 
         if (value instanceof Byte)
             valueOut.int8((Byte) value);
@@ -274,17 +345,6 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
 //    }
 
 
-    @Nullable
-     long proxyLongObject(
-            @NotNull final WireKey eventId, Class<Object> resultType,
-            @Nullable final Consumer<ValueOut> consumer) {
-
-        final long startTime = System.currentTimeMillis();
-        final long tid = sendEvent(startTime, eventId, consumer);
-
-        return readLong(tid, startTime, CoreFields.reply);
-
-    }
     private int readInt(long tid, long startTime) {
         assert !hub.outBytesLock().isHeldByCurrentThread();
         final long timeoutTime = startTime + hub.timeoutMs;
