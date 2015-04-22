@@ -742,6 +742,8 @@ public class ClientWiredStatelessTcpConnectionHub {
     public enum CoreFields implements WireKey {
         tid,
         csp,
-        cid, reply
+        cid,
+        reply,
+        start
     }
 }
