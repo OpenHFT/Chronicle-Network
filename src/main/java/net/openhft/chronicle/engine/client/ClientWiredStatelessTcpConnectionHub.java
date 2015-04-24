@@ -54,7 +54,7 @@ public class ClientWiredStatelessTcpConnectionHub {
     protected final int tcpBufferSize;
     private final ReentrantLock inBytesLock = new ReentrantLock(true);
     private final ReentrantLock outBytesLock = new ReentrantLock();
-    private String type;
+
 
     @NotNull
     private final AtomicLong transactionID = new AtomicLong(0);
@@ -192,9 +192,6 @@ public class ClientWiredStatelessTcpConnectionHub {
             }
         }
         clientChannel = result;
-
-        checkVersion("//#" + type);
-
     }
 
 

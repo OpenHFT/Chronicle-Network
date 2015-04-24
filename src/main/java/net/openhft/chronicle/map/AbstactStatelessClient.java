@@ -52,78 +52,10 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         if (valueIn.isNull())
             return null;
 
-        return readObject(valueIn, usingValue, clazz);
+        return valueIn.object(usingValue, clazz);
     }
 
-    @Nullable
-    static <E> E readObject(@NotNull final ValueIn valueIn,
-                            @Nullable E usingValue,
-                            @NotNull Class<E> clazz) {
 
-        if (StringBuilder.class.isAssignableFrom(clazz)) {
-            valueIn.text((StringBuilder) usingValue);
-            return usingValue;
-        } else if (Marshallable.class.isAssignableFrom(clazz)) {
-
-            final E v;
-            if (usingValue == null)
-                try {
-                    v = clazz.newInstance();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            else
-                v = usingValue;
-
-            valueIn.marshallable((Marshallable) v);
-            return v;
-
-        } else if (StringBuilder.class.isAssignableFrom(clazz)) {
-            StringBuilder builder = (usingValue == null)
-                    ? Wires.acquireStringBuilder()
-                    : (StringBuilder) usingValue;
-            valueIn.text(builder);
-            return usingValue;
-
-        } else if (CharSequence.class.isAssignableFrom(clazz)) {
-            //noinspection unchecked
-            return (E) valueIn.text();
-
-        } else if (Long.class.isAssignableFrom(clazz)) {
-            //noinspection unchecked
-            return (E) (Long) valueIn.int64();
-        } else if (Double.class.isAssignableFrom(clazz)) {
-            //noinspection unchecked
-            return (E) (Double) valueIn.float64();
-
-        } else if (Integer.class.isAssignableFrom(clazz)) {
-            //noinspection unchecked
-            return (E) (Integer) valueIn.int32();
-
-        } else if (Float.class.isAssignableFrom(clazz)) {
-            //noinspection unchecked
-            return (E) (Float) valueIn.float32();
-
-        } else if (Short.class.isAssignableFrom(clazz)) {
-            //noinspection unchecked
-            return (E) (Short) valueIn.int16();
-
-        } else if (Character.class.isAssignableFrom(clazz)) {
-            //noinspection unchecked
-            final String text = valueIn.text();
-            if (text == null || text.length() == 0)
-                return null;
-            return (E) (Character) text.charAt(0);
-
-        } else if (Byte.class.isAssignableFrom(clazz)) {
-            //noinspection unchecked
-            return (E) (Byte) valueIn.int8();
-
-
-        } else {
-            throw new IllegalStateException("unsupported type");
-        }
-    }
 
     @SuppressWarnings("SameParameterValue")
     protected long proxyReturnLong(@NotNull final WireKey eventId) {
@@ -260,31 +192,6 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
 
     }
 
-    protected static void writeField(ValueOut wireOut, Object value) {
-        writeField(value, wireOut);
-    }
-
-    static WireOut writeField(Object value, ValueOut valueOut) {
-
-        if (value instanceof Byte)
-            return valueOut.int8((Byte) value);
-        else if (value instanceof Character)
-            return valueOut.text(value.toString());
-        else if (value instanceof Short)
-            return valueOut.int16((Short) value);
-        else if (value instanceof Integer)
-            return valueOut.int32((Integer) value);
-        else if (value instanceof Long)
-            return valueOut.int64((Long) value);
-        else if (value instanceof CharSequence) {
-            return valueOut.text((CharSequence) value);
-        } else if (value instanceof Marshallable) {
-            return valueOut.marshallable((Marshallable) value);
-        } else {
-            throw new IllegalStateException("type=" + value.getClass() +
-                    " is unsupported, it must either be of type Marshallable or CharSequence");
-        }
-    }
 
     protected boolean readBoolean(long tid, long startTime) {
         assert !hub.outBytesLock().isHeldByCurrentThread();
@@ -408,7 +315,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
                             ", paramNames.length=" + paramNames.length;
 
             if (paramNames.length == 1) {
-                writeField(out, args[0]);
+                out.object(out);
                 return;
             }
 
@@ -417,7 +324,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
 
                 for (int i = 0; i < paramNames.length; i++) {
                     final ValueOut vo = m.write(paramNames[i]);
-                    writeField(vo, args[i]);
+                    vo.object(vo);
                 }
 
             });
