@@ -315,7 +315,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
                             ", paramNames.length=" + paramNames.length;
 
             if (paramNames.length == 1) {
-                out.object(out);
+                out.object(args[0]);
                 return;
             }
 
