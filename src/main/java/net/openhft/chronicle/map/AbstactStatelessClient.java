@@ -324,7 +324,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
 
                 for (int i = 0; i < paramNames.length; i++) {
                     final ValueOut vo = m.write(paramNames[i]);
-                    vo.object(vo);
+                    vo.object(args[i]);
                 }
 
             });
