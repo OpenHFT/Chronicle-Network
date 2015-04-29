@@ -66,10 +66,14 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
 
     @SuppressWarnings("SameParameterValue")
     protected int proxyReturnInt(@NotNull final WireKey eventId) {
-        final long startTime = System.currentTimeMillis();
-        long tid = sendEvent(startTime, eventId, null);
-        return readInt(tid, startTime);
+        return proxyReturnWireConsumer(eventId, f -> f.read(CoreFields.reply).int32());
     }
+
+    protected int proxyReturnUint16(@NotNull final WireKey eventId) {
+        return proxyReturnWireConsumer(eventId, f -> f.read(CoreFields.reply).uint16());
+    }
+
+
 
     public <T>T proxyReturnWireConsumer(@NotNull final WireKey eventId,
                                         @NotNull final Function<WireIn, T> consumer) {
@@ -102,11 +106,11 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         return readLong(tid, startTime, reply);
     }
 
-    protected void proxyBytesReturnVoid(@NotNull final WireKey eventId,
+   /* protected void proxyBytesReturnVoid(@NotNull final WireKey eventId,
                                         @Nullable final Bytes bytes, WireKey reply) {
         final long startTime = System.currentTimeMillis();
         sendEventBytes(startTime, eventId, bytes);
-    }
+    }*/
 
     @SuppressWarnings("SameParameterValue")
     protected void proxyReturnVoid(@NotNull final WireKey eventId) {
