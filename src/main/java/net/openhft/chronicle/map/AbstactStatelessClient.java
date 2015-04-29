@@ -43,25 +43,10 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
 
     }
 
-    static <E> E readObject(@NotNull final WireKey argName,
-                            @NotNull final Wire wireIn,
-                            @Nullable final E usingValue,
-                            @NotNull final Class<E> clazz) {
-
-        final ValueIn valueIn = wireIn.read(argName);
-        if (valueIn.isNull())
-            return null;
-
-        return valueIn.object(usingValue, clazz);
-    }
-
-
 
     @SuppressWarnings("SameParameterValue")
     protected long proxyReturnLong(@NotNull final WireKey eventId) {
-        final long startTime = System.currentTimeMillis();
-        long tid = sendEvent(startTime, eventId, null);
-        return readLong(tid, startTime, CoreFields.reply);
+        return proxyReturnWireConsumer(eventId, f -> f.read(CoreFields.reply).int64());
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -74,18 +59,17 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
     }
 
 
-
-    public <T>T proxyReturnWireConsumer(@NotNull final WireKey eventId,
-                                        @NotNull final Function<WireIn, T> consumer) {
+    public <T> T proxyReturnWireConsumer(@NotNull final WireKey eventId,
+                                         @NotNull final Function<WireIn, T> consumer) {
         final long startTime = System.currentTimeMillis();
         long tid = sendEvent(startTime, eventId, null);
         return readWire(tid, startTime, consumer);
     }
 
 
-    public <T>T proxyReturnWireConsumerInOut(@NotNull final WireKey eventId,
-                                        @Nullable final Consumer<ValueOut> consumerOut,
-                                        @NotNull final Function<WireIn, T> consumerIn) {
+    public <T> T proxyReturnWireConsumerInOut(@NotNull final WireKey eventId,
+                                              @Nullable final Consumer<ValueOut> consumerOut,
+                                              @NotNull final Function<WireIn, T> consumerIn) {
         final long startTime = System.currentTimeMillis();
         long tid = sendEvent(startTime, eventId, consumerOut);
         return readWire(tid, startTime, consumerIn);
@@ -127,7 +111,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
 
     @SuppressWarnings("SameParameterValue")
     protected Marshallable proxyReturnMarshallable(@NotNull final WireKey eventId) {
-        return proxyReturnWireConsumerInOut(eventId,null, wireIn -> wireIn.read(()->"reply").typedMarshallable());
+        return proxyReturnWireConsumerInOut(eventId, null, wireIn -> wireIn.read(() -> "reply").typedMarshallable());
     }
 
     protected long sendEvent(final long startTime,
@@ -215,7 +199,8 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
 
     @SuppressWarnings("SameParameterValue")
     protected boolean proxyReturnBooleanArgs(
-            @NotNull final E eventId, Object... args) {
+            @NotNull final E eventId,
+            @NotNull final Object... args) {
         final long startTime = System.currentTimeMillis();
 
         final long tid = sendEvent(startTime, eventId, toParameters(eventId, args));
