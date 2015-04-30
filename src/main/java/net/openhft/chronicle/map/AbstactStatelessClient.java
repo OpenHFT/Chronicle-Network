@@ -8,6 +8,7 @@ import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -101,14 +102,6 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         proxyReturnVoid(eventId, null);
     }
 
-//    @SuppressWarnings("SameParameterValue")
-//    protected Marshallable proxyReturnMarshallable(@NotNull final WireKey eventId,
-//                                                   @Nullable final Consumer<ValueOut> consumer) {
-//        final long startTime = System.currentTimeMillis();
-//        long tid = sendEvent(startTime, eventId, consumer);
-//        return proxyReturnWireConsumer(tid, startTime);
-//    }
-
     @SuppressWarnings("SameParameterValue")
     protected Marshallable proxyReturnMarshallable(@NotNull final WireKey eventId) {
         return proxyReturnWireConsumerInOut(eventId, null, wireIn -> wireIn.read(() -> "reply").typedMarshallable());
@@ -198,7 +191,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
     }
 
     @SuppressWarnings("SameParameterValue")
-    protected boolean proxyReturnBooleanArgs(
+    protected boolean proxyReturnBooleanWithArgs(
             @NotNull final E eventId,
             @NotNull final Object... args) {
         final long startTime = System.currentTimeMillis();
@@ -206,6 +199,16 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         final long tid = sendEvent(startTime, eventId, toParameters(eventId, args));
         return readBoolean(tid, startTime);
     }
+
+    protected boolean proxyReturnBooleanWithSequence(
+            @NotNull final E eventId,
+            @NotNull final Collection sequence) {
+        final long startTime = System.currentTimeMillis();
+
+        final long tid = sendEvent(startTime, eventId, out -> sequence.forEach(out::object));
+        return readBoolean(tid, startTime);
+    }
+
 
     @SuppressWarnings("SameParameterValue")
     protected boolean proxyReturnBoolean(@NotNull final WireKey eventId) {
