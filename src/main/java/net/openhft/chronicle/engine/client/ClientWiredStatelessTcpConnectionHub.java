@@ -22,10 +22,7 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.hash.RemoteCallTimeoutException;
 import net.openhft.chronicle.hash.impl.util.CloseablesManager;
 import net.openhft.chronicle.network.event.EventGroup;
-import net.openhft.chronicle.wire.TextWire;
-import net.openhft.chronicle.wire.Wire;
-import net.openhft.chronicle.wire.WireKey;
-import net.openhft.chronicle.wire.Wires;
+import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -736,11 +733,4 @@ public class ClientWiredStatelessTcpConnectionHub {
         getApplicationVersion
     }
 
-    public enum CoreFields implements WireKey {
-        tid,
-        csp,
-        cid,
-        reply,
-        start
-    }
 }

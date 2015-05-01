@@ -2,8 +2,8 @@ package net.openhft.chronicle.map;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.engine.client.ClientWiredStatelessTcpConnectionHub;
-import net.openhft.chronicle.engine.client.ClientWiredStatelessTcpConnectionHub.CoreFields;
-import net.openhft.chronicle.engine.client.ParameterizeWireKey;
+import net.openhft.chronicle.wire.CoreFields;
+import net.openhft.chronicle.wire.ParameterizeWireKey;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -22,7 +22,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
     protected final String channelName;
     protected String csp;
 
-    static final WriteMarshallable EMPTY = wire -> {
+   public static final WriteMarshallable EMPTY = wire -> {
         // nothing
     };
 
