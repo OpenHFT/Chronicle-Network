@@ -51,6 +51,7 @@ public abstract class WireTcpHandler implements TcpHandler {
         // process all messages in this batch, provided there is plenty of output space.
         do {
             int length = in.readUnsignedShort(in.position());
+            System.out.println("raw data=" + Bytes.toHex(in, in.position(), in.remaining()));
             if (in.remaining() >= length + 2) {
                 in.skip(2);
                 long limit = in.limit();
@@ -86,7 +87,7 @@ public abstract class WireTcpHandler implements TcpHandler {
                     in.position(end);
                 }
             }
-        } while (in.remaining() >= 2 && out.remaining() > out.capacity() / 2);
+        } while (in.remaining() > 2 && out.remaining() > out.capacity() / 2);
     }
 
     private boolean recreateWire;
