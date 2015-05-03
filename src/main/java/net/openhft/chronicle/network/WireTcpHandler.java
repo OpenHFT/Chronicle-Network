@@ -78,8 +78,6 @@ public abstract class WireTcpHandler implements TcpHandler {
                         return;
                     }
 
-
-                    assert written < 1024;
                     out.writeUnsignedShort(outPos, (int) written);
 
                 } catch (Exception e) {
