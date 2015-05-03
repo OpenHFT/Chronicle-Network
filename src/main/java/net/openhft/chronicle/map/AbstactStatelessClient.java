@@ -2,8 +2,6 @@ package net.openhft.chronicle.map;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.engine.client.ClientWiredStatelessTcpConnectionHub;
-import net.openhft.chronicle.wire.CoreFields;
-import net.openhft.chronicle.wire.ParameterizeWireKey;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -81,7 +79,8 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
                                    @Nullable final Consumer<ValueOut> consumer) {
         final long startTime = System.currentTimeMillis();
         long tid = sendEvent(startTime, eventId, consumer);
-        readVoid(tid, startTime);
+        readWire(tid, startTime, w -> w.read(() -> "reply").marshallable(wireIn -> {
+        }));
     }
 
     protected long proxyBytesReturnLong(@NotNull final WireKey eventId,
