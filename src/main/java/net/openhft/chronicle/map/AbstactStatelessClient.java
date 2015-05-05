@@ -22,10 +22,6 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
     protected String csp;
     private final ExceptionMarshaller exceptionMarshaller = new ExceptionMarshaller();
 
-    public static final WriteMarshallable EMPTY = wire -> {
-        // nothing
-    };
-
 
     /**
      * @param channelName
@@ -116,7 +112,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
                 final ValueOut valueOut = wireOut.writeEventName(eventId);
 
                 if (consumer == null)
-                    valueOut.marshallable(EMPTY);
+                    valueOut.marshallable(WireOut.EMPTY);
                 else
                     consumer.accept(valueOut);
 
