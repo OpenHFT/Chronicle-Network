@@ -191,7 +191,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
             return function.apply(event);
 
         if (CoreFields.exception.contentEquals(eventName))
-            event.marshallable(exceptionMarshaller);
+            exceptionMarshaller.readMarshallable(wireIn);
 
         throw new UnsupportedOperationException("unknown event=" + eventName);
     }
@@ -254,7 +254,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         }
     }
 
-    private int readInt(long tid, long startTime) {
+    /*private int readInt(long tid, long startTime) {
         assert !hub.outBytesLock().isHeldByCurrentThread();
         final long timeoutTime = startTime + hub.timeoutMs;
 
@@ -269,7 +269,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
             hub.inBytesLock().unlock();
         }
     }
-
+*/
     private <T> T readWire(long tid, long startTime, WireKey reply, Function<ValueIn, T> c) {
         assert !hub.outBytesLock().isHeldByCurrentThread();
         final long timeoutTime = startTime + hub.timeoutMs;
