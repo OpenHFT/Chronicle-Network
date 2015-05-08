@@ -259,7 +259,7 @@ public class ClientWiredStatelessTcpConnectionHub {
     @SuppressWarnings("WeakerAccess")
     @NotNull
     String clientVersion() {
-        throw new UnsupportedOperationException("todo");
+        throw new UnsupportedOperationException("todo (clientVersion)");
     }
 
 
@@ -323,10 +323,7 @@ public class ClientWiredStatelessTcpConnectionHub {
         assert inBytesLock().isHeldByCurrentThread();
 
         try {
-
-            final Wire wire = proxyReplyThrowable(timeoutTime, tid);
-
-            return wire;
+            return proxyReplyThrowable(timeoutTime, tid);
         } catch (IOException e) {
             close();
             throw new IORuntimeException(e);

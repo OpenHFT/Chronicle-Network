@@ -48,46 +48,75 @@ public abstract class WireTcpHandler implements TcpHandler {
             out.writeUnsignedShort(outPos, (int) written);
             return;
         }
-        // process all messages in this batch, provided there is plenty of output space.
+
+
         do {
-            int length = in.readUnsignedShort(in.position());
-            if (length == 0)
-                break;
 
-            if (in.remaining() >= length + 2) {
-                in.skip(2);
-                long limit = in.limit();
-                long end = in.position() + length;
-                long outPos = out.position();
-                try {
-                    out.skip(2);
-                    in.limit(end);
+            if (!processMessage(in, out))
+                return;
 
-                    final long position = inWire.bytes().position();
-                    try {
-                        process(inWire, outWire);
-                    } finally {
-                        inWire.bytes().position(position + length);
-                    }
-
-
-                    long written = out.position() - outPos - 2;
-
-                    if (written == 0) {
-                        out.position(outPos);
-                        return;
-                    }
-
-                    out.writeUnsignedShort(outPos, (int) written);
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    in.limit(limit);
-                    in.position(end);
-                }
-            }
         } while (in.remaining() > 2 && out.remaining() > out.capacity() / 2);
+    }
+
+
+    /**
+     * process all messages in this batch, provided there is plenty of output space.
+     *
+     * @param in  the source bytes
+     * @param out the destination bytes
+     * @return true if we can read attempt the next
+     */
+    private boolean processMessage(Bytes in, Bytes out) {
+
+        int length = in.readUnsignedShort(in.position());
+
+        assert length >= 0;
+
+        if (length == 0) {
+            in.skip(2);
+            return false;
+        }
+
+        if (in.remaining() < length + 2)
+            // we have to first read more data befor this can be processed
+            return false;
+        else {
+
+            in.skip(2);
+            long limit = in.limit();
+            long end = in.position() + length;
+            long outPos = out.position();
+            try {
+                out.skip(2);
+                in.limit(end);
+
+                final long position = inWire.bytes().position();
+                try {
+                    process(inWire, outWire);
+                } finally {
+                    inWire.bytes().position(position + length);
+                }
+
+                long written = out.position() - outPos - 2;
+
+                if (written == 0) {
+                    out.position(outPos);
+
+                    return false;
+                }
+
+                out.writeUnsignedShort(outPos, (int) written);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                in.limit(limit);
+                in.position(end);
+            }
+
+
+        }
+        return true;
     }
 
     private boolean recreateWire;
