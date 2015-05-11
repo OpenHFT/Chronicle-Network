@@ -376,8 +376,17 @@ public class ClientWiredStatelessTcpConnectionHub {
                 bytes.skip(SIZE_OF_SIZE);
                 bytes.limit(bytes.position() + messageSize);
 
-                System.out.println("\n--------------------------------\nclient reads\n" +
-                        Wires.fromSizePrefixedBlobs(bytes));
+
+                if (net.openhft.chronicle.wire.YamlLogging.clientReads) {
+
+                    System.out.println("\n" +
+                            net.openhft.chronicle.wire.YamlLogging.readMessage +
+                            "receives :\n\n" +
+                            "```yaml\n" +
+                            Wires.fromSizePrefixedBlobs(bytes) +
+                            "```\n");
+                }
+
 
                 int headerlen = bytes.readVolatileInt();
 
@@ -576,17 +585,23 @@ public class ClientWiredStatelessTcpConnectionHub {
             bytes.limit(outBuffer.limit());
             bytes.position(outBuffer.position());
 
-            try {
-                System.out.println("\n--------------------------------------------\n" +
-                        "client writes:\n\n" +
-                        //        Bytes.toDebugString(outBuffer));
-                        Wires.fromSizePrefixedBlobs(bytes));
-            } catch (Exception e) {
-                System.out.println("\n--------------------------------------------\n" +
-                        "client writes:\n\n" +
-                        //        Bytes.toDebugString(outBuffer));
-                        Bytes.toDebugString(bytes));
+            if (net.openhft.chronicle.wire.YamlLogging.clientWrites) {
+                try {
+                    System.out.println("### " + net.openhft.chronicle.wire.YamlLogging.title + "\n\n" +
+                            net.openhft.chronicle.wire.YamlLogging.writeMessage + "\n\n" +
+                            "sends :\n\n" +
+                            "```yaml\n" +
+                            Wires.fromSizePrefixedBlobs(bytes) +
+                            "```");
+                    net.openhft.chronicle.wire.YamlLogging.title = "";
+                    net.openhft.chronicle.wire.YamlLogging.writeMessage = "";
+
+                } catch (Exception e) {
+                    System.out.println("--------------------------------------------\nclient writes:\n\n" +
+                            Bytes.toDebugString(bytes));
+                }
             }
+
         } finally {
             bytes.limit(limit);
             bytes.position(position);
