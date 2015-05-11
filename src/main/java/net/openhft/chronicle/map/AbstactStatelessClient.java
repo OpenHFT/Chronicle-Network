@@ -40,7 +40,6 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
 
     }
 
-
     @SuppressWarnings("SameParameterValue")
     protected long proxyReturnLong(@NotNull final WireKey eventId) {
         return proxyReturnWireConsumer(eventId, f -> f.int64());
@@ -55,14 +54,12 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         return proxyReturnWireConsumer(eventId, f -> f.uint16());
     }
 
-
     public <T> T proxyReturnWireConsumer(@NotNull final WireKey eventId,
                                          @NotNull final Function<ValueIn, T> consumer) {
         final long startTime = System.currentTimeMillis();
         long tid = sendEvent(startTime, eventId, null);
         return readWire(tid, startTime, CoreFields.reply, consumer);
     }
-
 
     public <T> T proxyReturnWireConsumerInOut(@NotNull final WireKey eventId,
                                               CoreFields reply, @Nullable final Consumer<ValueOut> consumerOut,
@@ -81,23 +78,11 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         }));
     }
 
-    protected long proxyBytesReturnLong(@NotNull final WireKey eventId,
-                                        @Nullable final Bytes bytes, WireKey reply) {
-        final long startTime = System.currentTimeMillis();
-        long tid = sendEventBytes(startTime, eventId, bytes);
-        return readLong(tid, startTime, reply);
-    }
-
-
     @SuppressWarnings("SameParameterValue")
     protected void proxyReturnVoid(@NotNull final WireKey eventId) {
         proxyReturnVoid(eventId, null);
     }
 
-    @SuppressWarnings("SameParameterValue")
-    protected Marshallable proxyReturnMarshallable(@NotNull final WireKey eventId) {
-        return proxyReturnWireConsumerInOut(eventId, CoreFields.reply, null, ValueIn::typedMarshallable);
-    }
 
     protected long sendEvent(final long startTime,
                              @NotNull final WireKey eventId,
@@ -117,30 +102,6 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
                     consumer.accept(valueOut);
 
             });
-
-            hub.writeSocket(hub.outWire());
-
-        } finally {
-            hub.outBytesLock().unlock();
-        }
-        return tid;
-    }
-
-
-    protected long sendEventBytes(final long startTime,
-                                  @NotNull final WireKey eventId,
-                                  @Nullable final Bytes c) {
-        long tid;
-        hub.outBytesLock().lock();
-        try {
-
-            tid = writeHeader(startTime);
-
-            hub.outWire().writeDocument(false, wireOut -> {
-                wireOut.writeEventName(eventId);
-                wireOut.bytes().write(c);
-            });
-
 
             hub.writeSocket(hub.outWire());
 
@@ -224,52 +185,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         return readBoolean(tid, startTime);
     }
 
-    protected void readVoid(long tid, long startTime) {
-        assert !hub.outBytesLock().isHeldByCurrentThread();
-        final long timeoutTime = startTime + hub.timeoutMs;
 
-        // receive
-        hub.inBytesLock().lock();
-        try {
-            final Wire wire = hub.proxyReply(timeoutTime, tid);
-            checkIsData(wire);
-            readReply(wire, CoreFields.reply, valueIn -> null);
-        } finally {
-            hub.inBytesLock().unlock();
-        }
-    }
-
-    private long readLong(long tid, long startTime, WireKey replyId) {
-        assert !hub.outBytesLock().isHeldByCurrentThread();
-        final long timeoutTime = startTime + hub.timeoutMs;
-
-        // receive
-        hub.inBytesLock().lock();
-        try {
-            final Wire wire = hub.proxyReply(timeoutTime, tid);
-            checkIsData(wire);
-            return readReply(wire, replyId, ValueIn::int64);
-        } finally {
-            hub.inBytesLock().unlock();
-        }
-    }
-
-    /*private int readInt(long tid, long startTime) {
-        assert !hub.outBytesLock().isHeldByCurrentThread();
-        final long timeoutTime = startTime + hub.timeoutMs;
-
-        // receive
-        hub.inBytesLock().lock();
-        try {
-            final Wire wire = hub.proxyReply(timeoutTime, tid);
-            checkIsData(wire);
-            return readReply(wire, CoreFields.reply, ValueIn::int32);
-
-        } finally {
-            hub.inBytesLock().unlock();
-        }
-    }
-*/
     private <T> T readWire(long tid, long startTime, WireKey reply, Function<ValueIn, T> c) {
         assert !hub.outBytesLock().isHeldByCurrentThread();
         final long timeoutTime = startTime + hub.timeoutMs;
