@@ -50,6 +50,8 @@ RawWire: Loop back echo latency was 5.9/6.8 8/10 12/80 us for 50/90 99/99.9 99.9
 @RunWith(value = Parameterized.class)
 public class WireTcpHandlerTest {
 
+    public static final int SIZE_OF_SIZE = 4;
+
     private final String desc;
     private final Function<Bytes, Wire> wireWrapper;
 
@@ -109,11 +111,11 @@ public class WireTcpHandlerTest {
             for (SocketChannel socket : sockets) {
                 out.clear();
                 outBytes.clear();
-                outBytes.writeUnsignedShort(0);
+                outBytes.writeUnsignedInt(0);
                 td.key3 = td.key2 = td.key1 = i;
                 td.writeMarshallable(outWire);
 
-                outBytes.writeUnsignedShort(0, (int) outBytes.position() - 2);
+                outBytes.writeUnsignedInt(0, (int) outBytes.position() - SIZE_OF_SIZE);
                 out.limit((int) outBytes.position());
                 socket.write(out);
                 if (out.remaining() > 0)
@@ -127,10 +129,10 @@ public class WireTcpHandlerTest {
                     int read = socket.read(in);
                     inBytes.limit(in.position());
                     if (inBytes.remaining() >= 2) {
-                        int length = inBytes.readUnsignedShort(0);
-                        if (inBytes.remaining() >= length + 2) {
-                            inBytes.limit(length + 2);
-                            inBytes.skip(2);
+                        long length = inBytes.readUnsignedInt(0);
+                        if (inBytes.remaining() >= length + SIZE_OF_SIZE) {
+                            inBytes.limit(length + SIZE_OF_SIZE);
+                            inBytes.skip(SIZE_OF_SIZE);
                             td2.readMarshallable(inWire);
                         }
                         break;
