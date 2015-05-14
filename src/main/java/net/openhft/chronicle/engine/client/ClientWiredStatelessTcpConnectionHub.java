@@ -592,8 +592,12 @@ public class ClientWiredStatelessTcpConnectionHub {
 
             if (net.openhft.chronicle.wire.YamlLogging.clientWrites) {
                 try {
-                    System.out.println("### " + net.openhft.chronicle.wire.YamlLogging.title + "\n\n" +
-                            net.openhft.chronicle.wire.YamlLogging.writeMessage + "\n\n" +
+
+                    System.out.println(((!YamlLogging.title.isEmpty()) ? "### " + YamlLogging
+                            .title + "\n\n" : "") + "" +
+                             YamlLogging.writeMessage + (YamlLogging.writeMessage.isEmpty() ?
+                                    "" :
+                                    "\n\n") +
                             "sends :\n\n" +
                             "```yaml\n" +
                             Wires.fromSizePrefixedBlobs(bytes) +
@@ -602,7 +606,7 @@ public class ClientWiredStatelessTcpConnectionHub {
                     net.openhft.chronicle.wire.YamlLogging.writeMessage = "";
 
                 } catch (Exception e) {
-                    System.out.println("--------------------------------------------\nclient writes:\n\n" +
+                    System.out.println(
                             Bytes.toDebugString(bytes));
                 }
             }
