@@ -28,24 +28,25 @@ import java.io.StreamCorruptedException;
  * Created by peter.lawrey on 22/01/15.
  */
 public abstract class WireTcpHandler implements TcpHandler {
+    public static final int SIZE_OF_SIZE = 4;
     protected Wire inWire, outWire;
 
     @Override
     public void process(Bytes in, Bytes out) {
         checkWires(in, out);
 
-        if (in.remaining() < 2) {
+        if (in.remaining() < SIZE_OF_SIZE) {
             long outPos = out.position();
-            out.skip(2);
+            out.skip(SIZE_OF_SIZE);
             publish(outWire);
 
-            long written = out.position() - outPos - 2;
+            long written = out.position() - outPos - SIZE_OF_SIZE;
             if (written == 0) {
                 out.position(outPos);
                 return;
             }
             assert written < 1 << 16;
-            out.writeUnsignedShort(outPos, (int) written);
+            out.writeUnsignedInt(outPos, (int) written);
             return;
         }
 
@@ -55,7 +56,7 @@ public abstract class WireTcpHandler implements TcpHandler {
             if (!processMessage(in, out))
                 return;
 
-        } while (in.remaining() > 2 && out.remaining() > out.capacity() / 2);
+        } while (in.remaining() > SIZE_OF_SIZE && out.remaining() > out.capacity() / SIZE_OF_SIZE);
     }
 
 
@@ -68,26 +69,26 @@ public abstract class WireTcpHandler implements TcpHandler {
      */
     private boolean processMessage(Bytes in, Bytes out) {
 
-        int length = in.readUnsignedShort(in.position());
+        long length = in.readUnsignedInt(in.position());
 
         assert length >= 0;
 
         if (length == 0) {
-            in.skip(2);
+            in.skip(SIZE_OF_SIZE);
             return false;
         }
 
-        if (in.remaining() < length + 2)
+        if (in.remaining() < length + SIZE_OF_SIZE)
             // we have to first read more data befor this can be processed
             return false;
         else {
 
-            in.skip(2);
+            in.skip(SIZE_OF_SIZE);
             long limit = in.limit();
             long end = in.position() + length;
             long outPos = out.position();
             try {
-                out.skip(2);
+                out.skip(SIZE_OF_SIZE);
                 in.limit(end);
 
                 final long position = inWire.bytes().position();
@@ -97,7 +98,7 @@ public abstract class WireTcpHandler implements TcpHandler {
                     inWire.bytes().position(position + length);
                 }
 
-                long written = out.position() - outPos - 2;
+                long written = out.position() - outPos - SIZE_OF_SIZE;
 
                 if (written == 0) {
                     out.position(outPos);
@@ -105,7 +106,7 @@ public abstract class WireTcpHandler implements TcpHandler {
                     return false;
                 }
 
-                out.writeUnsignedShort(outPos, (int) written);
+                out.writeUnsignedInt(outPos, (int) written);
 
             } catch (Exception e) {
                 e.printStackTrace();

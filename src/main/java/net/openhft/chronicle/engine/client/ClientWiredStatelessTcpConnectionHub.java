@@ -43,7 +43,7 @@ public class ClientWiredStatelessTcpConnectionHub {
 
     private static final Logger LOG = LoggerFactory.getLogger(ClientWiredStatelessTcpConnectionHub.class);
 
-    public static final int SIZE_OF_SIZE = 2;
+    public static final int SIZE_OF_SIZE = 4;
 
     protected final String name;
     protected final InetSocketAddress remoteAddress;
@@ -311,8 +311,8 @@ public class ClientWiredStatelessTcpConnectionHub {
         long pos = bytes.position();
         try {
             bytes.reset();
-            int size = (int) (position - bytes.position());
-            bytes.writeUnsignedShort(size - SIZE_OF_SIZE);
+            long size = position - bytes.position();
+            bytes.writeUnsignedInt(size - SIZE_OF_SIZE);
         } finally {
             bytes.position(pos);
         }
@@ -360,7 +360,7 @@ public class ClientWiredStatelessTcpConnectionHub {
                 // reads just the size
                 readSocket(SIZE_OF_SIZE, timeoutTime);
 
-                final int messageSize = bytes.readUnsignedShort(bytes.position());
+                final long messageSize = bytes.readUnsignedInt(bytes.position());
 
 
                 try {
@@ -370,8 +370,13 @@ public class ClientWiredStatelessTcpConnectionHub {
                     assert messageSize < 1 << 30 : "Invalid message size " + messageSize;
                 }
 
-                final int remainingBytes0 = messageSize;
-                readSocket(remainingBytes0, timeoutTime);
+                final long remainingBytes0 = messageSize;
+
+
+                // todo improve this
+                assert remainingBytes0 < Integer.MAX_VALUE;
+
+                readSocket((int) remainingBytes0, timeoutTime);
 
                 bytes.skip(SIZE_OF_SIZE);
                 bytes.limit(bytes.position() + messageSize);
@@ -734,7 +739,7 @@ public class ClientWiredStatelessTcpConnectionHub {
         bytes.mark();
 
         // skip the 2 bytes for the size
-        bytes.skip(2);
+        bytes.skip(SIZE_OF_SIZE);
     }
 
     public void startTime(long startTime) {
