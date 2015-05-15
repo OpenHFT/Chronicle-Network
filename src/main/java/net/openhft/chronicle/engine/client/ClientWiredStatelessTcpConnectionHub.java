@@ -364,8 +364,7 @@ public class ClientWiredStatelessTcpConnectionHub {
                 // reads just the size
                 readSocket(SIZE_OF_SIZE, timeoutTime);
 
-                final long messageSize = bytes.readUnsignedInt(bytes.position());
-
+                final long messageSize = Wires.lengthOf(bytes.readInt());
 
                 try {
                     assert messageSize > 0 : "Invalid message size " + messageSize;
@@ -382,7 +381,6 @@ public class ClientWiredStatelessTcpConnectionHub {
 
                 readSocket((int) remainingBytes0, timeoutTime);
 
-                bytes.skip(SIZE_OF_SIZE);
                 bytes.limit(bytes.position() + messageSize);
 
 

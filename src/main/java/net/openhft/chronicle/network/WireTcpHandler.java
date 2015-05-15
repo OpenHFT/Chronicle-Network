@@ -37,23 +37,23 @@ public abstract class WireTcpHandler implements TcpHandler {
 
         if (in.remaining() < SIZE_OF_SIZE) {
             long outPos = out.position();
-            out.skip(SIZE_OF_SIZE);
+
             publish(outWire);
 
-            long written = out.position() - outPos - SIZE_OF_SIZE;
+            long written = out.position() - outPos;
             if (written == 0) {
                 out.position(outPos);
                 return;
             }
-            assert written < 1 << 16;
-            out.writeUnsignedInt(outPos, (int) written);
+            assert written <= 1 << TcpEventHandler.CAPACITY;
+
             return;
         }
 
 
         do {
 
-            if (!processMessage(in, out))
+            if (!read(in, out))
                 return;
 
         } while (in.remaining() > SIZE_OF_SIZE && out.remaining() > out.capacity() / SIZE_OF_SIZE);
@@ -67,7 +67,7 @@ public abstract class WireTcpHandler implements TcpHandler {
      * @param out the destination bytes
      * @return true if we can read attempt the next
      */
-    private boolean processMessage(Bytes in, Bytes out) {
+    private boolean read(Bytes in, Bytes out) {
 
         long length = in.readUnsignedInt(in.position());
 
