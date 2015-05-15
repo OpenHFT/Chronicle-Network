@@ -59,10 +59,10 @@ public class ClientWiredStatelessTcpConnectionHub {
     @Nullable
     protected CloseablesManager closeables;
 
-      final Wire outWire = new TextWire(Bytes.elasticByteBuffer());
+    final Wire outWire = new TextWire(Bytes.elasticByteBuffer());
 
     long largestChunkSoFar = 0;
-     public final Wire inWire = new TextWire(Bytes.elasticByteBuffer());
+    public final Wire inWire = new TextWire(Bytes.elasticByteBuffer());
 
     //  used by the enterprise version
     public int localIdentifier;
@@ -78,7 +78,6 @@ public class ClientWiredStatelessTcpConnectionHub {
     // set up in the header
     private long startTime;
     private boolean doHandShaking;
-
 
 
     public ClientWiredStatelessTcpConnectionHub(
@@ -282,7 +281,7 @@ public class ClientWiredStatelessTcpConnectionHub {
                 if (clientChannel == null)
                     lazyConnect(timeoutMs, remoteAddress);
                 try {
-                    writeLength(wire);
+
 
                     // send out all the bytes
                     writeSocket(wire, timeoutTime);
@@ -342,102 +341,57 @@ public class ClientWiredStatelessTcpConnectionHub {
 
 
     private Wire proxyReplyThrowable(long timeoutTime, long tid) throws IOException {
-
-        assert inBytesLock().isHeldByCurrentThread();
-
-        inWireByteBuffer().clear();
-        inWire.clear();
-
         for (; ; ) {
 
-            // read the next item from the socket
-            if (parkedTransactionId == 0) {
-
-                assert parkedTransactionTimeStamp == 0;
-
-                // if we have processed all the bytes that we have read in
-                final Bytes<?> bytes = inWire.bytes();
-                if (inWireByteBuffer().position() == bytes.position())
-                    inWireClear();
-
-                // todo change the size to include the meta data bit
-                // reads just the size
-                readSocket(SIZE_OF_SIZE, timeoutTime);
-
-                final long messageSize = Wires.lengthOf(bytes.readInt());
-
-                try {
-                    assert messageSize > 0 : "Invalid message size " + messageSize;
-                    assert messageSize < 1 << 30 : "Invalid message size " + messageSize;
-                } catch (AssertionError e) {
-                    assert messageSize < 1 << 30 : "Invalid message size " + messageSize;
-                }
-
-                final long remainingBytes0 = messageSize;
+            assert inBytesLock().isHeldByCurrentThread();
 
 
-                // todo improve this
-                assert remainingBytes0 < Integer.MAX_VALUE;
+            // if we have processed all the bytes that we have read in
+            final Bytes<?> bytes = inWire.bytes();
+            inWireClear();
 
-                readSocket((int) remainingBytes0, timeoutTime);
+            // todo change the size to include the meta data bit
+            // reads just the size
+            readSocket(SIZE_OF_SIZE, timeoutTime);
 
-                bytes.limit(bytes.position() + messageSize);
+            final int header = bytes.readVolatileInt(bytes.position());
+            final long messageSize = Wires.lengthOf(header);
 
+            assert messageSize > 0 : "Invalid message size " + messageSize;
+            assert messageSize < 1 << 30 : "Invalid message size " + messageSize;
 
-                if (net.openhft.chronicle.wire.YamlLogging.clientReads) {
+            if (!Wires.isData(header)) {
 
-                    System.out.println("\n" +
-                            net.openhft.chronicle.wire.YamlLogging.readMessage +
-                            "receives :\n\n" +
-                            "```yaml\n" +
-                            Wires.fromSizePrefixedBlobs(bytes) +
-                            "```\n");
-                }
+                readSocket((int) messageSize, timeoutTime);
 
+                inWire.readDocument((WireIn w) -> {
+                    parkedTransactionId = w.read(CoreFields.tid).int64();
 
-                int headerlen = bytes.readVolatileInt();
+                    if (parkedTransactionId != tid) {
 
-                assert !Wires.isData(headerlen);
-                long tid0 = inWire.read(CoreFields.tid).int64();
+                        // if the transaction id is not for this thread, park it
+                        // and allow another thread to pick it up
+                        parkedTransactionTimeStamp = System.currentTimeMillis();
+                        pause();
 
-                // if the transaction id is for this thread process it
-                if (tid0 == tid) {
-                    clearParked();
-                    return inWire;
+                    }
 
-                } else {
-
-                    // if the transaction id is not for this thread, park it
-                    // and allow another thread to pick it up
-                    parkedTransactionTimeStamp = System.currentTimeMillis();
-                    parkedTransactionId = tid0;
-                    pause();
-                    continue;
-                }
+                }, null);
+                continue;
             }
 
-            // the transaction id was read by another thread, but is for this thread, process it
             if (parkedTransactionId == tid) {
-                clearParked();
+                // the data is for this thread so process it
+                readSocket((int) messageSize, timeoutTime);
                 return inWire;
-            }
+            } else if (System.currentTimeMillis() - timeoutTime > parkedTransactionTimeStamp)
 
-            // time out the old transaction id
-            if (System.currentTimeMillis() - timeoutTime >
-                    parkedTransactionTimeStamp) {
-
-                LOG.error("name=" + name, new IllegalStateException("Skipped Message with " +
+                throw new IllegalStateException("Skipped Message with " +
                         "transaction-id=" +
                         parkedTransactionTimeStamp +
                         ", this can occur when you have another thread which has called the " +
                         "stateless client and terminated abruptly before the message has been " +
-                        "returned from the server and hence consumed by the other thread."));
-
-                // read the the next message
-                clearParked();
-                pause();
-            }
-
+                        "returned from the server and hence consumed by the other thread.");
         }
 
     }
@@ -505,6 +459,9 @@ public class ClientWiredStatelessTcpConnectionHub {
 
             checkTimeout(timeoutTime);
         }
+
+        final Bytes<?> bytes = inWire.bytes();
+        bytes.limit(position + requiredNumberOfBytes);
     }
 
     private ByteBuffer inWireByteBuffer() {
@@ -533,7 +490,6 @@ public class ClientWiredStatelessTcpConnectionHub {
         final Bytes<?> bytes = outWire.bytes();
         long outBytesPosition = bytes.position();
 
-
         // if we have other threads waiting to send and the buffer is not full,
         // let the other threads write to the buffer
         if (outBytesLock().hasQueuedThreads() &&
@@ -543,13 +499,12 @@ public class ClientWiredStatelessTcpConnectionHub {
 
         final ByteBuffer outBuffer = (ByteBuffer) bytes.underlyingObject();
         outBuffer.limit((int) bytes.position());
-        outBuffer.position(SIZE_OF_SIZE);
+
+        outBuffer.position(0);
 
         if (EventGroup.IS_DEBUG) {
             writeBytesToStandardOut(bytes, outBuffer);
         }
-
-        outBuffer.position(0);
 
         upateLargestChunkSoFarSize(outBuffer);
 
@@ -559,7 +514,6 @@ public class ClientWiredStatelessTcpConnectionHub {
 
             if (len == -1)
                 throw new IORuntimeException("Disconnection to server");
-
 
             // if we have queued threads then we don't have to write all the bytes as the other
             // threads will write the remains bytes.
@@ -597,10 +551,9 @@ public class ClientWiredStatelessTcpConnectionHub {
 
                     System.out.println(((!YamlLogging.title.isEmpty()) ? "### " + YamlLogging
                             .title + "\n\n" : "") + "" +
-                             YamlLogging.writeMessage + (YamlLogging.writeMessage.isEmpty() ?
-                                    "" :
-                                    "\n\n") +
-                            "sends :\n\n" +
+                            YamlLogging.writeMessage + (YamlLogging.writeMessage.isEmpty() ?
+                            "" : "\n\n") +
+                            "sends:\n\n" +
                             "```yaml\n" +
                             Wires.fromSizePrefixedBlobs(bytes) +
                             "```");
@@ -635,10 +588,10 @@ public class ClientWiredStatelessTcpConnectionHub {
 
     /**
      * @param eventName the event name
-     * @param startTime  the time the message was sent
+     * @param startTime the time the message was sent
      * @param wire
-     * @param csp        the csp describing this nammed channel
-     * @param cid        if the cid != 0 the cid will be used instead of the csp
+     * @param csp       the csp describing this nammed channel
+     * @param cid       if the cid != 0 the cid will be used instead of the csp
      * @return the tid
      */
     private long proxySend(@NotNull final WireKey eventName,
@@ -715,7 +668,9 @@ public class ClientWiredStatelessTcpConnectionHub {
     public long writeHeader(long startTime, Wire wire, String csp, long cid) {
 
         assert outBytesLock().isHeldByCurrentThread();
-        markSize(wire);
+
+        assert outBytesLock().isHeldByCurrentThread();
+
         startTime(startTime);
 
         long tid = nextUniqueTransaction(startTime);
@@ -730,23 +685,6 @@ public class ClientWiredStatelessTcpConnectionHub {
         return tid;
     }
 
-
-    /**
-     * mark the location of the outWire size
-     *
-     * @param outWire the wire to be marked
-     */
-    public void markSize(Wire outWire) {
-
-        assert outBytesLock().isHeldByCurrentThread();
-
-        // this is where the size will go
-        final Bytes<?> bytes = outWire.bytes();
-        bytes.mark();
-
-        // skip the 2 bytes for the size
-        bytes.skip(SIZE_OF_SIZE);
-    }
 
     public void startTime(long startTime) {
         this.startTime = startTime;

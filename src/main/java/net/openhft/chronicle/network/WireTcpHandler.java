@@ -21,6 +21,7 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.wire.TextWire;
 import net.openhft.chronicle.wire.Wire;
+import net.openhft.chronicle.wire.Wires;
 
 import java.io.StreamCorruptedException;
 
@@ -69,26 +70,29 @@ public abstract class WireTcpHandler implements TcpHandler {
      */
     private boolean read(Bytes in, Bytes out) {
 
-        long length = in.readUnsignedInt(in.position());
 
-        assert length >= 0;
+
+        long header = in.readInt(in.position());
+
+        long length = Wires.lengthOf(header);
+
+        assert length >= 0 && length < 1 << 22 : "in="+in+", hex=" + Bytes.toHex(in);
 
         if (length == 0) {
             in.skip(SIZE_OF_SIZE);
             return false;
         }
 
-        if (in.remaining() < length + SIZE_OF_SIZE)
-            // we have to first read more data befor this can be processed
+        if (in.remaining() < length)
+            // we have to first read more data before this can be processed
             return false;
         else {
 
-            in.skip(SIZE_OF_SIZE);
             long limit = in.limit();
-            long end = in.position() + length;
+            long end = in.position() + length+SIZE_OF_SIZE;
             long outPos = out.position();
             try {
-                out.skip(SIZE_OF_SIZE);
+
                 in.limit(end);
 
                 final long position = inWire.bytes().position();
@@ -98,7 +102,7 @@ public abstract class WireTcpHandler implements TcpHandler {
                     inWire.bytes().position(position + length);
                 }
 
-                long written = out.position() - outPos - SIZE_OF_SIZE;
+                long written = out.position() - outPos;
 
                 if (written == 0) {
                     out.position(outPos);
@@ -106,7 +110,6 @@ public abstract class WireTcpHandler implements TcpHandler {
                     return false;
                 }
 
-                out.writeUnsignedInt(outPos, (int) written);
 
             } catch (Exception e) {
                 e.printStackTrace();
