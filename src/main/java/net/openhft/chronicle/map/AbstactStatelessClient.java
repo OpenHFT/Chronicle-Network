@@ -11,12 +11,14 @@ import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static net.openhft.chronicle.wire.CoreFields.reply;
+
 /**
  * Created by Rob Austin
  */
 public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
 
-    protected final ClientWiredStatelessTcpConnectionHub hub;
+    final ClientWiredStatelessTcpConnectionHub hub;
     private final long cid;
     protected final String channelName;
     protected String csp;
@@ -106,6 +108,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
             hub.writeSocket(hub.outWire());
 
         } finally {
+      //todo rob      hub.outWire().clear();
             hub.outBytesLock().unlock();
         }
         return tid;
@@ -140,6 +143,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
             return readReply(wireIn, CoreFields.reply, v -> v.bool());
 
         } finally {
+            //todo rob     hub.inWire.clear();
             hub.inBytesLock().unlock();
         }
     }
@@ -197,6 +201,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
             checkIsData(wire);
             return readReply(wire, reply, c);
         } finally {
+            //todo rob      hub.inWire.clear();
             hub.inBytesLock().unlock();
         }
     }
@@ -232,4 +237,27 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
 
         };
     }
+
+    int readInt(long tid, long startTime) {
+        assert !hub.outBytesLock().isHeldByCurrentThread();
+
+        long timeoutTime = startTime + hub.timeoutMs;
+
+        // receive
+        hub.inBytesLock().lock();
+        try {
+            final Wire wireIn = hub.proxyReply(timeoutTime, tid);
+            checkIsData(wireIn);
+            return wireIn.read(reply).int32();
+        } finally {
+            //todo rob    hub.inWire.clear();
+            hub.inBytesLock().unlock();
+        }
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    void identifier(int localIdentifier) {
+        hub.localIdentifier = localIdentifier;
+    }
+
 }

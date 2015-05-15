@@ -59,10 +59,10 @@ public class ClientWiredStatelessTcpConnectionHub {
     @Nullable
     protected CloseablesManager closeables;
 
-    private final Wire outWire = new TextWire(Bytes.elasticByteBuffer());
+      final Wire outWire = new TextWire(Bytes.elasticByteBuffer());
 
     long largestChunkSoFar = 0;
-    private final Wire intWire = new TextWire(Bytes.elasticByteBuffer());
+     public final Wire inWire = new TextWire(Bytes.elasticByteBuffer());
 
     //  used by the enterprise version
     public int localIdentifier;
@@ -78,6 +78,7 @@ public class ClientWiredStatelessTcpConnectionHub {
     // set up in the header
     private long startTime;
     private boolean doHandShaking;
+
 
 
     public ClientWiredStatelessTcpConnectionHub(
@@ -344,6 +345,7 @@ public class ClientWiredStatelessTcpConnectionHub {
 
         assert inBytesLock().isHeldByCurrentThread();
 
+
         for (; ; ) {
 
             // read the next item from the socket
@@ -352,7 +354,7 @@ public class ClientWiredStatelessTcpConnectionHub {
                 assert parkedTransactionTimeStamp == 0;
 
                 // if we have processed all the bytes that we have read in
-                final Bytes<?> bytes = intWire.bytes();
+                final Bytes<?> bytes = inWire.bytes();
                 if (inWireByteBuffer().position() == bytes.position())
                     inWireClear();
 
@@ -396,12 +398,12 @@ public class ClientWiredStatelessTcpConnectionHub {
                 int headerlen = bytes.readVolatileInt();
 
                 assert !Wires.isData(headerlen);
-                long tid0 = intWire.read(CoreFields.tid).int64();
+                long tid0 = inWire.read(CoreFields.tid).int64();
 
                 // if the transaction id is for this thread process it
                 if (tid0 == tid) {
                     clearParked();
-                    return intWire;
+                    return inWire;
 
                 } else {
 
@@ -417,7 +419,7 @@ public class ClientWiredStatelessTcpConnectionHub {
             // the transaction id was read by another thread, but is for this thread, process it
             if (parkedTransactionId == tid) {
                 clearParked();
-                return intWire;
+                return inWire;
             }
 
             // time out the old transaction id
@@ -445,7 +447,7 @@ public class ClientWiredStatelessTcpConnectionHub {
      */
     private void inWireClear() {
         inWireByteBuffer().clear();
-        final Bytes<?> bytes = intWire.bytes();
+        final Bytes<?> bytes = inWire.bytes();
         bytes.clear();
     }
 
@@ -506,12 +508,12 @@ public class ClientWiredStatelessTcpConnectionHub {
     }
 
     private ByteBuffer inWireByteBuffer() {
-        final Bytes<?> bytes = intWire.bytes();
+        final Bytes<?> bytes = inWire.bytes();
         return (ByteBuffer) bytes.underlyingObject();
     }
 
     private ByteBuffer inWireByteBuffer(long requiredCapacity) {
-        final Bytes<?> bytes = intWire.bytes();
+        final Bytes<?> bytes = inWire.bytes();
         bytes.ensureCapacity(requiredCapacity);
         return (ByteBuffer) bytes.underlyingObject();
     }
