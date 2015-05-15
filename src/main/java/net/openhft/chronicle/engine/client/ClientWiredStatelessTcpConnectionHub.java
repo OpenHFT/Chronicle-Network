@@ -345,6 +345,8 @@ public class ClientWiredStatelessTcpConnectionHub {
 
         assert inBytesLock().isHeldByCurrentThread();
 
+        inWireByteBuffer().clear();
+        inWire.clear();
 
         for (; ; ) {
 

@@ -108,7 +108,6 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
             hub.writeSocket(hub.outWire());
 
         } finally {
-      //todo rob      hub.outWire().clear();
             hub.outBytesLock().unlock();
         }
         return tid;
@@ -143,7 +142,6 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
             return readReply(wireIn, CoreFields.reply, v -> v.bool());
 
         } finally {
-            //todo rob     hub.inWire.clear();
             hub.inBytesLock().unlock();
         }
     }
@@ -201,7 +199,6 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
             checkIsData(wire);
             return readReply(wire, reply, c);
         } finally {
-            //todo rob      hub.inWire.clear();
             hub.inBytesLock().unlock();
         }
     }
@@ -250,7 +247,6 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
             checkIsData(wireIn);
             return wireIn.read(reply).int32();
         } finally {
-            //todo rob    hub.inWire.clear();
             hub.inBytesLock().unlock();
         }
     }
