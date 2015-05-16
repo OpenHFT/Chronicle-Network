@@ -23,4 +23,31 @@ public enum StringUtils {
 
         return true;
     }
+
+    public static boolean contains(@NotNull final CharSequence source,
+                                   @NotNull final String token) {
+
+
+        OUTER:
+        for (int sourceI = 0; sourceI <= source.length()- token.length(); sourceI++) {
+            int lastSourceI = sourceI;
+            for (int tokenI = 0; tokenI < token.length(); tokenI++) {
+
+                if (toLowerCase(source.charAt(sourceI)) != toLowerCase(token.charAt(tokenI))) {
+                    sourceI = lastSourceI;
+                    continue OUTER;
+                }
+                sourceI++;
+
+            }
+
+            return true;
+        }
+
+
+        return false;
+    }
+
+
+
 }
