@@ -64,7 +64,8 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
     }
 
     public <T> T proxyReturnWireConsumerInOut(@NotNull final WireKey eventId,
-                                              CoreFields reply, @Nullable final Consumer<ValueOut> consumerOut,
+                                              CoreFields reply,
+                                              @Nullable final Consumer<ValueOut> consumerOut,
                                               @NotNull final Function<ValueIn, T> consumerIn) {
         final long startTime = System.currentTimeMillis();
         long tid = sendEvent(startTime, eventId, consumerOut);
@@ -90,6 +91,8 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
                              @NotNull final WireKey eventId,
                              @Nullable final Consumer<ValueOut> consumer) {
         long tid;
+        if (hub.outBytesLock().isHeldByCurrentThread())
+            throw new IllegalStateException("Cannot view map while debugging");
         hub.outBytesLock().lock();
         try {
 
@@ -102,7 +105,6 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
                     valueOut.marshallable(WireOut.EMPTY);
                 else
                     consumer.accept(valueOut);
-
             });
 
             hub.writeSocket(hub.outWire());
