@@ -76,7 +76,7 @@ public abstract class WireTcpHandler implements TcpHandler {
 
         long length = Wires.lengthOf(header);
 
-        assert length >= 0 && length < 1 << 22 : "in="+in+", hex=" + Bytes.toHex(in);
+        assert length >= 0 && length < 1 << 22 : "in=" + in + ", hex=" + in.toHexString();
 
         if (length == 0) {
             in.skip(SIZE_OF_SIZE);
