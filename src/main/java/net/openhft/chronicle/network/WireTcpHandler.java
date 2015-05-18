@@ -69,11 +69,7 @@ public abstract class WireTcpHandler implements TcpHandler {
      * @return true if we can read attempt the next
      */
     private boolean read(Bytes in, Bytes out) {
-
-
-
         long header = in.readInt(in.position());
-
         long length = Wires.lengthOf(header);
 
         assert length >= 0 && length < 1 << 22 : "in=" + in + ", hex=" + in.toHexString();
