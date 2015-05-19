@@ -102,8 +102,14 @@ public class ClientWiredStatelessTcpConnectionHub {
         try {
             SocketChannel socketChannel = openSocketChannel(closeables);
 
-            if (socketChannel.connect(remoteAddress))
+            if (socketChannel.connect(remoteAddress)) {
+
                 clientChannel = socketChannel;
+
+                clientChannel.socket().setTcpNoDelay(true);
+                clientChannel.socket().setReceiveBufferSize(tcpBufferSize);
+                clientChannel.socket().setSendBufferSize(tcpBufferSize);
+            }
 
         } catch (IOException e) {
             LOG.error("", e);
@@ -173,8 +179,10 @@ public class ClientWiredStatelessTcpConnectionHub {
                 }
 
                 result.socket().setTcpNoDelay(true);
-                if (doHandShaking)
+                result.socket().setReceiveBufferSize(tcpBufferSize);
+                result.socket().setSendBufferSize(tcpBufferSize);
 
+                if (doHandShaking)
                     break;
             } catch (IOException e) {
                 if (closeables != null) closeables.closeQuietly();
