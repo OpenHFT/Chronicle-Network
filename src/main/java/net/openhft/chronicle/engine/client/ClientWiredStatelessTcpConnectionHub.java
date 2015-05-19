@@ -121,24 +121,8 @@ public class ClientWiredStatelessTcpConnectionHub {
     public ReentrantLock inBytesLock() {
         return inBytesLock;
     }
-
     public ReentrantLock outBytesLock() {
         return outBytesLock;
-    }
-
-    protected void checkVersion(@NotNull String csp) {
-
-        final String serverVersion = serverApplicationVersion(csp);
-        final String clientVersion = clientVersion();
-
-        if (!serverVersion.equals(clientVersion)) {
-            LOG.warn("DIFFERENT CHRONICLE-MAP VERSIONS: The Chronicle-Map-Server and " +
-                    "Stateless-Client are on different " +
-                    "versions, " +
-                    " we suggest that you use the same version, server=" +
-                    serverApplicationVersion(csp) + ", " +
-                    "client=" + clientVersion);
-        }
     }
 
     public static boolean IS_DEBUG = java.lang.management.ManagementFactory.getRuntimeMXBean().
