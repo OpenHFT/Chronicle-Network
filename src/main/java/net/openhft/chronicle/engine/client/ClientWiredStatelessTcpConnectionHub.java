@@ -243,12 +243,6 @@ public class ClientWiredStatelessTcpConnectionHub {
         return (result == null) ? "" : result;
     }
 
-    @SuppressWarnings("WeakerAccess")
-    @NotNull
-    String clientVersion() {
-        throw new UnsupportedOperationException("todo (clientVersion)");
-    }
-
 
     /**
      * sends data to the server via TCP/IP
@@ -259,7 +253,6 @@ public class ClientWiredStatelessTcpConnectionHub {
 
         assert outBytesLock().isHeldByCurrentThread();
         assert !inBytesLock().isHeldByCurrentThread();
-
 
         final long timeoutTime = startTime + this.timeoutMs;
         try {
@@ -285,23 +278,6 @@ public class ClientWiredStatelessTcpConnectionHub {
         } catch (Exception e) {
             close();
             throw e;
-        }
-    }
-
-    private void writeLength(Wire outWire) {
-        assert outBytesLock().isHeldByCurrentThread();
-        final Bytes<?> bytes = outWire.bytes();
-        long position = bytes.position();
-        if (position > Integer.MAX_VALUE || position < Integer.MIN_VALUE)
-            throw new IllegalStateException("message too large");
-
-        long pos = bytes.position();
-        try {
-            bytes.reset();
-            long size = position - bytes.position();
-            bytes.writeUnsignedInt(size - SIZE_OF_SIZE);
-        } finally {
-            bytes.position(pos);
         }
     }
 
@@ -367,6 +343,7 @@ public class ClientWiredStatelessTcpConnectionHub {
             if (parkedTransactionId == tid) {
                 // the data is for this thread so process it
                 readSocket((int) messageSize, timeoutTime);
+                logToStandardOutMessageReceived(inWire.bytes());
                 return inWire;
             } else if (System.currentTimeMillis() - timeoutTime > parkedTransactionTimeStamp)
 
@@ -389,11 +366,6 @@ public class ClientWiredStatelessTcpConnectionHub {
         bytes.clear();
     }
 
-    private void clearParked() {
-        assert inBytesLock().isHeldByCurrentThread();
-        parkedTransactionId = 0;
-        parkedTransactionTimeStamp = 0;
-    }
 
     private void pause() {
 
@@ -483,9 +455,8 @@ public class ClientWiredStatelessTcpConnectionHub {
 
         outBuffer.position(0);
 
-        if (EventGroup.IS_DEBUG) {
-            writeBytesToStandardOut(bytes, outBuffer);
-        }
+        if (EventGroup.IS_DEBUG)
+            logToStandardOutMessageSent(bytes, outBuffer);
 
         upateLargestChunkSoFarSize(outBuffer);
 
@@ -519,7 +490,11 @@ public class ClientWiredStatelessTcpConnectionHub {
 
     }
 
-    private void writeBytesToStandardOut(Bytes<?> bytes, ByteBuffer outBuffer) {
+    private void logToStandardOutMessageSent(Bytes<?> bytes, ByteBuffer outBuffer) {
+        if (!YamlLogging.clientWrites || !IS_DEBUG)
+            return;
+
+
         final long position = bytes.position();
         final long limit = bytes.limit();
         try {
@@ -527,7 +502,7 @@ public class ClientWiredStatelessTcpConnectionHub {
             bytes.limit(outBuffer.limit());
             bytes.position(outBuffer.position());
 
-            if (net.openhft.chronicle.wire.YamlLogging.clientWrites) {
+            if (YamlLogging.clientWrites) {
                 try {
 
                     System.out.println(((!YamlLogging.title.isEmpty()) ? "### " + YamlLogging
@@ -538,14 +513,14 @@ public class ClientWiredStatelessTcpConnectionHub {
                             "```yaml\n" +
                             Wires.fromSizePrefixedBlobs(bytes) +
                             "```");
-                    net.openhft.chronicle.wire.YamlLogging.title = "";
-                    net.openhft.chronicle.wire.YamlLogging.writeMessage = "";
+                    YamlLogging.title = "";
+                    YamlLogging.writeMessage = "";
 
                 } catch (Exception e) {
                     System.out.println(
                             Bytes.toDebugString(bytes));
                 }
-            }
+                }
 
         } finally {
             bytes.limit(limit);
@@ -553,6 +528,35 @@ public class ClientWiredStatelessTcpConnectionHub {
         }
     }
 
+
+    private void logToStandardOutMessageReceived(Bytes<?> bytes) {
+
+        if (!YamlLogging.clientReads || !IS_DEBUG)
+            return;
+
+        final long position = bytes.position();
+        final long limit = bytes.limit();
+        try {
+
+            try {
+
+                System.out.println("\nreceives:\n\n" +
+                        "```yaml\n" +
+                        Wires.fromSizePrefixedBlobs(bytes) +
+                        "```\n\n");
+                net.openhft.chronicle.wire.YamlLogging.title = "";
+                net.openhft.chronicle.wire.YamlLogging.writeMessage = "";
+
+            } catch (Exception e) {
+                System.out.println(Bytes.toDebugString(bytes));
+            }
+
+
+        } finally {
+            bytes.limit(limit);
+            bytes.position(position);
+        }
+    }
     /**
      * calculates the size of each chunk
      *
