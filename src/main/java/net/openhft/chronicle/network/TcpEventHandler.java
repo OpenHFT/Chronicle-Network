@@ -32,7 +32,7 @@ import java.nio.channels.SocketChannel;
  * Created by peter.lawrey on 22/01/15.
  */
 public class TcpEventHandler implements EventHandler {
-    public static final int CAPACITY = 1 << 22+1024;
+    public static final int CAPACITY = 1 << 23;
     private final SocketChannel sc;
     private final TcpHandler handler;
     private final ByteBuffer inBB = ByteBuffer.allocateDirect(CAPACITY);
@@ -45,6 +45,7 @@ public class TcpEventHandler implements EventHandler {
         sc.configureBlocking(false);
         sc.socket().setTcpNoDelay(true);
         sc.socket().setReceiveBufferSize(CAPACITY);
+        sc.socket().setSendBufferSize(CAPACITY);
         this.handler = handler;
         // there is nothing which needs to be written by default.
         outBB.limit(0);

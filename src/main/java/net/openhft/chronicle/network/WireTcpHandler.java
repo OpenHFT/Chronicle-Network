@@ -22,6 +22,8 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.wire.TextWire;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.Wires;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.StreamCorruptedException;
 
@@ -31,6 +33,8 @@ import java.io.StreamCorruptedException;
 public abstract class WireTcpHandler implements TcpHandler {
     public static final int SIZE_OF_SIZE = 4;
     protected Wire inWire, outWire;
+
+    private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
 
     @Override
     public void process(Bytes in, Bytes out) {
@@ -69,8 +73,8 @@ public abstract class WireTcpHandler implements TcpHandler {
      * @return true if we can read attempt the next
      */
     private boolean read(Bytes in, Bytes out) {
-        long header = in.readInt(in.position());
-        long length = Wires.lengthOf(header);
+
+        long length = Wires.lengthOf(in.readInt(in.position()));
 
         assert length >= 0 && length < 1 << 22 : "in=" + in + ", hex=" + in.toHexString();
 
@@ -79,43 +83,42 @@ public abstract class WireTcpHandler implements TcpHandler {
             return false;
         }
 
-        if (in.remaining() < length)
+        if (in.remaining() < length)   {
             // we have to first read more data before this can be processed
+            if (LOG.isDebugEnabled())
+                LOG.debug("required length=" + length + " but only got " + in.remaining() + " bytes, " +
+                        "this is " +
+                        "short by " + (length - +in.remaining()) + " bytes");
             return false;
-        else {
+        }
 
-            long limit = in.limit();
-            long end = in.position() + length+SIZE_OF_SIZE;
-            long outPos = out.position();
+        long limit = in.limit();
+        long end = in.position() + length + SIZE_OF_SIZE;
+        long outPos = out.position();
+        try {
+
+            in.limit(end);
+
+            final long position = inWire.bytes().position();
             try {
-
-                in.limit(end);
-
-                final long position = inWire.bytes().position();
-                try {
-                    process(inWire, outWire);
-                } finally {
-                    inWire.bytes().position(position + length);
-                }
-
-                long written = out.position() - outPos;
-
-                if (written == 0) {
-                    out.position(outPos);
-
-                    return false;
-                }
-
-
-            } catch (Exception e) {
-                e.printStackTrace();
+                process(inWire, outWire);
             } finally {
-                in.limit(limit);
-                in.position(end);
+                inWire.bytes().position(position + length);
             }
 
+            long written = out.position() - outPos;
 
+            if (written > 0)
+                return false;
+
+        } catch (Exception e) {
+            LOG.error("", e);
+        } finally {
+            in.limit(limit);
+            in.position(end);
         }
+
+
         return true;
     }
 
@@ -154,7 +157,7 @@ public abstract class WireTcpHandler implements TcpHandler {
      */
 
     /**
-     * @param in the wire to be processed
+     * @param in  the wire to be processed
      * @param out the result of processing the {@code in}
      * @throws StreamCorruptedException if the wire is corrupt
      */
