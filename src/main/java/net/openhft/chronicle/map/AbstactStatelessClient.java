@@ -64,7 +64,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
     }
 
     public <T> T proxyReturnWireConsumerInOut(@NotNull final WireKey eventId,
-                                              CoreFields reply,
+                                              @NotNull final CoreFields reply,
                                               @Nullable final Consumer<ValueOut> consumerOut,
                                               @NotNull final Function<ValueIn, T> consumerIn) {
         final long startTime = System.currentTimeMillis();
@@ -86,7 +86,6 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         proxyReturnVoid(eventId, null);
     }
 
-
     protected long sendEvent(final long startTime,
                              @NotNull final WireKey eventId,
                              @Nullable final Consumer<ValueOut> consumer) {
@@ -95,8 +94,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
             throw new IllegalStateException("Cannot view map while debugging");
         hub.outBytesLock().lock();
         try {
-
-            tid = writeHeader(startTime);
+            tid = writeMetaData(startTime);
             hub.outWire().writeDocument(false, wireOut -> {
 
                 final ValueOut valueOut = wireOut.writeEventName(eventId);
@@ -115,8 +113,50 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         return tid;
     }
 
-    protected long writeHeader(long startTime) {
-        return hub.writeHeader(startTime, hub.outWire(), csp, cid);
+
+    protected void sendEventAsync(@NotNull final WireKey eventId,
+                                  @Nullable final Consumer<ValueOut> consumer) {
+
+        if (hub.outBytesLock().isHeldByCurrentThread())
+            throw new IllegalStateException("Cannot view map while debugging");
+
+        hub.outBytesLock().lock();
+        try {
+
+            writeAsyncMetaData(System.currentTimeMillis());
+            hub.outWire().writeDocument(false, wireOut -> {
+
+                final ValueOut valueOut = wireOut.writeEventName(eventId);
+
+                if (consumer == null)
+                    valueOut.marshallable(WireOut.EMPTY);
+                else
+                    consumer.accept(valueOut);
+            });
+
+            hub.writeSocket(hub.outWire());
+
+        } finally {
+            hub.outBytesLock().unlock();
+        }
+    }
+
+    /**
+     * @param startTime the start time of this transaction
+     * @return the translation id ( which is sent to the server )
+     */
+    protected long writeMetaData(long startTime) {
+        return hub.writeMetaData(startTime, hub.outWire(), csp, cid);
+    }
+
+    /**
+     * if async meta data is written, no response will be returned from the server
+     *
+     * @param startTime the start time of this transaction
+     */
+    protected void writeAsyncMetaData(long startTime) {
+        hub.startTime(startTime);
+        hub.writeAsyncHeader(hub.outWire(), csp, cid);
     }
 
     protected void checkIsData(Wire wireIn) {

@@ -52,7 +52,6 @@ public class ClientWiredStatelessTcpConnectionHub {
     private final ReentrantLock inBytesLock = new ReentrantLock(true);
     private final ReentrantLock outBytesLock = new ReentrantLock();
 
-
     @NotNull
     private final AtomicLong transactionID = new AtomicLong(0);
 
@@ -60,7 +59,6 @@ public class ClientWiredStatelessTcpConnectionHub {
     protected CloseablesManager closeables;
 
     final Wire outWire = new TextWire(Bytes.elasticByteBuffer());
-
     long largestChunkSoFar = 0;
     public final Wire inWire = new TextWire(Bytes.elasticByteBuffer());
 
@@ -79,7 +77,6 @@ public class ClientWiredStatelessTcpConnectionHub {
     private long startTime;
     private boolean doHandShaking;
 
-
     public ClientWiredStatelessTcpConnectionHub(
             byte localIdentifier,
             boolean doHandShaking,
@@ -89,14 +86,12 @@ public class ClientWiredStatelessTcpConnectionHub {
 
         this.localIdentifier = localIdentifier;
         this.doHandShaking = doHandShaking;
-
         this.tcpBufferSize = tcpBufferSize;
         this.remoteAddress = remoteAddress;
         this.name = " connected to " + remoteAddress.toString();
         this.timeoutMs = timeout;
 
         attemptConnect(remoteAddress);
-
     }
 
     private synchronized void attemptConnect(final InetSocketAddress remoteAddress) {
@@ -345,13 +340,10 @@ public class ClientWiredStatelessTcpConnectionHub {
 
             assert inBytesLock().isHeldByCurrentThread();
 
-
             // if we have processed all the bytes that we have read in
             final Bytes<?> bytes = inWire.bytes();
             inWireClear();
 
-            // todo change the size to include the meta data bit
-            // reads just the size
             readSocket(SIZE_OF_SIZE, timeoutTime);
 
             final int header = bytes.readVolatileInt(bytes.position());
@@ -452,9 +444,7 @@ public class ClientWiredStatelessTcpConnectionHub {
         while (buffer.position() - start < requiredNumberOfBytes) {
             assert clientChannel != null;
 
-            int len = clientChannel.read(buffer);
-
-            if (len == -1)
+            if (clientChannel.read(buffer) == -1)
                 throw new IORuntimeException("Disconnection to server");
 
             checkTimeout(timeoutTime);
@@ -465,8 +455,7 @@ public class ClientWiredStatelessTcpConnectionHub {
     }
 
     private ByteBuffer inWireByteBuffer() {
-        final Bytes<?> bytes = inWire.bytes();
-        return (ByteBuffer) bytes.underlyingObject();
+        return (ByteBuffer) inWire.bytes().underlyingObject();
     }
 
     private ByteBuffer inWireByteBuffer(long requiredCapacity) {
@@ -606,7 +595,7 @@ public class ClientWiredStatelessTcpConnectionHub {
         // send
         outBytesLock().lock();
         try {
-            long tid = writeHeader(startTime, wire, csp, cid);
+            long tid = writeMetaData(startTime,wire, csp, cid);
             wire.writeDocument(false, wireOut -> {
                 wireOut.writeEventName(eventName);
                 wireOut.writeValue().marshallable(w -> {
@@ -620,11 +609,11 @@ public class ClientWiredStatelessTcpConnectionHub {
         }
     }
 
-    @SuppressWarnings("SameParameterValue")
+ /*   @SuppressWarnings("SameParameterValue")
     @Nullable
     public String proxyReturnString(@NotNull final WireKey messageId, String csp, long cid) {
         return proxyReturnString(messageId, outWire, csp, cid);
-    }
+    }*/
 
     @SuppressWarnings("SameParameterValue")
     @Nullable
@@ -665,15 +654,13 @@ public class ClientWiredStatelessTcpConnectionHub {
         return outWire;
     }
 
-    public long writeHeader(long startTime, Wire wire, String csp, long cid) {
+
+    public long writeMetaData(long startTime, Wire wire, String csp, long cid) {
 
         assert outBytesLock().isHeldByCurrentThread();
-
-        assert outBytesLock().isHeldByCurrentThread();
-
         startTime(startTime);
-
         long tid = nextUniqueTransaction(startTime);
+
         wire.writeDocument(true, wireOut -> {
             if (cid == 0)
                 wireOut.write(CoreFields.csp).text(csp);
@@ -683,6 +670,27 @@ public class ClientWiredStatelessTcpConnectionHub {
         });
 
         return tid;
+    }
+
+
+    /**
+     * The writes the meta data to wire - the async version does not contain the tid
+     * @param wire the wire that we will write to
+     * @param csp provide either the csp or the cid
+     * @param cid provide either the csp or the cid
+     */
+    public void writeAsyncHeader(Wire wire, String csp, long cid) {
+
+        assert outBytesLock().isHeldByCurrentThread();
+
+        wire.writeDocument(true, wireOut -> {
+            if (cid == 0)
+                wireOut.write(CoreFields.csp).text(csp);
+            else
+                wireOut.write(CoreFields.cid).int64(cid);
+
+        });
+
     }
 
 
