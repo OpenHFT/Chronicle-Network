@@ -105,7 +105,7 @@ public class ClientWiredStatelessTcpConnectionHub {
             if (socketChannel.connect(remoteAddress)) {
 
                 clientChannel = socketChannel;
-
+                clientChannel.configureBlocking(false);
                 clientChannel.socket().setTcpNoDelay(true);
                 clientChannel.socket().setReceiveBufferSize(tcpBufferSize);
                 clientChannel.socket().setSendBufferSize(tcpBufferSize);
@@ -466,6 +466,12 @@ public class ClientWiredStatelessTcpConnectionHub {
 
             if (len == -1)
                 throw new IORuntimeException("Disconnection to server");
+
+            if (outBuffer.remaining() == 0)
+                break;
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Buffer is full");
 
             // if we have queued threads then we don't have to write all the bytes as the other
             // threads will write the remains bytes.
