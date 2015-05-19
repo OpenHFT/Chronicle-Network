@@ -22,12 +22,7 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.WireTcpHandler;
 import net.openhft.chronicle.network.event.EventGroup;
-import net.openhft.chronicle.wire.BinaryWire;
-import net.openhft.chronicle.wire.RawWire;
-import net.openhft.chronicle.wire.TextWire;
-import net.openhft.chronicle.wire.Wire;
-
-import org.junit.Ignore;
+import net.openhft.chronicle.wire.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -49,7 +44,6 @@ BinaryWire: Loop back echo latency was 6.6/8.0 9/11 19/3056 us for 50/90 99/99.9
 RawWire: Loop back echo latency was 5.9/6.8 8/10 12/80 us for 50/90 99/99.9 99.99/worst %tile
  */
 @RunWith(value = Parameterized.class)
-@Ignore
 public class WireTcpHandlerTest {
 
     public static final int SIZE_OF_SIZE = 4;
@@ -85,13 +79,11 @@ public class WireTcpHandlerTest {
             sc[i] = SocketChannel.open(localAddress);
             sc[i].configureBlocking(false);
         }
-//        testThroughput(sc);
+        //       testThroughput(sc);
         testLatency(desc, wireWrapper, sc[0]);
 
         eg.stop();
     }
-
-
 
 
     private static void testLatency(String desc, Function<Bytes, Wire> wireWrapper, SocketChannel... sockets) throws IOException {
@@ -113,11 +105,8 @@ public class WireTcpHandlerTest {
             for (SocketChannel socket : sockets) {
                 out.clear();
                 outBytes.clear();
-                outBytes.writeUnsignedInt(0);
-                td.key3 = td.key2 = td.key1 = i;
-                td.writeMarshallable(outWire);
-
-                outBytes.writeUnsignedInt(0, (int) outBytes.position() - SIZE_OF_SIZE);
+                td.value3 = td.value2 = td.value1 = i;
+                td.write(outWire);
                 out.limit((int) outBytes.position());
                 socket.write(out);
                 if (out.remaining() > 0)
@@ -130,12 +119,12 @@ public class WireTcpHandlerTest {
                 while (true) {
                     int read = socket.read(in);
                     inBytes.limit(in.position());
-                    if (inBytes.remaining() >= 2) {
-                        long length = inBytes.readUnsignedInt(0);
-                        if (inBytes.remaining() >= length + SIZE_OF_SIZE) {
-                            inBytes.limit(length + SIZE_OF_SIZE);
-                            inBytes.skip(SIZE_OF_SIZE);
-                            td2.readMarshallable(inWire);
+                    if (inBytes.remaining() >= SIZE_OF_SIZE) {
+                        long header = inBytes.readInt(0);
+
+                        final int len = Wires.lengthOf(header);
+                        if (inBytes.remaining() >= len) {
+                            td2.read(inWire);
                         }
                         break;
                     }
@@ -169,8 +158,8 @@ public class WireTcpHandlerTest {
 
         @Override
         protected void process(Wire inWire, Wire outWire) {
-            td.readMarshallable(inWire);
-            td.writeMarshallable(outWire);
+            td.read(inWire);
+            td.write(outWire);
         }
 
         @Override
