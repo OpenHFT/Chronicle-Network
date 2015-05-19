@@ -506,7 +506,7 @@ public class ClientWiredStatelessTcpConnectionHub {
                 try {
 
                     System.out.println(((!YamlLogging.title.isEmpty()) ? "### " + YamlLogging
-                            .title + "\n\n" : "") + "" +
+                            .title + "\n" : "") + "" +
                             YamlLogging.writeMessage + (YamlLogging.writeMessage.isEmpty() ?
                             "" : "\n\n") +
                             "sends:\n\n" +
