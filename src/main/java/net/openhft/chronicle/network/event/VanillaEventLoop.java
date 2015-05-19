@@ -19,6 +19,7 @@
 package net.openhft.chronicle.network.event;
 
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.threads.NamedThreadFactory;
 import net.openhft.chronicle.threads.Pauser;
 
@@ -209,13 +210,7 @@ public class VanillaEventLoop implements EventLoop, Runnable {
         if (thread == null) {
             out.append("\nbut is null !?");
         } else {
-            StackTraceElement[] ste = thread.getStackTrace();
-            int last = ste.length - 1;
-            for (; last > 0; last--)
-                if (!ste[last].getClassName().startsWith("java"))
-                    break;
-            for (int i = 0; i <= last; i++)
-                out.append("\n\tat ").append(ste[i]);
+            Jvm.trimStackTrace(out, thread.getStackTrace());
         }
         // TODO use a logger.
         System.out.println(out);
