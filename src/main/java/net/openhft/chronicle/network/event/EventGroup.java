@@ -90,7 +90,7 @@ public class EventGroup implements EventLoop  {
             long blockingTime = System.nanoTime() - core.loopStartNS();
             long blockingInterval = blockingTime / (MONITOR_INTERVAL / 2);
 
-            if (blockingInterval > lastInterval && !IS_DEBUG) {
+            if (blockingInterval > lastInterval && !IS_DEBUG && core.isAlive()) {
                 core.dumpRunningState(core.name() + " thread has blocked for " + MILLISECONDS.convert(blockingTime, NANOSECONDS) + " ms.");
             } else {
                 lastInterval = Math.max(1, blockingInterval);

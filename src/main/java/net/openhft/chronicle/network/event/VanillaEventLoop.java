@@ -56,7 +56,7 @@ public class VanillaEventLoop implements EventLoop, Runnable {
         this.name = name;
         this.pauser = pauser;
         this.timerIntervalNS = timerIntervalNS;
-        service = Executors.newSingleThreadExecutor(new NamedThreadFactory(name,true));
+        service = Executors.newSingleThreadExecutor(new NamedThreadFactory(name, true));
     }
 
     public void start() {
@@ -206,12 +206,10 @@ public class VanillaEventLoop implements EventLoop, Runnable {
     }
 
     public void dumpRunningState(String message) {
+        Thread thread = this.thread;
+        if (thread == null) return;
         StringBuilder out = new StringBuilder(message);
-        if (thread == null) {
-            out.append("\nbut is null !?");
-        } else {
-            Jvm.trimStackTrace(out, thread.getStackTrace());
-        }
+        Jvm.trimStackTrace(out, thread.getStackTrace());
         // TODO use a logger.
         System.out.println(out);
     }
@@ -222,9 +220,14 @@ public class VanillaEventLoop implements EventLoop, Runnable {
         try {
             if (service.awaitTermination(1000, TimeUnit.MILLISECONDS))
                 service.shutdownNow();
-             service.awaitTermination(100, TimeUnit.MILLISECONDS);
+            service.awaitTermination(100, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             service.shutdownNow();
         }
+    }
+
+    public boolean isAlive() {
+        Thread thread = this.thread;
+        return thread != null && thread.isAlive();
     }
 }
