@@ -1,9 +1,9 @@
 package net.openhft.chronicle.map;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.engine.client.ClientWiredStatelessTcpConnectionHub;
 import net.openhft.chronicle.wire.*;
-import net.openhft.chronicle.wire.util.ExceptionMarshaller;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,8 +22,6 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
     private final long cid;
     protected final String channelName;
     protected String csp;
-    private final ExceptionMarshaller exceptionMarshaller = new ExceptionMarshaller();
-
 
     /**
      * @param channelName
@@ -195,8 +193,9 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         if (replyId.contentEquals(eventName))
             return function.apply(event);
 
-        if (CoreFields.exception.contentEquals(eventName))
-            exceptionMarshaller.readMarshallable(wireIn);
+        if (CoreFields.exception.contentEquals(eventName)) {
+            throw Jvm.rethrow(event.throwable(true));
+        }
 
         throw new UnsupportedOperationException("unknown event=" + eventName);
     }
