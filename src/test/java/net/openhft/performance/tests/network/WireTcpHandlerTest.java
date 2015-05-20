@@ -88,7 +88,7 @@ public class WireTcpHandlerTest {
 
     private static void testLatency(String desc, Function<Bytes, Wire> wireWrapper, SocketChannel... sockets) throws IOException {
 //        System.out.println("Starting latency test");
-        int tests = 500000;
+        int tests = 100000;
         long[] times = new long[tests * sockets.length];
         int count = 0;
         ByteBuffer out = ByteBuffer.allocateDirect(64 * 1024);
