@@ -19,22 +19,25 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.wire.TextWire;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.Wires;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.StreamCorruptedException;
+import java.util.function.Function;
 
-/**
- * Created by peter.lawrey on 22/01/15.
- */
 public abstract class WireTcpHandler implements TcpHandler {
     public static final int SIZE_OF_SIZE = 4;
+    private final Function<Bytes, Wire> bytesToWire;
     protected Wire inWire, outWire;
 
     private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
+
+    public WireTcpHandler(@NotNull final Function<Bytes, Wire> bytesToWire) {
+        this.bytesToWire = bytesToWire;
+    }
 
     @Override
     public void process(Bytes in, Bytes out) {
@@ -51,16 +54,12 @@ public abstract class WireTcpHandler implements TcpHandler {
                 return;
             }
             assert written <= 1 << TcpEventHandler.CAPACITY;
-
             return;
         }
 
-
         do {
-
             if (!read(in, out))
                 return;
-
         } while (in.remaining() > SIZE_OF_SIZE && out.remaining() > out.capacity() / SIZE_OF_SIZE);
     }
 
@@ -75,7 +74,6 @@ public abstract class WireTcpHandler implements TcpHandler {
     private boolean read(Bytes in, Bytes out) {
 
         long length = Wires.lengthOf(in.readInt(in.position()));
-
         assert length >= 0 && length < 1 << 22 : "in=" + in + ", hex=" + in.toHexString();
 
         if (length == 0) {
@@ -83,7 +81,7 @@ public abstract class WireTcpHandler implements TcpHandler {
             return false;
         }
 
-        if (in.remaining() < length)   {
+        if (in.remaining() < length) {
             // we have to first read more data before this can be processed
             if (LOG.isDebugEnabled())
                 LOG.debug("required length=" + length + " but only got " + in.remaining() + " bytes, " +
@@ -124,32 +122,24 @@ public abstract class WireTcpHandler implements TcpHandler {
 
     private boolean recreateWire;
 
-    protected void recreateWire(boolean recreateWire) {
-        this.recreateWire = recreateWire;
-    }
-
     private void checkWires(Bytes in, Bytes out) {
 
         if (recreateWire) {
             recreateWire = false;
-            inWire = createWriteFor(in);
-            outWire = createWriteFor(out);
+            inWire = bytesToWire.apply(in);
+            outWire = bytesToWire.apply(out);
             return;
         }
 
         if ((inWire == null || inWire.bytes() != in)) {
-            inWire = createWriteFor(in);
+            inWire = bytesToWire.apply(in);
             recreateWire = false;
         }
 
         if ((outWire == null || outWire.bytes() != out)) {
-            outWire = createWriteFor(out);
+            outWire = bytesToWire.apply(out);
             recreateWire = false;
         }
-    }
-
-    protected Wire createWriteFor(Bytes bytes) {
-        return new TextWire(bytes);
     }
 
     /**

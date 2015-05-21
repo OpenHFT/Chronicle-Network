@@ -150,10 +150,10 @@ public class WireTcpHandlerTest {
 
     static class EchoRequestHandler extends WireTcpHandler {
         private final TestData td = new TestData();
-        private final Function<Bytes, Wire> wireWrapper;
 
-        EchoRequestHandler(Function<Bytes, Wire> wireWrapper) {
-            this.wireWrapper = wireWrapper;
+
+        EchoRequestHandler(Function<Bytes, Wire> bytesToWire) {
+            super(bytesToWire);
         }
 
         @Override
@@ -162,9 +162,6 @@ public class WireTcpHandlerTest {
             td.write(outWire);
         }
 
-        @Override
-        protected Wire createWriteFor(Bytes bytes) {
-            return wireWrapper.apply(bytes);
-        }
+
     }
 }

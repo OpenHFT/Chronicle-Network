@@ -19,6 +19,7 @@
 package net.openhft.chronicle.engine.client;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.bytes.BytesUtil;
 import net.openhft.chronicle.hash.RemoteCallTimeoutException;
 import net.openhft.chronicle.hash.impl.util.CloseablesManager;
 import net.openhft.chronicle.network.event.EventGroup;
@@ -34,6 +35,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
+
+import static net.openhft.chronicle.wire.CoreFields.reply;
 
 
 /**
@@ -42,7 +46,6 @@ import java.util.concurrent.locks.ReentrantLock;
 public class ClientWiredStatelessTcpConnectionHub {
 
     private static final Logger LOG = LoggerFactory.getLogger(ClientWiredStatelessTcpConnectionHub.class);
-
     public static final int SIZE_OF_SIZE = 4;
 
     protected final String name;
@@ -58,19 +61,18 @@ public class ClientWiredStatelessTcpConnectionHub {
     @Nullable
     protected CloseablesManager closeables;
 
-    final Wire outWire = new TextWire(Bytes.elasticByteBuffer());
-    long largestChunkSoFar = 0;
-    public final Wire inWire = new TextWire(Bytes.elasticByteBuffer());
+    final Wire outWire;
+    final Wire inWire;
 
+    private long largestChunkSoFar = 0;
     //  used by the enterprise version
     public int localIdentifier;
-
-
     private SocketChannel clientChannel;
+
     // this is a transaction id and size that has been read by another thread.
     private volatile long parkedTransactionId;
-
     private volatile long parkedTransactionTimeStamp;
+
     private long limitOfLast = 0;
 
     // set up in the header
@@ -80,14 +82,18 @@ public class ClientWiredStatelessTcpConnectionHub {
     public ClientWiredStatelessTcpConnectionHub(
             byte localIdentifier,
             boolean doHandShaking,
-            InetSocketAddress remoteAddress,
+            @NotNull final InetSocketAddress remoteAddress,
             int tcpBufferSize,
-            long timeout) {
+            long timeout,
+            @NotNull final Function<Bytes, ? extends Wire> byteToWire) {
 
         this.localIdentifier = localIdentifier;
         this.doHandShaking = doHandShaking;
         this.tcpBufferSize = tcpBufferSize;
         this.remoteAddress = remoteAddress;
+
+        outWire = byteToWire.apply(Bytes.elasticByteBuffer());
+        inWire = byteToWire.apply(Bytes.elasticByteBuffer());
         this.name = " connected to " + remoteAddress.toString();
         this.timeoutMs = timeout;
 
@@ -121,6 +127,7 @@ public class ClientWiredStatelessTcpConnectionHub {
     public ReentrantLock inBytesLock() {
         return inBytesLock;
     }
+
     public ReentrantLock outBytesLock() {
         return outBytesLock;
     }
@@ -181,7 +188,6 @@ public class ClientWiredStatelessTcpConnectionHub {
 
     static SocketChannel openSocketChannel(final CloseablesManager closeables) throws IOException {
         SocketChannel result = null;
-
         try {
             result = SocketChannel.open();
             result.socket().setTcpNoDelay(true);
@@ -203,20 +209,14 @@ public class ClientWiredStatelessTcpConnectionHub {
         // ensure that any excising connection are first closed
         if (closeables != null)
             closeables.closeQuietly();
-
         closeables = new CloseablesManager();
     }
 
-
     public synchronized void close() {
-
         if (closeables != null)
             closeables.closeQuietly();
-
-
         closeables = null;
         clientChannel = null;
-
     }
 
     /**
@@ -234,13 +234,6 @@ public class ClientWiredStatelessTcpConnectionHub {
                 break;
         }
         return id;
-    }
-
-    @NotNull
-    public String serverApplicationVersion(@NotNull String csp) {
-        TextWire wire = new TextWire(Bytes.elasticByteBuffer());
-        String result = proxyReturnString(Events.getApplicationVersion, wire, csp, 0);
-        return (result == null) ? "" : result;
     }
 
 
@@ -325,7 +318,7 @@ public class ClientWiredStatelessTcpConnectionHub {
                 readSocket((int) messageSize, timeoutTime);
 
                 inWire.readDocument((WireIn w) -> {
-                    parkedTransactionId = w.read(CoreFields.tid).int64();
+                    parkedTransactionId = CoreFields.tid(w);
 
                     if (parkedTransactionId != tid) {
 
@@ -343,7 +336,7 @@ public class ClientWiredStatelessTcpConnectionHub {
             if (parkedTransactionId == tid) {
                 // the data is for this thread so process it
                 readSocket((int) messageSize, timeoutTime);
-                logToStandardOutMessageReceived(inWire.bytes());
+                logToStandardOutMessageReceived(inWire);
                 return inWire;
             } else if (System.currentTimeMillis() - timeoutTime > parkedTransactionTimeStamp)
 
@@ -356,6 +349,7 @@ public class ClientWiredStatelessTcpConnectionHub {
         }
 
     }
+
 
     /**
      * clears the wire and its underlying byte buffer
@@ -456,7 +450,7 @@ public class ClientWiredStatelessTcpConnectionHub {
         outBuffer.position(0);
 
         if (EventGroup.IS_DEBUG)
-            logToStandardOutMessageSent(bytes, outBuffer);
+            logToStandardOutMessageSent(outWire, outBuffer);
 
         upateLargestChunkSoFarSize(outBuffer);
 
@@ -496,10 +490,12 @@ public class ClientWiredStatelessTcpConnectionHub {
 
     }
 
-    private void logToStandardOutMessageSent(Bytes<?> bytes, ByteBuffer outBuffer) {
+    private void logToStandardOutMessageSent(Wire wire, ByteBuffer outBuffer) {
         if (!YamlLogging.clientWrites || !IS_DEBUG)
             return;
 
+
+        Bytes<?> bytes = wire.bytes();
 
         final long position = bytes.position();
         final long limit = bytes.limit();
@@ -512,12 +508,15 @@ public class ClientWiredStatelessTcpConnectionHub {
                 try {
 
                     System.out.println(((!YamlLogging.title.isEmpty()) ? "### " + YamlLogging
-                            .title + "\n" : "") + "" +
-                            YamlLogging.writeMessage + (YamlLogging.writeMessage.isEmpty() ?
-                            "" : "\n\n") +
-                            "sends:\n\n" +
-                            "```yaml\n" +
-                            Wires.fromSizePrefixedBlobs(bytes) +
+                                    .title + "\n" : "") + "" +
+                                    YamlLogging.writeMessage + (YamlLogging.writeMessage.isEmpty() ?
+                                    "" : "\n\n") +
+                                    "sends:\n\n" +
+                                    "```yaml\n" +
+                                    ((wire instanceof TextWire) ?
+                                            Wires.fromSizePrefixedBlobs(bytes) :
+                                            BytesUtil.toHexString(bytes, bytes.position(), bytes.remaining()))+
+
                             "```");
                     YamlLogging.title = "";
                     YamlLogging.writeMessage = "";
@@ -526,7 +525,7 @@ public class ClientWiredStatelessTcpConnectionHub {
                     System.out.println(
                             Bytes.toDebugString(bytes));
                 }
-                }
+            }
 
         } finally {
             bytes.limit(limit);
@@ -535,7 +534,10 @@ public class ClientWiredStatelessTcpConnectionHub {
     }
 
 
-    private void logToStandardOutMessageReceived(Bytes<?> bytes) {
+    private void logToStandardOutMessageReceived(Wire wire) {
+
+
+        Bytes<?> bytes = wire.bytes();
 
         if (!YamlLogging.clientReads || !IS_DEBUG)
             return;
@@ -548,7 +550,12 @@ public class ClientWiredStatelessTcpConnectionHub {
 
                 System.out.println("\nreceives:\n\n" +
                         "```yaml\n" +
-                        Wires.fromSizePrefixedBlobs(bytes) +
+
+                        ((wire instanceof TextWire) ?
+                                Wires.fromSizePrefixedBlobs(bytes) :
+                                BytesUtil.toHexString(bytes, bytes.position(), bytes.remaining())
+
+                        ) +
                         "```\n\n");
                 net.openhft.chronicle.wire.YamlLogging.title = "";
                 net.openhft.chronicle.wire.YamlLogging.writeMessage = "";
@@ -563,6 +570,7 @@ public class ClientWiredStatelessTcpConnectionHub {
             bytes.position(position);
         }
     }
+
     /**
      * calculates the size of each chunk
      *
@@ -597,7 +605,7 @@ public class ClientWiredStatelessTcpConnectionHub {
         // send
         outBytesLock().lock();
         try {
-            long tid = writeMetaData(startTime,wire, csp, cid);
+            long tid = writeMetaData(startTime, wire, csp, cid);
             wire.writeDocument(false, wireOut -> {
                 wireOut.writeEventName(eventName);
                 wireOut.writeValue().marshallable(w -> {
@@ -641,7 +649,7 @@ public class ClientWiredStatelessTcpConnectionHub {
 
             assert Wires.isData(datalen);
 
-            return wire.read(CoreFields.reply).text();
+            return wire.read(reply).text();
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -665,10 +673,10 @@ public class ClientWiredStatelessTcpConnectionHub {
 
         wire.writeDocument(true, wireOut -> {
             if (cid == 0)
-                wireOut.write(CoreFields.csp).text(csp);
+                wireOut.writeEventName(CoreFields.csp).text(csp);
             else
-                wireOut.write(CoreFields.cid).int64(cid);
-            wireOut.write(CoreFields.tid).int64(tid);
+                wireOut.writeEventName(CoreFields.cid).int64(cid);
+            wireOut.writeEventName(CoreFields.tid).int64(tid);
         });
 
         return tid;
@@ -677,9 +685,10 @@ public class ClientWiredStatelessTcpConnectionHub {
 
     /**
      * The writes the meta data to wire - the async version does not contain the tid
+     *
      * @param wire the wire that we will write to
-     * @param csp provide either the csp or the cid
-     * @param cid provide either the csp or the cid
+     * @param csp  provide either the csp or the cid
+     * @param cid  provide either the csp or the cid
      */
     public void writeAsyncHeader(Wire wire, String csp, long cid) {
 
@@ -687,9 +696,9 @@ public class ClientWiredStatelessTcpConnectionHub {
 
         wire.writeDocument(true, wireOut -> {
             if (cid == 0)
-                wireOut.write(CoreFields.csp).text(csp);
+                wireOut.writeEventName(CoreFields.csp).text(csp);
             else
-                wireOut.write(CoreFields.cid).int64(cid);
+                wireOut.writeEventName(CoreFields.cid).int64(cid);
 
         });
 
