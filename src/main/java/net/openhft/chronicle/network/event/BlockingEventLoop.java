@@ -18,7 +18,6 @@
 
 package net.openhft.chronicle.network.event;
 
-
 import net.openhft.chronicle.threads.NamedThreadFactory;
 
 import javax.xml.ws.WebServiceException;
@@ -49,7 +48,6 @@ public class BlockingEventLoop implements EventLoop {
 
     @Override
     public void start() {
-
     }
 
     @Override

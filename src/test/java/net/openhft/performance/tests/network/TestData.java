@@ -35,24 +35,19 @@ class TestData implements DoubleConsumer, LongConsumer, IntConsumer {
     long value2;
     double value3;
 
-
     public void write(WireOut wire) {
-
         wire.writeDocument(false, d ->
                 d.write(Field.key1).int32(value1)
                         .write(Field.key2).int64(value2)
                         .write(Field.key3).float64(value3));
     }
 
-
     public void read(WireIn wire) {
-
         wire.readDocument(null, data ->
                         data.read(Field.key1).int32(i -> value1 = i)
                                 .read(Field.key2).int64(i -> value2 = i)
                                 .read(Field.key3).float64(i -> value3 = i)
         );
-
     }
 
     @Override
@@ -62,12 +57,10 @@ class TestData implements DoubleConsumer, LongConsumer, IntConsumer {
 
     @Override
     public void accept(int value) {
-
     }
 
     @Override
     public void accept(long value) {
-
     }
 
     enum Field implements WireKey {

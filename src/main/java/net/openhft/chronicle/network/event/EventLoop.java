@@ -18,7 +18,6 @@
 
 package net.openhft.chronicle.network.event;
 
-
 import java.io.Closeable;
 
 /**
@@ -30,5 +29,4 @@ public interface EventLoop extends Closeable {
     void start();
 
     void stop();
-
 }

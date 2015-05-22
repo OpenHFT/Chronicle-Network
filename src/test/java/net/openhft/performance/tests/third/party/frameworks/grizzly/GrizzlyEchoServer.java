@@ -72,7 +72,6 @@ public class GrizzlyEchoServer {
             transport.start();
 
             countDownLatch.await(50, TimeUnit.SECONDS);
-
         } finally {
             LOG.info("Stopping transport...");
             // stop the transport
@@ -80,7 +79,6 @@ public class GrizzlyEchoServer {
 
             LOG.info("Stopped transport...");
         }
-
 
     }
 }

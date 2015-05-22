@@ -41,7 +41,6 @@ public final class NettyClientLatencyTest {
     static final int PORT = Integer.parseInt(System.getProperty("port", Integer.toString(EchoClientMain
             .PORT)));
 
-
     static class MyChannelInboundHandler extends ChannelInboundHandlerAdapter {
         private final ByteBuf firstMessage;
 
@@ -64,17 +63,14 @@ public final class NettyClientLatencyTest {
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
-
             try {
 
                 if (((ByteBuf) msg).readableBytes() >= 8) {
-
                     if (count % 10000 == 0)
                         System.out.print(".");
 
                     if (count >= 0) {
                         times[count] = System.nanoTime() - ((ByteBuf) msg).readLong();
-
 
                         if (count == times.length - 1) {
                             Arrays.sort(times);
@@ -96,7 +92,6 @@ public final class NettyClientLatencyTest {
             } finally {
                 ReferenceCountUtil.release(msg); // (2)
             }
-
 
             final ByteBuf outMsg = ctx.alloc().buffer(8); // (2)
             outMsg.writeLong(System.nanoTime());
@@ -123,10 +118,10 @@ public final class NettyClientLatencyTest {
         final SslContext sslCtx;
         if (SSL) {
             sslCtx = SslContext.newClientContext(InsecureTrustManagerFactory.INSTANCE);
+
         } else {
             sslCtx = null;
         }
-
 
         // Configure the client.
         EventLoopGroup group = new NioEventLoopGroup();

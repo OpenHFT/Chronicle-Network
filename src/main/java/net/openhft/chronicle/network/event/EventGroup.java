@@ -18,7 +18,6 @@
 
 package net.openhft.chronicle.network.event;
 
-
 import net.openhft.chronicle.threads.LightPauser;
 
 import java.io.IOException;
@@ -31,7 +30,6 @@ import static net.openhft.chronicle.network.event.References.or;
  */
 public class EventGroup implements EventLoop  {
     static final long MONITOR_INTERVAL = NANOSECONDS.convert(100, MILLISECONDS);
-
 
     public static boolean IS_DEBUG = java.lang.management.ManagementFactory.getRuntimeMXBean().
             getInputArguments().toString().indexOf("jdwp") >= 0;
@@ -50,9 +48,11 @@ public class EventGroup implements EventLoop  {
             case DAEMON:
                 core.addHandler(handler);
                 break;
+
             case MONITOR:
                 monitor.addHandler(handler);
                 break;
+
             case BLOCKING:
                 blocking.addHandler(handler);
                 break;
@@ -92,6 +92,7 @@ public class EventGroup implements EventLoop  {
 
             if (blockingInterval > lastInterval && !IS_DEBUG && core.isAlive()) {
                 core.dumpRunningState(core.name() + " thread has blocked for " + MILLISECONDS.convert(blockingTime, NANOSECONDS) + " ms.");
+
             } else {
                 lastInterval = Math.max(1, blockingInterval);
             }

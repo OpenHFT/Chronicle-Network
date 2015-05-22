@@ -18,7 +18,6 @@
 
 package net.openhft.chronicle.network.event;
 
-
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.threads.NamedThreadFactory;
 import net.openhft.chronicle.threads.Pauser;
@@ -71,6 +70,7 @@ public class VanillaEventLoop implements EventLoop, Runnable {
     public void addHandler(EventHandler handler) {
         if (thread == null || thread == Thread.currentThread()) {
             addNewHandler(handler);
+
         } else {
             pauser.unpause();
             while (!newHandler.compareAndSet(null, handler))
@@ -104,6 +104,7 @@ public class VanillaEventLoop implements EventLoop, Runnable {
                     System.out.println("b " + count);
                     count = 0;
                     pauser.reset();
+
                 } else {
                     count++;
                     runDaemonHandlers();
@@ -188,9 +189,11 @@ public class VanillaEventLoop implements EventLoop, Runnable {
             case HIGH:
                 highHandlers.add(handler);
                 break;
+
             case MEDIUM:
                 mediumHandlers.add(handler);
                 break;
+
             case TIMER:
             case DAEMON:
                 daemonHandlers.add(handler);

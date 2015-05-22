@@ -73,7 +73,6 @@ Loop back echo latency was 20.8/21.8 29/34 38/2286 us for 50/90 99/99.9 99.99/wo
 
 */
 
-
 public class EchoClientMain {
     public static final int PORT = Integer.getInteger("port", 8007);
     public static final int CLIENTS = Integer.getInteger("clients", 2);
@@ -168,6 +167,4 @@ public class EchoClientMain {
                 times[times.length - 1] / 1000
         );
     }
-
-
 }

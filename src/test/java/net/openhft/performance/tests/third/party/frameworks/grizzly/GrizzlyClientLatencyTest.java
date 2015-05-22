@@ -42,7 +42,6 @@ public class GrizzlyClientLatencyTest {
     private static final int PORT = Integer.parseInt(System.getProperty("port", DEFAULT_PORT));
     private static final String HOST = System.getProperty("host", "127.0.0.1");
 
-
     public static void main(String[] args) throws IOException,
             ExecutionException, InterruptedException, TimeoutException {
 
@@ -64,7 +63,6 @@ public class GrizzlyClientLatencyTest {
         final AtomicLong bytesReceived = new AtomicLong();
 
         filterChainBuilder.add(new BaseFilter() {
-
             final long[] times = new long[500_000];
             int count = -50_000; // for warn up - we will skip the first 50_000
 
@@ -87,16 +85,13 @@ public class GrizzlyClientLatencyTest {
 
                 final Object peerAddress = ctx.getAddress();
 
-
                 Buffer msg = ctx.<Buffer>getMessage();
                 if (msg.remaining() >= 8) {
-
                     if (count % 10000 == 0)
                         System.out.print(".");
 
                     if (count >= 0) {
                         times[count] = System.nanoTime() - msg.getLong();
-
 
                         if (count == times.length - 1) {
                             Arrays.sort(times);
@@ -127,7 +122,6 @@ public class GrizzlyClientLatencyTest {
 
                 ctx.write(peerAddress, buffer2, null);
                 return ctx.getStopAction();
-
             }
         });
 
@@ -158,7 +152,6 @@ public class GrizzlyClientLatencyTest {
             long time = System.nanoTime() - startTime;
             System.out.printf("\nThroughput was %.1f MB/s%n", 1e3 *
                     bytesReceived.get() / time);
-
         } finally {
             // close the client connection
             if (connection != null) {

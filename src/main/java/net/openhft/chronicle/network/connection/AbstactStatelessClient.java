@@ -1,8 +1,7 @@
-package net.openhft.chronicle.map;
+package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.engine.client.ClientWiredStatelessTcpConnectionHub;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -18,7 +17,7 @@ import static net.openhft.chronicle.wire.CoreFields.reply;
  */
 public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
 
-    final ClientWiredStatelessTcpConnectionHub hub;
+    protected final ClientWiredStatelessTcpConnectionHub hub;
     private final long cid;
     protected final String channelName;
     protected String csp;
@@ -37,7 +36,6 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         this.csp = "//" + channelName + "?view=" + type;
         this.hub = hub;
         this.channelName = channelName;
-
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -104,17 +102,14 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
             });
 
             hub.writeSocket(hub.outWire());
-
         } finally {
             hub.outBytesLock().unlock();
         }
         return tid;
     }
 
-
     protected void sendEventAsync(@NotNull final WireKey eventId,
                                   @Nullable final Consumer<ValueOut> consumer) {
-
         if (hub.outBytesLock().isHeldByCurrentThread())
             throw new IllegalStateException("Cannot view map while debugging");
 
@@ -133,7 +128,6 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
             });
 
             hub.writeSocket(hub.outWire());
-
         } finally {
             hub.outBytesLock().unlock();
         }
@@ -163,7 +157,6 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         if (!Wires.isData(datalen))
             throw new IllegalStateException("expecting a data blob, from ->" + Bytes.toDebugString
                     (wireIn.bytes(), 0, wireIn.bytes().limit()));
-
     }
 
     StringBuilder eventName = new StringBuilder();
@@ -180,12 +173,10 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
             checkIsData(wireIn);
 
             return readReply(wireIn, CoreFields.reply, v -> v.bool());
-
         } finally {
             hub.inBytesLock().unlock();
         }
     }
-
 
     <R> R readReply(WireIn wireIn, WireKey replyId, Function<ValueIn, R> function) {
         final ValueIn event = wireIn.read(eventName);
@@ -199,7 +190,6 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
 
         throw new UnsupportedOperationException("unknown event=" + eventName);
     }
-
 
     @SuppressWarnings("SameParameterValue")
     protected boolean proxyReturnBooleanWithArgs(
@@ -220,14 +210,12 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         return readBoolean(tid, startTime);
     }
 
-
     @SuppressWarnings("SameParameterValue")
     protected boolean proxyReturnBoolean(@NotNull final WireKey eventId) {
         final long startTime = System.currentTimeMillis();
         final long tid = sendEvent(startTime, eventId, null);
         return readBoolean(tid, startTime);
     }
-
 
     private <T> T readWire(long tid, long startTime, WireKey reply, Function<ValueIn, T> c) {
         assert !hub.outBytesLock().isHeldByCurrentThread();
@@ -244,11 +232,9 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
         }
     }
 
-
     public static <E extends ParameterizeWireKey>
     Consumer<ValueOut> toParameters(@NotNull final E eventId,
                                     @Nullable final Object... args) {
-
         return out -> {
             final WireKey[] paramNames = eventId.params();
 
@@ -263,7 +249,6 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
                 return;
             }
 
-
             out.marshallable(m -> {
 
                 for (int i = 0; i < paramNames.length; i++) {
@@ -272,11 +257,10 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
                 }
 
             });
-
         };
     }
 
-    int readInt(long tid, long startTime) {
+    protected int readInt(long tid, long startTime) {
         assert !hub.outBytesLock().isHeldByCurrentThread();
 
         long timeoutTime = startTime + hub.timeoutMs;
@@ -296,5 +280,4 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
     void identifier(int localIdentifier) {
         hub.localIdentifier = localIdentifier;
     }
-
 }

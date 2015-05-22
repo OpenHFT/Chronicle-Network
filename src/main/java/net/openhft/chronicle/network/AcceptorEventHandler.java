@@ -66,7 +66,6 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
 
             if (sc != null)
                 eventLoop.addHandler(new TcpEventHandler(sc, tcpHandlerSupplier.get()));
-
         } catch (AsynchronousCloseException e) {
             closeSocket();
         } catch (Exception e) {
@@ -80,13 +79,11 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
         try {
             ssc.socket().close();
         } catch (IOException ignored) {
-
         }
 
         try {
             ssc.close();
         } catch (IOException ignored) {
-
         }
     }
 

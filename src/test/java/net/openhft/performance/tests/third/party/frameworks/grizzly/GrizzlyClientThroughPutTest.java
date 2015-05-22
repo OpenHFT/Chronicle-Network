@@ -44,7 +44,6 @@ public class GrizzlyClientThroughPutTest {
     final static MemoryManager GRIZZLY_MM =
             MemoryManager.DEFAULT_MEMORY_MANAGER;
 
-
     public static void main(String[] args) throws IOException,
             ExecutionException, InterruptedException, TimeoutException {
 
@@ -70,9 +69,7 @@ public class GrizzlyClientThroughPutTest {
         final long startTime = System.nanoTime();
         final AtomicLong bytesReceived = new AtomicLong();
 
-
         filterChainBuilder.add(new BaseFilter() {
-
             int i;
             final Buffer buffer2 = GRIZZLY_MM.allocate(bufferSize);
 
@@ -127,7 +124,6 @@ public class GrizzlyClientThroughPutTest {
             long time = System.nanoTime() - startTime;
             System.out.printf("\nThroughput was %.1f MB/s%n", 1e3 *
                     bytesReceived.get() / time);
-
         } finally
 
         {

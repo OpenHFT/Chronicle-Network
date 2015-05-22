@@ -18,7 +18,6 @@
 
 package net.openhft.chronicle.network;
 
-
 import net.openhft.chronicle.bytes.Bytes;
 
 /**

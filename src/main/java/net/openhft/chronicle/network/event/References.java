@@ -18,8 +18,6 @@
 
 package net.openhft.chronicle.network.event;
 
-
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

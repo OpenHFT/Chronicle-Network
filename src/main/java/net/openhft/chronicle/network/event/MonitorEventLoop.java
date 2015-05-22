@@ -18,7 +18,6 @@
 
 package net.openhft.chronicle.network.event;
 
-
 import net.openhft.chronicle.threads.NamedThreadFactory;
 import net.openhft.chronicle.threads.Pauser;
 
@@ -73,6 +72,7 @@ public class MonitorEventLoop implements EventLoop, Runnable, Closeable {
                 }
                 if (busy) {
                     pauser.reset();
+
                 } else {
                     pauser.pause();
                 }

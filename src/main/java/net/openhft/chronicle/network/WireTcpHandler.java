@@ -63,7 +63,6 @@ public abstract class WireTcpHandler implements TcpHandler {
         } while (in.remaining() > SIZE_OF_SIZE && out.remaining() > out.capacity() / SIZE_OF_SIZE);
     }
 
-
     /**
      * process all messages in this batch, provided there is plenty of output space.
      *
@@ -72,7 +71,6 @@ public abstract class WireTcpHandler implements TcpHandler {
      * @return true if we can read attempt the next
      */
     private boolean read(Bytes in, Bytes out) {
-
         long length = Wires.lengthOf(in.readInt(in.position()));
         assert length >= 0 && length < 1 << 22 : "in=" + in + ", hex=" + in.toHexString();
 
@@ -108,7 +106,6 @@ public abstract class WireTcpHandler implements TcpHandler {
 
             if (written > 0)
                 return false;
-
         } catch (Exception e) {
             LOG.error("", e);
         } finally {
@@ -116,14 +113,12 @@ public abstract class WireTcpHandler implements TcpHandler {
             in.position(end);
         }
 
-
         return true;
     }
 
     private boolean recreateWire;
 
     private void checkWires(Bytes in, Bytes out) {
-
         if (recreateWire) {
             recreateWire = false;
             inWire = bytesToWire.apply(in);

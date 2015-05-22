@@ -33,7 +33,6 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-
 public class MinaClientThroughPutTest {
 
     private static final String DEFAULT_PORT = Integer.toString(MinaEchoServer.PORT);
@@ -48,7 +47,6 @@ public class MinaClientThroughPutTest {
         connector.setConnectTimeoutMillis(CONNECT_TIMEOUT);
 
         connector.setHandler(new IoHandlerAdapter() {
-
             int bytesReceived = 0;
             long startTime;
             final int bufferSize = 64;
@@ -74,7 +72,6 @@ public class MinaClientThroughPutTest {
 
             @Override
             public void messageReceived(IoSession session, Object message) {
-
                 bytesReceived += ((IoBuffer) message).remaining();
                 ((IoBuffer) message).clear();
 
@@ -96,7 +93,6 @@ public class MinaClientThroughPutTest {
 
             @Override
             public void messageSent(IoSession session, Object message) {
-
             }
 
             @Override
@@ -125,5 +121,4 @@ public class MinaClientThroughPutTest {
         session.getCloseFuture().awaitUninterruptibly();
         connector.dispose();
     }
-
 }

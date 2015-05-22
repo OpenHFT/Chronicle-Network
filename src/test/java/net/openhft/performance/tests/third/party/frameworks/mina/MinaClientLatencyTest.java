@@ -32,7 +32,6 @@ import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 
-
 public class MinaClientLatencyTest {
 
     public static final String DEFAULT_PORT = Integer.toString(MinaEchoServer.PORT);
@@ -51,11 +50,9 @@ public class MinaClientLatencyTest {
         connector.setConnectTimeoutMillis(CONNECT_TIMEOUT);
 
         connector.setHandler(new IoHandlerAdapter() {
-
             long startTime;
             int count = -50_000; // for warn up - we will skip the first 50_000
             int i;
-
 
             @Override
             public void sessionOpened(IoSession session) {
@@ -68,20 +65,16 @@ public class MinaClientLatencyTest {
 
             @Override
             public void sessionClosed(IoSession session) {
-
             }
 
             @Override
             public void messageReceived(IoSession session, Object msg) {
-
                 if (((IoBuffer) msg).remaining() >= 8) {
-
                     if (count % 10000 == 0)
                         System.out.print(".");
 
                     if (count >= 0) {
                         times[count] = System.nanoTime() - ((IoBuffer) msg).getLong();
-
 
                         if (count == times.length - 1) {
                             Arrays.sort(times);
@@ -109,10 +102,8 @@ public class MinaClientLatencyTest {
 
             }
 
-
             @Override
             public void messageSent(IoSession session, Object message) {
-
             }
 
             @Override
@@ -143,5 +134,4 @@ public class MinaClientLatencyTest {
         }
 
     }
-
 }

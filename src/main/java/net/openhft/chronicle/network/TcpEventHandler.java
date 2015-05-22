@@ -73,6 +73,7 @@ public class TcpEventHandler implements EventHandler {
             int read = inBB.remaining() > 0 ? sc.read(inBB) : 1;
             if (read < 0) {
                 closeSC();
+
             } else if (read > 0) {
                 // inBB.position() where the data has been read() up to.
                 invokeHandler();
@@ -151,6 +152,7 @@ public class TcpEventHandler implements EventHandler {
         int wrote = sc.write(outBB);
         if (wrote < 0) {
             closeSC();
+
         } else if (wrote > 0) {
             outBB.compact().flip();
             outBBB.position(outBB.limit());

@@ -36,7 +36,6 @@ public class NettyEchoServer {
         this.port = port;
     }
 
-
     public void run() throws Exception {
         EventLoopGroup bossGroup = new NioEventLoopGroup(); // (1)
         EventLoopGroup workerGroup = new NioEventLoopGroup();
@@ -48,7 +47,6 @@ public class NettyEchoServer {
                         @Override
                         public void initChannel(SocketChannel ch) throws Exception {
                             ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-
                                 // echo server
                                 @Override
                                 public void channelRead(ChannelHandlerContext ctx, Object msg) { // (2)
@@ -85,6 +83,7 @@ public class NettyEchoServer {
         int port;
         if (args.length > 0) {
             port = Integer.parseInt(args[0]);
+
         } else {
             port = EchoClientMain.PORT;
         }

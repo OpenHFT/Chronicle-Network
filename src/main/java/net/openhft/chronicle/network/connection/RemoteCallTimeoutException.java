@@ -16,20 +16,19 @@
  * limitations under the License.
  */
 
-package net.openhft.chronicle.engine.client;
-
-import java.io.IOException;
+package net.openhft.chronicle.network.connection;
 
 /**
+ * TODO mention in docs
  * @author Rob Austin.
  */
-public class IORuntimeException extends RuntimeException {
+public class RemoteCallTimeoutException extends RuntimeException {
 
-    public IORuntimeException(IOException e) {
-        super(e);
+    public RemoteCallTimeoutException(String s) {
+        super(s);
     }
 
-    public IORuntimeException(String message) {
-        super(message);
+    public RemoteCallTimeoutException() {
+        super();
     }
 }

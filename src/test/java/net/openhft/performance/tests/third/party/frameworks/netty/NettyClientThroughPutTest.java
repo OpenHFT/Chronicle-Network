@@ -42,10 +42,8 @@ public final class NettyClientThroughPutTest {
     static final int PORT = Integer.parseInt(System.getProperty("port", Integer.toString(EchoClientMain
             .PORT)));
 
-
     static class MyChannelInboundHandler extends ChannelInboundHandlerAdapter {
         private final ByteBuf firstMessage;
-
 
         final int bufferSize = 32 * 1024;
 
@@ -59,7 +57,6 @@ public final class NettyClientThroughPutTest {
             firstMessage = Unpooled.buffer(bufferSize);
             firstMessage.writeBytes(payload);
         }
-
 
         @Override
         public void channelActive(ChannelHandlerContext ctx) {
@@ -88,7 +85,6 @@ public final class NettyClientThroughPutTest {
                 ReferenceCountUtil.release(msg); // (2)
             }
 
-
             final ByteBuf outMsg = ctx.alloc().buffer(bufferSize); // (2)
             outMsg.writeBytes(payload);
 
@@ -114,10 +110,10 @@ public final class NettyClientThroughPutTest {
         final SslContext sslCtx;
         if (SSL) {
             sslCtx = SslContext.newClientContext(InsecureTrustManagerFactory.INSTANCE);
+
         } else {
             sslCtx = null;
         }
-
 
         // Configure the client.
         EventLoopGroup group = new NioEventLoopGroup();
