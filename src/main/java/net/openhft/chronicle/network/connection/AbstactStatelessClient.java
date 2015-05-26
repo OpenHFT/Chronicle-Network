@@ -73,8 +73,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
                                    @Nullable final Consumer<ValueOut> consumer) {
         final long startTime = System.currentTimeMillis();
         long tid = sendEvent(startTime, eventId, consumer);
-        readWire(tid, startTime, CoreFields.reply, v -> v.marshallable(wireIn -> {
-        }));
+        readWire(tid, startTime, CoreFields.reply, v -> v.marshallable(ReadMarshallable.DISCARD));
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -96,7 +95,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
                 final ValueOut valueOut = wireOut.writeEventName(eventId);
 
                 if (consumer == null)
-                    valueOut.marshallable(WireOut.EMPTY);
+                    valueOut.marshallable(WriteMarshallable.EMPTY);
                 else
                     consumer.accept(valueOut);
             });
@@ -122,7 +121,7 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
                 final ValueOut valueOut = wireOut.writeEventName(eventId);
 
                 if (consumer == null)
-                    valueOut.marshallable(WireOut.EMPTY);
+                    valueOut.marshallable(WriteMarshallable.EMPTY);
                 else
                     consumer.accept(valueOut);
             });
