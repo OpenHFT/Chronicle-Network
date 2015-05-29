@@ -136,14 +136,14 @@ public class VanillaEventLoop implements EventLoop, Runnable {
     private boolean runOneTenthLowHandler(int i) {
         boolean busy = false;
         for (int j = i; j < mediumHandlers.size(); j += 10) {
-            EventHandler handler = mediumHandlers.get(i);
+            EventHandler handler = mediumHandlers.get(j);
             try {
                 busy |= handler.runOnce();
             } catch (Exception e) {
                 e.printStackTrace();
             }
             if (handler.isDead())
-                mediumHandlers.remove(i--);
+                mediumHandlers.remove(j--);
         }
         return busy;
     }
