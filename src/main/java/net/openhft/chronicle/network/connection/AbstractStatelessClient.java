@@ -15,7 +15,7 @@ import static net.openhft.chronicle.wire.CoreFields.reply;
 /**
  * Created by Rob Austin
  */
-public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
+public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> {
 
     protected final ClientWiredStatelessTcpConnectionHub hub;
     private final long cid;
@@ -28,10 +28,10 @@ public abstract class AbstactStatelessClient<E extends ParameterizeWireKey> {
      * @param type        the type of wire handler for example "MAP" or "QUEUE"
      * @param cid         used by proxies such as the entry-set
      */
-    public AbstactStatelessClient(@NotNull final String channelName,
-                                  @NotNull final ClientWiredStatelessTcpConnectionHub hub,
-                                  @NotNull final String type,
-                                  long cid) {
+    public AbstractStatelessClient(@NotNull final String channelName,
+                                   @NotNull final ClientWiredStatelessTcpConnectionHub hub,
+                                   @NotNull final String type,
+                                   long cid) {
         this.cid = cid;
         this.csp = "//" + channelName + "?view=" + type;
         this.hub = hub;
