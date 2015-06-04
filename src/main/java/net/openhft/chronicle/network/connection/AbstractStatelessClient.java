@@ -33,7 +33,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> {
                                    @NotNull final String type,
                                    long cid) {
         this.cid = cid;
-        this.csp = "//" + channelName + "?view=" + type;
+        this.csp = "/" + channelName + "?view=" + type;
         this.hub = hub;
         this.channelName = channelName;
     }
