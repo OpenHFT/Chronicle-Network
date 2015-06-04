@@ -25,15 +25,15 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> {
     /**
      * @param channelName
      * @param hub
-     * @param type        the type of wire handler for example "MAP" or "QUEUE"
      * @param cid         used by proxies such as the entry-set
+     * @param csp
      */
     public AbstractStatelessClient(@NotNull final String channelName,
                                    @NotNull final ClientWiredStatelessTcpConnectionHub hub,
-                                   @NotNull final String type,
-                                   long cid) {
+                                   long cid,
+                                   String csp) {
         this.cid = cid;
-        this.csp = "/" + channelName + "?view=" + type;
+        this.csp = csp;
         this.hub = hub;
         this.channelName = channelName;
     }
