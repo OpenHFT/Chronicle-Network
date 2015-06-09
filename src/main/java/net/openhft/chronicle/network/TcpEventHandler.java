@@ -19,6 +19,8 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.engine.api.SessionDetails;
+import net.openhft.chronicle.engine.api.SessionDetailsProvider;
 import net.openhft.chronicle.network.event.EventHandler;
 import net.openhft.chronicle.network.event.EventLoop;
 import net.openhft.chronicle.network.event.HandlerPriority;
@@ -39,21 +41,24 @@ public class TcpEventHandler implements EventHandler {
     private final Bytes inBBB = Bytes.wrap(inBB.slice());
     private final ByteBuffer outBB = ByteBuffer.allocateDirect(CAPACITY);
     private final Bytes outBBB = Bytes.wrap(outBB.slice());
+    private final SessionDetailsProvider sessionDetails;
 
-    public TcpEventHandler(SocketChannel sc, TcpHandler handler) throws IOException {
+    public TcpEventHandler(SocketChannel sc, TcpHandler handler, final SessionDetailsProvider sessionDetails) throws IOException {
         this.sc = sc;
         sc.configureBlocking(false);
         sc.socket().setTcpNoDelay(true);
         sc.socket().setReceiveBufferSize(CAPACITY);
         sc.socket().setSendBufferSize(CAPACITY);
+
         this.handler = handler;
         // there is nothing which needs to be written by default.
         outBB.limit(0);
-
+        this.sessionDetails = sessionDetails;
         // allow these to be used by another thread.
         // todo check that this can be commented out
         // inBBB.clearThreadAssociation();
         //  outBBB.clearThreadAssociation();
+
     }
 
     @Override
@@ -88,7 +93,7 @@ public class TcpEventHandler implements EventHandler {
     void invokeHandler() throws IOException {
         inBBB.limit(inBB.position());
         outBBB.position(outBB.limit());
-        handler.process(inBBB, outBBB);
+        handler.process(inBBB, outBBB, sessionDetails);
 
         // did it write something?
         if (outBBB.position() > outBB.limit()) {

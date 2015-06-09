@@ -19,6 +19,8 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.engine.api.SessionDetails;
+import net.openhft.chronicle.engine.api.SessionDetailsProvider;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.Wires;
 import org.jetbrains.annotations.NotNull;
@@ -40,7 +42,7 @@ public abstract class WireTcpHandler implements TcpHandler {
     }
 
     @Override
-    public void process(Bytes in, Bytes out) {
+    public void process(Bytes in, Bytes out, SessionDetailsProvider sessionDetails) {
         checkWires(in, out);
 
         if (in.remaining() < SIZE_OF_SIZE) {
@@ -58,7 +60,7 @@ public abstract class WireTcpHandler implements TcpHandler {
         }
 
         do {
-            if (!read(in, out))
+            if (!read(in, out, sessionDetails))
                 return;
         } while (in.remaining() > SIZE_OF_SIZE && out.remaining() > out.capacity() / SIZE_OF_SIZE);
     }
@@ -70,7 +72,7 @@ public abstract class WireTcpHandler implements TcpHandler {
      * @param out the destination bytes
      * @return true if we can read attempt the next
      */
-    private boolean read(Bytes in, Bytes out) {
+    private boolean read(Bytes in, Bytes out, SessionDetails sessionDetails) {
         long length = Wires.lengthOf(in.readInt(in.position()));
         assert length >= 0 && length < 1 << 22 : "in=" + in + ", hex=" + in.toHexString();
 
@@ -97,7 +99,7 @@ public abstract class WireTcpHandler implements TcpHandler {
 
             final long position = inWire.bytes().position();
             try {
-                process(inWire, outWire);
+                process(inWire, outWire, sessionDetails);
             } finally {
                 inWire.bytes().position(position + length);
             }
@@ -146,7 +148,11 @@ public abstract class WireTcpHandler implements TcpHandler {
      * @param out the result of processing the {@code in}
      * @throws StreamCorruptedException if the wire is corrupt
      */
-    protected abstract void process(Wire in, Wire out) throws StreamCorruptedException;
+    protected abstract void process(@NotNull Wire in,
+                                    @NotNull Wire out,
+                                    @NotNull SessionDetails sessionDetails)
+            throws
+            StreamCorruptedException;
 
     /**
      * Publish some data

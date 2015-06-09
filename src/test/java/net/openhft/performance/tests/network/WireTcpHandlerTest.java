@@ -19,10 +19,13 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.engine.api.SessionDetails;
+import net.openhft.chronicle.engine.session.VanillaSessionDetails;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.WireTcpHandler;
 import net.openhft.chronicle.network.event.EventGroup;
 import net.openhft.chronicle.wire.*;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -69,7 +72,8 @@ public class WireTcpHandlerTest {
     public void testProcess() throws Exception {
         EventGroup eg = new EventGroup();
         eg.start();
-        AcceptorEventHandler eah = new AcceptorEventHandler(0, () -> new EchoRequestHandler(wireWrapper));
+        AcceptorEventHandler eah = new AcceptorEventHandler(0, () -> new EchoRequestHandler
+                (wireWrapper), VanillaSessionDetails::new);
         eg.addHandler(eah);
 
         SocketChannel[] sc = new SocketChannel[1];
@@ -154,7 +158,7 @@ public class WireTcpHandlerTest {
         }
 
         @Override
-        protected void process(Wire inWire, Wire outWire) {
+        protected void process(@NotNull Wire inWire, @NotNull Wire outWire, @NotNull SessionDetails sd) {
             td.read(inWire);
             td.write(outWire);
         }

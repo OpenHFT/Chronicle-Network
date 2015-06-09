@@ -18,9 +18,11 @@
 
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.engine.api.SessionDetailsProvider;
 import net.openhft.chronicle.network.event.EventHandler;
 import net.openhft.chronicle.network.event.EventLoop;
 import net.openhft.chronicle.network.event.HandlerPriority;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,16 +39,21 @@ import java.util.function.Supplier;
  */
 public class AcceptorEventHandler implements EventHandler,Closeable {
     private final Supplier<TcpHandler> tcpHandlerSupplier;
+    private final Supplier<SessionDetailsProvider> sessionDetailsSupplier;
     private EventLoop eventLoop;
     private final ServerSocketChannel ssc;
 
     private static final Logger LOG = LoggerFactory.getLogger(AcceptorEventHandler.class);
 
-    public AcceptorEventHandler(int port, Supplier<TcpHandler> tcpHandlerSupplier) throws IOException {
+    public AcceptorEventHandler(int port,
+                                @NotNull final Supplier<TcpHandler> tcpHandlerSupplier,
+                                @NotNull final Supplier<SessionDetailsProvider> sessionDetailsSupplier) throws
+            IOException {
         this.tcpHandlerSupplier = tcpHandlerSupplier;
         ssc = ServerSocketChannel.open();
         ssc.socket().setReuseAddress(true);
         ssc.bind(new InetSocketAddress(port));
+        this.sessionDetailsSupplier = sessionDetailsSupplier;
     }
 
     public int getLocalPort() throws IOException {
@@ -64,8 +71,17 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
 
             SocketChannel sc = ssc.accept();
 
-            if (sc != null)
-                eventLoop.addHandler(new TcpEventHandler(sc, tcpHandlerSupplier.get()));
+            if (sc != null) {
+
+                final SessionDetailsProvider sessionDetails = sessionDetailsSupplier.get();
+
+                sessionDetails.setConnectionAddress((InetSocketAddress) sc.getRemoteAddress());
+
+                eventLoop.addHandler(new TcpEventHandler(sc,
+                        tcpHandlerSupplier.get(),
+                        sessionDetails));
+            }
+
         } catch (AsynchronousCloseException e) {
             closeSocket();
         } catch (Exception e) {

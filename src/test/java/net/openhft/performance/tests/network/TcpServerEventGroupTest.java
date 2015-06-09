@@ -18,6 +18,8 @@
 
 package net.openhft.performance.tests.network;
 
+import net.openhft.chronicle.engine.api.SessionDetailsProvider;
+import net.openhft.chronicle.engine.session.VanillaSessionDetails;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.event.EventGroup;
 import org.junit.Ignore;
@@ -30,6 +32,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
+import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
 
@@ -47,12 +50,13 @@ Loop back echo latency was 4.8/5.2 5.6/7.4 9.6us for 50/90 99/99.9 99.99%tile
 
 public class TcpServerEventGroupTest {
 
-    @Ignore("todo fix")
+    @Ignore("fix JIRA https://higherfrequencytrading.atlassian.net/browse/NET-13")
     @Test
     public void testStart() throws Exception {
         EventGroup eg = new EventGroup();
         eg.start();
-        AcceptorEventHandler eah = new AcceptorEventHandler(0, EchoHandler::new);
+        AcceptorEventHandler eah = new AcceptorEventHandler(0, EchoHandler::new,
+                VanillaSessionDetails::new);
         eg.addHandler(eah);
 
         SocketChannel[] sc = new SocketChannel[2];
