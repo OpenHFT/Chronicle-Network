@@ -21,6 +21,16 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
         this.sessionId = UUID.randomUUID();
     }
 
+
+    public static VanillaSessionDetails of(String userId, String securityToken) {
+        final VanillaSessionDetails vanillaSessionDetails = new VanillaSessionDetails();
+        vanillaSessionDetails.setUserId(userId);
+        vanillaSessionDetails.setSecurityToken(securityToken);
+        return vanillaSessionDetails;
+
+    }
+
+
     /***
      * used to uniquely identify the session
      */
