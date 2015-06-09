@@ -19,7 +19,6 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.engine.api.SessionDetails;
 import net.openhft.chronicle.engine.api.SessionDetailsProvider;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.Wires;
@@ -55,7 +54,7 @@ public abstract class WireTcpHandler implements TcpHandler {
                 out.position(outPos);
                 return;
             }
-            assert written <= 1 << TcpEventHandler.CAPACITY;
+            assert written <= TcpEventHandler.CAPACITY;
             return;
         }
 
@@ -72,11 +71,13 @@ public abstract class WireTcpHandler implements TcpHandler {
      * @param out the destination bytes
      * @return true if we can read attempt the next
      */
-    private boolean read(Bytes in, Bytes out, SessionDetails sessionDetails) {
-        long length = Wires.lengthOf(in.readInt(in.position()));
+    private boolean read(Bytes in, Bytes out, SessionDetailsProvider sessionDetails) {
+        final long header = in.readInt(in.position());
+        long length = Wires.lengthOf(header);
         assert length >= 0 && length < 1 << 22 : "in=" + in + ", hex=" + in.toHexString();
 
-        if (length == 0) {
+        // we don't return on meta data of zero bytes as this is a system message
+        if (length == 0 && Wires.isData(header)) {
             in.skip(SIZE_OF_SIZE);
             return false;
         }
@@ -84,9 +85,9 @@ public abstract class WireTcpHandler implements TcpHandler {
         if (in.remaining() < length) {
             // we have to first read more data before this can be processed
             if (LOG.isDebugEnabled())
-                LOG.debug("required length=" + length + " but only got " + in.remaining() + " bytes, " +
-                        "this is " +
-                        "short by " + (length - +in.remaining()) + " bytes");
+                LOG.debug(String.format("required length=%d but only got %d bytes, " +
+                                "this is short by %d bytes", length, in.remaining(),
+                        length - in.remaining()));
             return false;
         }
 
@@ -150,13 +151,13 @@ public abstract class WireTcpHandler implements TcpHandler {
      */
     protected abstract void process(@NotNull Wire in,
                                     @NotNull Wire out,
-                                    @NotNull SessionDetails sessionDetails)
-            throws
-            StreamCorruptedException;
+                                    @NotNull SessionDetailsProvider sessionDetails)
+            throws StreamCorruptedException;
 
     /**
      * Publish some data
      */
     protected void publish(Wire out) {
     }
+
 }

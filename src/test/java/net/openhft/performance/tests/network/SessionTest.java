@@ -19,7 +19,7 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.engine.api.SessionDetails;
+import net.openhft.chronicle.engine.api.SessionDetailsProvider;
 import net.openhft.chronicle.engine.session.VanillaSessionDetails;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.WireTcpHandler;
@@ -50,6 +50,9 @@ public class SessionTest {
 
     private final Function<Bytes, Wire> wireWrapper = TextWire::new;
 
+    /**
+     * test that the same sesson returns the same session id
+     */
     @Test
     public void testProcess() throws Exception {
         EventGroup eg = new EventGroup();
@@ -135,10 +138,9 @@ public class SessionTest {
         @Override
         protected void process(@NotNull Wire inWire,
                                @NotNull Wire outWire,
-                               @NotNull SessionDetails sd) {
+                               @NotNull SessionDetailsProvider sd) {
             outWire.writeDocument(false, w -> w.write(() -> "sessionId").text(sd.sessionId()
                     .toString()));
-
         }
 
     }

@@ -12,8 +12,11 @@ import java.util.UUID;
  */
 public class VanillaSessionDetails implements SessionDetailsProvider {
     private final Map<Class, Object> infoMap = new LinkedHashMap<>();
-    private String userId, securityToken;
-    private InetSocketAddress connectionAddress;
+    private String userId = System.getProperty("user.name");
+    private String securityToken = "";
+
+    // only set on a server not on a client
+    private InetSocketAddress clientAddress;
     private long connectTimeMS;
     private UUID sessionId;
 
@@ -21,13 +24,11 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
         this.sessionId = UUID.randomUUID();
     }
 
-
     public static VanillaSessionDetails of(String userId, String securityToken) {
         final VanillaSessionDetails vanillaSessionDetails = new VanillaSessionDetails();
         vanillaSessionDetails.setUserId(userId);
         vanillaSessionDetails.setSecurityToken(securityToken);
         return vanillaSessionDetails;
-
     }
 
 
@@ -50,8 +51,8 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
     }
 
     @Override
-    public InetSocketAddress connectionAddress() {
-        return connectionAddress;
+    public InetSocketAddress clientAddress() {
+        return clientAddress;
     }
 
     @Override
@@ -73,8 +74,8 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
         this.connectTimeMS = connectTimeMS;
     }
 
-    public void setConnectionAddress(InetSocketAddress connectionAddress) {
-        this.connectionAddress = connectionAddress;
+    public void setClientAddress(InetSocketAddress clientAddress) {
+        this.clientAddress = clientAddress;
     }
 
     public void setSecurityToken(String securityToken) {

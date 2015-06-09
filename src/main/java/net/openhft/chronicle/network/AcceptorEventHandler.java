@@ -75,7 +75,7 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
 
                 final SessionDetailsProvider sessionDetails = sessionDetailsSupplier.get();
 
-                sessionDetails.setConnectionAddress((InetSocketAddress) sc.getRemoteAddress());
+                sessionDetails.setClientAddress((InetSocketAddress) sc.getRemoteAddress());
 
                 eventLoop.addHandler(new TcpEventHandler(sc,
                         tcpHandlerSupplier.get(),

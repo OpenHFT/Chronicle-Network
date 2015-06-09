@@ -22,7 +22,7 @@ public interface SessionDetails {
     String securityToken();
 
     @Nullable
-    InetSocketAddress connectionAddress();
+    InetSocketAddress clientAddress();
 
     long connectTimeMS();
 

@@ -9,7 +9,7 @@ public interface SessionDetailsProvider extends SessionDetails {
 
     void setConnectTimeMS(long connectTimeMS);
 
-    void setConnectionAddress(InetSocketAddress connectionAddress);
+    void setClientAddress(InetSocketAddress connectionAddress);
 
     void setSecurityToken(String securityToken);
 

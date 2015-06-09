@@ -19,7 +19,7 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.engine.api.SessionDetails;
+import net.openhft.chronicle.engine.api.SessionDetailsProvider;
 import net.openhft.chronicle.engine.session.VanillaSessionDetails;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.WireTcpHandler;
@@ -158,7 +158,9 @@ public class WireTcpHandlerTest {
         }
 
         @Override
-        protected void process(@NotNull Wire inWire, @NotNull Wire outWire, @NotNull SessionDetails sd) {
+        protected void process(@NotNull Wire inWire,
+                               @NotNull Wire outWire,
+                               @NotNull SessionDetailsProvider sd) {
             td.read(inWire);
             td.write(outWire);
         }
