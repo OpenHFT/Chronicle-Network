@@ -31,6 +31,7 @@ import java.util.function.Function;
 
 public abstract class WireTcpHandler implements TcpHandler {
     public static final int SIZE_OF_SIZE = 4;
+    @NotNull
     private final Function<Bytes, Wire> bytesToWire;
     protected Wire inWire, outWire;
 
@@ -41,7 +42,7 @@ public abstract class WireTcpHandler implements TcpHandler {
     }
 
     @Override
-    public void process(Bytes in, Bytes out, SessionDetailsProvider sessionDetails) {
+    public void process(@NotNull Bytes in, @NotNull Bytes out, @NotNull SessionDetailsProvider sessionDetails) {
         checkWires(in, out);
 
         if (in.remaining() < SIZE_OF_SIZE) {
@@ -71,7 +72,7 @@ public abstract class WireTcpHandler implements TcpHandler {
      * @param out the destination bytes
      * @return true if we can read attempt the next
      */
-    private boolean read(Bytes in, Bytes out, SessionDetailsProvider sessionDetails) {
+    private boolean read(@NotNull Bytes in, @NotNull Bytes out, @NotNull SessionDetailsProvider sessionDetails) {
         final long header = in.readInt(in.position());
         long length = Wires.lengthOf(header);
         assert length >= 0 && length < 1 << 22 : "in=" + in + ", hex=" + in.toHexString();

@@ -1,6 +1,7 @@
 package net.openhft.chronicle.engine.session;
 
 import net.openhft.chronicle.engine.api.SessionDetailsProvider;
+import org.jetbrains.annotations.NotNull;
 
 import java.net.InetSocketAddress;
 import java.util.LinkedHashMap;
@@ -24,6 +25,7 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
         this.sessionId = UUID.randomUUID();
     }
 
+    @NotNull
     public static VanillaSessionDetails of(String userId, String securityToken) {
         final VanillaSessionDetails vanillaSessionDetails = new VanillaSessionDetails();
         vanillaSessionDetails.setUserId(userId);
@@ -65,6 +67,7 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
         infoMap.put(infoClass, info);
     }
 
+    @NotNull
     @Override
     public <I> I get(Class<I> infoClass) {
         return (I) infoMap.get(infoClass);

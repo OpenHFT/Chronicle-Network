@@ -19,6 +19,7 @@
 package net.openhft.performance.tests.vanilla.tcp;
 
 import net.openhft.affinity.AffinitySupport;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -32,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author peter.lawrey
  */
 public class EchoServerMain {
-    public static void main(String... args) throws IOException {
+    public static void main(@NotNull String... args) throws IOException {
         int port = args.length < 1 ? EchoClientMain.PORT : Integer.parseInt(args[0]);
         ServerSocketChannel ssc = ServerSocketChannel.open();
         ssc.bind(new InetSocketAddress(port));
@@ -85,7 +86,7 @@ public class EchoServerMain {
         }
     }
 
-    static int freeSpace(ByteBuffer bb2) {
+    static int freeSpace(@NotNull ByteBuffer bb2) {
         return bb2.capacity() - bb2.remaining();
     }
 }

@@ -81,7 +81,7 @@ public class SessionTest {
         eg.stop();
     }
 
-    private static String testSessionId(SocketChannel... sockets) throws IOException {
+    private static String testSessionId(@NotNull SocketChannel... sockets) throws IOException {
 
         final StringBuilder session = new StringBuilder();
 
@@ -131,7 +131,7 @@ public class SessionTest {
 
     public static class SessionIdRefector extends WireTcpHandler {
 
-        public SessionIdRefector(Function<Bytes, Wire> bytesToWire) {
+        public SessionIdRefector(@NotNull Function<Bytes, Wire> bytesToWire) {
             super(bytesToWire);
         }
 

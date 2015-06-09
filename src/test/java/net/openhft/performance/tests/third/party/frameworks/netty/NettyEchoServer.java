@@ -24,6 +24,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import net.openhft.performance.tests.vanilla.tcp.EchoClientMain;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Discards any incoming data.
@@ -45,17 +46,17 @@ public class NettyEchoServer {
                     .channel(NioServerSocketChannel.class) // (3)
                     .childHandler(new ChannelInitializer<SocketChannel>() { // (4)
                         @Override
-                        public void initChannel(SocketChannel ch) throws Exception {
+                        public void initChannel(@NotNull SocketChannel ch) throws Exception {
                             ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
                                 // echo server
                                 @Override
-                                public void channelRead(ChannelHandlerContext ctx, Object msg) { // (2)
+                                public void channelRead(@NotNull ChannelHandlerContext ctx, Object msg) { // (2)
                                     ctx.write(msg); // (1)
                                     ctx.flush(); // (2)
                                 }
 
                                 @Override
-                                public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) { // (4)
+                                public void exceptionCaught(@NotNull ChannelHandlerContext ctx, @NotNull Throwable cause) { // (4)
                                     // Close the connection when an exception is raised.
                                     cause.printStackTrace();
                                     ctx.close();
@@ -79,7 +80,7 @@ public class NettyEchoServer {
         }
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(@NotNull String[] args) throws Exception {
         int port;
         if (args.length > 0) {
             port = Integer.parseInt(args[0]);

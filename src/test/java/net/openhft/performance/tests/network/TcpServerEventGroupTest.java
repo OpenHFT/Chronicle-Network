@@ -22,6 +22,7 @@ import net.openhft.chronicle.engine.api.SessionDetailsProvider;
 import net.openhft.chronicle.engine.session.VanillaSessionDetails;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.event.EventGroup;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -72,7 +73,7 @@ public class TcpServerEventGroupTest {
         eg.stop();
     }
 
-    private static void testThroughput(SocketChannel... sockets) throws IOException, InterruptedException {
+    private static void testThroughput(@NotNull SocketChannel... sockets) throws IOException, InterruptedException {
         System.out.println("Starting throughput test");
         int bufferSize = 32 * 1024;
         ByteBuffer bb = ByteBuffer.allocateDirect(bufferSize);
@@ -109,7 +110,7 @@ public class TcpServerEventGroupTest {
         System.out.printf("Throughput was %.1f MB/s%n", 1e3 * count * bufferSize * sockets.length / time);
     }
 
-    private static void testLatency(SocketChannel... sockets) throws IOException {
+    private static void testLatency(@NotNull SocketChannel... sockets) throws IOException {
         System.out.println("Starting latency test");
         int tests = 500000;
         long[] times = new long[tests * sockets.length];

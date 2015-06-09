@@ -20,6 +20,7 @@ package net.openhft.performance.tests.third.party.frameworks.grizzly;
 
 import org.glassfish.grizzly.filterchain.*;
 import org.glassfish.grizzly.nio.transport.TCPNIOTransport;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -36,6 +37,7 @@ public class GrizzlyEchoServer {
     static final Logger LOG = Logger.getLogger(GrizzlyEchoServer.class.getName());
     static final int PORT = Integer.parseInt(System.getProperty("port", "9124"));
 
+    @NotNull
     private static CountDownLatch countDownLatch = new CountDownLatch(1);
 
     public static void main(String[] args) throws IOException, InterruptedException {
@@ -49,7 +51,7 @@ public class GrizzlyEchoServer {
         // EchoFilter is responsible for echoing received messages
         filterChainBuilder.add(new BaseFilter() {
             @Override
-            public NextAction handleRead(FilterChainContext ctx) throws IOException {
+            public NextAction handleRead(@NotNull FilterChainContext ctx) throws IOException {
                 // Peer address is used for non-connected UDP Connection :)
                 final Object peerAddress = ctx.getAddress();
                 final Object message = ctx.getMessage();

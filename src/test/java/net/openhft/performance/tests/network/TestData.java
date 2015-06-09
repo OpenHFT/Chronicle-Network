@@ -21,6 +21,7 @@ package net.openhft.performance.tests.network;
 import net.openhft.chronicle.wire.WireIn;
 import net.openhft.chronicle.wire.WireKey;
 import net.openhft.chronicle.wire.WireOut;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
@@ -35,14 +36,14 @@ class TestData implements DoubleConsumer, LongConsumer, IntConsumer {
     long value2;
     double value3;
 
-    public void write(WireOut wire) {
+    public void write(@NotNull WireOut wire) {
         wire.writeDocument(false, d ->
                 d.write(Field.key1).int32(value1)
                         .write(Field.key2).int64(value2)
                         .write(Field.key3).float64(value3));
     }
 
-    public void read(WireIn wire) {
+    public void read(@NotNull WireIn wire) {
         wire.readDocument(null, data ->
                         data.read(Field.key1).int32(i -> value1 = i)
                                 .read(Field.key2).int64(i -> value2 = i)

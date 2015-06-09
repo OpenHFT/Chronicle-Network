@@ -89,7 +89,7 @@ public class WireTcpHandlerTest {
         eg.stop();
     }
 
-    private static void testLatency(String desc, Function<Bytes, Wire> wireWrapper, SocketChannel... sockets) throws IOException {
+    private static void testLatency(String desc, @NotNull Function<Bytes, Wire> wireWrapper, @NotNull SocketChannel... sockets) throws IOException {
 //        System.out.println("Starting latency test");
         int tests = 100000;
         long[] times = new long[tests * sockets.length];
@@ -153,7 +153,7 @@ public class WireTcpHandlerTest {
     static class EchoRequestHandler extends WireTcpHandler {
         private final TestData td = new TestData();
 
-        EchoRequestHandler(Function<Bytes, Wire> bytesToWire) {
+        EchoRequestHandler(@NotNull Function<Bytes, Wire> bytesToWire) {
             super(bytesToWire);
         }
 

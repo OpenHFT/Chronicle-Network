@@ -19,6 +19,7 @@
 package net.openhft.performance.tests.vanilla.tcp;
 
 import net.openhft.affinity.AffinitySupport;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -77,7 +78,7 @@ public class EchoClientMain {
     public static final int PORT = Integer.getInteger("port", 8007);
     public static final int CLIENTS = Integer.getInteger("clients", 2);
 
-    public static void main(String... args) throws IOException, InterruptedException {
+    public static void main(@NotNull String... args) throws IOException, InterruptedException {
         AffinitySupport.setAffinity(1L << 3);
         String[] hostnames = args.length > 0 ? args : "localhost".split(",");
 
@@ -90,7 +91,7 @@ public class EchoClientMain {
         closeConnections(sockets);
     }
 
-    private static void openConnections(String[] hostname, int port, SocketChannel... sockets) throws IOException {
+    private static void openConnections(@NotNull String[] hostname, int port, @NotNull SocketChannel... sockets) throws IOException {
         for (int j = 0; j < sockets.length; j++) {
             sockets[j] = SocketChannel.open(new InetSocketAddress(hostname[j % hostname.length], port));
             sockets[j].socket().setTcpNoDelay(true);
@@ -98,12 +99,12 @@ public class EchoClientMain {
         }
     }
 
-    private static void closeConnections(SocketChannel... sockets) throws IOException {
+    private static void closeConnections(@NotNull SocketChannel... sockets) throws IOException {
         for (Closeable socket : sockets)
             socket.close();
     }
 
-    private static void testThroughput(SocketChannel... sockets) throws IOException, InterruptedException {
+    private static void testThroughput(@NotNull SocketChannel... sockets) throws IOException, InterruptedException {
         System.out.println("Starting throughput test");
         int bufferSize = 32 * 1024;
         ByteBuffer bb = ByteBuffer.allocateDirect(bufferSize);
@@ -134,7 +135,7 @@ public class EchoClientMain {
         System.out.printf("Throughput was %.1f MB/s%n", 1e3 * count * bufferSize * sockets.length / time);
     }
 
-    private static void testLatency(SocketChannel... sockets) throws IOException {
+    private static void testLatency(@NotNull SocketChannel... sockets) throws IOException {
         System.out.println("Starting latency test");
         int tests = 1000000;
         long[] times = new long[tests * sockets.length];

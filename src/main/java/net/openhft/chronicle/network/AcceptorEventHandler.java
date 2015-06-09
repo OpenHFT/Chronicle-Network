@@ -38,7 +38,9 @@ import java.util.function.Supplier;
  * Created by peter.lawrey on 22/01/15.
  */
 public class AcceptorEventHandler implements EventHandler,Closeable {
+    @NotNull
     private final Supplier<TcpHandler> tcpHandlerSupplier;
+    @NotNull
     private final Supplier<SessionDetailsProvider> sessionDetailsSupplier;
     private EventLoop eventLoop;
     private final ServerSocketChannel ssc;
@@ -103,6 +105,7 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
         }
     }
 
+    @NotNull
     @Override
     public HandlerPriority priority() {
         return HandlerPriority.BLOCKING;

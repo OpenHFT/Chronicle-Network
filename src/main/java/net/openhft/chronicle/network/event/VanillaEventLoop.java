@@ -21,6 +21,8 @@ package net.openhft.chronicle.network.event;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.threads.NamedThreadFactory;
 import net.openhft.chronicle.threads.Pauser;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +38,7 @@ import static net.openhft.chronicle.network.event.References.or;
  */
 public class VanillaEventLoop implements EventLoop, Runnable {
     private final EventLoop parent;
+    @NotNull
     private final ExecutorService service;
     private final List<EventHandler> highHandlers = new ArrayList<>();
     private final List<EventHandler> mediumHandlers = new ArrayList<>();
@@ -48,6 +51,7 @@ public class VanillaEventLoop implements EventLoop, Runnable {
     private long loopStartNS;
     private long lastTimerNS;
     private volatile boolean running = true;
+    @Nullable
     private volatile Thread thread = null;
 
     public VanillaEventLoop(EventLoop parent, String name, Pauser pauser, long timerIntervalNS) {
@@ -67,7 +71,7 @@ public class VanillaEventLoop implements EventLoop, Runnable {
         running = false;
     }
 
-    public void addHandler(EventHandler handler) {
+    public void addHandler(@NotNull EventHandler handler) {
         if (thread == null || thread == Thread.currentThread()) {
             addNewHandler(handler);
 
@@ -184,7 +188,7 @@ public class VanillaEventLoop implements EventLoop, Runnable {
         }
     }
 
-    private void addNewHandler(EventHandler handler) {
+    private void addNewHandler(@NotNull EventHandler handler) {
         switch (or(handler.priority(), HandlerPriority.MEDIUM)) {
             case HIGH:
                 highHandlers.add(handler);
@@ -208,7 +212,7 @@ public class VanillaEventLoop implements EventLoop, Runnable {
         return name;
     }
 
-    public void dumpRunningState(String message) {
+    public void dumpRunningState(@NotNull String message) {
         Thread thread = this.thread;
         if (thread == null) return;
         StringBuilder out = new StringBuilder(message);

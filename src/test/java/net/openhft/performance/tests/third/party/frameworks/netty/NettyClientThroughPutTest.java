@@ -26,6 +26,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.ReferenceCountUtil;
 import net.openhft.performance.tests.vanilla.tcp.EchoClientMain;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -47,6 +48,7 @@ public final class NettyClientThroughPutTest {
 
         final int bufferSize = 32 * 1024;
 
+        @NotNull
         byte[] payload = new byte[bufferSize];
         long bytesReceived = 0;
         long startTime;
@@ -59,7 +61,7 @@ public final class NettyClientThroughPutTest {
         }
 
         @Override
-        public void channelActive(ChannelHandlerContext ctx) {
+        public void channelActive(@NotNull ChannelHandlerContext ctx) {
             startTime = System.nanoTime();
             ctx.writeAndFlush(firstMessage);
 
@@ -67,7 +69,7 @@ public final class NettyClientThroughPutTest {
         }
 
         @Override
-        public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        public void channelRead(@NotNull ChannelHandlerContext ctx, @NotNull Object msg) {
             try {
                 bytesReceived += ((ByteBuf) msg).readableBytes();
 
@@ -93,12 +95,12 @@ public final class NettyClientThroughPutTest {
         }
 
         @Override
-        public void channelReadComplete(ChannelHandlerContext ctx) {
+        public void channelReadComplete(@NotNull ChannelHandlerContext ctx) {
             ctx.flush();
         }
 
         @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        public void exceptionCaught(@NotNull ChannelHandlerContext ctx, @NotNull Throwable cause) {
             // Close the connection when an exception is raised.
             cause.printStackTrace();
             ctx.close();
@@ -124,7 +126,7 @@ public final class NettyClientThroughPutTest {
                     .option(ChannelOption.TCP_NODELAY, true)
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
-                        public void initChannel(SocketChannel ch) throws Exception {
+                        public void initChannel(@NotNull SocketChannel ch) throws Exception {
                             ChannelPipeline p = ch.pipeline();
                             if (sslCtx != null) {
                                 p.addLast(sslCtx.newHandler(ch.alloc(), HOST, PORT));

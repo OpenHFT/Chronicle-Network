@@ -19,6 +19,7 @@
 package net.openhft.chronicle.network.event;
 
 import net.openhft.chronicle.threads.LightPauser;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
@@ -40,7 +41,7 @@ public class EventGroup implements EventLoop  {
             NANOSECONDS.convert(100, MICROSECONDS));
     final BlockingEventLoop blocking = new BlockingEventLoop(this, "blocking-event-loop");
 
-    public void addHandler(EventHandler handler) {
+    public void addHandler(@NotNull EventHandler handler) {
         switch (or(handler.priority(), HandlerPriority.BLOCKING)) {
             case HIGH:
             case MEDIUM:

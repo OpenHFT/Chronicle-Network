@@ -27,6 +27,7 @@ import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -41,12 +42,12 @@ public class MinaEchoServer {
 
         acceptor.setHandler(new IoHandlerAdapter() {
             @Override
-            public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
+            public void exceptionCaught(IoSession session, @NotNull Throwable cause) throws Exception {
                 cause.printStackTrace();
             }
 
             @Override
-            public void messageReceived(IoSession session, Object message) throws Exception {
+            public void messageReceived(@NotNull IoSession session, Object message) throws Exception {
                 session.write(message);
             }
 

@@ -19,6 +19,7 @@
 package net.openhft.chronicle.network.event;
 
 import net.openhft.chronicle.threads.NamedThreadFactory;
+import org.jetbrains.annotations.NotNull;
 
 import javax.xml.ws.WebServiceException;
 import java.util.concurrent.ExecutorService;
@@ -30,6 +31,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class BlockingEventLoop implements EventLoop {
     private final EventLoop parent;
+    @NotNull
     private final ExecutorService service;
 
     public BlockingEventLoop(EventLoop parent, String name) {
@@ -38,7 +40,7 @@ public class BlockingEventLoop implements EventLoop {
     }
 
     @Override
-    public void addHandler(EventHandler handler) {
+    public void addHandler(@NotNull EventHandler handler) {
         service.submit(() -> {
             handler.eventLoop(parent);
             while (!handler.isDead())

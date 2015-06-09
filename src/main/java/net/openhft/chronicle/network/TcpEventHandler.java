@@ -24,6 +24,7 @@ import net.openhft.chronicle.engine.api.SessionDetailsProvider;
 import net.openhft.chronicle.network.event.EventHandler;
 import net.openhft.chronicle.network.event.EventLoop;
 import net.openhft.chronicle.network.event.HandlerPriority;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -35,6 +36,7 @@ import java.nio.channels.SocketChannel;
  */
 public class TcpEventHandler implements EventHandler {
     public static final int CAPACITY = 1 << 23;
+    @NotNull
     private final SocketChannel sc;
     private final TcpHandler handler;
     private final ByteBuffer inBB = ByteBuffer.allocateDirect(CAPACITY);
@@ -43,7 +45,7 @@ public class TcpEventHandler implements EventHandler {
     private final Bytes outBBB = Bytes.wrap(outBB.slice());
     private final SessionDetailsProvider sessionDetails;
 
-    public TcpEventHandler(SocketChannel sc, TcpHandler handler, final SessionDetailsProvider sessionDetails) throws IOException {
+    public TcpEventHandler(@NotNull SocketChannel sc, TcpHandler handler, final SessionDetailsProvider sessionDetails) throws IOException {
         this.sc = sc;
         sc.configureBlocking(false);
         sc.socket().setTcpNoDelay(true);
@@ -61,13 +63,14 @@ public class TcpEventHandler implements EventHandler {
 
     }
 
+    @NotNull
     @Override
     public HandlerPriority priority() {
         return HandlerPriority.HIGH;
     }
 
     @Override
-    public void eventLoop(EventLoop eventLoop) {
+    public void eventLoop(@NotNull EventLoop eventLoop) {
         // handle unsolicited or unfulfilled writes at a lower priority
         eventLoop.addHandler(new WriteEventHandler());
     }
@@ -116,7 +119,7 @@ public class TcpEventHandler implements EventHandler {
         return !sc.isOpen();
     }
 
-    void handleIOE(IOException e) {
+    void handleIOE(@NotNull IOException e) {
         e.printStackTrace();
         closeSC();
     }

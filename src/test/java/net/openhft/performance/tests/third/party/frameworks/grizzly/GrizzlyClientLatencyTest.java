@@ -24,6 +24,7 @@ import org.glassfish.grizzly.filterchain.*;
 import org.glassfish.grizzly.memory.MemoryManager;
 import org.glassfish.grizzly.nio.transport.TCPNIOTransport;
 import org.glassfish.grizzly.nio.transport.TCPNIOTransportBuilder;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -78,7 +79,7 @@ public class GrizzlyClientLatencyTest {
              * @throws java.io.IOException
              */
             @Override
-            public NextAction handleRead(final FilterChainContext ctx) throws IOException {
+            public NextAction handleRead(@NotNull final FilterChainContext ctx) throws IOException {
 
                 if (i++ % 100_000 == 0)
                     System.out.print(".");

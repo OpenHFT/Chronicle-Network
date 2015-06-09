@@ -20,6 +20,7 @@ package net.openhft.chronicle.network.event;
 
 import net.openhft.chronicle.threads.NamedThreadFactory;
 import net.openhft.chronicle.threads.Pauser;
+import org.jetbrains.annotations.NotNull;
 
 import javax.xml.ws.WebServiceException;
 import java.io.Closeable;
@@ -54,7 +55,7 @@ public class MonitorEventLoop implements EventLoop, Runnable, Closeable {
         running = false;
     }
 
-    public void addHandler(EventHandler handler) {
+    public void addHandler(@NotNull EventHandler handler) {
         synchronized (handler) {
             handlers.add(handler);
             handler.eventLoop(parent);

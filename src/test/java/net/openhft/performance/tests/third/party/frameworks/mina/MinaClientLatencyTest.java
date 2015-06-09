@@ -28,6 +28,7 @@ import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
+import org.jetbrains.annotations.NotNull;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
@@ -55,7 +56,7 @@ public class MinaClientLatencyTest {
             int i;
 
             @Override
-            public void sessionOpened(IoSession session) {
+            public void sessionOpened(@NotNull IoSession session) {
                 startTime = System.nanoTime();
                 ioBuffer.clear();
                 ioBuffer.putLong(System.nanoTime());
@@ -68,7 +69,7 @@ public class MinaClientLatencyTest {
             }
 
             @Override
-            public void messageReceived(IoSession session, Object msg) {
+            public void messageReceived(@NotNull IoSession session, @NotNull Object msg) {
                 if (((IoBuffer) msg).remaining() >= 8) {
                     if (count % 10000 == 0)
                         System.out.print(".");
@@ -107,7 +108,7 @@ public class MinaClientLatencyTest {
             }
 
             @Override
-            public void exceptionCaught(IoSession session, Throwable cause) {
+            public void exceptionCaught(@NotNull IoSession session, @NotNull Throwable cause) {
                 cause.printStackTrace();
                 session.close(true);
             }

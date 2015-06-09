@@ -25,6 +25,7 @@ import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.TcpHandler;
 import net.openhft.chronicle.network.event.EventGroup;
 import net.openhft.performance.tests.vanilla.tcp.EchoClientMain;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
@@ -42,7 +43,7 @@ class EchoHandler implements TcpHandler {
     }
 
     @Override
-    public void process(final Bytes in, final Bytes out, final SessionDetailsProvider sessionDetails) {
+    public void process(@NotNull final Bytes in, @NotNull final Bytes out, final SessionDetailsProvider sessionDetails) {
         if (in.remaining() == 0)
             return;
 //            System.out.println("P - " + in.readLong(in.position()) + " " + in.toDebugString());
