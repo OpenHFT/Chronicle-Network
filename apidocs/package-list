@@ -1,3 +1,5 @@
+net.openhft.chronicle.engine.api
+net.openhft.chronicle.engine.session
 net.openhft.chronicle.network
 net.openhft.chronicle.network.connection
 net.openhft.chronicle.network.event
