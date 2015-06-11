@@ -164,6 +164,5 @@ public class WireTcpHandlerTest {
             td.read(inWire);
             td.write(outWire);
         }
-
     }
 }

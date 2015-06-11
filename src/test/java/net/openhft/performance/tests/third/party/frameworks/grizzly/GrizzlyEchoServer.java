@@ -81,6 +81,5 @@ public class GrizzlyEchoServer {
 
             LOG.info("Stopped transport...");
         }
-
     }
 }

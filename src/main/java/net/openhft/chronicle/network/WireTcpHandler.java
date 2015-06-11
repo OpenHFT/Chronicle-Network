@@ -160,5 +160,4 @@ public abstract class WireTcpHandler implements TcpHandler {
      */
     protected void publish(Wire out) {
     }
-
 }

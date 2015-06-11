@@ -142,6 +142,5 @@ public class SessionTest {
             outWire.writeDocument(false, w -> w.write(() -> "sessionId").text(sd.sessionId()
                     .toString()));
         }
-
     }
 }

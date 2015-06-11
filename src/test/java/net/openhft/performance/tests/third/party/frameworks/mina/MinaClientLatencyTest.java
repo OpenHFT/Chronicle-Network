@@ -133,6 +133,5 @@ public class MinaClientLatencyTest {
                 session.getCloseFuture().awaitUninterruptibly();
             connector.dispose();
         }
-
     }
 }

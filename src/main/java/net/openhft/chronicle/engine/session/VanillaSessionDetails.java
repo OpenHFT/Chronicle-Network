@@ -33,7 +33,6 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
         return vanillaSessionDetails;
     }
 
-
     /***
      * used to uniquely identify the session
      */
