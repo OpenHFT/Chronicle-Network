@@ -33,6 +33,8 @@ import org.jetbrains.annotations.NotNull;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 
+import static net.openhft.chronicle.core.Jvm.pause;
+
 public class MinaClientLatencyTest {
 
     public static final String DEFAULT_PORT = Integer.toString(MinaEchoServer.PORT);
@@ -123,7 +125,7 @@ public class MinaClientLatencyTest {
                     break;
                 } catch (RuntimeIoException e) {
                     e.printStackTrace();
-                    Thread.sleep(5000);
+                    pause(5000);
                 }
             }
 

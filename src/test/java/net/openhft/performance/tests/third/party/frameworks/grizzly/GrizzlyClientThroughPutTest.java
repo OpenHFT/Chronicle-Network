@@ -33,6 +33,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static net.openhft.chronicle.core.Jvm.pause;
+
 /**
  * The simple client, which sends a message to the echo server and waits for response
  */
@@ -120,7 +122,7 @@ public class GrizzlyClientThroughPutTest {
             connection.write(buffer);
 
             // the test should run for 10 seconds
-            Thread.sleep(10_000);
+            pause(10_000);
 
             long time = System.nanoTime() - startTime;
             System.out.printf("\nThroughput was %.1f MB/s%n", 1e3 *

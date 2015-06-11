@@ -34,6 +34,8 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+import static net.openhft.chronicle.core.Jvm.pause;
+
 public class MinaClientThroughPutTest {
 
     private static final String DEFAULT_PORT = Integer.toString(MinaEchoServer.PORT);
@@ -113,7 +115,7 @@ public class MinaClientThroughPutTest {
                 break;
             } catch (RuntimeIoException e) {
                 e.printStackTrace();
-                Thread.sleep(5000);
+                pause(5000);
             }
         }
 
