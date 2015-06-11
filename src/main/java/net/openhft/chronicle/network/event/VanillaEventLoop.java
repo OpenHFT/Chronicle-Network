@@ -54,12 +54,12 @@ public class VanillaEventLoop implements EventLoop, Runnable {
     @Nullable
     private volatile Thread thread = null;
 
-    public VanillaEventLoop(EventLoop parent, String name, Pauser pauser, long timerIntervalNS) {
+    public VanillaEventLoop(EventLoop parent, String name, Pauser pauser, long timerIntervalNS, boolean daemon) {
         this.parent = parent;
         this.name = name;
         this.pauser = pauser;
         this.timerIntervalNS = timerIntervalNS;
-        service = Executors.newSingleThreadExecutor(new NamedThreadFactory(name, true));
+        service = Executors.newSingleThreadExecutor(new NamedThreadFactory(name, daemon));
     }
 
     public void start() {

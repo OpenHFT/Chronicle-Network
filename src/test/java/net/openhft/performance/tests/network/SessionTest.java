@@ -55,7 +55,7 @@ public class SessionTest {
      */
     @Test
     public void testProcess() throws Exception {
-        EventGroup eg = new EventGroup();
+        EventGroup eg = new EventGroup(true);
         eg.start();
         AcceptorEventHandler eah = new AcceptorEventHandler(0, () -> new SessionIdRefector
                 (wireWrapper), VanillaSessionDetails::new);

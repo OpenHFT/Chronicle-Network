@@ -36,10 +36,14 @@ public class EventGroup implements EventLoop  {
             getInputArguments().toString().indexOf("jdwp") >= 0;
 
     final EventLoop monitor = new MonitorEventLoop(this, new LightPauser(LightPauser.NO_BUSY_PERIOD, NANOSECONDS.convert(1, SECONDS)));
-    final VanillaEventLoop core = new VanillaEventLoop(this, "core-event-loop",
-            new LightPauser(NANOSECONDS.convert(20, MICROSECONDS), NANOSECONDS.convert(200, MICROSECONDS)),
-            NANOSECONDS.convert(100, MICROSECONDS));
+    final VanillaEventLoop core;
     final BlockingEventLoop blocking = new BlockingEventLoop(this, "blocking-event-loop");
+
+    public EventGroup(boolean daemon) {
+        core = new VanillaEventLoop(this, "core-event-loop",
+                new LightPauser(NANOSECONDS.convert(20, MICROSECONDS), NANOSECONDS.convert(200, MICROSECONDS)),
+                NANOSECONDS.convert(100, MICROSECONDS), daemon);
+    }
 
     public void addHandler(@NotNull EventHandler handler) {
         switch (or(handler.priority(), HandlerPriority.BLOCKING)) {

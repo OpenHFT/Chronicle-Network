@@ -35,7 +35,7 @@ import java.io.IOException;
 class EchoHandler implements TcpHandler {
 
     public static void main(String[] args) throws IOException {
-        EventGroup eg = new EventGroup();
+        EventGroup eg = new EventGroup(false);
         eg.start();
         AcceptorEventHandler eah = new AcceptorEventHandler(EchoClientMain.PORT,
                 EchoHandler::new, VanillaSessionDetails::new);
