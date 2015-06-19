@@ -22,6 +22,7 @@ import net.openhft.chronicle.engine.api.SessionDetailsProvider;
 /**
  * Created by peter.lawrey on 22/01/15.
  */
+@FunctionalInterface
 public interface TcpHandler {
     void process(Bytes in, Bytes out, SessionDetailsProvider sessionDetails);
 }
