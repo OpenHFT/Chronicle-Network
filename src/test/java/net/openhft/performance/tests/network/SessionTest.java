@@ -48,37 +48,6 @@ public class SessionTest {
 
     private final Function<Bytes, Wire> wireWrapper = TextWire::new;
 
-    /**
-     * test that the same sesson returns the same session id
-     */
-    @Test
-    public void testProcess() throws Exception {
-        EventGroup eg = new EventGroup(true);
-        eg.start();
-        AcceptorEventHandler eah = new AcceptorEventHandler(0, () -> new SessionIdRefector
-                (wireWrapper), VanillaSessionDetails::new);
-        eg.addHandler(eah);
-
-        SocketChannel[] sc = new SocketChannel[2];
-        for (int i = 0; i < sc.length; i++) {
-            SocketAddress localAddress = new InetSocketAddress("localhost", eah.getLocalPort());
-            System.out.println("Connecting to " + localAddress);
-            sc[i] = SocketChannel.open(localAddress);
-            sc[i].configureBlocking(false);
-        }
-
-        final String s0 = testSessionId(sc[0]);
-        final String s1 = testSessionId(sc[1]);
-
-        Assert.assertTrue(s0.length() > 0);
-        Assert.assertTrue(s1.length() > 0);
-
-        Assert.assertEquals(s0, testSessionId(sc[0]));
-        Assert.assertEquals(s1, testSessionId(sc[1]));
-
-        eg.stop();
-    }
-
     private static String testSessionId(@NotNull SocketChannel... sockets) throws IOException {
 
         final StringBuilder session = new StringBuilder();
@@ -91,7 +60,7 @@ public class SessionTest {
             out.writeDocument(false, w -> w.write(() -> "test-key").text("test"));
 
             final ByteBuffer buffer = (ByteBuffer) out.bytes().underlyingObject();
-            buffer.limit((int) out.bytes().position());
+            buffer.limit((int) out.bytes().writePosition());
             socket.write(buffer);
 
             if (buffer.remaining() > 0)
@@ -125,6 +94,37 @@ public class SessionTest {
 
         return session.toString();
 
+    }
+
+    /**
+     * test that the same sesson returns the same session id
+     */
+    @Test
+    public void testProcess() throws Exception {
+        EventGroup eg = new EventGroup(true);
+        eg.start();
+        AcceptorEventHandler eah = new AcceptorEventHandler(0, () -> new SessionIdRefector
+                (wireWrapper), VanillaSessionDetails::new);
+        eg.addHandler(eah);
+
+        SocketChannel[] sc = new SocketChannel[2];
+        for (int i = 0; i < sc.length; i++) {
+            SocketAddress localAddress = new InetSocketAddress("localhost", eah.getLocalPort());
+            System.out.println("Connecting to " + localAddress);
+            sc[i] = SocketChannel.open(localAddress);
+            sc[i].configureBlocking(false);
+        }
+
+        final String s0 = testSessionId(sc[0]);
+        final String s1 = testSessionId(sc[1]);
+
+        Assert.assertTrue(s0.length() > 0);
+        Assert.assertTrue(s1.length() > 0);
+
+        Assert.assertEquals(s0, testSessionId(sc[0]));
+        Assert.assertEquals(s1, testSessionId(sc[1]));
+
+        eg.stop();
     }
 
     public static class SessionIdRefector extends WireTcpHandler {

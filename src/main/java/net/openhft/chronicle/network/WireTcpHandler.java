@@ -31,11 +31,11 @@ import java.util.function.Function;
 
 public abstract class WireTcpHandler implements TcpHandler {
     public static final int SIZE_OF_SIZE = 4;
+    private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
     @NotNull
     private final Function<Bytes, Wire> bytesToWire;
     protected Wire inWire, outWire;
-
-    private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
+    private boolean recreateWire;
 
     public WireTcpHandler(@NotNull final Function<Bytes, Wire> bytesToWire) {
         this.bytesToWire = bytesToWire;
@@ -45,14 +45,14 @@ public abstract class WireTcpHandler implements TcpHandler {
     public void process(@NotNull Bytes in, @NotNull Bytes out, @NotNull SessionDetailsProvider sessionDetails) {
         checkWires(in, out);
 
-        if (in.remaining() < SIZE_OF_SIZE) {
-            long outPos = out.position();
+        if (in.readRemaining() < SIZE_OF_SIZE) {
+            long outPos = out.writePosition();
 
             publish(outWire);
 
-            long written = out.position() - outPos;
+            long written = out.writePosition() - outPos;
             if (written == 0) {
-                out.position(outPos);
+                out.writePosition(outPos);
                 return;
             }
             assert written <= TcpEventHandler.CAPACITY;
@@ -62,7 +62,7 @@ public abstract class WireTcpHandler implements TcpHandler {
         do {
             if (!read(in, out, sessionDetails))
                 return;
-        } while (in.remaining() > SIZE_OF_SIZE && out.remaining() > out.capacity() / SIZE_OF_SIZE);
+        } while (in.readRemaining() > SIZE_OF_SIZE && out.writeRemaining() > out.capacity() / SIZE_OF_SIZE);
     }
 
     /**
@@ -73,59 +73,57 @@ public abstract class WireTcpHandler implements TcpHandler {
      * @return true if we can read attempt the next
      */
     private boolean read(@NotNull Bytes in, @NotNull Bytes out, @NotNull SessionDetailsProvider sessionDetails) {
-        final long header = in.readInt(in.position());
+        final long header = in.readInt(in.readPosition());
         long length = Wires.lengthOf(header);
         assert length >= 0 && length < 1 << 22 : "in=" + in + ", hex=" + in.toHexString();
 
         // we don't return on meta data of zero bytes as this is a system message
         if (length == 0 && Wires.isData(header)) {
-            in.skip(SIZE_OF_SIZE);
+            in.readSkip(SIZE_OF_SIZE);
             return false;
         }
 
-        if (in.remaining() < length) {
+        if (in.readRemaining() < length) {
             // we have to first read more data before this can be processed
             if (LOG.isDebugEnabled())
                 LOG.debug(String.format("required length=%d but only got %d bytes, " +
-                                "this is short by %d bytes", length, in.remaining(),
-                        length - in.remaining()));
+                                "this is short by %d bytes", length, in.readRemaining(),
+                        length - in.readRemaining()));
             return false;
         }
 
-        long limit = in.limit();
-        long end = in.position() + length + SIZE_OF_SIZE;
-        long outPos = out.position();
+        long limit = in.readLimit();
+        long end = in.readPosition() + length + SIZE_OF_SIZE;
+        long outPos = out.writePosition();
         try {
 
-            in.limit(end);
+            in.readLimit(end);
 
-            final long position = inWire.bytes().position();
+            final long position = inWire.bytes().readPosition();
             try {
                 process(inWire, outWire, sessionDetails);
             } finally {
                 try {
-                    inWire.bytes().position(position + length);
+                    inWire.bytes().readPosition(position + length);
                 } catch (BufferOverflowException e) {
                     //noinspection ThrowFromFinallyBlock
-                    throw new IllegalStateException("Unexpected error position: " + position + ", length: " + length + " limit(): " + inWire.bytes().limit(), e);
+                    throw new IllegalStateException("Unexpected error position: " + position + ", length: " + length + " limit(): " + inWire.bytes().readLimit(), e);
                 }
             }
 
-            long written = out.position() - outPos;
+            long written = out.writePosition() - outPos;
 
             if (written > 0)
                 return false;
         } catch (Exception e) {
             LOG.error("", e);
         } finally {
-            in.limit(limit);
-            in.position(end);
+            in.readLimit(limit);
+            in.readPosition(end);
         }
 
         return true;
     }
-
-    private boolean recreateWire;
 
     private void checkWires(Bytes in, Bytes out) {
         if (recreateWire) {

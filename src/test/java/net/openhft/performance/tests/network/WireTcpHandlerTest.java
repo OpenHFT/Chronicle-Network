@@ -66,27 +66,6 @@ public class WireTcpHandlerTest {
         );
     }
 
-    @Test
-    public void testProcess() throws Exception {
-        EventGroup eg = new EventGroup(true);
-        eg.start();
-        AcceptorEventHandler eah = new AcceptorEventHandler(0, () -> new EchoRequestHandler
-                (wireWrapper), VanillaSessionDetails::new);
-        eg.addHandler(eah);
-
-        SocketChannel[] sc = new SocketChannel[1];
-        for (int i = 0; i < sc.length; i++) {
-            SocketAddress localAddress = new InetSocketAddress("localhost", eah.getLocalPort());
-            System.out.println("Connecting to " + localAddress);
-            sc[i] = SocketChannel.open(localAddress);
-            sc[i].configureBlocking(false);
-        }
-        //       testThroughput(sc);
-        testLatency(desc, wireWrapper, sc[0]);
-
-        eg.stop();
-    }
-
     private static void testLatency(String desc, @NotNull Function<Bytes, Wire> wireWrapper, @NotNull SocketChannel... sockets) throws IOException {
 //        System.out.println("Starting latency test");
         int tests = 100000;
@@ -108,7 +87,7 @@ public class WireTcpHandlerTest {
                 outBytes.clear();
                 td.value3 = td.value2 = td.value1 = i;
                 td.write(outWire);
-                out.limit((int) outBytes.position());
+                out.limit((int) outBytes.writePosition());
                 socket.write(out);
                 if (out.remaining() > 0)
                     throw new AssertionError("Unable to write in one go.");
@@ -119,12 +98,12 @@ public class WireTcpHandlerTest {
                 inBytes.clear();
                 while (true) {
                     int read = socket.read(in);
-                    inBytes.limit(in.position());
-                    if (inBytes.remaining() >= SIZE_OF_SIZE) {
+                    inBytes.readLimit(in.position());
+                    if (inBytes.readRemaining() >= SIZE_OF_SIZE) {
                         long header = inBytes.readInt(0);
 
                         final int len = Wires.lengthOf(header);
-                        if (inBytes.remaining() >= len) {
+                        if (inBytes.readRemaining() >= len) {
                             td2.read(inWire);
                         }
                         break;
@@ -146,6 +125,27 @@ public class WireTcpHandlerTest {
                 times[times.length - times.length / 10000] / 1000,
                 times[times.length - 1] / 1000
         );
+    }
+
+    @Test
+    public void testProcess() throws Exception {
+        EventGroup eg = new EventGroup(true);
+        eg.start();
+        AcceptorEventHandler eah = new AcceptorEventHandler(0, () -> new EchoRequestHandler
+                (wireWrapper), VanillaSessionDetails::new);
+        eg.addHandler(eah);
+
+        SocketChannel[] sc = new SocketChannel[1];
+        for (int i = 0; i < sc.length; i++) {
+            SocketAddress localAddress = new InetSocketAddress("localhost", eah.getLocalPort());
+            System.out.println("Connecting to " + localAddress);
+            sc[i] = SocketChannel.open(localAddress);
+            sc[i].configureBlocking(false);
+        }
+        //       testThroughput(sc);
+        testLatency(desc, wireWrapper, sc[0]);
+
+        eg.stop();
     }
 
     static class EchoRequestHandler extends WireTcpHandler {

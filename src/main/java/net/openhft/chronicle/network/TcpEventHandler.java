@@ -92,23 +92,23 @@ public class TcpEventHandler implements EventHandler {
     }
 
     void invokeHandler() throws IOException {
-        inBBB.limit(inBB.position());
-        outBBB.position(outBB.limit());
+        inBBB.readLimit(inBB.position());
+        outBBB.writePosition(outBB.limit());
         handler.process(inBBB, outBBB, sessionDetails);
 
         // did it write something?
-        if (outBBB.position() > outBB.limit()) {
-            outBB.limit((int) outBBB.position());
+        if (outBBB.writePosition() > outBB.limit()) {
+            outBB.limit((int) outBBB.writePosition());
             tryWrite();
         }
         // TODO Optimise.
         // if it read some data compact();
-        if (inBBB.position() > 0) {
-            inBB.position((int) inBBB.position());
-            inBB.limit((int) inBBB.limit());
+        if (inBBB.readPosition() > 0) {
+            inBB.position((int) inBBB.readPosition());
+            inBB.limit((int) inBBB.readLimit());
             inBB.compact();
-            inBBB.position(0);
-            inBBB.limit(inBB.position());
+            inBBB.readPosition(0);
+            inBBB.readLimit(inBB.position());
         }
     }
 
@@ -129,19 +129,33 @@ public class TcpEventHandler implements EventHandler {
         }
     }
 
+    boolean tryWrite() throws IOException {
+        int wrote = sc.write(outBB);
+        if (wrote < 0) {
+            closeSC();
+
+        } else if (wrote > 0) {
+            outBB.compact().flip();
+            outBBB.writePosition(outBB.limit());
+            outBBB.writeLimit(outBB.capacity());
+            return true;
+        }
+        return false;
+    }
+
     class WriteEventHandler implements EventHandler {
         @Override
         public boolean runOnce() {
             try {
-                // get more data to write if the buffer was empty 
-                // or we can write some of what is there 
+                // get more data to write if the buffer was empty
+                // or we can write some of what is there
                 if (outBB.remaining() == 0 || tryWrite()) {
                     invokeHandler();
                     tryWrite();
                 }
             } catch (ClosedChannelException cce) {
                 closeSC();
-                
+
             } catch (IOException e) {
                 handleIOE(e);
             }
@@ -152,19 +166,5 @@ public class TcpEventHandler implements EventHandler {
         public boolean isDead() {
             return !sc.isOpen();
         }
-    }
-
-    boolean tryWrite() throws IOException {
-        int wrote = sc.write(outBB);
-        if (wrote < 0) {
-            closeSC();
-
-        } else if (wrote > 0) {
-            outBB.compact().flip();
-            outBBB.position(outBB.limit());
-            outBBB.limit(outBB.capacity());
-            return true;
-        }
-        return false;
     }
 }

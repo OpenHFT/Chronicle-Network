@@ -42,11 +42,11 @@ class EchoHandler implements TcpHandler {
 
     @Override
     public void process(@NotNull final Bytes in, @NotNull final Bytes out, final SessionDetailsProvider sessionDetails) {
-        if (in.remaining() == 0)
+        if (in.readRemaining() == 0)
             return;
 //            System.out.println("P - " + in.readLong(in.position()) + " " + in.toDebugString());
-        long toWrite = Math.min(in.remaining(), out.remaining());
-        out.write(in, in.position(), toWrite);
-        out.skip(toWrite);
+        long toWrite = Math.min(in.readRemaining(), out.writeRemaining());
+        out.write(in, in.readPosition(), toWrite);
+        out.writeSkip(toWrite);
     }
 }
