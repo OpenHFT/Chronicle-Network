@@ -14,10 +14,35 @@
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package net.openhft.chronicle.network.event;
+package net.openhft.chronicle.network.api.session;
+
+import org.jetbrains.annotations.Nullable;
+
+import java.net.InetSocketAddress;
+import java.util.UUID;
 
 /**
- * Created by peter.lawrey on 22/01/15.
+ * Session local details stored here.
+ * <p>
+ * Created by peter on 01/06/15.
  */
-public interface BytesHandler {
+public interface SessionDetails {
+
+    // a unique id used to identify this session, this field is by contract immutable
+    UUID sessionId();
+
+    @Nullable
+    String userId();
+
+    @Nullable
+    String securityToken();
+
+    @Nullable
+    InetSocketAddress clientAddress();
+
+    long connectTimeMS();
+
+    <I> void set(Class<I> infoClass, I info);
+
+    <I> I get(Class<I> infoClass);
 }

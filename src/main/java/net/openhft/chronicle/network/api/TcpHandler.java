@@ -14,21 +14,15 @@
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package net.openhft.chronicle.engine.api;
+package net.openhft.chronicle.network.api;
 
-import java.net.InetSocketAddress;
+import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 
 /**
- * Created by Rob Austin
+ * Created by peter.lawrey on 22/01/15.
  */
-public interface SessionDetailsProvider extends SessionDetails {
-
-    void setConnectTimeMS(long connectTimeMS);
-
-    void setClientAddress(InetSocketAddress connectionAddress);
-
-    void setSecurityToken(String securityToken);
-
-    void setUserId(String userId);
-
+@FunctionalInterface
+public interface TcpHandler {
+    void process(Bytes in, Bytes out, SessionDetailsProvider sessionDetails);
 }

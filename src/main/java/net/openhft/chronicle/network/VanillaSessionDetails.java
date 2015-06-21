@@ -14,9 +14,9 @@
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package net.openhft.chronicle.engine.session;
+package net.openhft.chronicle.network;
 
-import net.openhft.chronicle.engine.api.SessionDetailsProvider;
+import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.InetSocketAddress;

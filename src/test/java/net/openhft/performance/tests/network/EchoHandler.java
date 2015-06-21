@@ -17,11 +17,11 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.engine.api.SessionDetailsProvider;
-import net.openhft.chronicle.engine.session.VanillaSessionDetails;
 import net.openhft.chronicle.network.AcceptorEventHandler;
-import net.openhft.chronicle.network.TcpHandler;
-import net.openhft.chronicle.network.event.EventGroup;
+import net.openhft.chronicle.network.VanillaSessionDetails;
+import net.openhft.chronicle.network.api.TcpHandler;
+import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
+import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.performance.tests.vanilla.tcp.EchoClientMain;
 import org.jetbrains.annotations.NotNull;
 

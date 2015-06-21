@@ -16,9 +16,9 @@
 
 package net.openhft.performance.tests.network;
 
-import net.openhft.chronicle.engine.session.VanillaSessionDetails;
 import net.openhft.chronicle.network.AcceptorEventHandler;
-import net.openhft.chronicle.network.event.EventGroup;
+import net.openhft.chronicle.network.VanillaSessionDetails;
+import net.openhft.chronicle.threads.EventGroup;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Ignore;
 import org.junit.Test;

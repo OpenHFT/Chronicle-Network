@@ -17,10 +17,11 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.engine.api.SessionDetailsProvider;
-import net.openhft.chronicle.network.event.EventHandler;
-import net.openhft.chronicle.network.event.EventLoop;
-import net.openhft.chronicle.network.event.HandlerPriority;
+import net.openhft.chronicle.network.api.TcpHandler;
+import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
+import net.openhft.chronicle.threads.HandlerPriority;
+import net.openhft.chronicle.threads.api.EventHandler;
+import net.openhft.chronicle.threads.api.EventLoop;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
