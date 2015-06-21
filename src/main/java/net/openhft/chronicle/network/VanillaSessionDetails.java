@@ -38,7 +38,6 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
     private UUID sessionId;
 
     public VanillaSessionDetails() {
-        this.sessionId = UUID.randomUUID();
     }
 
     @NotNull
@@ -54,6 +53,8 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
      */
     @Override
     public UUID sessionId() {
+        if (sessionId == null)
+            sessionId = UUID.randomUUID();
         return sessionId;
     }
 

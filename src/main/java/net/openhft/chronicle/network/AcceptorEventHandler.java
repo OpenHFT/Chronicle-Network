@@ -69,7 +69,6 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
     @Override
     public boolean runOnce()  {
         try {
-
             SocketChannel sc = ssc.accept();
 
             if (sc != null) {
