@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.StreamCorruptedException;
+import java.nio.BufferOverflowException;
 import java.util.function.Function;
 
 public abstract class WireTcpHandler implements TcpHandler {
@@ -101,7 +102,12 @@ public abstract class WireTcpHandler implements TcpHandler {
             try {
                 process(inWire, outWire, sessionDetails);
             } finally {
-                inWire.bytes().position(position + length);
+                try {
+                    inWire.bytes().position(position + length);
+                } catch (BufferOverflowException e) {
+                    //noinspection ThrowFromFinallyBlock
+                    throw new IllegalStateException("Unexpected error position: " + position + ", length: " + length + " limit(): " + inWire.bytes().limit(), e);
+                }
             }
 
             long written = out.position() - outPos;
