@@ -38,9 +38,9 @@ public class TcpEventHandler implements EventHandler {
     private final SocketChannel sc;
     private final TcpHandler handler;
     private final ByteBuffer inBB = ByteBuffer.allocateDirect(CAPACITY);
-    private final Bytes inBBB = Bytes.wrap(inBB.slice());
+    private final Bytes inBBB = Bytes.wrapForRead(inBB.slice());
     private final ByteBuffer outBB = ByteBuffer.allocateDirect(CAPACITY);
-    private final Bytes outBBB = Bytes.wrap(outBB.slice());
+    private final Bytes outBBB = Bytes.wrapForWrite(outBB.slice());
     private final SessionDetailsProvider sessionDetails;
 
     public TcpEventHandler(@NotNull SocketChannel sc, TcpHandler handler, final SessionDetailsProvider sessionDetails) throws IOException {

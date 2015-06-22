@@ -54,7 +54,7 @@ public class SessionTest {
 
         for (SocketChannel socket : sockets) {
 
-            TextWire out = new TextWire(Bytes.wrap(ByteBuffer.allocate(1024)));
+            TextWire out = new TextWire(Bytes.wrapForWrite(ByteBuffer.allocate(1024)));
 
             out.clear();
             out.writeDocument(false, w -> w.write(() -> "test-key").text("test"));
@@ -69,7 +69,7 @@ public class SessionTest {
 
         for (SocketChannel socket : sockets) {
 
-            TextWire in = new TextWire(Bytes.wrap(ByteBuffer.allocate(1024)));
+            TextWire in = new TextWire(Bytes.wrapForRead(ByteBuffer.allocate(1024)));
 
             final ByteBuffer buffer = (ByteBuffer) in.bytes().underlyingObject();
 

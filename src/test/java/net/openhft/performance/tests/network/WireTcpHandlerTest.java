@@ -72,11 +72,11 @@ public class WireTcpHandlerTest {
         long[] times = new long[tests * sockets.length];
         int count = 0;
         ByteBuffer out = ByteBuffer.allocateDirect(64 * 1024);
-        Bytes outBytes = Bytes.wrap(out);
+        Bytes outBytes = Bytes.wrapForWrite(out);
         Wire outWire = wireWrapper.apply(outBytes);
 
         ByteBuffer in = ByteBuffer.allocateDirect(64 * 1024);
-        Bytes inBytes = Bytes.wrap(in);
+        Bytes inBytes = Bytes.wrapForRead(in);
         Wire inWire = wireWrapper.apply(inBytes);
         TestData td = new TestData();
         TestData td2 = new TestData();
