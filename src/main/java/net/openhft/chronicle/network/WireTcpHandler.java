@@ -120,11 +120,13 @@ public abstract class WireTcpHandler implements TcpHandler {
             LOG.error("", e);
         } finally {
             in.readLimit(limit);
+            // TODO remove this !!
+            Thread.yield();
             try {
                 in.readPosition(end);
             } catch (Exception e) {
                 throw new IllegalStateException("position: " + end
-                        + ", readLimit: " + in.readLimit() + " " + in.toDebugString(), e);
+                        + ", limit:" + limit + ", readLimit: " + in.readLimit() + " " + in.toDebugString(), e);
 
             }
         }
