@@ -22,7 +22,9 @@ import net.openhft.chronicle.network.VanillaSessionDetails;
 import net.openhft.chronicle.network.WireTcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.threads.EventGroup;
-import net.openhft.chronicle.wire.*;
+import net.openhft.chronicle.wire.Wire;
+import net.openhft.chronicle.wire.WireType;
+import net.openhft.chronicle.wire.Wires;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,9 +62,9 @@ public class WireTcpHandlerTest {
     @Parameterized.Parameters
     public static Collection<Object[]> combinations() {
         return Arrays.asList(
-                new Object[]{"TextWire", (Function<Bytes, Wire>) TextWire::new},
-                new Object[]{"BinaryWire", (Function<Bytes, Wire>) BinaryWire::new},
-                new Object[]{"RawWire", (Function<Bytes, Wire>) RawWire::new}
+                new Object[]{"TextWire", WireType.TEXT},
+                new Object[]{"BinaryWire", WireType.BINARY},
+                new Object[]{"RawWire", WireType.RAW}
         );
     }
 

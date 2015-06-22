@@ -24,6 +24,7 @@ import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.TextWire;
 import net.openhft.chronicle.wire.Wire;
+import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.Wires;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
@@ -45,8 +46,6 @@ RawWire: Loop back echo latency was 5.9/6.8 8/10 12/80 us for 50/90 99/99.9 99.9
  */
 
 public class SessionTest {
-
-    private final Function<Bytes, Wire> wireWrapper = TextWire::new;
 
     private static String testSessionId(@NotNull SocketChannel... sockets) throws IOException {
 
@@ -105,7 +104,7 @@ public class SessionTest {
         EventGroup eg = new EventGroup(true);
         eg.start();
         AcceptorEventHandler eah = new AcceptorEventHandler(0, () -> new SessionIdRefector
-                (wireWrapper), VanillaSessionDetails::new);
+                (WireType.TEXT), VanillaSessionDetails::new);
         eg.addHandler(eah);
 
         SocketChannel[] sc = new SocketChannel[2];
