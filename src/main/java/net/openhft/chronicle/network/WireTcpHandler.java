@@ -94,6 +94,7 @@ public abstract class WireTcpHandler implements TcpHandler {
 
         long limit = in.readLimit();
         long end = in.readPosition() + length + SIZE_OF_SIZE;
+        assert end <= limit;
         long outPos = out.writePosition();
         try {
 
@@ -115,11 +116,17 @@ public abstract class WireTcpHandler implements TcpHandler {
 
             if (written > 0)
                 return false;
-        } catch (Exception e) {
+        } catch (Throwable e) {
             LOG.error("", e);
         } finally {
             in.readLimit(limit);
-            in.readPosition(end);
+            try {
+                in.readPosition(end);
+            } catch (Exception e) {
+                throw new IllegalStateException("position: " + end
+                        + ", readLimit: " + in.readLimit() + " " + in.toDebugString(), e);
+
+            }
         }
 
         return true;
