@@ -83,7 +83,8 @@ public class SessionTest {
                 socket.read(buffer);
             }
 
-            in.bytes().clear();
+            in.bytes().readPosition(0);
+            in.bytes().readLimit(buffer.position());
             in.readDocument(null, i -> {
                 final String id = i.read(() -> "sessionId").text();
                 session.append(id);
