@@ -20,6 +20,7 @@ import net.openhft.affinity.AffinitySupport;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -74,16 +75,17 @@ Loop back echo latency was 20.8/21.8 29/34 38/2286 us for 50/90 99/99.9 99.99/wo
 
 public class EchoClientMain {
     public static final int PORT = Integer.getInteger("port", 8007);
-    public static final int CLIENTS = Integer.getInteger("clients", 2);
+    public static final int CLIENTS = Integer.getInteger("clients", 1);
+    public static final int TARGET_THROUGHPUT = Integer.getInteger("throughput", 10_000);
 
     public static void main(@NotNull String... args) throws IOException, InterruptedException {
         AffinitySupport.setAffinity(1L << 3);
         String[] hostnames = args.length > 0 ? args : "localhost".split(",");
 
         SocketChannel[] sockets = new SocketChannel[CLIENTS];
-        openConnections(hostnames, PORT, sockets);
-        testThroughput(sockets);
-        closeConnections(sockets);
+//        openConnections(hostnames, PORT, sockets);
+//        testThroughput(sockets);
+//        closeConnections(sockets);
         openConnections(hostnames, PORT, sockets);
         testLatency(sockets);
         closeConnections(sockets);
@@ -135,15 +137,29 @@ public class EchoClientMain {
 
     private static void testLatency(@NotNull SocketChannel... sockets) throws IOException {
         System.out.println("Starting latency test");
-        int tests = 1000000;
+        int tests = Math.min(10 * TARGET_THROUGHPUT, 1000000);
         long[] times = new long[tests * sockets.length];
         int count = 0;
-        ByteBuffer bb = ByteBuffer.allocateDirect(64);
-        for (int i = -50000; i < tests; i++) {
-            long now = System.nanoTime();
+        int messageLength = 64;
+        ByteBuffer bb = ByteBuffer.allocateDirect(messageLength);
+        long now = System.nanoTime();
+        long rate = (long) (1e9 / TARGET_THROUGHPUT);
+        for (int i = -20000; i < tests; i++) {
+            now += rate;
+            while (System.nanoTime() < now)
+                ;
             for (SocketChannel socket : sockets) {
                 bb.clear();
-                socket.write(bb);
+                bb.putLong(0, messageLength);
+                bb.putLong(8, now);
+                int toWrite = bb.remaining();
+                int len = socket.write(bb);
+                if (len < 0)
+                    throw new EOFException();
+                if (len < toWrite) {
+                    System.out.println("Wrote " + len + " of " + toWrite);
+                    socket.write(bb);
+                }
                 if (bb.remaining() > 0)
                     throw new AssertionError("Unable to write in one go.");
             }
@@ -152,6 +168,10 @@ public class EchoClientMain {
                 while (bb.remaining() > 0)
                     if (socket.read(bb) < 0)
                         throw new AssertionError("Unable to read in one go.");
+                if (bb.getLong(0) != messageLength)
+                    throw new AssertionError("Not at start of message len " + bb.getLong(0));
+                if (bb.getLong(8) != now)
+                    throw new AssertionError("Not our message " + bb.getLong(8) + " not " + now);
                 if (i >= 0)
                     times[count++] = System.nanoTime() - now;
             }

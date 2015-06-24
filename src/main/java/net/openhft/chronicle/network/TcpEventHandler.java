@@ -17,6 +17,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.threads.HandlerPriority;
@@ -98,7 +99,7 @@ public class TcpEventHandler implements EventHandler {
 
         // did it write something?
         if (outBBB.writePosition() > outBB.limit()) {
-            outBB.limit((int) outBBB.writePosition());
+            outBB.limit(Maths.toInt32(outBBB.writePosition()));
             tryWrite();
         }
         // TODO Optimise.
