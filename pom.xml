@@ -26,7 +26,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>chronicle-network</artifactId>
-    <version>1.0.6-alpha</version>
+    <version>1.0.7-alpha-SNAPSHOT</version>
     <name>OpenHFT/Chronicle-Network</name>
     <description>Chronicle-Network</description>
 
@@ -244,7 +244,7 @@
         <connection>scm:git:git@github.com:OpenHFT/Chronicle-Network.git</connection>
         <developerConnection>scm:git:git@github.com:OpenHFT/Chronicle-Network.git
         </developerConnection>
-        <tag>chronicle-network-1.0.6-alpha</tag>
+        <tag>master</tag>
     </scm>
 
 </project>
