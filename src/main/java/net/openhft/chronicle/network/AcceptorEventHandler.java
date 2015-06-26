@@ -21,6 +21,7 @@ import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.threads.HandlerPriority;
 import net.openhft.chronicle.threads.api.EventHandler;
 import net.openhft.chronicle.threads.api.EventLoop;
+import net.openhft.chronicle.threads.api.InvalidEventHandlerException;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,14 +38,13 @@ import java.util.function.Supplier;
  * Created by peter.lawrey on 22/01/15.
  */
 public class AcceptorEventHandler implements EventHandler,Closeable {
+    private static final Logger LOG = LoggerFactory.getLogger(AcceptorEventHandler.class);
     @NotNull
     private final Supplier<TcpHandler> tcpHandlerSupplier;
     @NotNull
     private final Supplier<SessionDetailsProvider> sessionDetailsSupplier;
-    private EventLoop eventLoop;
     private final ServerSocketChannel ssc;
-
-    private static final Logger LOG = LoggerFactory.getLogger(AcceptorEventHandler.class);
+    private EventLoop eventLoop;
 
     public AcceptorEventHandler(int port,
                                 @NotNull final Supplier<TcpHandler> tcpHandlerSupplier,
@@ -67,7 +67,9 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
     }
 
     @Override
-    public boolean runOnce()  {
+    public boolean action() throws InvalidEventHandlerException {
+        if (!ssc.isOpen()) throw new InvalidEventHandlerException();
+
         try {
             SocketChannel sc = ssc.accept();
 
@@ -107,11 +109,6 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
     @Override
     public HandlerPriority priority() {
         return HandlerPriority.BLOCKING;
-    }
-
-    @Override
-    public boolean isDead() {
-        return !ssc.isOpen();
     }
 
     @Override

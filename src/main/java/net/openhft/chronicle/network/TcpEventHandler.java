@@ -23,6 +23,7 @@ import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.threads.HandlerPriority;
 import net.openhft.chronicle.threads.api.EventHandler;
 import net.openhft.chronicle.threads.api.EventLoop;
+import net.openhft.chronicle.threads.api.InvalidEventHandlerException;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -75,7 +76,9 @@ public class TcpEventHandler implements EventHandler {
     }
 
     @Override
-    public boolean runOnce() {
+    public boolean action() throws InvalidEventHandlerException {
+        if (!sc.isOpen()) throw new InvalidEventHandlerException();
+
         try {
             int read = inBB.remaining() > 0 ? sc.read(inBB) : 1;
             if (read < 0) {
@@ -113,10 +116,6 @@ public class TcpEventHandler implements EventHandler {
         }
     }
 
-    @Override
-    public boolean isDead() {
-        return !sc.isOpen();
-    }
 
     void handleIOE(@NotNull IOException e) {
         e.printStackTrace();
@@ -146,7 +145,9 @@ public class TcpEventHandler implements EventHandler {
 
     class WriteEventHandler implements EventHandler {
         @Override
-        public boolean runOnce() {
+        public boolean action() throws InvalidEventHandlerException {
+            if (!sc.isOpen()) throw new InvalidEventHandlerException();
+
             try {
                 // get more data to write if the buffer was empty
                 // or we can write some of what is there
@@ -161,11 +162,6 @@ public class TcpEventHandler implements EventHandler {
                 handleIOE(e);
             }
             return false;
-        }
-
-        @Override
-        public boolean isDead() {
-            return !sc.isOpen();
         }
     }
 }
