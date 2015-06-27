@@ -151,9 +151,13 @@ public class TcpEventHandler implements EventHandler {
             try {
                 // get more data to write if the buffer was empty
                 // or we can write some of what is there
-                if (outBB.remaining() == 0 || tryWrite()) {
-                    invokeHandler();
+                boolean busy = outBB.remaining() > 0;
+                if (busy)
                     tryWrite();
+                if (outBB.remaining() == 0) {
+                    invokeHandler();
+                    if (!busy)
+                        tryWrite();
                 }
             } catch (ClosedChannelException cce) {
                 closeSC();
