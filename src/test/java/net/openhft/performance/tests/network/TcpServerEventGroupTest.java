@@ -49,7 +49,7 @@ public class TcpServerEventGroupTest {
 
     @Ignore("fix JIRA https://higherfrequencytrading.atlassian.net/browse/NET-13")
     @Test
-    public void testStart() throws Exception {
+    public void testStart() throws IOException, InterruptedException {
         EventGroup eg = new EventGroup(true);
         eg.start();
         AcceptorEventHandler eah = new AcceptorEventHandler(0, EchoHandler::new,

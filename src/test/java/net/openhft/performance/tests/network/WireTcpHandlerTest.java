@@ -130,7 +130,7 @@ public class WireTcpHandlerTest {
     }
 
     @Test
-    public void testProcess() throws Exception {
+    public void testProcess() throws IOException {
         EventGroup eg = new EventGroup(true);
         eg.start();
         AcceptorEventHandler eah = new AcceptorEventHandler(0, () -> new EchoRequestHandler

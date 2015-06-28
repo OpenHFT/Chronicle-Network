@@ -40,17 +40,17 @@ public class MinaEchoServer {
 
         acceptor.setHandler(new IoHandlerAdapter() {
             @Override
-            public void exceptionCaught(IoSession session, @NotNull Throwable cause) throws Exception {
+            public void exceptionCaught(IoSession session, @NotNull Throwable cause) {
                 cause.printStackTrace();
             }
 
             @Override
-            public void messageReceived(@NotNull IoSession session, Object message) throws Exception {
+            public void messageReceived(@NotNull IoSession session, Object message) {
                 session.write(message);
             }
 
             @Override
-            public void sessionIdle(IoSession session, IdleStatus status) throws Exception {
+            public void sessionIdle(IoSession session, IdleStatus status) {
 
             }
         });

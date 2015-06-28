@@ -28,6 +28,7 @@ import io.netty.util.ReferenceCountUtil;
 import net.openhft.performance.tests.vanilla.tcp.EchoClientMain;
 import org.jetbrains.annotations.NotNull;
 
+import javax.net.ssl.SSLException;
 import java.util.Arrays;
 
 /**
@@ -115,7 +116,7 @@ public final class NettyClientLatencyTest {
         }
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws SSLException, InterruptedException {
         // Configure SSL.git
         final SslContext sslCtx;
         if (SSL) {
@@ -134,7 +135,7 @@ public final class NettyClientLatencyTest {
                     .option(ChannelOption.TCP_NODELAY, true)
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
-                        public void initChannel(@NotNull SocketChannel ch) throws Exception {
+                        public void initChannel(@NotNull SocketChannel ch) {
                             ChannelPipeline p = ch.pipeline();
                             if (sslCtx != null) {
                                 p.addLast(sslCtx.newHandler(ch.alloc(), HOST, PORT));
