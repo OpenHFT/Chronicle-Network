@@ -22,10 +22,7 @@ import net.openhft.chronicle.network.VanillaSessionDetails;
 import net.openhft.chronicle.network.WireTcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.threads.EventGroup;
-import net.openhft.chronicle.wire.TextWire;
-import net.openhft.chronicle.wire.Wire;
-import net.openhft.chronicle.wire.WireType;
-import net.openhft.chronicle.wire.Wires;
+import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
@@ -134,8 +131,8 @@ public class SessionTest {
         }
 
         @Override
-        protected void process(@NotNull Wire inWire,
-                               @NotNull Wire outWire,
+        protected void process(@NotNull WireIn inWire,
+                               @NotNull WireOut outWire,
                                @NotNull SessionDetailsProvider sd) {
             outWire.writeDocument(false, w -> w.write(() -> "sessionId").text(sd.sessionId()
                     .toString()));

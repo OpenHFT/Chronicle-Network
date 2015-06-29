@@ -20,6 +20,8 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.wire.Wire;
+import net.openhft.chronicle.wire.WireIn;
+import net.openhft.chronicle.wire.WireOut;
 import net.openhft.chronicle.wire.Wires;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -162,8 +164,8 @@ public abstract class WireTcpHandler implements TcpHandler {
      * @param out the result of processing the {@code in}
      * @throws StreamCorruptedException if the wire is corrupt
      */
-    protected abstract void process(@NotNull Wire in,
-                                    @NotNull Wire out,
+    protected abstract void process(@NotNull WireIn in,
+                                    @NotNull WireOut out,
                                     @NotNull SessionDetailsProvider sessionDetails)
             throws StreamCorruptedException;
 
