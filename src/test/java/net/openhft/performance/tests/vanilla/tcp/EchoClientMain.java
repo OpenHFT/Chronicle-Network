@@ -87,7 +87,7 @@ public class EchoClientMain {
 //        testThroughput(sockets);
 //        closeConnections(sockets);
         openConnections(hostnames, PORT, sockets);
-        testLatency(sockets);
+        testByteLatency(sockets);
         closeConnections(sockets);
     }
 
@@ -95,7 +95,7 @@ public class EchoClientMain {
         for (int j = 0; j < sockets.length; j++) {
             sockets[j] = SocketChannel.open(new InetSocketAddress(hostname[j % hostname.length], port));
             sockets[j].socket().setTcpNoDelay(true);
-            sockets[j].configureBlocking(false);
+            sockets[j].configureBlocking(true);
         }
     }
 
@@ -175,6 +175,40 @@ public class EchoClientMain {
                 if (i >= 0)
                     times[count++] = System.nanoTime() - now;
             }
+        }
+        Arrays.sort(times);
+        System.out.printf("Loop back echo latency was %.1f/%.1f %,d/%,d %,d/%d us for 50/90 99/99.9 99.99/worst %%tile%n",
+                times[times.length / 2] / 1e3,
+                times[times.length * 9 / 10] / 1e3,
+                times[times.length - times.length / 100] / 1000,
+                times[times.length - times.length / 1000] / 1000,
+                times[times.length - times.length / 10000] / 1000,
+                times[times.length - 1] / 1000
+        );
+    }
+
+    private static void testByteLatency(@NotNull SocketChannel... sockets) throws IOException {
+        System.out.println("Starting latency test");
+        int tests = Math.min(10 * TARGET_THROUGHPUT, 1000000);
+        long[] times = new long[tests * sockets.length];
+        int count = 0;
+        long now = System.nanoTime();
+        long rate = (long) (1e9 / TARGET_THROUGHPUT);
+
+        for (int i = -20000; i < tests; i++) {
+            now += rate;
+            while (System.nanoTime() < now)
+                ;
+
+            sockets[0].socket().getOutputStream().write(1);
+
+            int length = sockets[0].socket().getInputStream().read();
+            if(length !=1)
+                throw new AssertionError("Did not read");
+
+            if (i >= 0)
+                times[count++] = System.nanoTime() - now;
+
         }
         Arrays.sort(times);
         System.out.printf("Loop back echo latency was %.1f/%.1f %,d/%,d %,d/%d us for 50/90 99/99.9 99.99/worst %%tile%n",
