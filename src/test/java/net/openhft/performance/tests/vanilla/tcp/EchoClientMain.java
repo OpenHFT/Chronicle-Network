@@ -191,7 +191,7 @@ public class EchoClientMain {
 
     private static void testByteLatency(int targetThroughput, @NotNull SocketChannel... sockets) throws IOException {
         System.out.println("Starting latency test rate: " + targetThroughput);
-        int tests = Math.min(180 * targetThroughput, 10000000);
+        int tests = Math.min(18 * targetThroughput, 1000000);
         long[] times = new long[tests * sockets.length];
         int count = 0;
         long now = System.nanoTime();
