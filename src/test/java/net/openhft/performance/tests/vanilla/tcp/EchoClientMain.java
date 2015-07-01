@@ -88,7 +88,7 @@ public class EchoClientMain {
 //        testThroughput(sockets);
 //        closeConnections(sockets);
         openConnections(hostnames, PORT, sockets);
-        for(int i: new int[] { 100000, 100000, 70000, 50000, 30000, 20000, 10000, 5000})
+        for (int i : new int[]{100000, 100000, 70000, 50000, 30000, 20000, 10000, 5000})
             testByteLatency(i, sockets);
         closeConnections(sockets);
     }
@@ -190,8 +190,8 @@ public class EchoClientMain {
     }
 
     private static void testByteLatency(int targetThroughput, @NotNull SocketChannel... sockets) throws IOException {
-        System.out.println("Starting latency test rate: "+targetThroughput);
-        int tests = Math.min(18 * targetThroughput, 1000000);
+        System.out.println("Starting latency test rate: " + targetThroughput);
+        int tests = Math.min(180 * targetThroughput, 10000000);
         long[] times = new long[tests * sockets.length];
         int count = 0;
         long now = System.nanoTime();
@@ -207,16 +207,16 @@ public class EchoClientMain {
                 ;
 
             bb.position(0);
-            while(bb.remaining()>0)
+            while (bb.remaining() > 0)
                 if (socket.write(bb) < 0)
                     throw new EOFException();
 
             bb.position(0);
-            while(bb.remaining()>0)
+            while (bb.remaining() > 0)
                 if (socket.read(bb) < 0)
                     throw new EOFException();
 
-            if(bb.getInt(0) != 0x12345678)
+            if (bb.getInt(0) != 0x12345678)
                 throw new AssertionError("read error");
 
             if (i >= 0)
