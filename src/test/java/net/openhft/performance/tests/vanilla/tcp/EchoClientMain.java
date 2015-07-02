@@ -222,6 +222,7 @@ public class EchoClientMain {
             if (i >= 0)
                 times[count++] = System.nanoTime() - now;
         }
+        System.out.println("Average time " + (Arrays.stream(times).sum()/times.length)/1000);
         Arrays.sort(times);
         System.out.printf("Loop back echo latency was %.1f/%.1f %,d/%,d %,d/%d %,d us for 50/90 99/99.9 99.99/99.999 worst %%tile%n",
                 times[times.length / 2] / 1e3,
