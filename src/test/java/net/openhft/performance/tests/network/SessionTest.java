@@ -18,6 +18,7 @@ package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network.AcceptorEventHandler;
+import net.openhft.chronicle.network.TCPRegistery;
 import net.openhft.chronicle.network.VanillaSessionDetails;
 import net.openhft.chronicle.network.WireTcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
@@ -28,7 +29,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -100,13 +100,15 @@ public class SessionTest {
     public void testProcess() throws IOException {
         EventGroup eg = new EventGroup(true);
         eg.start();
-        AcceptorEventHandler eah = new AcceptorEventHandler(0, () -> new SessionIdRefector
+        TCPRegistery.createServerSocketChannelFor("testProcess");
+
+        AcceptorEventHandler eah = new AcceptorEventHandler("testProcess", () -> new SessionIdRefector
                 (WireType.TEXT), VanillaSessionDetails::new);
         eg.addHandler(eah);
 
         SocketChannel[] sc = new SocketChannel[2];
         for (int i = 0; i < sc.length; i++) {
-            SocketAddress localAddress = new InetSocketAddress("localhost", eah.getLocalPort());
+            SocketAddress localAddress = TCPRegistery.lookup("testProcess");
             System.out.println("Connecting to " + localAddress);
             sc[i] = SocketChannel.open(localAddress);
             sc[i].configureBlocking(false);
@@ -122,6 +124,8 @@ public class SessionTest {
         Assert.assertEquals(s1, testSessionId(sc[1]));
 
         eg.stop();
+        // shutdown all servers
+        TCPRegistery.reset();
     }
 
     public static class SessionIdRefector extends WireTcpHandler {

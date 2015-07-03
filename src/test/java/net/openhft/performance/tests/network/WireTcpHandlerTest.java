@@ -18,6 +18,7 @@ package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network.AcceptorEventHandler;
+import net.openhft.chronicle.network.TCPRegistery;
 import net.openhft.chronicle.network.VanillaSessionDetails;
 import net.openhft.chronicle.network.WireTcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
@@ -29,8 +30,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
@@ -68,7 +67,7 @@ public class WireTcpHandlerTest {
 
     private static void testLatency(String desc, @NotNull Function<Bytes, Wire> wireWrapper, @NotNull SocketChannel... sockets) throws IOException {
 //        System.out.println("Starting latency test");
-        int tests = 100000;
+        int tests = 40000;
         long[] times = new long[tests * sockets.length];
         int count = 0;
         ByteBuffer out = ByteBuffer.allocateDirect(64 * 1024);
@@ -80,7 +79,7 @@ public class WireTcpHandlerTest {
         Wire inWire = wireWrapper.apply(inBytes);
         TestData td = new TestData();
         TestData td2 = new TestData();
-        for (int i = -50000; i < tests; i++) {
+        for (int i = -12000; i < tests; i++) {
             long now = System.nanoTime();
             for (SocketChannel socket : sockets) {
                 out.clear();
@@ -131,21 +130,19 @@ public class WireTcpHandlerTest {
     public void testProcess() throws IOException {
         EventGroup eg = new EventGroup(true);
         eg.start();
-        AcceptorEventHandler eah = new AcceptorEventHandler(0, () -> new EchoRequestHandler
-                (wireWrapper), VanillaSessionDetails::new);
+        TCPRegistery.createServerSocketChannelFor(desc);
+        AcceptorEventHandler eah = new AcceptorEventHandler(desc,
+                () -> new EchoRequestHandler(wireWrapper), VanillaSessionDetails::new);
         eg.addHandler(eah);
 
-        SocketChannel[] sc = new SocketChannel[1];
-        for (int i = 0; i < sc.length; i++) {
-            SocketAddress localAddress = new InetSocketAddress("localhost", eah.getLocalPort());
-            System.out.println("Connecting to " + localAddress);
-            sc[i] = SocketChannel.open(localAddress);
-            sc[i].configureBlocking(false);
-        }
+        SocketChannel sc = TCPRegistery.createSocketChannel(desc);
+        sc.configureBlocking(false);
+
         //       testThroughput(sc);
-        testLatency(desc, wireWrapper, sc[0]);
+        testLatency(desc, wireWrapper, sc);
 
         eg.stop();
+        TCPRegistery.reset();
     }
 
     static class EchoRequestHandler extends WireTcpHandler {

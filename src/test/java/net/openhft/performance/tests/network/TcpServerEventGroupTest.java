@@ -17,6 +17,7 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.network.AcceptorEventHandler;
+import net.openhft.chronicle.network.TCPRegistery;
 import net.openhft.chronicle.network.VanillaSessionDetails;
 import net.openhft.chronicle.threads.EventGroup;
 import org.jetbrains.annotations.NotNull;
@@ -24,8 +25,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
@@ -52,21 +51,19 @@ public class TcpServerEventGroupTest {
     public void testStart() throws IOException, InterruptedException {
         EventGroup eg = new EventGroup(true);
         eg.start();
-        AcceptorEventHandler eah = new AcceptorEventHandler(0, EchoHandler::new,
+        TCPRegistery.createServerSocketChannelFor("TcpServerEventGroupTest");
+        AcceptorEventHandler eah = new AcceptorEventHandler("TcpServerEventGroupTest", EchoHandler::new,
                 VanillaSessionDetails::new);
         eg.addHandler(eah);
 
-        SocketChannel[] sc = new SocketChannel[2];
-        for (int i = 0; i < sc.length; i++) {
-            SocketAddress localAddress = new InetSocketAddress("localhost", eah.getLocalPort());
-            System.out.println("Connecting to " + localAddress);
-            sc[i] = SocketChannel.open(localAddress);
-            sc[i].configureBlocking(false);
-        }
+        SocketChannel sc = TCPRegistery.createSocketChannel("TcpServerEventGroupTest");
+        sc.configureBlocking(false);
+
         testThroughput(sc);
-        testLatency(sc[0]);
+        testLatency(sc);
 
         eg.stop();
+        TCPRegistery.reset();
     }
 
     private static void testThroughput(@NotNull SocketChannel... sockets) throws IOException, InterruptedException {

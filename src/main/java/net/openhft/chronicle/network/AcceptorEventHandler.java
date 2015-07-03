@@ -46,19 +46,13 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
     private final ServerSocketChannel ssc;
     private EventLoop eventLoop;
 
-    public AcceptorEventHandler(int port,
+    public AcceptorEventHandler(String description,
                                 @NotNull final Supplier<TcpHandler> tcpHandlerSupplier,
                                 @NotNull final Supplier<SessionDetailsProvider> sessionDetailsSupplier) throws
             IOException {
         this.tcpHandlerSupplier = tcpHandlerSupplier;
-        ssc = ServerSocketChannel.open();
-        ssc.socket().setReuseAddress(true);
-        ssc.bind(new InetSocketAddress(port));
+        ssc = TCPRegistery.acquireServerSocketChannel(description);
         this.sessionDetailsSupplier = sessionDetailsSupplier;
-    }
-
-    public int getLocalPort() throws IOException {
-        return ssc.socket().getLocalPort();
     }
 
     @Override
