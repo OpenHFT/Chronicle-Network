@@ -64,7 +64,10 @@ public enum TCPRegistery {
 
     public static void createServerSocketChannelFor(String... descriptions) throws IOException {
         for (String description : descriptions) {
-            InetSocketAddress address = new InetSocketAddress("localhost", 0);
+            int port = 0;
+            if (description.contains(":"))
+                port = Integer.parseInt(description.split(":")[1]);
+            InetSocketAddress address = new InetSocketAddress("localhost", port);
             createSSC(description, address);
         }
     }
