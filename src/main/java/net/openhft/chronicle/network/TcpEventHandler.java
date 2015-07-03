@@ -86,7 +86,7 @@ public class TcpEventHandler implements EventHandler {
 
             } else if (read > 0) {
                 // inBB.position() where the data has been read() up to.
-                invokeHandler();
+                return invokeHandler();
             }
         } catch (IOException e) {
             handleIOE(e);
@@ -95,7 +95,8 @@ public class TcpEventHandler implements EventHandler {
         return false;
     }
 
-    void invokeHandler() throws IOException {
+    boolean invokeHandler() throws IOException {
+        boolean busy = false;
         inBBB.readLimit(inBB.position());
         outBBB.writePosition(outBB.limit());
         handler.process(inBBB, outBBB, sessionDetails);
@@ -104,6 +105,7 @@ public class TcpEventHandler implements EventHandler {
         if (outBBB.writePosition() > outBB.limit()) {
             outBB.limit(Maths.toInt32(outBBB.writePosition()));
             tryWrite();
+            busy = true;
         }
         // TODO Optimise.
         // if it read some data compact();
@@ -113,7 +115,9 @@ public class TcpEventHandler implements EventHandler {
             inBB.compact();
             inBBB.readPosition(0);
             inBBB.readLimit(inBB.position());
+            busy = true;
         }
+        return busy;
     }
 
 

@@ -66,6 +66,10 @@ public class TcpServerEventGroupTest {
         TCPRegistery.reset();
     }
 
+    public static void main(String[] args) throws IOException, InterruptedException {
+        new TcpServerEventGroupTest().testStart();
+    }
+
     private static void testThroughput(@NotNull SocketChannel... sockets) throws IOException, InterruptedException {
         System.out.println("Starting throughput test");
         int bufferSize = 32 * 1024;
@@ -76,7 +80,6 @@ public class TcpServerEventGroupTest {
             for (SocketChannel socket : sockets) {
                 bb.clear();
                 bb.putLong(0, count);
-                System.out.println("w1");
                 if (socket.write(bb) < 0)
                     throw new AssertionError("Socket " + socket + " unable to write in one go.");
             }
@@ -85,7 +88,6 @@ public class TcpServerEventGroupTest {
                     bb.clear();
                     while (socket.read(bb) >= 0 && bb.remaining() > 0) ;
                     long ts2 = bb.getLong(0);
-                    System.out.println("r1 " + ts2);
                     if (count - window != ts2)
                         assertEquals(count - window, ts2);
                 }
