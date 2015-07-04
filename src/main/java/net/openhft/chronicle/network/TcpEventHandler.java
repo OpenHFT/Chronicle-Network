@@ -28,6 +28,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 
@@ -122,7 +123,8 @@ public class TcpEventHandler implements EventHandler {
 
 
     void handleIOE(@NotNull IOException e) {
-        e.printStackTrace();
+        if (!(e instanceof ClosedByInterruptException))
+            e.printStackTrace();
         closeSC();
     }
 

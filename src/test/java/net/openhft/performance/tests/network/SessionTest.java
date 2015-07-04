@@ -18,7 +18,7 @@ package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network.AcceptorEventHandler;
-import net.openhft.chronicle.network.TCPRegistery;
+import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaSessionDetails;
 import net.openhft.chronicle.network.WireTcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
@@ -100,7 +100,7 @@ public class SessionTest {
     public void testProcess() throws IOException {
         EventGroup eg = new EventGroup(true);
         eg.start();
-        TCPRegistery.createServerSocketChannelFor("testProcess");
+        TCPRegistry.createServerSocketChannelFor("testProcess");
 
         AcceptorEventHandler eah = new AcceptorEventHandler("testProcess", () -> new SessionIdRefector
                 (WireType.TEXT), VanillaSessionDetails::new);
@@ -108,7 +108,7 @@ public class SessionTest {
 
         SocketChannel[] sc = new SocketChannel[2];
         for (int i = 0; i < sc.length; i++) {
-            SocketAddress localAddress = TCPRegistery.lookup("testProcess");
+            SocketAddress localAddress = TCPRegistry.lookup("testProcess");
             System.out.println("Connecting to " + localAddress);
             sc[i] = SocketChannel.open(localAddress);
             sc[i].configureBlocking(false);
@@ -125,7 +125,7 @@ public class SessionTest {
 
         eg.stop();
         // shutdown all servers
-        TCPRegistery.reset();
+        TCPRegistry.reset();
     }
 
     public static class SessionIdRefector extends WireTcpHandler {
