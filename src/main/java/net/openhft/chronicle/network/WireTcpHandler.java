@@ -77,7 +77,7 @@ public abstract class WireTcpHandler implements TcpHandler {
     private boolean read(@NotNull Bytes in, @NotNull Bytes out, @NotNull SessionDetailsProvider sessionDetails) {
         final long header = in.readInt(in.readPosition());
         long length = Wires.lengthOf(header);
-        assert length >= 0 && length < 1 << 22 : "in=" + in + ", hex=" + in.toHexString();
+        assert length >= 0 && length < 1 << 23 : "in=" + in + ", hex=" + in.toHexString();
 
         // we don't return on meta data of zero bytes as this is a system message
         if (length == 0 && Wires.isData(header)) {
@@ -122,8 +122,6 @@ public abstract class WireTcpHandler implements TcpHandler {
             LOG.error("", e);
         } finally {
             in.readLimit(limit);
-            // TODO remove this !!
-            Thread.yield();
             try {
                 in.readPosition(end);
             } catch (Exception e) {
