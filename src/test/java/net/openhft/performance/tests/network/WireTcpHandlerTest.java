@@ -18,7 +18,7 @@ package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network.AcceptorEventHandler;
-import net.openhft.chronicle.network.TCPRegistery;
+import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaSessionDetails;
 import net.openhft.chronicle.network.WireTcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
@@ -130,19 +130,19 @@ public class WireTcpHandlerTest {
     public void testProcess() throws IOException {
         EventGroup eg = new EventGroup(true);
         eg.start();
-        TCPRegistery.createServerSocketChannelFor(desc);
+        TCPRegistry.createServerSocketChannelFor(desc);
         AcceptorEventHandler eah = new AcceptorEventHandler(desc,
                 () -> new EchoRequestHandler(wireWrapper), VanillaSessionDetails::new);
         eg.addHandler(eah);
 
-        SocketChannel sc = TCPRegistery.createSocketChannel(desc);
+        SocketChannel sc = TCPRegistry.createSocketChannel(desc);
         sc.configureBlocking(false);
 
         //       testThroughput(sc);
         testLatency(desc, wireWrapper, sc);
 
         eg.stop();
-        TCPRegistery.reset();
+        TCPRegistry.reset();
     }
 
     static class EchoRequestHandler extends WireTcpHandler {

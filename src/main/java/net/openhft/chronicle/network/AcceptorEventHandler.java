@@ -51,7 +51,7 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
                                 @NotNull final Supplier<SessionDetailsProvider> sessionDetailsSupplier) throws
             IOException {
         this.tcpHandlerSupplier = tcpHandlerSupplier;
-        ssc = TCPRegistery.acquireServerSocketChannel(description);
+        ssc = TCPRegistry.acquireServerSocketChannel(description);
         this.sessionDetailsSupplier = sessionDetailsSupplier;
     }
 

@@ -32,7 +32,7 @@ import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 /**
  * Created by peter on 03/07/15.
  */
-public enum TCPRegistery {
+public enum TCPRegistry {
     ;
     static final Map<String, InetSocketAddress> HOSTNAME_PORT_ALIAS = new ConcurrentSkipListMap<>();
     static final Map<String, ServerSocketChannel> DESC_TO_SERVER_SOCKET_CHANNEL_MAP = new ConcurrentSkipListMap<>();

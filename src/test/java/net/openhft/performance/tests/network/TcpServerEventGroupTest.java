@@ -17,7 +17,7 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.network.AcceptorEventHandler;
-import net.openhft.chronicle.network.TCPRegistery;
+import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaSessionDetails;
 import net.openhft.chronicle.threads.EventGroup;
 import org.jetbrains.annotations.NotNull;
@@ -51,19 +51,19 @@ public class TcpServerEventGroupTest {
     public void testStart() throws IOException, InterruptedException {
         EventGroup eg = new EventGroup(true);
         eg.start();
-        TCPRegistery.createServerSocketChannelFor("TcpServerEventGroupTest");
+        TCPRegistry.createServerSocketChannelFor("TcpServerEventGroupTest");
         AcceptorEventHandler eah = new AcceptorEventHandler("TcpServerEventGroupTest", EchoHandler::new,
                 VanillaSessionDetails::new);
         eg.addHandler(eah);
 
-        SocketChannel sc = TCPRegistery.createSocketChannel("TcpServerEventGroupTest");
+        SocketChannel sc = TCPRegistry.createSocketChannel("TcpServerEventGroupTest");
         sc.configureBlocking(false);
 
         testThroughput(sc);
         testLatency(sc);
 
         eg.stop();
-        TCPRegistery.reset();
+        TCPRegistry.reset();
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
