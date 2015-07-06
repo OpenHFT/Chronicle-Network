@@ -25,4 +25,7 @@ import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 @FunctionalInterface
 public interface TcpHandler {
     void process(Bytes in, Bytes out, SessionDetailsProvider sessionDetails);
+
+    default void onEndOfConnection() {
+    }
 }

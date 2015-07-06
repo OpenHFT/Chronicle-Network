@@ -78,7 +78,10 @@ public class TcpEventHandler implements EventHandler {
 
     @Override
     public boolean action() throws InvalidEventHandlerException {
-        if (!sc.isOpen()) throw new InvalidEventHandlerException();
+        if (!sc.isOpen()) {
+            handler.onEndOfConnection();
+            throw new InvalidEventHandlerException();
+        }
 
         try {
             int read = inBB.remaining() > 0 ? sc.read(inBB) : 1;
