@@ -45,6 +45,7 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
     private final Supplier<SessionDetailsProvider> sessionDetailsSupplier;
     private final ServerSocketChannel ssc;
     private EventLoop eventLoop;
+    private boolean unchecked = false;
 
     public AcceptorEventHandler(String description,
                                 @NotNull final Supplier<TcpHandler> tcpHandlerSupplier,
@@ -53,6 +54,10 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
         this.tcpHandlerSupplier = tcpHandlerSupplier;
         ssc = TCPRegistry.acquireServerSocketChannel(description);
         this.sessionDetailsSupplier = sessionDetailsSupplier;
+    }
+
+    public void unchecked(boolean unchecked) {
+        this.unchecked = unchecked;
     }
 
     @Override
@@ -75,7 +80,7 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
 
                 eventLoop.addHandler(new TcpEventHandler(sc,
                         tcpHandlerSupplier.get(),
-                        sessionDetails));
+                        sessionDetails, unchecked));
             }
 
         } catch (AsynchronousCloseException e) {

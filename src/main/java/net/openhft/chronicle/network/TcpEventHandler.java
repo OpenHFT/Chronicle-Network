@@ -41,12 +41,12 @@ public class TcpEventHandler implements EventHandler {
     private final SocketChannel sc;
     private final TcpHandler handler;
     private final ByteBuffer inBB = ByteBuffer.allocateDirect(CAPACITY);
-    private final Bytes inBBB = Bytes.wrapForRead(inBB.slice());
+    private final Bytes inBBB;
     private final ByteBuffer outBB = ByteBuffer.allocateDirect(CAPACITY);
-    private final Bytes outBBB = Bytes.wrapForWrite(outBB.slice());
+    private final Bytes outBBB;
     private final SessionDetailsProvider sessionDetails;
 
-    public TcpEventHandler(@NotNull SocketChannel sc, TcpHandler handler, final SessionDetailsProvider sessionDetails) throws IOException {
+    public TcpEventHandler(@NotNull SocketChannel sc, TcpHandler handler, final SessionDetailsProvider sessionDetails, boolean unchecked) throws IOException {
         this.sc = sc;
         sc.configureBlocking(false);
         sc.socket().setTcpNoDelay(true);
@@ -62,6 +62,8 @@ public class TcpEventHandler implements EventHandler {
         // inBBB.clearThreadAssociation();
         //  outBBB.clearThreadAssociation();
 
+        inBBB = Bytes.wrapForRead(inBB.slice()).unchecked(unchecked);
+        outBBB = Bytes.wrapForWrite(outBB.slice()).unchecked(unchecked);
     }
 
     @NotNull
