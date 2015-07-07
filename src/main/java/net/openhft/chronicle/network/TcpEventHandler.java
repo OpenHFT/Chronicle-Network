@@ -55,7 +55,6 @@ public class TcpEventHandler implements EventHandler {
 
         this.handler = handler;
         // there is nothing which needs to be written by default.
-        outBB.limit(0);
         this.sessionDetails = sessionDetails;
         // allow these to be used by another thread.
         // todo check that this can be commented out
@@ -64,6 +63,8 @@ public class TcpEventHandler implements EventHandler {
 
         inBBB = Bytes.wrapForRead(inBB.slice()).unchecked(unchecked);
         outBBB = Bytes.wrapForWrite(outBB.slice()).unchecked(unchecked);
+        // must be set after we take a slice();
+        outBB.limit(0);
     }
 
     @NotNull
