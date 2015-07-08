@@ -34,6 +34,8 @@ import java.util.function.Function;
 public abstract class WireTcpHandler implements TcpHandler {
     public static final int SIZE_OF_SIZE = 4;
     private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
+    // this is the point at which it is worth doing more work to get more data.
+    static final int SMALL_WRITE_BUFFER = 32 << 10;
     @NotNull
     private final Function<Bytes, Wire> bytesToWire;
     protected Wire inWire, outWire;
@@ -47,24 +49,11 @@ public abstract class WireTcpHandler implements TcpHandler {
     public void process(@NotNull Bytes in, @NotNull Bytes out, @NotNull SessionDetailsProvider sessionDetails) {
         checkWires(in, out);
 
-        if (in.readRemaining() < SIZE_OF_SIZE) {
-            long outPos = out.writePosition();
+        // try to write first.
+        publish(outWire);
 
-            publish(outWire);
-
-            long written = out.writePosition() - outPos;
-            if (written == 0) {
-                out.writePosition(outPos);
-                return;
-            }
-            assert written <= TcpEventHandler.CAPACITY;
-            return;
-        }
-
-        do {
-            if (!read(in, out, sessionDetails))
-                return;
-        } while (in.readRemaining() > SIZE_OF_SIZE && out.writeRemaining() > out.capacity() / SIZE_OF_SIZE);
+        if (in.readRemaining() >= SIZE_OF_SIZE && out.writePosition() < SMALL_WRITE_BUFFER)
+            read(in, out, sessionDetails);
     }
 
     /**

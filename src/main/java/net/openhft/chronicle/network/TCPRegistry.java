@@ -99,6 +99,8 @@ public enum TCPRegistry {
         String property = System.getProperty(description);
         if (property != null) {
             String[] parts = property.split(":", 2);
+            if (parts[0].equals("null"))
+                throw new IllegalArgumentException("Invalid hostname \"null\"");
             if (parts.length == 1)
                 throw new IllegalArgumentException("Alias " + description + " as " + property + " malformed, expected hostname:port");
             try {

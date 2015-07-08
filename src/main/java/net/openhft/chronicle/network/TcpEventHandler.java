@@ -37,6 +37,8 @@ import java.nio.channels.SocketChannel;
  */
 public class TcpEventHandler implements EventHandler {
     public static final int CAPACITY = 1 << 23;
+    private static final int TOO_MUCH_TO_WRITE = 32 << 10;
+
     @NotNull
     private final SocketChannel sc;
     private final TcpHandler handler;
@@ -45,6 +47,7 @@ public class TcpEventHandler implements EventHandler {
     private final ByteBuffer outBB = ByteBuffer.allocateDirect(CAPACITY);
     private final Bytes outBBB;
     private final SessionDetailsProvider sessionDetails;
+    private int writeCount = 0;
 
     public TcpEventHandler(@NotNull SocketChannel sc, TcpHandler handler, final SessionDetailsProvider sessionDetails, boolean unchecked) throws IOException {
         this.sc = sc;
@@ -109,7 +112,7 @@ public class TcpEventHandler implements EventHandler {
         handler.process(inBBB, outBBB, sessionDetails);
 
         // did it write something?
-        if (outBBB.writePosition() > outBB.limit()) {
+        if (outBBB.writePosition() > outBB.limit() || outBBB.writePosition() >= 4) {
             outBB.limit(Maths.toInt32(outBBB.writePosition()));
             tryWrite();
             busy = true;
