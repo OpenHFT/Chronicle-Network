@@ -19,6 +19,7 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
+import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.WireIn;
 import net.openhft.chronicle.wire.WireOut;
@@ -40,6 +41,7 @@ public abstract class WireTcpHandler implements TcpHandler {
     private final Function<Bytes, Wire> bytesToWire;
     protected Wire inWire, outWire;
     private boolean recreateWire;
+    protected final WireOutPublisher publisher = new WireOutPublisher();
 
     public WireTcpHandler(@NotNull final Function<Bytes, Wire> bytesToWire) {
         this.bytesToWire = bytesToWire;
@@ -49,11 +51,10 @@ public abstract class WireTcpHandler implements TcpHandler {
     public void process(@NotNull Bytes in, @NotNull Bytes out, @NotNull SessionDetailsProvider sessionDetails) {
         checkWires(in, out);
 
-        // try to write first.
-        publish(outWire);
-
-        if (in.readRemaining() >= SIZE_OF_SIZE && out.writePosition() < SMALL_WRITE_BUFFER)
-            read(in, out, sessionDetails);
+        publisher.applyAction(outWire, () -> {
+            if (in.readRemaining() >= SIZE_OF_SIZE && out.writePosition() < SMALL_WRITE_BUFFER)
+                read(in, out, sessionDetails);
+        });
     }
 
     /**
@@ -156,9 +157,4 @@ public abstract class WireTcpHandler implements TcpHandler {
                                     @NotNull SessionDetailsProvider sessionDetails)
             throws StreamCorruptedException;
 
-    /**
-     * Publish some data
-     */
-    protected void publish(Wire out) {
-    }
 }
