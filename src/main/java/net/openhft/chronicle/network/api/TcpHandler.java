@@ -26,6 +26,9 @@ import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 public interface TcpHandler {
     void process(Bytes in, Bytes out, SessionDetailsProvider sessionDetails);
 
-    default void onEndOfConnection() {
+    default void sendHeartBeat(Bytes outBBB, SessionDetailsProvider sessionDetails) {
+    }
+
+    default void onEndOfConnection(boolean heartbeatTimeOut) {
     }
 }

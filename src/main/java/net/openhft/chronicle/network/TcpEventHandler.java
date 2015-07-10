@@ -18,6 +18,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Maths;
+import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.threads.HandlerPriority;
@@ -37,7 +38,6 @@ import java.nio.channels.SocketChannel;
  */
 public class TcpEventHandler implements EventHandler {
     public static final int CAPACITY = 1 << 23;
-    private static final int TOO_MUCH_TO_WRITE = 32 << 10;
 
     @NotNull
     private final SocketChannel sc;
@@ -47,9 +47,16 @@ public class TcpEventHandler implements EventHandler {
     private final ByteBuffer outBB = ByteBuffer.allocateDirect(CAPACITY);
     private final Bytes outBBB;
     private final SessionDetailsProvider sessionDetails;
-    private int writeCount = 0;
+    private final long heartBeatIntervalTicks;
+    private final long heartBeatTimeoutTicks;
+    private long lastTickReadTime = Time.tickTime(), lastHeartBeatTick = lastTickReadTime + 1000;
 
-    public TcpEventHandler(@NotNull SocketChannel sc, TcpHandler handler, final SessionDetailsProvider sessionDetails, boolean unchecked) throws IOException {
+    public TcpEventHandler(@NotNull SocketChannel sc, TcpHandler handler, final SessionDetailsProvider sessionDetails,
+                           boolean unchecked, long heartBeatIntervalTicks, long heartBeatTimeoutTicks) throws IOException {
+        this.heartBeatIntervalTicks = heartBeatIntervalTicks;
+        this.heartBeatTimeoutTicks = heartBeatTimeoutTicks;
+        assert heartBeatIntervalTicks <= heartBeatTimeoutTicks / 2;
+
         this.sc = sc;
         sc.configureBlocking(false);
         sc.socket().setTcpNoDelay(true);
@@ -85,7 +92,7 @@ public class TcpEventHandler implements EventHandler {
     @Override
     public boolean action() throws InvalidEventHandlerException {
         if (!sc.isOpen()) {
-            handler.onEndOfConnection();
+            handler.onEndOfConnection(false);
             throw new InvalidEventHandlerException();
         }
 
@@ -95,14 +102,37 @@ public class TcpEventHandler implements EventHandler {
                 closeSC();
 
             } else if (read > 0) {
+                lastTickReadTime = Time.tickTime();
                 // inBB.position() where the data has been read() up to.
                 return invokeHandler();
+            } else {
+                long tickTime = Time.tickTime();
+                if (tickTime > lastTickReadTime + heartBeatTimeoutTicks) {
+                    handler.onEndOfConnection(true);
+                    closeSC();
+                    throw new InvalidEventHandlerException();
+                }
+                if (tickTime > Math.max(lastHeartBeatTick, lastTickReadTime) + heartBeatIntervalTicks) {
+                    lastHeartBeatTick = tickTime;
+                    sendHeartBeat();
+                }
             }
         } catch (IOException e) {
             handleIOE(e);
         }
 
         return false;
+    }
+
+    protected void sendHeartBeat() throws IOException {
+        outBBB.writePosition(outBB.limit());
+        handler.sendHeartBeat(outBBB, sessionDetails);
+
+        // did it write something?
+        if (outBBB.writePosition() > outBB.limit() || outBBB.writePosition() >= 4) {
+            outBB.limit(Maths.toInt32(outBBB.writePosition()));
+            tryWrite();
+        }
     }
 
     boolean invokeHandler() throws IOException {

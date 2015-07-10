@@ -48,6 +48,10 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
     private boolean unchecked = false;
     private volatile boolean closed;
 
+    // TODO make configurable.
+    private long heartbeatIntervalTicks = 2000;
+    private long heartbeatTimeOutTicks = 10000;
+
     public AcceptorEventHandler(String description,
                                 @NotNull final Supplier<TcpHandler> tcpHandlerSupplier,
                                 @NotNull final Supplier<SessionDetailsProvider> sessionDetailsSupplier) throws
@@ -81,7 +85,8 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
 
                 eventLoop.addHandler(new TcpEventHandler(sc,
                         tcpHandlerSupplier.get(),
-                        sessionDetails, unchecked));
+                        sessionDetails, unchecked,
+                        heartbeatIntervalTicks, heartbeatTimeOutTicks));
             }
 
         } catch (AsynchronousCloseException e) {
