@@ -46,6 +46,7 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
     private final ServerSocketChannel ssc;
     private EventLoop eventLoop;
     private boolean unchecked = false;
+    private volatile boolean closed;
 
     public AcceptorEventHandler(String description,
                                 @NotNull final Supplier<TcpHandler> tcpHandlerSupplier,
@@ -86,8 +87,10 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
         } catch (AsynchronousCloseException e) {
             closeSocket();
         } catch (Exception e) {
-            LOG.error("", e);
-            closeSocket();
+            if (!closed) {
+                LOG.error("", e);
+                closeSocket();
+            }
         }
         return false;
     }
@@ -112,6 +115,7 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
 
     @Override
     public void close() throws IOException {
+        closed = true;
         closeSocket();
     }
 }
