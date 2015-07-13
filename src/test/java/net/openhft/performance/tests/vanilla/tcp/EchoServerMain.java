@@ -16,7 +16,7 @@
 
 package net.openhft.performance.tests.vanilla.tcp;
 
-import net.openhft.affinity.AffinitySupport;
+import net.openhft.affinity.Affinity;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.EOFException;
@@ -44,7 +44,7 @@ public class EchoServerMain {
             new Thread(() -> {
                 boolean locked = lock.tryLock();
                 if (locked)
-                    AffinitySupport.setAffinity(1 << 2L);
+                    Affinity.setAffinity(1 << 2L);
                 try {
                     System.out.println("Connected " + socket);
                     // simulate copying the data. 

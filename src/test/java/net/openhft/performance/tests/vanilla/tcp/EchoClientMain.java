@@ -16,14 +16,13 @@
 
 package net.openhft.performance.tests.vanilla.tcp;
 
-import net.openhft.affinity.AffinitySupport;
+import net.openhft.affinity.Affinity;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
@@ -80,7 +79,7 @@ public class EchoClientMain {
     public static final int TARGET_THROUGHPUT = Integer.getInteger("throughput", 20_000);
 
     public static void main(@NotNull String... args) throws IOException, InterruptedException {
-        AffinitySupport.setAffinity(1L << 3);
+        Affinity.setAffinity(3);
         String[] hostnames = args.length > 0 ? args : "localhost".split(",");
 
         SocketChannel[] sockets = new SocketChannel[CLIENTS];
