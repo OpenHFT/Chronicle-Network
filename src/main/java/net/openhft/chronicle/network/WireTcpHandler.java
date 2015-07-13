@@ -57,6 +57,11 @@ public abstract class WireTcpHandler implements TcpHandler {
         });
     }
 
+    @Override
+    public void onEndOfConnection(boolean heartbeatTimeOut) {
+        publisher.close();
+    }
+
     /**
      * process all messages in this batch, provided there is plenty of output space.
      *
