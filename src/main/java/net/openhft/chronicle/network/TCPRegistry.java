@@ -64,10 +64,15 @@ public enum TCPRegistry {
 
     public static void createServerSocketChannelFor(String... descriptions) throws IOException {
         for (String description : descriptions) {
-            int port = 0;
-            if (description.contains(":"))
-                port = Integer.parseInt(description.split(":")[1]);
-            InetSocketAddress address = new InetSocketAddress("localhost", port);
+            InetSocketAddress address;
+            if (description.contains(":")) {
+                String[] split = description.trim().split(":");
+                String host = split[0];
+                int port = Integer.parseInt(split[1]);
+                address = createInetSocketAddress(host, port);
+            } else {
+                address = new InetSocketAddress(0);
+            }
             createSSC(description, address);
         }
     }
@@ -126,9 +131,14 @@ public enum TCPRegistry {
 
     @NotNull
     private static InetSocketAddress addInetSocketAddress(String description, String hostname, int port) {
-        InetSocketAddress address = new InetSocketAddress(hostname, port);
+        InetSocketAddress address = createInetSocketAddress(hostname, port);
         HOSTNAME_PORT_ALIAS.put(description, address);
         return address;
+    }
+
+    @NotNull
+    private static InetSocketAddress createInetSocketAddress(String hostname, int port) {
+        return hostname.isEmpty() || hostname.equals("*") ? new InetSocketAddress(port) : new InetSocketAddress(hostname, port);
     }
 
     public static SocketChannel createSocketChannel(String description) throws IOException {

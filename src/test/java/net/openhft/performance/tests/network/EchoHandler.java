@@ -35,7 +35,7 @@ class EchoHandler implements TcpHandler {
     public static void main(String[] args) throws IOException {
         EventGroup eg = new EventGroup(false);
         eg.start();
-        AcceptorEventHandler eah = new AcceptorEventHandler("localhost:" + EchoClientMain.PORT,
+        AcceptorEventHandler eah = new AcceptorEventHandler("*:" + EchoClientMain.PORT,
                 EchoHandler::new, VanillaSessionDetails::new);
         eg.addHandler(eah);
     }
