@@ -1,7 +1,10 @@
 package net.openhft.chronicle.network.connection;
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.wire.WireOut;
+import net.openhft.chronicle.wire.Wires;
+import net.openhft.chronicle.wire.YamlLogging;
 
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
@@ -38,6 +41,16 @@ public class WireOutPublisher implements Closeable {
             if (wireConsumer == null)
                 break;
             wireConsumer.accept(out);
+
+            if (Jvm.IS_DEBUG && YamlLogging.showServerWrites)
+                try {
+                    System.out.println("\nServer Publishes:\n" +
+                            Wires.fromSizePrefixedBlobs(out.bytes(), out.bytes().readPosition(), out
+                                    .bytes().readRemaining()));
+                } catch (Exception e) {
+                    System.out.println("\nServer Publishes ( corrupted ) :\n" +
+                            out.bytes().toDebugString());
+                }
         }
     }
 
