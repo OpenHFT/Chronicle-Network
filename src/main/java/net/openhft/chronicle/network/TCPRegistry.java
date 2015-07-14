@@ -131,6 +131,9 @@ public enum TCPRegistry {
 
     @NotNull
     private static InetSocketAddress addInetSocketAddress(String description, String hostname, int port) {
+        if (port <= 0 || port >= 65536)
+            throw new IllegalArgumentException("Invalid port " + port);
+
         InetSocketAddress address = createInetSocketAddress(hostname, port);
         HOSTNAME_PORT_ALIAS.put(description, address);
         return address;

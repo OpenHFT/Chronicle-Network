@@ -42,23 +42,21 @@ public class WireOutPublisher implements Closeable {
                 break;
             wireConsumer.accept(out);
 
+
             if (Jvm.IS_DEBUG && YamlLogging.showServerWrites)
                 try {
-                    System.out.println("\nServer Publishes:\n" +
+                    System.out.println("\nServer Sends (from async publisher ) :\n" +
                             Wires.fromSizePrefixedBlobs(out.bytes(), out.bytes().readPosition(), out
                                     .bytes().readRemaining()));
                 } catch (Exception e) {
-                    System.out.println("\nServer Publishes ( corrupted ) :\n" +
+                    System.out.println("\nServer Sends ( from async publisher - corrupted ) :\n" +
                             out.bytes().toDebugString());
                 }
         }
     }
 
     public void add(Consumer<WireOut> outConsumer) {
-        /*if (Thread.holdsLock(this)) {
-            outConsumer.accept(out);
 
-        } else */
         if (closed) {
             throw new IllegalStateException("Closed");
 
