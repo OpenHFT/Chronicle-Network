@@ -37,7 +37,7 @@ import java.util.function.Supplier;
 /**
  * Created by peter.lawrey on 22/01/15.
  */
-public class AcceptorEventHandler implements EventHandler,Closeable {
+public class AcceptorEventHandler implements EventHandler, Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(AcceptorEventHandler.class);
     @NotNull
     private final Supplier<TcpHandler> tcpHandlerSupplier;
@@ -48,9 +48,8 @@ public class AcceptorEventHandler implements EventHandler,Closeable {
     private boolean unchecked = false;
     private volatile boolean closed;
 
-    // TODO make configurable.
-    private long heartbeatIntervalTicks = 2000;
-    private long heartbeatTimeOutTicks = 10000;
+    private long heartbeatIntervalTicks = Integer.getInteger("heartbeat.interval.ticks", 50_000);
+    private long heartbeatTimeOutTicks = Integer.getInteger("heartbeat.timeout.ticks", 100_000);
 
     public AcceptorEventHandler(String description,
                                 @NotNull final Supplier<TcpHandler> tcpHandlerSupplier,
