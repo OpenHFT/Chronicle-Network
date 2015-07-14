@@ -42,10 +42,11 @@ public class WireOutPublisher implements Closeable {
     }
 
     public void add(Consumer<WireOut> outConsumer) {
-        if (Thread.holdsLock(this)) {
+        /*if (Thread.holdsLock(this)) {
             outConsumer.accept(out);
 
-        } else if (closed) {
+        } else */
+        if (closed) {
             throw new IllegalStateException("Closed");
 
         } else {
