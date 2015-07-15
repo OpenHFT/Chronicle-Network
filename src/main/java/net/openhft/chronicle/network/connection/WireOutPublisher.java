@@ -45,11 +45,11 @@ public class WireOutPublisher implements Closeable {
 
             if (Jvm.IS_DEBUG && YamlLogging.showServerWrites)
                 try {
-                    System.out.println("\nServer Sends (from async publisher ) :\n" +
+                    System.out.println("\nServer Publishes (from async publisher ) :\n" +
                             Wires.fromSizePrefixedBlobs(out.bytes(), out.bytes().readPosition(), out
                                     .bytes().readRemaining()));
                 } catch (Exception e) {
-                    System.out.println("\nServer Sends ( from async publisher - corrupted ) :\n" +
+                    System.out.println("\nServer Publishes ( from async publisher - corrupted ) :\n" +
                             out.bytes().toDebugString());
                 }
         }
