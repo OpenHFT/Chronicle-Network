@@ -16,7 +16,7 @@ public enum WanSimulator {
 
     public static void dataRead(int bytes) {
         if (NET_BANDWIDTH <= 0) return;
-        totalRead += bytes + RANDOM.nextInt(BYTES_PER_MS);
+        totalRead += bytes + RANDOM.nextInt(BYTES_PER_MS / 2);
         int delay = (int) (totalRead / BYTES_PER_MS);
         if (delay > 0) {
             Jvm.pause(delay);
