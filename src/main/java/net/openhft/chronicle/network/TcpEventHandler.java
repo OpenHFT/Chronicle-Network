@@ -111,7 +111,7 @@ public class TcpEventHandler implements EventHandler, Closeable {
                 closeSC();
 
             } else if (read > 0) {
-
+                WanSimulator.dataRead(read);
                 readLog.log(inBB, start, inBB.position());
                 lastTickReadTime = Time.tickTime();
                 // inBB.position() where the data has been read() up to.
