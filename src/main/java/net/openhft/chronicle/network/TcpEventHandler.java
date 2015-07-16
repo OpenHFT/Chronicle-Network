@@ -43,10 +43,10 @@ public class TcpEventHandler implements EventHandler, Closeable {
     @NotNull
     private final SocketChannel sc;
     private final TcpHandler handler;
-    private  ByteBuffer inBB = ByteBuffer.allocateDirect(CAPACITY);
-    private  Bytes inBBB;
-    private  ByteBuffer outBB = ByteBuffer.allocateDirect(CAPACITY);
-    private  Bytes outBBB;
+    private ByteBuffer inBB = ByteBuffer.allocateDirect(CAPACITY);
+    private Bytes inBBB;
+    private ByteBuffer outBB = ByteBuffer.allocateDirect(CAPACITY);
+    private Bytes outBBB;
     private final SessionDetailsProvider sessionDetails;
     private final long heartBeatIntervalTicks;
     private final long heartBeatTimeoutTicks;
@@ -124,7 +124,7 @@ public class TcpEventHandler implements EventHandler, Closeable {
                     closeSC();
                     throw new InvalidEventHandlerException();
                 }
-                if (tickTime > Math.max(lastHeartBeatTick, lastTickReadTime) + heartBeatIntervalTicks) {
+                if (tickTime > lastHeartBeatTick + heartBeatIntervalTicks) {
                     lastHeartBeatTick = tickTime;
                     sendHeartBeat();
                 }
