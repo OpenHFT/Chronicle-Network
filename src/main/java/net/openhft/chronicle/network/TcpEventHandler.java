@@ -18,6 +18,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Maths;
+import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
@@ -36,16 +37,16 @@ import java.nio.channels.SocketChannel;
 /**
  * Created by peter.lawrey on 22/01/15.
  */
-public class TcpEventHandler implements EventHandler {
+public class TcpEventHandler implements EventHandler, Closeable {
     public static final int CAPACITY = 1 << 23;
 
     @NotNull
     private final SocketChannel sc;
     private final TcpHandler handler;
-    private final ByteBuffer inBB = ByteBuffer.allocateDirect(CAPACITY);
-    private final Bytes inBBB;
-    private final ByteBuffer outBB = ByteBuffer.allocateDirect(CAPACITY);
-    private final Bytes outBBB;
+    private  ByteBuffer inBB = ByteBuffer.allocateDirect(CAPACITY);
+    private  Bytes inBBB;
+    private  ByteBuffer outBB = ByteBuffer.allocateDirect(CAPACITY);
+    private  Bytes outBBB;
     private final SessionDetailsProvider sessionDetails;
     private final long heartBeatIntervalTicks;
     private final long heartBeatTimeoutTicks;
@@ -96,6 +97,10 @@ public class TcpEventHandler implements EventHandler {
     public boolean action() throws InvalidEventHandlerException {
         if (!sc.isOpen()) {
             handler.onEndOfConnection(false);
+
+            // clear these to free up memory.
+            inBB = outBB = null;
+            inBBB = outBBB = null;
             throw new InvalidEventHandlerException();
         }
 
@@ -172,6 +177,11 @@ public class TcpEventHandler implements EventHandler {
     void handleIOE(@NotNull IOException e) {
         if (!(e instanceof ClosedByInterruptException))
             e.printStackTrace();
+        closeSC();
+    }
+
+    @Override
+    public void close() {
         closeSC();
     }
 
