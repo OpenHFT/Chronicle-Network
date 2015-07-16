@@ -17,6 +17,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
@@ -55,6 +56,12 @@ public abstract class WireTcpHandler implements TcpHandler {
             if (in.readRemaining() >= SIZE_OF_SIZE && out.writePosition() < SMALL_WRITE_BUFFER)
                 read(in, out, sessionDetails);
         });
+    }
+
+    public void sendHeartBeat(Bytes out, SessionDetailsProvider sessionDetails) {
+        final WireOut outWire = bytesToWire.apply(out);
+        outWire.writeDocument(true, w -> w.write(() -> "tid").int64(0));
+        outWire.writeDocument(false, w -> w.writeEventName(() -> "heartbeat").int64(Time.currentTimeMillis()));
     }
 
     @Override
