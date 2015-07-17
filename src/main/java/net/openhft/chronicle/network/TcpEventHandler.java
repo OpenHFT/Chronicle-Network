@@ -38,7 +38,8 @@ import java.nio.channels.SocketChannel;
  * Created by peter.lawrey on 22/01/15.
  */
 public class TcpEventHandler implements EventHandler, Closeable {
-    public static final int CAPACITY = 1 << 23;
+    public static final int TCP_BUFFER = 64 << 10;
+    public static final int CAPACITY = 8 << 20;
 
     @NotNull
     private final SocketChannel sc;
@@ -62,8 +63,8 @@ public class TcpEventHandler implements EventHandler, Closeable {
         this.sc = sc;
         sc.configureBlocking(false);
         sc.socket().setTcpNoDelay(true);
-        sc.socket().setReceiveBufferSize(CAPACITY);
-        sc.socket().setSendBufferSize(CAPACITY);
+        sc.socket().setReceiveBufferSize(TCP_BUFFER);
+        sc.socket().setSendBufferSize(TCP_BUFFER);
 
         this.handler = handler;
         // there is nothing which needs to be written by default.
@@ -220,10 +221,11 @@ public class TcpEventHandler implements EventHandler, Closeable {
             try {
                 // get more data to write if the buffer was empty
                 // or we can write some of what is there
-                busy = outBB.remaining() > 0;
+                int remaining = outBB.remaining();
+                busy = remaining > 0;
                 if (busy)
                     tryWrite();
-                if (outBB.remaining() == 0) {
+                if (outBB.remaining() == remaining) {
                     invokeHandler();
                     if (!busy)
                         busy |= tryWrite();
