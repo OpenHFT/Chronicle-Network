@@ -38,7 +38,7 @@ import java.nio.channels.SocketChannel;
  * Created by peter.lawrey on 22/01/15.
  */
 public class TcpEventHandler implements EventHandler, Closeable {
-    public static final int TCP_BUFFER = 64 << 10;
+    public static final int TCP_BUFFER = Integer.getInteger("tcpBufferSize", 2 << 20);
     public static final int CAPACITY = 8 << 20;
 
     @NotNull
