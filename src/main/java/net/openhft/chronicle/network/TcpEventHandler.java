@@ -205,8 +205,8 @@ public class TcpEventHandler implements EventHandler, Closeable {
 
         } else if (wrote > 0) {
             outBB.compact().flip();
-            outBBB.writePosition(outBB.limit());
             outBBB.writeLimit(outBB.capacity());
+            outBBB.writePosition(outBB.limit());
             return true;
         }
         return false;
