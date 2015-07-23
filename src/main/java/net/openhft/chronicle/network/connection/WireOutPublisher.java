@@ -48,7 +48,7 @@ public class WireOutPublisher implements Closeable {
 
 
                     System.out.println("\nServer Publishes (from async publisher ) :\n" +
-                            Wires.fromSizePrefixedBlobs(out.bytes(), out.bytes().readPosition(), out.bytes().readRemaining()));
+                            Wires.fromSizePrefixedBinaryToText(out.bytes()));
 
                 } catch (Exception e) {
                     System.out.println("\nServer Publishes ( from async publisher - corrupted ) :\n" +
