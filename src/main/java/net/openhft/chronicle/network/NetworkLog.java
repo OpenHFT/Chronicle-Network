@@ -35,8 +35,20 @@ public class NetworkLog {
         StringBuilder sb = new StringBuilder(desc);
         sb.append(" len: ").append(end - start)
                 .append(" - ");
-        for (int i = start; i < end; i++)
-            sb.append(RandomDataInput.charToString[bytes.get(i) & 0xFF]);
+        if (end - start > 128) {
+            for (int i = start; i < start + 64; i++)
+                appendByte(bytes, sb, i);
+            sb.append(" ... ");
+            for (int i = end - 64; i < end; i++)
+                appendByte(bytes, sb, i);
+        } else {
+            for (int i = start; i < end; i++)
+                appendByte(bytes, sb, i);
+        }
         System.out.println(sb);
+    }
+
+    private void appendByte(ByteBuffer bytes, StringBuilder sb, int i) {
+        sb.append(RandomDataInput.charToString[bytes.get(i) & 0xFF]);
     }
 }
