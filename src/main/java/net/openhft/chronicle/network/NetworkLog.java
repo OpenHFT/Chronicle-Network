@@ -2,6 +2,8 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.RandomDataInput;
 import net.openhft.chronicle.core.Jvm;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -15,6 +17,10 @@ public class NetworkLog {
     private final String desc;
     private long lastOut = System.currentTimeMillis();
 
+    private static final Logger LOG =
+            LoggerFactory.getLogger(NetworkLog.class.getName());
+
+
     public NetworkLog(SocketChannel channel, String op) throws IOException {
         this.desc = op
                 + " " + ((InetSocketAddress) channel.getLocalAddress()).getPort()
@@ -22,17 +28,18 @@ public class NetworkLog {
     }
 
     public void idle() {
-        if (!Jvm.IS_DEBUG) return;
+        if (!Jvm.IS_DEBUG || !LOG.isDebugEnabled()) return;
         long now = System.currentTimeMillis();
         if (now - lastOut > 2000) {
             lastOut = now;
-            System.out.println(desc + " idle");
+            LOG.debug(desc + " idle");
         }
     }
 
     public void log(ByteBuffer bytes, int start, int end) {
-        if (!Jvm.IS_DEBUG) return;
-        StringBuilder sb = new StringBuilder(desc);
+        if (!Jvm.IS_DEBUG || !LOG.isDebugEnabled()) return;
+
+        final StringBuilder sb = new StringBuilder(desc);
         sb.append(" len: ").append(end - start)
                 .append(" - ");
         if (end - start > 128) {
@@ -45,7 +52,8 @@ public class NetworkLog {
             for (int i = start; i < end; i++)
                 appendByte(bytes, sb, i);
         }
-        System.out.println(sb);
+
+        LOG.debug(sb.toString());
     }
 
     private void appendByte(ByteBuffer bytes, StringBuilder sb, int i) {
