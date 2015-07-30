@@ -27,8 +27,6 @@ import net.openhft.chronicle.threads.api.EventHandler;
 import net.openhft.chronicle.threads.api.EventLoop;
 import net.openhft.chronicle.threads.api.InvalidEventHandlerException;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -40,10 +38,9 @@ import java.nio.channels.SocketChannel;
  * Created by peter.lawrey on 22/01/15.
  */
 public class TcpEventHandler implements EventHandler, Closeable {
-    public static final int TCP_BUFFER = Integer.getInteger("tcpBufferSize", 2 << 20);
-    public static final int CAPACITY = 8 << 20;
-    private static final Logger LOG =
-            LoggerFactory.getLogger(TcpEventHandler.class.getName());
+    public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 1 <<
+            20);
+    public static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", 5 << 20);
     @NotNull
     private final SocketChannel sc;
     private final TcpHandler handler;
