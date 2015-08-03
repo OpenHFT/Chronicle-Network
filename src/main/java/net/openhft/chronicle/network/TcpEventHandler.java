@@ -38,10 +38,10 @@ import java.nio.channels.SocketChannel;
 /**
  * Created by peter.lawrey on 22/01/15.
  */
-public class TcpEventHandler implements EventHandler, Closeable {
-    public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 1 <<
+class TcpEventHandler implements EventHandler, Closeable {
+    private static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 1 <<
             20);
-    public static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", 5 << 20);
+    private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", 5 << 20);
     @NotNull
     private final SocketChannel sc;
     private final TcpHandler handler;
@@ -80,7 +80,9 @@ public class TcpEventHandler implements EventHandler, Closeable {
         // inBBB.clearThreadAssociation();
         //  outBBB.clearThreadAssociation();
 
+        assert inBB != null;
         inBBB = Bytes.wrapForRead(inBB.slice()).unchecked(unchecked);
+        assert outBB != null;
         outBBB = Bytes.wrapForWrite(outBB.slice()).unchecked(unchecked);
         // must be set after we take a slice();
         outBB.limit(0);
@@ -112,6 +114,7 @@ public class TcpEventHandler implements EventHandler, Closeable {
         }
 
         try {
+            assert inBB != null;
             int start = inBB.position();
             int read = inBB.remaining() > 0 ? sc.read(inBB) : 1;
             if (read < 0) {
@@ -143,7 +146,9 @@ public class TcpEventHandler implements EventHandler, Closeable {
         return false;
     }
 
-    protected void sendHeartBeat() throws IOException {
+    private void sendHeartBeat() throws IOException {
+        assert outBB != null;
+        assert outBBB != null;
         outBBB.writePosition(outBB.limit());
         handler.sendHeartBeat(outBBB, sessionDetails);
 
@@ -156,9 +161,13 @@ public class TcpEventHandler implements EventHandler, Closeable {
         }
     }
 
-    boolean invokeHandler() throws IOException {
+    private boolean invokeHandler() throws IOException {
         boolean busy = false;
+        assert inBB != null;
+        assert inBBB != null;
         inBBB.readLimit(inBB.position());
+        assert outBB != null;
+        assert outBBB != null;
         outBBB.writePosition(outBB.limit());
         handler.process(inBBB, outBBB, sessionDetails);
 
@@ -181,7 +190,7 @@ public class TcpEventHandler implements EventHandler, Closeable {
     }
 
 
-    void handleIOE(@NotNull IOException e) {
+    private void handleIOE(@NotNull IOException e) {
         if (!(e instanceof ClosedByInterruptException))
             e.printStackTrace();
         closeSC();
@@ -199,7 +208,8 @@ public class TcpEventHandler implements EventHandler, Closeable {
         }
     }
 
-    boolean tryWrite() throws IOException {
+    private boolean tryWrite() throws IOException {
+        assert outBB != null;
         if (outBB.remaining() <= 0)
             return false;
         int start = outBB.position();
@@ -211,6 +221,7 @@ public class TcpEventHandler implements EventHandler, Closeable {
 
         } else if (wrote > 0) {
             outBB.compact().flip();
+            assert outBBB != null;
             outBBB.writeLimit(outBB.capacity());
             outBBB.writePosition(outBB.limit());
             return true;
@@ -218,7 +229,7 @@ public class TcpEventHandler implements EventHandler, Closeable {
         return false;
     }
 
-    class WriteEventHandler implements EventHandler {
+    private class WriteEventHandler implements EventHandler {
         @Override
         public boolean action() throws InvalidEventHandlerException {
             if (!sc.isOpen()) throw new InvalidEventHandlerException();
@@ -227,6 +238,7 @@ public class TcpEventHandler implements EventHandler, Closeable {
             try {
                 // get more data to write if the buffer was empty
                 // or we can write some of what is there
+                assert outBB != null;
                 int remaining = outBB.remaining();
                 busy = remaining > 0;
                 if (busy)

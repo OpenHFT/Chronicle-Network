@@ -34,13 +34,14 @@ import java.nio.BufferOverflowException;
 import java.util.function.Function;
 
 public abstract class WireTcpHandler implements TcpHandler {
-    public static final int SIZE_OF_SIZE = 4;
+    private static final int SIZE_OF_SIZE = 4;
     private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
     // this is the point at which it is worth doing more work to get more data.
-    static final int SMALL_WRITE_BUFFER = 32 << 10;
+    private static final int SMALL_WRITE_BUFFER = 32 << 10;
     @NotNull
     private final Function<Bytes, Wire> bytesToWire;
-    protected Wire inWire, outWire;
+    private Wire inWire;
+    protected Wire outWire;
     private boolean recreateWire;
     protected final WireOutPublisher publisher = new WireOutPublisher();
 

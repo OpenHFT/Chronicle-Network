@@ -48,8 +48,8 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
     private boolean unchecked = false;
     private volatile boolean closed;
 
-    private long heartbeatIntervalTicks = Integer.getInteger("heartbeat.interval.ticks", 1_000);
-    private long heartbeatTimeOutTicks = Integer.getInteger("heartbeat.timeout.ticks", 100_000);
+    private final long heartbeatIntervalTicks = Integer.getInteger("heartbeat.interval.ticks", 1_000);
+    private final long heartbeatTimeOutTicks = Integer.getInteger("heartbeat.timeout.ticks", 100_000);
 
     public AcceptorEventHandler(@NotNull String description,
                                 @NotNull final Supplier<TcpHandler> tcpHandlerSupplier,

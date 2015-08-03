@@ -16,6 +16,7 @@
 
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.core.io.Closeable;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -38,9 +39,7 @@ public enum TCPRegistry {
     static final Map<String, ServerSocketChannel> DESC_TO_SERVER_SOCKET_CHANNEL_MAP = new ConcurrentSkipListMap<>();
 
     public static void reset() {
-        for (ServerSocketChannel ssc : DESC_TO_SERVER_SOCKET_CHANNEL_MAP.values()) {
-            closeQuietly(ssc);
-        }
+        DESC_TO_SERVER_SOCKET_CHANNEL_MAP.values().forEach(Closeable::closeQuietly);
         HOSTNAME_PORT_ALIAS.clear();
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.clear();
     }
