@@ -5,6 +5,8 @@ import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.wire.WireOut;
 import net.openhft.chronicle.wire.Wires;
 import net.openhft.chronicle.wire.YamlLogging;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
@@ -16,7 +18,7 @@ import java.util.function.Consumer;
 public class WireOutPublisher implements Closeable {
     private static final int WARN_QUEUE_LENGTH = 50;
     private final Queue<Consumer<WireOut>> publisher = new LinkedTransferQueue<>();
-
+    private static final Logger LOG = LoggerFactory.getLogger(WireOutPublisher.class);
     private volatile boolean closed;
 
     /**
@@ -41,11 +43,11 @@ public class WireOutPublisher implements Closeable {
                 try {
 
 
-                    System.out.println("\nServer Publishes (from async publisher ) :\n" +
+                    LOG.info("\nServer Publishes (from async publisher ) :\n" +
                             Wires.fromSizePrefixedBinaryToText(out.bytes()));
 
                 } catch (Exception e) {
-                    System.out.println("\nServer Publishes ( from async publisher - corrupted ) :\n" +
+                    LOG.info("\nServer Publishes ( from async publisher - corrupted ) :\n" +
                             out.bytes().toDebugString());
                     e.printStackTrace();
                 }
