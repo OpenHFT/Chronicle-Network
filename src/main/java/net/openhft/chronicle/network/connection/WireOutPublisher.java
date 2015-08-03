@@ -5,6 +5,7 @@ import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.wire.WireOut;
 import net.openhft.chronicle.wire.Wires;
 import net.openhft.chronicle.wire.YamlLogging;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +27,7 @@ public class WireOutPublisher implements Closeable {
      *
      * @param out buffer to write to.
      */
-    public void applyAction(WireOut out, Runnable runnable) {
+    public void applyAction(@NotNull WireOut out, @NotNull Runnable runnable) {
         if (publisher.isEmpty()) {
             synchronized (this) {
                 runnable.run();

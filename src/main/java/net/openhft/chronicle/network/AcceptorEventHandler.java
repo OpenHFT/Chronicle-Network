@@ -51,7 +51,7 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
     private long heartbeatIntervalTicks = Integer.getInteger("heartbeat.interval.ticks", 1_000);
     private long heartbeatTimeOutTicks = Integer.getInteger("heartbeat.timeout.ticks", 100_000);
 
-    public AcceptorEventHandler(String description,
+    public AcceptorEventHandler(@NotNull String description,
                                 @NotNull final Supplier<TcpHandler> tcpHandlerSupplier,
                                 @NotNull final Supplier<SessionDetailsProvider> sessionDetailsSupplier) throws
             IOException {

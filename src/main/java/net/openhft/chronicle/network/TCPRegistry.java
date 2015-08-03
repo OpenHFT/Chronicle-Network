@@ -58,11 +58,11 @@ public enum TCPRegistry {
             throw new AssertionError("Had to stop " + closed);
     }
 
-    public static void setAlias(String name, String hostname, int port) {
+    public static void setAlias(String name, @NotNull String hostname, int port) {
         HOSTNAME_PORT_ALIAS.put(name, new InetSocketAddress(hostname, port));
     }
 
-    public static void createServerSocketChannelFor(String... descriptions) throws IOException {
+    public static void createServerSocketChannelFor(@NotNull String... descriptions) throws IOException {
         for (String description : descriptions) {
             InetSocketAddress address;
             if (description.contains(":")) {
@@ -85,7 +85,7 @@ public enum TCPRegistry {
         HOSTNAME_PORT_ALIAS.put(description, (InetSocketAddress) ssc.socket().getLocalSocketAddress());
     }
 
-    public static ServerSocketChannel acquireServerSocketChannel(String description) throws IOException {
+    public static ServerSocketChannel acquireServerSocketChannel(@NotNull String description) throws IOException {
         ServerSocketChannel ssc = DESC_TO_SERVER_SOCKET_CHANNEL_MAP.get(description);
         if (ssc != null && ssc.isOpen())
             return ssc;
@@ -97,7 +97,7 @@ public enum TCPRegistry {
         return ssc;
     }
 
-    public static InetSocketAddress lookup(String description) {
+    public static InetSocketAddress lookup(@NotNull String description) {
         InetSocketAddress address = HOSTNAME_PORT_ALIAS.get(description);
         if (address != null)
             return address;
@@ -130,7 +130,7 @@ public enum TCPRegistry {
     }
 
     @NotNull
-    private static InetSocketAddress addInetSocketAddress(String description, String hostname, int port) {
+    private static InetSocketAddress addInetSocketAddress(String description, @NotNull String hostname, int port) {
         if (port <= 0 || port >= 65536)
             throw new IllegalArgumentException("Invalid port " + port);
 
@@ -140,11 +140,11 @@ public enum TCPRegistry {
     }
 
     @NotNull
-    private static InetSocketAddress createInetSocketAddress(String hostname, int port) {
+    private static InetSocketAddress createInetSocketAddress(@NotNull String hostname, int port) {
         return hostname.isEmpty() || hostname.equals("*") ? new InetSocketAddress(port) : new InetSocketAddress(hostname, port);
     }
 
-    public static SocketChannel createSocketChannel(String description) throws IOException {
+    public static SocketChannel createSocketChannel(@NotNull String description) throws IOException {
         return SocketChannel.open(lookup(description));
     }
 }

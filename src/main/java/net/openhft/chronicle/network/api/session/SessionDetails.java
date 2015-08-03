@@ -16,6 +16,7 @@
 
 package net.openhft.chronicle.network.api.session;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.InetSocketAddress;
@@ -44,5 +45,6 @@ public interface SessionDetails {
 
     <I> void set(Class<I> infoClass, I info);
 
+    @NotNull
     <I> I get(Class<I> infoClass);
 }

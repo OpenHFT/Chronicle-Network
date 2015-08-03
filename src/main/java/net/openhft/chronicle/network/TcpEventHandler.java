@@ -27,6 +27,7 @@ import net.openhft.chronicle.threads.api.EventHandler;
 import net.openhft.chronicle.threads.api.EventLoop;
 import net.openhft.chronicle.threads.api.InvalidEventHandlerException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -44,14 +45,19 @@ public class TcpEventHandler implements EventHandler, Closeable {
     @NotNull
     private final SocketChannel sc;
     private final TcpHandler handler;
+    @Nullable
     private ByteBuffer inBB = ByteBuffer.allocateDirect(CAPACITY);
+    @Nullable
     private Bytes inBBB;
+    @Nullable
     private ByteBuffer outBB = ByteBuffer.allocateDirect(CAPACITY);
+    @Nullable
     private Bytes outBBB;
     private final SessionDetailsProvider sessionDetails;
     private final long heartBeatIntervalTicks;
     private final long heartBeatTimeoutTicks;
     private long lastTickReadTime = Time.tickTime(), lastHeartBeatTick = lastTickReadTime + 1000;
+    @NotNull
     private final NetworkLog readLog, writeLog;
 
     public TcpEventHandler(@NotNull SocketChannel sc, TcpHandler handler, final SessionDetailsProvider sessionDetails,

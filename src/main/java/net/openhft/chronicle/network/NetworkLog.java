@@ -2,6 +2,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.RandomDataInput;
 import net.openhft.chronicle.core.Jvm;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,6 +15,7 @@ import java.nio.channels.SocketChannel;
  * Created by peter.lawrey on 15/07/2015.
  */
 public class NetworkLog {
+    @NotNull
     private final String desc;
     private long lastOut = System.currentTimeMillis();
 
@@ -21,7 +23,7 @@ public class NetworkLog {
             LoggerFactory.getLogger(NetworkLog.class.getName());
 
 
-    public NetworkLog(SocketChannel channel, String op) throws IOException {
+    public NetworkLog(@NotNull SocketChannel channel, String op) throws IOException {
         this.desc = op
                 + " " + ((InetSocketAddress) channel.getLocalAddress()).getPort()
                 + " " + ((InetSocketAddress) channel.getRemoteAddress()).getPort();
@@ -36,7 +38,7 @@ public class NetworkLog {
         }
     }
 
-    public void log(ByteBuffer bytes, int start, int end) {
+    public void log(@NotNull ByteBuffer bytes, int start, int end) {
         if (!Jvm.IS_DEBUG || !LOG.isDebugEnabled()) return;
 
         final StringBuilder sb = new StringBuilder(desc);
@@ -56,7 +58,7 @@ public class NetworkLog {
         LOG.debug(sb.toString());
     }
 
-    private void appendByte(ByteBuffer bytes, StringBuilder sb, int i) {
+    private void appendByte(@NotNull ByteBuffer bytes, @NotNull StringBuilder sb, int i) {
         sb.append(RandomDataInput.charToString[bytes.get(i) & 0xFF]);
     }
 }
