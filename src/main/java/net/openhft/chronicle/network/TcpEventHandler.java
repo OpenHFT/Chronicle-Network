@@ -146,6 +146,9 @@ class TcpEventHandler implements EventHandler, Closeable {
             }
         } catch (IOException e) {
             handleIOE(e);
+
+            // prevent the event loop from running again for this task
+            throw new InvalidEventHandlerException();
         }
 
         return false;
