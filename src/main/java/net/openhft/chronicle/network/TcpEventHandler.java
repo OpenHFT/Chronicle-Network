@@ -28,6 +28,8 @@ import net.openhft.chronicle.threads.api.EventLoop;
 import net.openhft.chronicle.threads.api.InvalidEventHandlerException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -39,6 +41,9 @@ import java.nio.channels.SocketChannel;
  * Created by peter.lawrey on 22/01/15.
  */
 class TcpEventHandler implements EventHandler, Closeable {
+    private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
+
+
     private static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 1 <<
             20);
     private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", 5 << 20);
@@ -191,8 +196,13 @@ class TcpEventHandler implements EventHandler, Closeable {
 
 
     private void handleIOE(@NotNull IOException e) {
-        if (!(e instanceof ClosedByInterruptException))
-            e.printStackTrace();
+        if (!(e instanceof ClosedByInterruptException)) {
+            if (e.getMessage().startsWith("An existing connection was forcibly closed"))
+                LOG.warn(e.getMessage());
+            else
+                LOG.error("", e);
+        }
+
         closeSC();
     }
 
