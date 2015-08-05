@@ -63,7 +63,7 @@ public class WireOutPublisher implements Closeable {
         } else {
             int size = publisher.size();
             if (size > WARN_QUEUE_LENGTH)
-                System.out.println("publish length: " + size);
+                LOG.debug("publish length: " + size);
 
             publisher.add(outConsumer);
         }
