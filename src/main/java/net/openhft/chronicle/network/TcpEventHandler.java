@@ -145,7 +145,9 @@ class TcpEventHandler implements EventHandler, Closeable {
                 }
             }
         } catch (IOException e) {
-            handleIOE(e);
+
+            final boolean clientIntentionallyClose = handler.hasClientClosed();
+            handleIOE(e, clientIntentionallyClose);
 
             // prevent the event loop from running again for this task
             throw new InvalidEventHandlerException();
@@ -198,15 +200,23 @@ class TcpEventHandler implements EventHandler, Closeable {
     }
 
 
-    private void handleIOE(@NotNull IOException e) {
-        if (!(e instanceof ClosedByInterruptException)) {
-            if (e.getMessage().startsWith("An existing connection was forcibly closed"))
-                LOG.warn(e.getMessage());
-            else
-                LOG.error("", e);
+    private void handleIOE(@NotNull IOException e, final boolean clientIntentionallyClose) {
+        try {
+
+            if (clientIntentionallyClose)
+                return;
+
+            if (!(e instanceof ClosedByInterruptException)) {
+                if (e.getMessage().startsWith("An existing connection was forcibly closed"))
+                    LOG.warn(e.getMessage());
+                else
+                    LOG.error("", e);
+            }
+
+        } finally {
+            closeSC();
         }
 
-        closeSC();
     }
 
     @Override
@@ -265,7 +275,7 @@ class TcpEventHandler implements EventHandler, Closeable {
                 closeSC();
 
             } catch (IOException e) {
-                handleIOE(e);
+                handleIOE(e, handler.hasClientClosed());
             }
             return busy;
         }

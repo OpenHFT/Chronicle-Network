@@ -37,7 +37,7 @@ public abstract class WireTcpHandler implements TcpHandler {
     private static final int SIZE_OF_SIZE = 4;
     private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
     // this is the point at which it is worth doing more work to get more data.
-    private static final int SMALL_WRITE_BUFFER = 32 << 10;
+    private static final int SMALL_WRITE_BUFFER = Integer.getInteger("WireTcpHandler.SMALL_WRITE_BUFFER", 32 << 10);
     @NotNull
     private final Function<Bytes, Wire> bytesToWire;
     private Wire inWire;

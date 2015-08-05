@@ -17,13 +17,15 @@
 package net.openhft.chronicle.network.api;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.network.ClientClosedProvider;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 
 /**
  * Created by peter.lawrey on 22/01/15.
  */
 @FunctionalInterface
-public interface TcpHandler {
+public interface TcpHandler extends ClientClosedProvider {
+
     void process(Bytes in, Bytes out, SessionDetailsProvider sessionDetails);
 
     default void sendHeartBeat(Bytes out, SessionDetailsProvider sessionDetails) {
