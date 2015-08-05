@@ -6,7 +6,7 @@ package net.openhft.chronicle.network;
 
 public interface ClientClosedProvider {
     /**
-     * @return {@true} if the client has intentionally closed
+     * @return {@code true} if the client has intentionally closed
      */
     default boolean hasClientClosed() {
         return false;
