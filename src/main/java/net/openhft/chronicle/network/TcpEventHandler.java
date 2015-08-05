@@ -65,6 +65,7 @@ class TcpEventHandler implements EventHandler, Closeable {
     @NotNull
     private final NetworkLog readLog, writeLog;
 
+
     public TcpEventHandler(@NotNull SocketChannel sc, TcpHandler handler, final SessionDetailsProvider sessionDetails,
                            boolean unchecked, long heartBeatIntervalTicks, long heartBeatTimeoutTicks) throws IOException {
         this.heartBeatIntervalTicks = heartBeatIntervalTicks;
@@ -119,38 +120,38 @@ class TcpEventHandler implements EventHandler, Closeable {
         }
 
         try {
+
             assert inBB != null;
             int start = inBB.position();
             int read = inBB.remaining() > 0 ? sc.read(inBB) : 1;
+
             if (read < 0) {
                 closeSC();
+                return false;
+            }
 
-            } else if (read > 0) {
+            if (read > 0) {
                 WanSimulator.dataRead(read);
                 readLog.log(inBB, start, inBB.position());
                 lastTickReadTime = Time.tickTime();
                 // inBB.position() where the data has been read() up to.
                 return invokeHandler();
-            } else {
-                readLog.idle();
-                long tickTime = Time.tickTime();
-                if (tickTime > lastTickReadTime + heartBeatTimeoutTicks) {
-                    handler.onEndOfConnection(true);
-                    closeSC();
-                    throw new InvalidEventHandlerException();
-                }
-                if (tickTime > lastHeartBeatTick + heartBeatIntervalTicks) {
-                    lastHeartBeatTick = tickTime;
-                    sendHeartBeat();
-                }
             }
+
+            readLog.idle();
+            long tickTime = Time.tickTime();
+            if (tickTime > lastTickReadTime + heartBeatTimeoutTicks) {
+                closeSC();
+                return false;
+            }
+
+            if (tickTime > lastHeartBeatTick + heartBeatIntervalTicks) {
+                lastHeartBeatTick = tickTime;
+                sendHeartBeat();
+            }
+
         } catch (IOException e) {
-
-            final boolean clientIntentionallyClose = handler.hasClientClosed();
-            handleIOE(e, clientIntentionallyClose);
-
-            // prevent the event loop from running again for this task
-            throw new InvalidEventHandlerException();
+            handleIOE(e, handler.hasClientClosed());
         }
 
         return false;
@@ -200,18 +201,16 @@ class TcpEventHandler implements EventHandler, Closeable {
     }
 
 
-    private void handleIOE(@NotNull IOException e, final boolean clientIntentionallyClose) {
+    private void handleIOE(@NotNull IOException e, final boolean clientIntentionallyClosed) {
         try {
 
-            if (clientIntentionallyClose)
+            if (clientIntentionallyClosed)
                 return;
 
-            if (!(e instanceof ClosedByInterruptException)) {
-                if (e.getMessage().startsWith("An existing connection was forcibly closed"))
-                    LOG.warn(e.getMessage());
-                else
-                    LOG.error("", e);
-            }
+            if (e.getMessage().startsWith("An existing connection was forcibly closed"))
+                LOG.warn(e.getMessage());
+            else if (!(e instanceof ClosedByInterruptException))
+                LOG.error("", e);
 
         } finally {
             closeSC();

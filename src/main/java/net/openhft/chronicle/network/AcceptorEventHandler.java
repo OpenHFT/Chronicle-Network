@@ -71,7 +71,8 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
 
     @Override
     public boolean action() throws InvalidEventHandlerException {
-        if (!ssc.isOpen()) throw new InvalidEventHandlerException();
+        if (!ssc.isOpen())
+            throw new InvalidEventHandlerException();
 
         try {
             SocketChannel sc = ssc.accept();
