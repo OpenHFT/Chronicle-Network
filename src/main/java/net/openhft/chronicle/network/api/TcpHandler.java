@@ -17,6 +17,7 @@
 package net.openhft.chronicle.network.api;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.annotation.NotNull;
 import net.openhft.chronicle.network.ClientClosedProvider;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 
@@ -26,7 +27,15 @@ import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 @FunctionalInterface
 public interface TcpHandler extends ClientClosedProvider {
 
-    void process(Bytes in, Bytes out, SessionDetailsProvider sessionDetails);
+    /**
+     * The server reads the bytes {@code in} from the client and sends a response {@code out} back
+     * to the client.
+     *
+     * @param in             the bytes send from the client
+     * @param out            the response send back to the client
+     * @param sessionDetails an instance per session
+     */
+    void process(@NotNull Bytes in, @NotNull Bytes out, @NotNull SessionDetailsProvider sessionDetails);
 
     default void sendHeartBeat(Bytes out, SessionDetailsProvider sessionDetails) {
     }
