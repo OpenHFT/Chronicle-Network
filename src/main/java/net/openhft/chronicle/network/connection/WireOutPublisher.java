@@ -50,7 +50,7 @@ public class WireOutPublisher implements Closeable {
                 } catch (Exception e) {
                     LOG.info("\nServer Publishes ( from async publisher - corrupted ) :\n" +
                             out.bytes().toDebugString());
-                    e.printStackTrace();
+                    LOG.error("", e);
                 }
         }
     }
