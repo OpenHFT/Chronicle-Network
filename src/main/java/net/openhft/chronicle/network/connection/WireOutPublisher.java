@@ -4,6 +4,7 @@ import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.wire.WireOut;
 import net.openhft.chronicle.wire.Wires;
+import net.openhft.chronicle.wire.WriteMarshallable;
 import net.openhft.chronicle.wire.YamlLogging;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -11,15 +12,14 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
-import java.util.function.Consumer;
 
 /**
  * Created by peter.lawrey on 09/07/2015.
  */
 public class WireOutPublisher implements Closeable {
     private static final int WARN_QUEUE_LENGTH = 50;
-    private final Queue<Consumer<WireOut>> publisher = new LinkedTransferQueue<>();
     private static final Logger LOG = LoggerFactory.getLogger(WireOutPublisher.class);
+    private final Queue<WriteMarshallable> publisher = new LinkedTransferQueue<>();
     private volatile boolean closed;
 
     /**
@@ -34,10 +34,10 @@ public class WireOutPublisher implements Closeable {
             }
         }
         while (out.bytes().writePosition() < out.bytes().realCapacity() / 4) {
-            Consumer<WireOut> wireConsumer = publisher.poll();
+            WriteMarshallable wireConsumer = publisher.poll();
             if (wireConsumer == null)
                 break;
-            wireConsumer.accept(out);
+            wireConsumer.writeMarshallable(out);
 
 
             if (Jvm.IS_DEBUG && YamlLogging.showServerWrites)
@@ -55,7 +55,7 @@ public class WireOutPublisher implements Closeable {
         }
     }
 
-    public void add(Consumer<WireOut> outConsumer) {
+    public void add(WriteMarshallable outConsumer) {
 
         if (closed) {
             throw new IllegalStateException("Closed");
