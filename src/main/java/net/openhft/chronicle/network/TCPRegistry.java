@@ -16,6 +16,7 @@
 
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import org.jetbrains.annotations.NotNull;
 
@@ -42,6 +43,7 @@ public enum TCPRegistry {
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.values().forEach(Closeable::closeQuietly);
         HOSTNAME_PORT_ALIAS.clear();
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.clear();
+        Jvm.pause(500);
     }
 
     public static void assertAllServersStopped() {
