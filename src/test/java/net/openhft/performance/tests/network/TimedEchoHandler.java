@@ -46,7 +46,7 @@ class TimedEchoHandler implements TcpHandler {
             return;
 //        System.out.println("P start " + in.toDebugString());
         long toWrite = Math.min(in.readRemaining(), out.writeRemaining());
-        out.write(in, in.readPosition(), toWrite);
+        out.write((net.openhft.chronicle.bytes.BytesStore) in, (long) in.readPosition(), (long) toWrite);
         out.writeLong(System.nanoTime());
         in.readSkip(toWrite);
 //        System.out.println("... P End " + in.toDebugString());
