@@ -40,7 +40,7 @@ public class WireOutPublisher implements Closeable {
             wireConsumer.writeMarshallable(out);
 
 
-            if (Jvm.IS_DEBUG && YamlLogging.showServerWrites)
+            if (Jvm.isDebug() && YamlLogging.showServerWrites)
                 try {
 
 

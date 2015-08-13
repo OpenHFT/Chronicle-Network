@@ -30,7 +30,7 @@ public class NetworkLog {
     }
 
     public void idle() {
-        if (!Jvm.IS_DEBUG || !LOG.isDebugEnabled()) return;
+        if (!Jvm.isDebug() || !LOG.isDebugEnabled()) return;
         long now = System.currentTimeMillis();
         if (now - lastOut > 2000) {
             lastOut = now;
@@ -39,7 +39,7 @@ public class NetworkLog {
     }
 
     public void log(@NotNull ByteBuffer bytes, int start, int end) {
-        if (!Jvm.IS_DEBUG || !LOG.isDebugEnabled()) return;
+        if (!Jvm.isDebug() || !LOG.isDebugEnabled()) return;
 
         final StringBuilder sb = new StringBuilder(desc);
         sb.append(" len: ").append(end - start)
