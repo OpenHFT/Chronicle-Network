@@ -207,7 +207,8 @@ class TcpEventHandler implements EventHandler, Closeable {
             if (clientIntentionallyClosed)
                 return;
 
-            if (e.getMessage().startsWith("An existing connection was forcibly closed"))
+            if (e.getMessage() != null && e.getMessage().startsWith("An existing connection was " +
+                    "forcibly closed"))
                 LOG.warn(e.getMessage());
             else if (!(e instanceof ClosedByInterruptException))
                 LOG.error("", e);
