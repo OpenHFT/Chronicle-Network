@@ -46,10 +46,15 @@ class TcpEventHandler implements EventHandler, Closeable {
 
     private static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 1 <<
             20);
-    private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", 5 << 20);
+    private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", 8 << 20);
     @NotNull
     private final SocketChannel sc;
     private final TcpHandler handler;
+    private final SessionDetailsProvider sessionDetails;
+    private final long heartBeatIntervalTicks;
+    private final long heartBeatTimeoutTicks;
+    @NotNull
+    private final NetworkLog readLog, writeLog;
     @Nullable
     private ByteBuffer inBB = ByteBuffer.allocateDirect(CAPACITY);
     @Nullable
@@ -58,12 +63,7 @@ class TcpEventHandler implements EventHandler, Closeable {
     private ByteBuffer outBB = ByteBuffer.allocateDirect(CAPACITY);
     @Nullable
     private Bytes outBBB;
-    private final SessionDetailsProvider sessionDetails;
-    private final long heartBeatIntervalTicks;
-    private final long heartBeatTimeoutTicks;
     private long lastTickReadTime = Time.tickTime(), lastHeartBeatTick = lastTickReadTime + 1000;
-    @NotNull
-    private final NetworkLog readLog, writeLog;
 
 
     public TcpEventHandler(@NotNull SocketChannel sc, TcpHandler handler, final SessionDetailsProvider sessionDetails,
