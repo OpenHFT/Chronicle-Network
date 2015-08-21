@@ -903,7 +903,7 @@ public class TcpChannelHub implements Closeable {
                             inWire.readDocument((WireIn w) -> this.tid = CoreFields.tid(w), null);
                         }
 
-                    } catch (ClosedChannelException e) {
+                    } catch (IOException e) {
                         tid = -1;
                         break;
                     } catch (@NotNull Exception e) {
@@ -912,8 +912,7 @@ public class TcpChannelHub implements Closeable {
                         if (isShutdown()) {
                             break;
                         } else {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("reconnecting due to unexpected " + e);
+                            LOG.warn("reconnecting due to unexpected ", e);
                             Thread.sleep(50);
                         }
                     } finally {
