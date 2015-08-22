@@ -22,6 +22,7 @@ import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaSessionDetails;
 import net.openhft.chronicle.network.WireTcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
+import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
@@ -125,6 +126,7 @@ public class SessionTest {
 
         eg.stop();
         // shutdown all servers
+        TcpChannelHub.closeAllHubs();
         TCPRegistry.reset();
     }
 

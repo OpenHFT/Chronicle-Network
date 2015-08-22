@@ -19,6 +19,7 @@ package net.openhft.performance.tests.network;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaSessionDetails;
+import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Ignore;
@@ -45,26 +46,6 @@ Loop back echo latency was 4.8/5.2 5.6/7.4 9.6us for 50/90 99/99.9 99.99%tile
  */
 
 public class TcpServerEventGroupTest {
-
-    @Ignore("fix JIRA https://higherfrequencytrading.atlassian.net/browse/NET-13")
-    @Test
-    public void testStart() throws IOException, InterruptedException {
-        EventGroup eg = new EventGroup(true);
-        eg.start();
-        TCPRegistry.createServerSocketChannelFor("TcpServerEventGroupTest");
-        AcceptorEventHandler eah = new AcceptorEventHandler("TcpServerEventGroupTest", EchoHandler::new,
-                VanillaSessionDetails::new);
-        eg.addHandler(eah);
-
-        SocketChannel sc = TCPRegistry.createSocketChannel("TcpServerEventGroupTest");
-        sc.configureBlocking(false);
-
-        testThroughput(sc);
-        testLatency(sc);
-
-        eg.stop();
-        TCPRegistry.reset();
-    }
 
     public static void main(String[] args) throws IOException, InterruptedException {
         new TcpServerEventGroupTest().testStart();
@@ -137,5 +118,26 @@ public class TcpServerEventGroupTest {
                 times[times.length - times.length / 10000] / 1000,
                 times[times.length - 1] / 1000
         );
+    }
+
+    @Ignore("fix JIRA https://higherfrequencytrading.atlassian.net/browse/NET-13")
+    @Test
+    public void testStart() throws IOException, InterruptedException {
+        EventGroup eg = new EventGroup(true);
+        eg.start();
+        TCPRegistry.createServerSocketChannelFor("TcpServerEventGroupTest");
+        AcceptorEventHandler eah = new AcceptorEventHandler("TcpServerEventGroupTest", EchoHandler::new,
+                VanillaSessionDetails::new);
+        eg.addHandler(eah);
+
+        SocketChannel sc = TCPRegistry.createSocketChannel("TcpServerEventGroupTest");
+        sc.configureBlocking(false);
+
+        testThroughput(sc);
+        testLatency(sc);
+
+        eg.stop();
+        TcpChannelHub.closeAllHubs();
+        TCPRegistry.reset();
     }
 }

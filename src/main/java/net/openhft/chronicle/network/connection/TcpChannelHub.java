@@ -70,6 +70,7 @@ public class TcpChannelHub implements Closeable {
     public static final int HEATBEAT_TIMEOUT_PERIOD = getInteger("heartbeat.timeout", 20_000);
 
     public static final int SIZE_OF_SIZE = 4;
+    public static final Set<TcpChannelHub> hubs = new CopyOnWriteArraySet<>();
     private static final Logger LOG = LoggerFactory.getLogger(TcpChannelHub.class);
     public final long timeoutMs;
     @NotNull
@@ -98,10 +99,8 @@ public class TcpChannelHub implements Closeable {
     private volatile SocketChannel clientChannel;
     private volatile boolean closed;
     private CountDownLatch receivedClosedAcknowledgement = new CountDownLatch(1);
-
     // set up in the header
     private long limitOfLast = 0;
-
     public TcpChannelHub(@NotNull final SessionProvider sessionProvider,
                          @NotNull final EventLoop eventLoop,
                          @NotNull final Function<Bytes, Wire> wire,
@@ -118,6 +117,29 @@ public class TcpChannelHub implements Closeable {
         this.handShakingWire = wire.apply(Bytes.elasticByteBuffer());
         this.sessionProvider = sessionProvider;
         this.tcpSocketConsumer = new TcpSocketConsumer(wire);
+        hubs.add(this);
+    }
+
+    public static void assertAllHubsClosed() {
+        StringBuilder errors = new StringBuilder();
+        for (TcpChannelHub h : hubs) {
+            if (!h.isClosed())
+                errors.append("Connection ").append(h).append(" still open\n");
+            h.close();
+        }
+        hubs.clear();
+        if (errors.length() > 0)
+            throw new AssertionError(errors.toString());
+    }
+
+    public static void closeAllHubs() {
+        for (TcpChannelHub h : hubs) {
+            if (!h.isClosed()) {
+                LOG.warn("Closing " + h);
+                h.close();
+            }
+        }
+        hubs.clear();
     }
 
     static void logToStandardOutMessageReceived(@NotNull Wire wire) {
@@ -319,6 +341,10 @@ public class TcpChannelHub implements Closeable {
 
     public boolean isOpen() {
         return clientChannel != null;
+    }
+
+    public boolean isClosed() {
+        return closed;
     }
 
     /**
@@ -1377,7 +1403,5 @@ public class TcpChannelHub implements Closeable {
 
             });
         }
-
-
     }
 }
