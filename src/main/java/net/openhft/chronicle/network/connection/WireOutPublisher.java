@@ -42,8 +42,6 @@ public class WireOutPublisher implements Closeable {
 
             if (Jvm.isDebug() && YamlLogging.showServerWrites)
                 try {
-
-
                     LOG.info("\nServer Publishes (from async publisher ) :\n" +
                             Wires.fromSizePrefixedBinaryToText(out.bytes()));
 
