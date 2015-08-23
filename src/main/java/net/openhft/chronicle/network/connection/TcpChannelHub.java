@@ -1329,7 +1329,7 @@ public class TcpChannelHub implements Closeable {
 
                                 final SocketAddress remote = socketAddressSupplier.get();
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("attempting to conenct to address=" + remote);
+                                    LOG.debug("attempting to connect to address=" + remote);
 
                                 if (socketChannel.connect(remote))
                                     // successfully connected

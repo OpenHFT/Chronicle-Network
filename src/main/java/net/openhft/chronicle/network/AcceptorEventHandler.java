@@ -44,12 +44,11 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
     @NotNull
     private final Supplier<SessionDetailsProvider> sessionDetailsSupplier;
     private final ServerSocketChannel ssc;
+    private final long heartbeatIntervalTicks = Integer.getInteger("heartbeat.interval.ticks", 1_000);
+    private final long heartbeatTimeOutTicks = Integer.getInteger("heartbeat.timeout.ticks", 100_000);
     private EventLoop eventLoop;
     private boolean unchecked = false;
     private volatile boolean closed;
-
-    private final long heartbeatIntervalTicks = Integer.getInteger("heartbeat.interval.ticks", 1_000);
-    private final long heartbeatTimeOutTicks = Integer.getInteger("heartbeat.timeout.ticks", 100_000);
 
     public AcceptorEventHandler(@NotNull String description,
                                 @NotNull final Supplier<TcpHandler> tcpHandlerSupplier,
@@ -78,6 +77,8 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
             SocketChannel sc = ssc.accept();
 
             if (sc != null) {
+                if (LOG.isInfoEnabled())
+                    LOG.info("Accepted " + sc);
 
                 final SessionDetailsProvider sessionDetails = sessionDetailsSupplier.get();
 
