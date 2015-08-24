@@ -104,4 +104,16 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
     public void setUserId(String userId) {
         this.userId = userId;
     }
+
+    @Override
+    public String toString() {
+        return "VanillaSessionDetails{" +
+                "infoMap=" + infoMap +
+                ", userId='" + userId + '\'' +
+                ", securityToken='" + securityToken + '\'' +
+                ", clientAddress=" + clientAddress +
+                ", connectTimeMS=" + connectTimeMS +
+                ", sessionId=" + sessionId +
+                '}';
+    }
 }
