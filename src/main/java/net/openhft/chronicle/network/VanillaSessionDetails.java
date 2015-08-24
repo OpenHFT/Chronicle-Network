@@ -29,7 +29,7 @@ import java.util.UUID;
  */
 public class VanillaSessionDetails implements SessionDetailsProvider {
     private final Map<Class, Object> infoMap = new LinkedHashMap<>();
-    private String userId = System.getProperty("user.name");
+    private String userId = "";
     private String securityToken = "";
 
     // only set on a server not on a client
