@@ -37,6 +37,8 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 
+import static net.openhft.chronicle.network.ServerThreadingStrategy.serverThreadingStrategy;
+
 /**
  * Created by peter.lawrey on 22/01/15.
  */
@@ -54,6 +56,8 @@ class TcpEventHandler implements EventHandler, Closeable {
     private final long heartBeatIntervalTicks;
     private final long heartBeatTimeoutTicks;
     @NotNull
+    private final WriteEventHandler writeEventHandler;
+    @NotNull
     private final NetworkLog readLog, writeLog;
     @Nullable
     private ByteBuffer inBB = ByteBuffer.allocateDirect(CAPACITY);
@@ -66,12 +70,12 @@ class TcpEventHandler implements EventHandler, Closeable {
     private long lastTickReadTime = Time.tickTime(), lastHeartBeatTick = lastTickReadTime + 1000;
 
 
-    public TcpEventHandler(@NotNull SocketChannel sc, TcpHandler handler, final SessionDetailsProvider sessionDetails,
+    public TcpEventHandler(@NotNull SocketChannel sc, @NotNull TcpHandler handler, @NotNull final SessionDetailsProvider sessionDetails,
                            boolean unchecked, long heartBeatIntervalTicks, long heartBeatTimeoutTicks) throws IOException {
         this.heartBeatIntervalTicks = heartBeatIntervalTicks;
         this.heartBeatTimeoutTicks = heartBeatTimeoutTicks;
         assert heartBeatIntervalTicks <= heartBeatTimeoutTicks / 2;
-
+        this.writeEventHandler = new WriteEventHandler();
         this.sc = sc;
         sc.configureBlocking(false);
         sc.socket().setTcpNoDelay(true);
@@ -99,17 +103,31 @@ class TcpEventHandler implements EventHandler, Closeable {
     @NotNull
     @Override
     public HandlerPriority priority() {
-        return HandlerPriority.HIGH;
+
+        switch (serverThreadingStrategy()) {
+
+            case SINGLE_THREADED:
+                return HandlerPriority.HIGH;
+
+            case MULTI_THREADED_BUSY_WAITING:
+                return HandlerPriority.BLOCKING;
+
+            default:
+                throw new UnsupportedOperationException("todo");
+        }
+
     }
 
     @Override
     public void eventLoop(@NotNull EventLoop eventLoop) {
-        // handle unsolicited or unfulfilled writes at a lower priority
-        eventLoop.addHandler(new WriteEventHandler());
+        // do nothing
     }
+
+    int oneInTen = 0;
 
     @Override
     public boolean action() throws InvalidEventHandlerException {
+
         if (!sc.isOpen()) {
             handler.onEndOfConnection(false);
 
@@ -118,6 +136,16 @@ class TcpEventHandler implements EventHandler, Closeable {
             inBBB = outBBB = null;
             throw new InvalidEventHandlerException();
         }
+
+        if (oneInTen++ == 10) {
+            oneInTen = 0;
+            try {
+                writeEventHandler.action();
+            } catch (Exception e) {
+                LOG.error("", e);
+            }
+        }
+
 
         try {
 
@@ -149,7 +177,8 @@ class TcpEventHandler implements EventHandler, Closeable {
                 lastHeartBeatTick = tickTime;
                 sendHeartBeat();
             }
-
+        } catch (ClosedChannelException e) {
+            closeSC();
         } catch (IOException e) {
             handleIOE(e, handler.hasClientClosed());
         }
