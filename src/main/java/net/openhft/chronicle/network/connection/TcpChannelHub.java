@@ -155,7 +155,7 @@ public class TcpChannelHub implements Closeable {
 
                 LOG.info("\nreceives:\n" +
                         "```yaml\n" +
-                        fromSizePrefixedBinaryToText(bytes) +
+                        fromSizePrefixedBlobs(bytes) +
                         "```\n");
                 YamlLogging.title = "";
                 YamlLogging.writeMessage = "";
@@ -180,7 +180,7 @@ public class TcpChannelHub implements Closeable {
 
                 LOG.info("\nreceives IN ERROR:\n" +
                         "```yaml\n" +
-                        fromSizePrefixedBinaryToText(bytes) +
+                        fromSizePrefixedBlobs(bytes) +
                         "```\n");
                 YamlLogging.title = "";
                 YamlLogging.writeMessage = "";
@@ -552,7 +552,7 @@ public class TcpChannelHub implements Closeable {
                         "" : "\n\n") +
                         "sends:\n\n" +
                         "```yaml\n" +
-                        fromSizePrefixedBinaryToText(bytes) +
+                        fromSizePrefixedBlobs(bytes) +
                         "```");
             YamlLogging.title = "";
             YamlLogging.writeMessage = "";
