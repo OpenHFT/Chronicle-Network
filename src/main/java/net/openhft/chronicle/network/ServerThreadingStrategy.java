@@ -25,12 +25,14 @@ public enum ServerThreadingStrategy {
 
     static {
         final String serverThreadingStrategy = System.getProperty("ServerThreadingStrategy");
-        try {
-            value = Enum.valueOf(ServerThreadingStrategy.class, serverThreadingStrategy);
-        } catch (Exception e) {
-            LOG.error("unable to apply -DServerThreadingStrategy=" + serverThreadingStrategy +
-                    ", so defaulting to " + value);
-        }
+        if (serverThreadingStrategy != null)
+
+            try {
+                value = Enum.valueOf(ServerThreadingStrategy.class, serverThreadingStrategy);
+            } catch (Exception e) {
+                LOG.error("unable to apply -DServerThreadingStrategy=" + serverThreadingStrategy +
+                        ", so defaulting to " + value);
+            }
     }
 
 
