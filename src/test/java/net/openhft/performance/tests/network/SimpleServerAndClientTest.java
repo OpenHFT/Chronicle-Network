@@ -40,7 +40,7 @@ public class SimpleServerAndClientTest {
             final long tid = tcpChannelHub.nextUniqueTransaction(System.currentTimeMillis());
             final Wire wire = new TextWire(Bytes.elasticByteBuffer());
 
-            wire.writeDocument(true, w -> w.write(() -> "csp").text("").write(() -> "tid").int64(tid));
+            wire.writeDocument(true, w -> w.write(() -> "tid").int64(tid));
             wire.writeDocument(false, w -> w.write(() -> "payload").text(expectedMessage));
 
             // write the data to the socket
@@ -96,7 +96,6 @@ public class SimpleServerAndClientTest {
                                @NotNull SessionDetailsProvider sd) {
 
             inWire.readDocument(m -> {
-                inWire.read(() -> "csp").text();
                 long tid = inWire.read(() -> "tid").int64();
                 outWire.writeDocument(true, meta -> meta.write(() -> "tid").int64(tid));
             }, d -> {
