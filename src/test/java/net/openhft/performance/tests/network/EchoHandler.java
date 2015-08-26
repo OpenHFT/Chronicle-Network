@@ -36,7 +36,7 @@ class EchoHandler implements TcpHandler {
         EventGroup eg = new EventGroup(false);
         eg.start();
         AcceptorEventHandler eah = new AcceptorEventHandler("*:" + EchoClientMain.PORT,
-                EchoHandler::new, VanillaSessionDetails::new);
+                EchoHandler::new, VanillaSessionDetails::new, 0, 0);
         eg.addHandler(eah);
     }
 

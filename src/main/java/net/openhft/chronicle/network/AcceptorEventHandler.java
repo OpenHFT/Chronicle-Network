@@ -44,19 +44,22 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
     @NotNull
     private final Supplier<SessionDetailsProvider> sessionDetailsSupplier;
     private final ServerSocketChannel ssc;
-    private final long heartbeatIntervalTicks = Integer.getInteger("heartbeat.interval.ticks", 1_000);
-    private final long heartbeatTimeOutTicks = Integer.getInteger("heartbeat.timeout.ticks", 100_000);
+    private final long heartbeatIntervalTicks;
+    private final long heartbeatTimeOutTicks;
     private EventLoop eventLoop;
     private boolean unchecked = false;
     private volatile boolean closed;
 
     public AcceptorEventHandler(@NotNull String description,
                                 @NotNull final Supplier<TcpHandler> tcpHandlerSupplier,
-                                @NotNull final Supplier<SessionDetailsProvider> sessionDetailsSupplier) throws
+                                @NotNull final Supplier<SessionDetailsProvider> sessionDetailsSupplier,
+                                long heartbeatIntervalTicks, long heartbeatTimeOutTicks) throws
             IOException {
         this.tcpHandlerSupplier = tcpHandlerSupplier;
         ssc = TCPRegistry.acquireServerSocketChannel(description);
         this.sessionDetailsSupplier = sessionDetailsSupplier;
+        this.heartbeatIntervalTicks = heartbeatIntervalTicks;
+        this.heartbeatTimeOutTicks = heartbeatTimeOutTicks;
     }
 
     public void unchecked(boolean unchecked) {

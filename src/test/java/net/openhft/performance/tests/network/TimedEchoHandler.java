@@ -36,7 +36,7 @@ class TimedEchoHandler implements TcpHandler {
         EventGroup eg = new EventGroup(false);
         eg.start();
         AcceptorEventHandler eah = new AcceptorEventHandler("*:" + EchoClientMain.PORT,
-                TimedEchoHandler::new, VanillaSessionDetails::new);
+                TimedEchoHandler::new, VanillaSessionDetails::new, 0, 0);
         eg.addHandler(eah);
     }
 

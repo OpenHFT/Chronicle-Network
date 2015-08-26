@@ -19,6 +19,7 @@ package net.openhft.performance.tests.network;
 import net.openhft.chronicle.wire.WireIn;
 import net.openhft.chronicle.wire.WireKey;
 import net.openhft.chronicle.wire.WireOut;
+import net.openhft.chronicle.wire.Wires;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.DoubleConsumer;
@@ -42,6 +43,10 @@ class TestData implements DoubleConsumer, LongConsumer, IntConsumer {
     }
 
     public void read(@NotNull WireIn wire) {
+
+
+        System.out.println(Wires.fromSizePrefixedBlobs(wire.bytes()));
+
         wire.readDocument(null, data ->
                         data.read(Field.key1).int32(i -> value1 = i)
                                 .read(Field.key2).int64(i -> value2 = i)

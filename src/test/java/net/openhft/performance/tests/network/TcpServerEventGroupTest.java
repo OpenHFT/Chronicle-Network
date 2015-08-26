@@ -127,7 +127,7 @@ public class TcpServerEventGroupTest {
         eg.start();
         TCPRegistry.createServerSocketChannelFor("TcpServerEventGroupTest");
         AcceptorEventHandler eah = new AcceptorEventHandler("TcpServerEventGroupTest", EchoHandler::new,
-                VanillaSessionDetails::new);
+                VanillaSessionDetails::new, 0, 0);
         eg.addHandler(eah);
 
         SocketChannel sc = TCPRegistry.createSocketChannel("TcpServerEventGroupTest");

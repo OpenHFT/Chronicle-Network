@@ -104,7 +104,7 @@ public class SessionTest {
         TCPRegistry.createServerSocketChannelFor("testProcess");
 
         AcceptorEventHandler eah = new AcceptorEventHandler("testProcess", () -> new SessionIdRefector
-                (WireType.TEXT), VanillaSessionDetails::new);
+                (WireType.TEXT), VanillaSessionDetails::new, 0,0);
         eg.addHandler(eah);
 
         SocketChannel[] sc = new SocketChannel[2];

@@ -167,6 +167,10 @@ class TcpEventHandler implements EventHandler, Closeable {
             }
 
             readLog.idle();
+
+            if (heartBeatIntervalTicks == 0)
+                return false;
+
             long tickTime = Time.tickTime();
             if (tickTime > lastTickReadTime + heartBeatTimeoutTicks) {
                 closeSC();

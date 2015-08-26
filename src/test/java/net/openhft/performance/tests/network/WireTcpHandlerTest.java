@@ -26,7 +26,6 @@ import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -46,7 +45,7 @@ BinaryWire: Loop back echo latency was 6.6/8.0 9/11 19/3056 us for 50/90 99/99.9
 RawWire: Loop back echo latency was 5.9/6.8 8/10 12/80 us for 50/90 99/99.9 99.99/worst %tile
  */
 @RunWith(value = Parameterized.class)
-@Ignore("todo fix")
+
 public class WireTcpHandlerTest {
 
     public static final int SIZE_OF_SIZE = 4;
@@ -135,7 +134,7 @@ public class WireTcpHandlerTest {
         eg.start();
         TCPRegistry.createServerSocketChannelFor(desc);
         AcceptorEventHandler eah = new AcceptorEventHandler(desc,
-                () -> new EchoRequestHandler(wireWrapper), VanillaSessionDetails::new);
+                () -> new EchoRequestHandler(wireWrapper), VanillaSessionDetails::new,0,0);
         eg.addHandler(eah);
 
         SocketChannel sc = TCPRegistry.createSocketChannel(desc);
