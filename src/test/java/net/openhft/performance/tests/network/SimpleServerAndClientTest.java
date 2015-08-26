@@ -27,7 +27,7 @@ public class SimpleServerAndClientTest {
 
     @Test
     public void test() throws IOException {
-        String desc = "";
+        String desc = "host.port";
         TCPRegistry.createServerSocketChannelFor(desc);
         EventGroup eg = new EventGroup(true);
         eg.start();
