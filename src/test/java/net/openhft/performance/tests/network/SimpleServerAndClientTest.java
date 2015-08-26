@@ -96,11 +96,11 @@ public class SimpleServerAndClientTest {
                                @NotNull SessionDetailsProvider sd) {
 
             inWire.readDocument(m -> {
-                long tid = inWire.read(() -> "tid").int64();
-                outWire.writeDocument(true, meta -> meta.write(() -> "tid").int64(tid));
+                outWire.writeDocument(true, meta -> meta.write(() -> "tid")
+                        .int64(inWire.read(() -> "tid").int64()));
             }, d -> {
-                final String payload = inWire.read(() -> "payload").text();
-                outWire.writeDocument(false, data -> data.write(() -> "payloadResponse").text(payload));
+                outWire.writeDocument(false, data -> data.write(() -> "payloadResponse")
+                        .text(inWire.read(() -> "payload").text()));
             });
         }
     }
