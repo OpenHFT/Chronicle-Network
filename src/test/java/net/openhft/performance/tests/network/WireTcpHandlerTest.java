@@ -133,7 +133,7 @@ public class WireTcpHandlerTest {
         eg.start();
         TCPRegistry.createServerSocketChannelFor(desc);
         AcceptorEventHandler eah = new AcceptorEventHandler(desc,
-                () -> new EchoRequestHandler(wireWrapper), VanillaSessionDetails::new,0,0);
+                () -> new EchoRequestHandler(wireWrapper), VanillaSessionDetails::new, 0, 0);
         eg.addHandler(eah);
 
         SocketChannel sc = TCPRegistry.createSocketChannel(desc);
@@ -147,10 +147,10 @@ public class WireTcpHandlerTest {
         TCPRegistry.reset();
     }
 
-    static class EchoRequestHandler extends WireTcpHandler {
+      static class EchoRequestHandler extends WireTcpHandler {
         private final TestData td = new TestData();
 
-        EchoRequestHandler(@NotNull Function<Bytes, Wire> bytesToWire) {
+          EchoRequestHandler(@NotNull Function<Bytes, Wire> bytesToWire) {
             super(bytesToWire);
         }
 
