@@ -101,15 +101,15 @@ public class SessionTest {
     public void testProcess() throws IOException {
         EventGroup eg = new EventGroup(true);
         eg.start();
-        TCPRegistry.createServerSocketChannelFor("testProcess");
+        TCPRegistry.createServerSocketChannelFor("test");
 
-        AcceptorEventHandler eah = new AcceptorEventHandler("testProcess", () -> new SessionIdRefector
+        AcceptorEventHandler eah = new AcceptorEventHandler("test", () -> new SessionIdRefector
                 (WireType.TEXT), VanillaSessionDetails::new, 0,0);
         eg.addHandler(eah);
 
         SocketChannel[] sc = new SocketChannel[2];
         for (int i = 0; i < sc.length; i++) {
-            SocketAddress localAddress = TCPRegistry.lookup("testProcess");
+            SocketAddress localAddress = TCPRegistry.lookup("test");
             System.out.println("Connecting to " + localAddress);
             sc[i] = SocketChannel.open(localAddress);
             sc[i].configureBlocking(false);

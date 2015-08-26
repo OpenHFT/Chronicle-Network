@@ -26,7 +26,7 @@ import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri
 public class SimpleServerAndClientTest {
 
     @Test
-    public void testProcess() throws IOException {
+    public void test() throws IOException {
         String desc = "";
         TCPRegistry.createServerSocketChannelFor(desc);
         EventGroup eg = new EventGroup(true);
