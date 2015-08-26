@@ -46,9 +46,10 @@ import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.State;
 
 import java.io.IOException;
+import java.lang.IllegalAccessException;
+import java.lang.String;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeUnit;
-
 
 
 import org.openjdk.jmh.annotations.Scope;
@@ -113,7 +114,9 @@ public class MyBenchmark {
 
         // read the reply and check the result
         reply.readDocument(null, data -> {
-            final String text = data.read(() -> "payloadResponse").text();
+            String text = data.read(() -> "payloadResponse").text();
+            if (text.length() == 0)
+                throw new IllegalAccessException("");
         });
     }
 
