@@ -1,5 +1,6 @@
 package net.openhft.performance.tests.network;
 
+
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.TCPRegistry;
@@ -11,6 +12,8 @@ import net.openhft.chronicle.wire.TextWire;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
@@ -23,6 +26,7 @@ import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri
  */
 public class SimpleServerAndClientTest {
 
+    @Test
     public void test() throws IOException {
         String desc = "host.port";
         TCPRegistry.createServerSocketChannelFor(desc);
@@ -49,6 +53,7 @@ public class SimpleServerAndClientTest {
             // read the reply and check the result
             reply.readDocument(null, data -> {
                 final String text = data.read(() -> "payloadResponse").text();
+                Assert.assertEquals(expectedMessage, text);
             });
 
             eg.stop();

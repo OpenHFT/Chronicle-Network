@@ -100,7 +100,7 @@ public class TcpChannelHub implements Closeable {
     private CountDownLatch receivedClosedAcknowledgement = new CountDownLatch(1);
     // set up in the header
     private long limitOfLast = 0;
-    private boolean shoudldSendCloseMessage;
+    private boolean shouldSendCloseMessage;
 
 
     public TcpChannelHub(@Nullable final SessionProvider sessionProvider,
@@ -120,7 +120,7 @@ public class TcpChannelHub implements Closeable {
         this.handShakingWire = wire.apply(Bytes.elasticByteBuffer());
         this.sessionProvider = sessionProvider;
         this.tcpSocketConsumer = new TcpSocketConsumer(wire);
-        this.shoudldSendCloseMessage = shouldSendCloseMessage;
+        this.shouldSendCloseMessage = shouldSendCloseMessage;
         hubs.add(this);
     }
 
@@ -359,7 +359,7 @@ public class TcpChannelHub implements Closeable {
         if (closed)
             return;
 
-        if (shoudldSendCloseMessage)
+        if (shouldSendCloseMessage)
             sendCloseMessage();
 
         closed = true;
