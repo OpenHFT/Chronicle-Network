@@ -45,7 +45,6 @@ BinaryWire: Loop back echo latency was 6.6/8.0 9/11 19/3056 us for 50/90 99/99.9
 RawWire: Loop back echo latency was 5.9/6.8 8/10 12/80 us for 50/90 99/99.9 99.99/worst %tile
  */
 @RunWith(value = Parameterized.class)
-
 public class WireTcpHandlerTest {
 
     public static final int SIZE_OF_SIZE = 4;
@@ -134,7 +133,7 @@ public class WireTcpHandlerTest {
         eg.start();
         TCPRegistry.createServerSocketChannelFor(desc);
         AcceptorEventHandler eah = new AcceptorEventHandler(desc,
-                () -> new EchoRequestHandler(wireWrapper), VanillaSessionDetails::new,Integer.MAX_VALUE/2,Integer.MAX_VALUE);
+                () -> new EchoRequestHandler(wireWrapper), VanillaSessionDetails::new,0,0);
         eg.addHandler(eah);
 
         SocketChannel sc = TCPRegistry.createSocketChannel(desc);
