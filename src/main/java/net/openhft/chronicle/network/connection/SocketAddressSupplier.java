@@ -12,9 +12,9 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * Provides support for failover TCP connections to the server, if the primary connection can not be
+ * Provides support for the client to failover TCP connections to different servers, if the primary connection can not be
  * establish, after retrying up to a timeout,  see {@link SocketAddressSupplier#timeoutMS()} the
- * other connections will be attempted see, the order of these connections are determined by the
+ * other connections will be attempted. The order of these connections are determined by the
  * order of the connectURIs
  *
  * @author Rob Austin.
@@ -46,6 +46,16 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
         // for (String descriptions : descriptions) {
         this.iterator = remoteAddresses.iterator();
         next();
+    }
+
+    /**
+     * use this method if you only with to connect to a single server
+     *
+     * @param connectURI the uri of the server
+     * @return a SocketAddressSupplier containing the UIR you provide
+     */
+    public static SocketAddressSupplier uri(String connectURI) {
+        return new SocketAddressSupplier(new String[]{connectURI}, "");
     }
 
     @NotNull

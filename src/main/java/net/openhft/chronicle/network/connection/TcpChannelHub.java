@@ -52,7 +52,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 import static java.lang.Integer.getInteger;
-import static java.lang.System.getProperty;
 import static java.lang.ThreadLocal.withInitial;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -101,11 +100,15 @@ public class TcpChannelHub implements Closeable {
     private CountDownLatch receivedClosedAcknowledgement = new CountDownLatch(1);
     // set up in the header
     private long limitOfLast = 0;
-    public TcpChannelHub(@NotNull final SessionProvider sessionProvider,
+    private boolean shoudldSendCloseMessage;
+
+
+    public TcpChannelHub(@Nullable final SessionProvider sessionProvider,
                          @NotNull final EventLoop eventLoop,
                          @NotNull final Function<Bytes, Wire> wire,
                          @NotNull final String name,
-                         @NotNull final SocketAddressSupplier socketAddressSupplier) {
+                         @NotNull final SocketAddressSupplier socketAddressSupplier,
+                         boolean shouldSendCloseMessage) {
         this.socketAddressSupplier = socketAddressSupplier;
         this.eventLoop = eventLoop;
         this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", 2 << 20);
@@ -117,6 +120,7 @@ public class TcpChannelHub implements Closeable {
         this.handShakingWire = wire.apply(Bytes.elasticByteBuffer());
         this.sessionProvider = sessionProvider;
         this.tcpSocketConsumer = new TcpSocketConsumer(wire);
+        this.shoudldSendCloseMessage = shouldSendCloseMessage;
         hubs.add(this);
     }
 
@@ -275,24 +279,24 @@ public class TcpChannelHub implements Closeable {
     }
 
     private synchronized void doHandShaking(@NotNull SocketChannel socketChannel) throws IOException {
-
         final SessionDetails sessionDetails = sessionDetails();
-        handShakingWire.clear();
-        handShakingWire.bytes().clear();
-        handShakingWire.writeDocument(false, wireOut -> {
-            if (sessionDetails == null)
-                wireOut.writeEventName(EventId.userid).text(getProperty("user.name"));
-            else
+        if (sessionDetails != null) {
+            handShakingWire.clear();
+            handShakingWire.bytes().clear();
+            handShakingWire.writeDocument(false, wireOut -> {
                 wireOut.writeEventName(EventId.userid).text(sessionDetails.userId());
-        });
+            });
 
-        writeSocket1(handShakingWire, timeoutMs, socketChannel);
+            writeSocket1(handShakingWire, timeoutMs, socketChannel);
+        }
 
 
     }
 
     @Nullable
     private SessionDetails sessionDetails() {
+        if (sessionProvider == null)
+            return null;
         return sessionProvider.get();
     }
 
@@ -355,7 +359,8 @@ public class TcpChannelHub implements Closeable {
         if (closed)
             return;
 
-        sendCloseMessage();
+        if (shoudldSendCloseMessage)
+            sendCloseMessage();
 
         closed = true;
         tcpSocketConsumer.stop();
@@ -431,6 +436,9 @@ public class TcpChannelHub implements Closeable {
 
         try {
             writeSocket1(wire, timeoutMs, clientChannel);
+        }catch (ClosedChannelException e){
+            closeSocket();
+            throw new ConnectionDroppedException(e);
         } catch (Exception e) {
             LOG.error("", e);
             closeSocket();
@@ -438,6 +446,14 @@ public class TcpChannelHub implements Closeable {
         }
     }
 
+    /**
+     * blocks for a message with the appreciate {@code tid}
+     *
+     * @param timeoutTime the amount of time to wait ( in MS ) before a time out exceptions
+     * @param tid         the {@code tid} of the message that we are waiting for
+     * @return the wire of the message with the {@code tid}
+     * @throws ConnectionDroppedException
+     */
     public Wire proxyReply(long timeoutTime, final long tid) throws ConnectionDroppedException {
 
         try {
@@ -1380,7 +1396,7 @@ public class TcpChannelHub implements Closeable {
                 } catch (Exception e) {
                     if (!isShutdown) {
                         LOG.error("failed to connect remoteAddress=" + socketAddressSupplier
-                                + " so will reconnect " + e.getMessage());
+                                + " so will reconnect ", e);
                         closeSocket();
                     }
                 }
