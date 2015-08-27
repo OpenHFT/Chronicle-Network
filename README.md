@@ -26,13 +26,13 @@ The client sends a message to the server, the server immediately responds with t
 back to the client.
 
 
-The full source code of this example can be found at
+The full source code of this example can be found at:
 
 ```java
 net.openhft.performance.tests.network.SimpleServerAndClientTest.test
 ```
 
-Below are  some of key part of this code explained in a bit more detail.
+Below are some of key parts of this code explained, in a bit more detail.
 
 #### TCPRegistry
 
