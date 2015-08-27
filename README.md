@@ -81,15 +81,15 @@ eg.start();
 
 This is an example of how to create and start a simple server, this server is configured with TextWire, so
 the client must also be configured with text wire. The port that we will used will be ( in this example ) determined
-by the TCP Registry, ofcource it a real life production environment you may decided not to use the
-TcpRegistry or provide it with a fixed host:port
+by the TCP Registry, of course it a real life production environment you may decide not to use the
+TcpRegistry ( which is fine ) or if you still use the TcpRegistry you can use a fixed host:port
 
 ```java
 final String expectedMessage = "<my message>";
 AcceptorEventHandler eah = new AcceptorEventHandler(desc,
     () -> new WireEchoRequestHandler(WireType.TEXT), VanillaSessionDetails::new, 0, 0);
 eg.addHandler(eah);
-SocketChannel sc = TCPRegistry.createSocketChannel(desc);
+final SocketChannel sc = TCPRegistry.createSocketChannel(desc);
 sc.configureBlocking(false);
 ```
 
