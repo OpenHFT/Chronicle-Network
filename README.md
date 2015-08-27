@@ -82,7 +82,7 @@ eg.start();
 This is an example of how to create and start a simple server, this server is configured with TextWire, so
 the client must also be configured with TextWire. The port that we will use will be ( in this example ) determined
 by the TCP Registry, of course in a real life production environment you may decide not to use the
-TcpRegistry or if you still use the TcpRegistry you can use a fixed <host>:<port>
+TcpRegistry or if you still use the TcpRegistry you can use a fixed host:port.
 
 ```java
 final String expectedMessage = "<my message>";
@@ -95,8 +95,8 @@ sc.configureBlocking(false);
 
 #### Server Message Processing
 
-An example of how to process a message on the server, in this simple example we
-receive and update and then immediately send back a response, however there are
+Below is some server code that process a message, in this simple example we
+receive and update a message and then immediately send back a response, however there are
 other solutions that can be implemented using Chronicle-Network, such as the server
 responding later to a client subscription.
 
@@ -137,10 +137,10 @@ public class WireEchoRequestHandler extends WireTcpHandler {
 ```
 
 
-#### Create and start the Client
+#### Create and Start the Client
 
-This code below create the TcpChannelHub, the TcpChannelHub is used by your client code to send messages to the server.
-each message that you send the server must have a unique transaction id ( we call this the tid ), when the server responds to
+Below is some client code that create the TcpChannelHub, the TcpChannelHub is used to send your messages to the server.
+each message must have a unique transaction id ( we call this transaction is the "tid" ), when the server responds to
 the client, its important that the server send back the tid, as the TcpChannelHub will look at each message
 that sent from the server and marshall that message onto your appropriate client thread.
 
@@ -149,7 +149,7 @@ that sent from the server and marshall that message onto your appropriate client
 TcpChannelHub tcpChannelHub = TcpChannelHub(null, eg, WireType.TEXT, "", SocketAddressSupplier.uri(desc), false);
 ```
 
-given that we are not providing fail-over support in this example the simple SocketAddressSupplier.uri(desc), is used.
+given in this example we are not implementing fail-over support the simple SocketAddressSupplier.uri(desc), is used.
 
 
 #### Create the message the client sends to the server
