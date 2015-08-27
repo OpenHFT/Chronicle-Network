@@ -115,7 +115,6 @@ public class WireEchoRequestHandler extends WireTcpHandler {
 }
 ```
 
-
 #### Create and Start the Client
 
 The client code that creates the TcpChannelHub,
@@ -127,8 +126,6 @@ It does this through the use of a unique transaction ID ( we call this transacti
  when the server responds to the client, its expected that the server sends back the tid as the very first field in the message.
 The TcpChannelHub will look at each message and read the tid, and then marshall the message
 onto your appropriate client thread.
-
-
 
 ```java
 TcpChannelHub tcpChannelHub = TcpChannelHub(null, eg, WireType.TEXT, "",
