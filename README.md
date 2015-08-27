@@ -35,10 +35,11 @@ Below are some of the key parts of this code explained, in a bit more detail.
 
 #### TCPRegistry
 
-The TCPRegistry is most useful for unit tests, it allows you to either provide a true host and port, say "localhost:8080" or if you would
+The TCPRegistry is most useful for unit tests, it allows you to either provide a true host and port, say "localhost:8080"
+or if you would
 rather let the application allocate you a free port at random, you can just provide a text reference to the port,
-such as, "host.port", you can provide any text you want, it will always be taken as a reference,
-that is unless its correctly formed like "hostname:port”, then it will use the exact host and port you provide.
+such as, "host.port", you can provide any text you want. It will always be taken as a reference.
+That is unless its correctly formed like "hostname:port”, then it will use the exact host and port you provide.
 The reason we offer this functionality is quite often in unit tests you wish to start a test via loopback,
 followed often by another test, if the first test does not shut down correctly it can impact on the
 second test. Giving each test a unique port is one solution, but then managing those ports can become a problem
@@ -75,7 +76,7 @@ sc.configureBlocking(false);
 
 #### Server Message Processing
 
-Below is some server code that process a message, in this simple example we
+This is the server code that processes a message, in this simple example we
 receive and update a message and then immediately send back a response, however there are
 other solutions that can be implemented using Chronicle-Network, such as the server
 responding later to a client subscription.
