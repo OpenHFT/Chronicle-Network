@@ -80,9 +80,9 @@ eg.start();
 #### Create and Start the Server
 
 This is an example of how to create and start a simple server, this server is configured with TextWire, so
-the client must also be configured with TextWire. The port that we will used will be ( in this example ) determined
+the client must also be configured with TextWire. The port that we will use will be ( in this example ) determined
 by the TCP Registry, of course it a real life production environment you may decide not to use the
-TcpRegistry ( which is fine ) or if you still use the TcpRegistry you can use a fixed host:port
+TcpRegistry or if you still use the TcpRegistry you can use a fixed <host>:<port>
 
 ```java
 final String expectedMessage = "<my message>";
