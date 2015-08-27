@@ -163,7 +163,7 @@ In order that the correct reply can be send to your thread you have to specify t
 Wire reply = tcpChannelHub.proxyReply(TimeUnit.SECONDS.toMillis(1), tid);
 ```
 
-####  check the result of the reply check the result
+####  Check the Result of the Reply
 ```java
 // read the reply and check the result
 reply.readDocument(null, data -> {
