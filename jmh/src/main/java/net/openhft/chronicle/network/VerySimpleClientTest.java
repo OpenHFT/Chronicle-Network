@@ -33,7 +33,6 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.WireType;
@@ -105,29 +104,37 @@ public class VerySimpleClientTest {
         eg.start();
         expectedMessage = "<my message>";
         createServer(desc, eg);
+
         client = createClient(eg, desc);
 
     }
 
     @TearDown
-    public void tearDown() {
+    public void tearDown() throws IOException {
+        System.out.println("closing");
         eg.stop();
-        TcpChannelHub.closeAllHubs();
+
         TCPRegistry.reset();
+        client.close();
+        client.socket().close();
+        System.out.println("closed");
     }
 
     @Benchmark
     public String test() throws IOException {
 
+
         // create the message to send§
         final long tid = 0;
         outWire.clear();
+        inWire.clear();
+        ((ByteBuffer) inWire.bytes().underlyingObject()).clear();
+        ((ByteBuffer) outWire.bytes().underlyingObject()).clear();
+
         outWire.writeDocument(true, w -> w.write(() -> "tid").int64(tid));
         outWire.writeDocument(false, w -> w.write(() -> "payload").text(expectedMessage));
 
         final ByteBuffer outBuff = (ByteBuffer) outWire.bytes().underlyingObject();
-
-        outBuff.clear();
         outBuff.limit((int) outWire.bytes().writePosition());
 
         // write the data to the socket
@@ -140,6 +147,7 @@ public class VerySimpleClientTest {
         // data
         readDocument(inWire);
 
+    //    System.out.println(Wires.fromSizePrefixedBlobs(inWire.bytes()));
 
         String[] text = {null};
         // read the reply and check the result
@@ -166,14 +174,21 @@ public class VerySimpleClientTest {
     @NotNull
     private SocketChannel createClient(EventGroup eg, String desc) throws IOException {
 
-        SocketChannel result = TCPRegistry.createSocketChannel(desc);
-        int tcpBufferSize = 2 << 20;
-        Socket socket = result.socket();
-        socket.setTcpNoDelay(true);
-        socket.setReceiveBufferSize(tcpBufferSize);
-        socket.setSendBufferSize(tcpBufferSize);
-        result.configureBlocking(false);
-        return result;
+        SocketChannel result = null;
+        try {
+            result = TCPRegistry.createSocketChannel(desc);
+            int tcpBufferSize = 2 << 20;
+            Socket socket = result.socket();
+            socket.setTcpNoDelay(true);
+            socket.setReceiveBufferSize(tcpBufferSize);
+            socket.setSendBufferSize(tcpBufferSize);
+            result.configureBlocking(false);
+            return result;
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw e;
+        }
+
     }
 
     private void createServer(String desc, EventGroup eg) throws IOException {
