@@ -41,7 +41,7 @@ rather let the application allocate you a free port at random, you can just prov
 for example "host.port", you can provide any text you want, it will always be taken as a reference,
 that is unless its correctly formed like "hostname:port”, then it will use the exact host and port you provide.
 The reason we offer this functionality is quiet often in unit tests you wish to start a test via loopback,
-followed often by another test via loopback, if the first test does not shut down correctly it can impact on the
+followed often by another test, if the first test does not shut down correctly it can impact on the
 second test. Giving each test a unique port is one solution, but then managing those ports can become a problem
 in its self. So we created the TCPRegistry which manages those ports for you, when you come to clean up at the end
 of each test, all you have to do it call TCPRegistry.reset() and it will ensure that any remaining ports that
