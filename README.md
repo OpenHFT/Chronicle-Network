@@ -25,7 +25,6 @@ Planned support for
 The client sends a message to the server, the server immediately responds with the same message
 back to the client.
 
-
 The full source code of this example can be found at:
 
 ```java
