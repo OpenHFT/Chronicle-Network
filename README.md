@@ -118,10 +118,13 @@ public class WireEchoRequestHandler extends WireTcpHandler {
 
 #### Create and Start the Client
 
-The client code that creates the TcpChannelHub, the TcpChannelHub is used to send your messages to the server and then read the servers response.
+The client code that creates the TcpChannelHub,
 
-The TcpChannelHub ensures that each response is marshaled back onto the appropriate client thread. It does this through the use of a unique transaction ID ( we call this transaction ID the "tid" ), when the server responds to
-the client, its expected that the server sends back the tid as the very first field in the message.
+The TcpChannelHub is used to send your messages to the server and then read the servers response.
+
+The TcpChannelHub ensures that each response is marshalled back onto the appropriate client thread.
+It does this through the use of a unique transaction ID ( we call this transaction ID the "tid" ),
+ when the server responds to the client, its expected that the server sends back the tid as the very first field in the message.
 The TcpChannelHub will look at each message and read the tid, and then marshall the message
 onto your appropriate client thread.
 
@@ -132,7 +135,7 @@ TcpChannelHub tcpChannelHub = TcpChannelHub(null, eg, WireType.TEXT, "",
     SocketAddressSupplier.uri(desc), false);
 ```
 
-given in this example we are not implementing fail-over support the simple SocketAddressSupplier.uri(desc), is used.
+in this example we are not implementing fail-over support, so the simple SocketAddressSupplier.uri(desc) is used.
 
 #### Client Message
 Creates the message the client sends to the server
