@@ -22,8 +22,8 @@ Planned support for
 # Example
 ## TCP Client/Server : Echo Example
 
-IN this example, The client sends a message to the server, the server immediately responds with the same message
-back tot the client
+The client sends a message to the server, the server immediately responds with the same message
+back to the client.
 
 
 The full source code of this example can be found at
