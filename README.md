@@ -16,29 +16,7 @@ Planned support for
 * Shared Memory
 * Unreliable UDP
 
-# Support
-This library will require Java 8
-   
-# Simplicity
-The library is a cut down version of the functionality Netty provides, 
-    so it needs to be simpler to reflect this.
-   
-# Testing
-The target environment is to support TCP over 10 Gig-E ethernet.  In prototype
-    testing, this library has half the latency and support 30% more bandwidth.
-    
-A key test is that it shouldn't GC more than once (to allow for warm up) with -mx64m
 
-# Downsides
-This comes at the cost of scalability for large number os connections.
-     In this situation, this library should perform at least as well as netty.
-
-# Comparisons
-
-## Netty
-Netty has a much wider range of functionality, however it creates some 
-   garbage in it's operation (less than using plain NIO Selectors) and isn't 
-   designed to support busy waiting which gives up a small but significant delay.
 
 
 # Example
@@ -149,7 +127,8 @@ onto your appropriate client thread.
 
 
 ```java
-TcpChannelHub tcpChannelHub = TcpChannelHub(null, eg, WireType.TEXT, "", SocketAddressSupplier.uri(desc), false);
+TcpChannelHub tcpChannelHub = TcpChannelHub(null, eg, WireType.TEXT, "",
+    SocketAddressSupplier.uri(desc), false);
 ```
 
 given in this example we are not implementing fail-over support the simple SocketAddressSupplier.uri(desc), is used.
@@ -169,14 +148,15 @@ wire.writeDocument(true, w -> w.write(() -> "tid").int64(tid));
 wire.writeDocument(false, w -> w.write(() -> "payload").text(expectedMessage));
 ```
 
-#### write the data to the socket
+#### Write the Data to the Socket
+When you have multiple client threads its important to lock before writing the data to the socket.
 ```java
 tcpChannelHub.lock(() -> tcpChannelHub.writeSocket(wire));
 ```
 
-#### read the reply from the socket
+#### Read the Reply from the Server
+In order that the correct reply can be send to your thread you have to specify the tid
 ```java
-// read the reply from the socket ( timeout after 1 second ), note: we have to pass the tid
 Wire reply = tcpChannelHub.proxyReply(TimeUnit.SECONDS.toMillis(1), tid);
 ```
 
@@ -190,7 +170,7 @@ reply.readDocument(null, data -> {
 ```
 
 
-#### shutdown and cleanup
+#### Shutdown and Cleanup
 ```java
 eg.stop();
 TcpChannelHub.closeAllHubs();
@@ -198,5 +178,27 @@ TCPRegistry.reset();
 tcpChannelHub.close();
 ```
 
+# Support
+This library will require Java 8
 
+# Simplicity
+The library is a cut down version of the functionality Netty provides,
+    so it needs to be simpler to reflect this.
+
+# Testing
+The target environment is to support TCP over 10 Gig-E ethernet.  In prototype
+    testing, this library has half the latency and support 30% more bandwidth.
+
+A key test is that it shouldn't GC more than once (to allow for warm up) with -mx64m
+
+# Downsides
+This comes at the cost of scalability for large number os connections.
+     In this situation, this library should perform at least as well as netty.
+
+# Comparisons
+
+## Netty
+Netty has a much wider range of functionality, however it creates some
+   garbage in it's operation (less than using plain NIO Selectors) and isn't
+   designed to support busy waiting which gives up a small but significant delay.
 
