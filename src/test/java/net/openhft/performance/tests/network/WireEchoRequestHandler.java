@@ -32,7 +32,12 @@ public class WireEchoRequestHandler extends WireTcpHandler {
     protected void process(@NotNull WireIn inWire,
                            @NotNull WireOut outWire,
                            @NotNull SessionDetailsProvider sd) {
-        inWire.readDocument(null, d -> outWire.writeDocument(false, data -> data
-                .writeEventName(() -> "payloadResponse").text(inWire.readEventName(new StringBuilder()).text())));
+        inWire.readDocument(m -> {
+            outWire.writeDocument(true, meta -> meta.write(() -> "tid")
+                    .int64(inWire.read(() -> "tid").int64()));
+        }, d -> {
+            outWire.writeDocument(false, data -> data.write(() -> "payloadResponse")
+                    .text(inWire.read(() -> "payload").text()));
+        });
     }
 }
