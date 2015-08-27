@@ -20,7 +20,10 @@ Planned support for
 
 
 # Example
-## Creates a Client and Server, exchanges an RPC message.
+## TCP Client/Server : Echo Example
+
+IN this example, The client sends a message to the server, the server immediately responds with the same message
+back tot the client
 
 
 The full source code of this example can be found at
@@ -57,7 +60,7 @@ eg.start();
 
 #### Create and Start the Server
 
-This is an example of how to create and start a simple server, this server is configured with TextWire, so
+The server is configured with TextWire, so
 the client must also be configured with TextWire. The port that we will use will be ( in this example ) determined
 by the TCP Registry, of course in a real life production environment you may decide not to use the
 TcpRegistry or if you still use the TcpRegistry you can use a fixed host:port.

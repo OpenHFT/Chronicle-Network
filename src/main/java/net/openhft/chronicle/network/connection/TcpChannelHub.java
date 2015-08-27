@@ -60,7 +60,13 @@ import static net.openhft.chronicle.core.Jvm.pause;
 import static net.openhft.chronicle.core.Jvm.rethrow;
 import static net.openhft.chronicle.wire.Wires.*;
 
+
 /**
+ * The TcpChannelHub is used to send your messages to the server and then read the servers response.
+ * The TcpChannelHub ensures that each response is marshalled back onto the appropriate client thread. It does this through the use of a unique transaction ID ( we call this transaction ID the "tid" ), when the server responds to
+ * the client, its expected that the server sends back the tid as the very first field in the message.
+ * The TcpChannelHub will look at each message and read the tid, and then marshall the message
+ * onto your appropriate client thread.
  * Created by Rob Austin
  */
 public class TcpChannelHub implements Closeable {
@@ -436,7 +442,7 @@ public class TcpChannelHub implements Closeable {
 
         try {
             writeSocket1(wire, timeoutMs, clientChannel);
-        }catch (ClosedChannelException e){
+        } catch (ClosedChannelException e) {
             closeSocket();
             throw new ConnectionDroppedException(e);
         } catch (Exception e) {
