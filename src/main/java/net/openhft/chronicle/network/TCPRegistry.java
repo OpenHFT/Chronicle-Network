@@ -35,7 +35,7 @@ import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
  * The TCPRegistry allows you to either provide a true host and port for example "localhost:8080" or if you would
  * rather let the application allocate you a free port at random, you can just provide a text reference to the port,
  * for example "host.port", you can provide any text you want, it will always be taken as a reference,
- * that is unless its correctly formed like "<hostname>:<port>”, then it will use the exact host and port you provide.
+ * that is unless its correctly formed like "&lt;hostname&gt;:&lt;port&gt;”, then it will use the exact host and port you provide.
  * The reason we offer this functionality is quiet often in unit tests you wish to start a test via loopback,
  * followed often by another test via loopback, if the first test does not shut down correctly it can impact on the
  * second test. Giving each test a unique port is one solution, but then managing those ports can become a problem
