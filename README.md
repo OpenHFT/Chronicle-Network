@@ -44,7 +44,7 @@ The reason we offer this functionality is quiet often in unit tests you wish to 
 followed often by another test, if the first test does not shut down correctly it can impact on the
 second test. Giving each test a unique port is one solution, but then managing those ports can become a problem
 in its self. So we created the TCPRegistry which manages those ports for you, when you come to clean up at the end
-of each test, all you have to do it call TCPRegistry.reset() and it will ensure that any remaining ports that
+of each test, all you have to do is call TCPRegistry.reset() and it will ensure that any remaining ports that
 are open will be closed.
 
 ```java
