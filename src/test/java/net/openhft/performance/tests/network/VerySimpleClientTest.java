@@ -36,7 +36,7 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaSessionDetails;
-import net.openhft.chronicle.network.WireEchoRequestHandler;
+
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.Wire;
@@ -141,7 +141,7 @@ public class VerySimpleClientTest {
         socket.setTcpNoDelay(true);
         socket.setReceiveBufferSize(tcpBufferSize);
         socket.setSendBufferSize(tcpBufferSize);
-        result.configureBlocking(false);
+        result.configureBlocking(true);
         return result;
     }
 

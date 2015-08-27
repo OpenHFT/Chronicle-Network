@@ -55,7 +55,7 @@ import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri
 
 
 @State(Scope.Thread)
-public class Main {
+public class ChanelHubTest {
 
     public static final WireType WIRE_TYPE = WireType.BINARY;
     final Wire wire = WIRE_TYPE.apply(Bytes.elasticByteBuffer());
@@ -65,9 +65,9 @@ public class Main {
 
     public static void main(String[] args) throws RunnerException, InvocationTargetException, IllegalAccessException, IOException {
         if (Jvm.isDebug()) {
-            Main main = new Main();
+            ChanelHubTest main = new ChanelHubTest();
             main.setUp();
-            for (Method m : Main.class.getMethods()) {
+            for (Method m : ChanelHubTest.class.getMethods()) {
                 if (m.getAnnotation(Benchmark.class) != null) {
                     m.invoke(main);
                 }
@@ -77,7 +77,7 @@ public class Main {
             int time = Boolean.getBoolean("longTest") ? 30 : 2;
             System.out.println("measurementTime: " + time + " secs");
             Options opt = new OptionsBuilder()
-                    .include(Main.class.getSimpleName())
+                    .include(ChanelHubTest.class.getSimpleName())
                     .warmupIterations(5)
 //                .measurementIterations(5)
                     .forks(1)

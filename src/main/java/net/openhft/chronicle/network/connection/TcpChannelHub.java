@@ -501,12 +501,7 @@ public class TcpChannelHub implements Closeable {
         updateLargestChunkSoFarSize(outBuffer);
 
         long start = Time.currentTimeMillis();
-        try {
-            if (socketChannel.isBlocking())
-                socketChannel.configureBlocking(false);
-        } catch (ClosedChannelException ignored) {
-            closeSocket();
-        }
+
 
         try {
 
@@ -546,13 +541,6 @@ public class TcpChannelHub implements Closeable {
         } catch (IOException e) {
             closeSocket();
             throw e;
-        } finally {
-            try {
-                if (socketChannel.isOpen())
-                    socketChannel.configureBlocking(true);
-            } catch (ClosedChannelException ignored) {
-                closeSocket();
-            }
         }
 
         outBuffer.clear();

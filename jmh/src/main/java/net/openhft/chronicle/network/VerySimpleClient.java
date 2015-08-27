@@ -40,13 +40,11 @@ import net.openhft.chronicle.wire.Wires;
 import org.jetbrains.annotations.NotNull;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -55,7 +53,7 @@ import java.util.concurrent.TimeUnit;
 
 
 @State(Scope.Thread)
-public class VerySimpleClientTest {
+public class VerySimpleClient {
 
     public static final WireType WIRE_TYPE = WireType.BINARY;
     final Wire outWire = WIRE_TYPE.apply(Bytes.elasticByteBuffer());
@@ -65,13 +63,21 @@ public class VerySimpleClientTest {
     private String expectedMessage;
     private SocketChannel client;
 
-    public static void main(String[] args) throws RunnerException, InvocationTargetException, IllegalAccessException, IOException {
+    public static void main(String[] args) throws Exception {
         if (Jvm.isDebug()) {
-            VerySimpleClientTest main = new VerySimpleClientTest();
+            VerySimpleClient main = new VerySimpleClient();
             main.setUp();
-            for (Method m : VerySimpleClientTest.class.getMethods()) {
+            for (Method m : VerySimpleClient.class.getMethods()) {
                 if (m.getAnnotation(Benchmark.class) != null) {
-                    m.invoke(main);
+                    for (int i = 0; i < 100; i++) {
+                        for (int j = 0; j < 100; j++) {
+                            m.invoke(main);
+
+                        }
+                        System.out.println("");
+                    }
+
+
                 }
             }
             main.tearDown();
@@ -79,7 +85,7 @@ public class VerySimpleClientTest {
             int time = Boolean.getBoolean("longTest") ? 30 : 2;
             System.out.println("measurementTime: " + time + " secs");
             Options opt = new OptionsBuilder()
-                    .include(VerySimpleClientTest.class.getSimpleName())
+                    .include(VerySimpleClient.class.getSimpleName())
                     .warmupIterations(5)
 //                .measurementIterations(5)
                     .forks(1)
@@ -97,14 +103,13 @@ public class VerySimpleClientTest {
      */
 
     @Setup
-    public void setUp() throws IOException {
+    public void setUp() throws Exception {
         String desc = "host.port";
         TCPRegistry.createServerSocketChannelFor(desc);
         eg = new EventGroup(true);
         eg.start();
         expectedMessage = "<my message>";
         createServer(desc, eg);
-
         client = createClient(eg, desc);
 
     }
@@ -120,12 +125,14 @@ public class VerySimpleClientTest {
         System.out.println("closed");
     }
 
+    long tid = 0;
+
     @Benchmark
     public String test() throws IOException {
 
 
         // create the message to send§
-        final long tid = 0;
+        tid++;
         outWire.clear();
         inWire.clear();
         ((ByteBuffer) inWire.bytes().underlyingObject()).clear();
@@ -137,6 +144,7 @@ public class VerySimpleClientTest {
         final ByteBuffer outBuff = (ByteBuffer) outWire.bytes().underlyingObject();
         outBuff.limit((int) outWire.bytes().writePosition());
 
+
         // write the data to the socket
         while (outBuff.hasRemaining())
             client.write(outBuff);
@@ -147,12 +155,12 @@ public class VerySimpleClientTest {
         // data
         readDocument(inWire);
 
-    //    System.out.println(Wires.fromSizePrefixedBlobs(inWire.bytes()));
+        //    System.out.println(Wires.fromSizePrefixedBlobs(inWire.bytes()));
 
         String[] text = {null};
         // read the reply and check the result
         inWire.readDocument(null, data -> {
-           text[0]= data.read(() -> "payloadResponse").text();
+            text[0] = data.read(() -> "payloadResponse").text();
         });
         return text[0];
     }
@@ -161,34 +169,45 @@ public class VerySimpleClientTest {
         ByteBuffer inBuff = (ByteBuffer) inMetaDataWire.bytes().underlyingObject();
 
         // write the data to the socket
-        long start = inMetaDataWire.bytes().readPosition();
-        while (inBuff.position() + start < 4)
+        long start = inMetaDataWire.bytes().writePosition();
+
+        while (inBuff.position() < 4 + start)
             client.read(inBuff);
 
-        inMetaDataWire.bytes().writePosition(inBuff.position());
         int len = Wires.lengthOf(inMetaDataWire.bytes().readInt(start));
+        inMetaDataWire.bytes().readLimit(start + 4 + len);
         while (inBuff.position() < 4 + len + start)
             client.read(inBuff);
     }
 
     @NotNull
-    private SocketChannel createClient(EventGroup eg, String desc) throws IOException {
+    private SocketChannel createClient(EventGroup eg, String desc) throws Exception {
 
-        SocketChannel result = null;
-        try {
-            result = TCPRegistry.createSocketChannel(desc);
-            int tcpBufferSize = 2 << 20;
-            Socket socket = result.socket();
-            socket.setTcpNoDelay(true);
-            socket.setReceiveBufferSize(tcpBufferSize);
-            socket.setSendBufferSize(tcpBufferSize);
-            result.configureBlocking(false);
-            return result;
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw e;
+        Exception e = null;
+        for (int i = 0; i < 10; i++) {
+
+            SocketChannel result = null;
+            try {
+
+                result = TCPRegistry.createSocketChannel(desc);
+                if (result == null)
+                    continue;
+                int tcpBufferSize = 2 << 20;
+                Socket socket = result.socket();
+                socket.setTcpNoDelay(true);
+                socket.setReceiveBufferSize(tcpBufferSize);
+                socket.setSendBufferSize(tcpBufferSize);
+                result.configureBlocking(false);
+                System.out.println("successfully connected");
+                return result;
+
+            } catch (IOException e0) {
+                e = e0;
+                continue;
+            }
         }
 
+        throw e;
     }
 
     private void createServer(String desc, EventGroup eg) throws IOException {
