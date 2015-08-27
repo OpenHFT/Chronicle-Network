@@ -51,7 +51,7 @@ The full source code of this example can be found at
 net.openhft.performance.tests.network.SimpleServerAndClientTest.test
 ```
 
-Below are the main snippets of code that's of interest
+Below are the key part of this code explained in a bit more detail.
 
 #### TCPRegistry
 
@@ -77,10 +77,10 @@ EventGroup eg = new EventGroup(true);
 eg.start();
 ```
 
-#### Create and start the Server
+#### Create and Start the Server
 
 This is an example of how to create and start a simple server, this server is configured with TextWire, so
-the client must also be configured with text wire. The port that we will used will be ( in this example ) determined
+the client must also be configured with TextWire. The port that we will used will be ( in this example ) determined
 by the TCP Registry, of course it a real life production environment you may decide not to use the
 TcpRegistry ( which is fine ) or if you still use the TcpRegistry you can use a fixed host:port
 
@@ -93,7 +93,14 @@ final SocketChannel sc = TCPRegistry.createSocketChannel(desc);
 sc.configureBlocking(false);
 ```
 
-#### The server code that process the message
+#### Server Message Processing
+
+An example of how to process a message on the server, in this simple example we
+receive and update and then immediately send back a response, however there are
+other solutions that can be implemented using Chronicle-Network, such as the server
+responding later to a client subscription.
+
+
 ```java
 /**
  * This code is used to read the tid and payload from a wire message,
