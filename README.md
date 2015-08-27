@@ -76,7 +76,7 @@ sc.configureBlocking(false);
 
 #### Server Message Processing
 
-This is the server code that processes a message, in this simple example we
+The server code that processes a message, in this simple example we
 receive and update a message and then immediately send back a response, however there are
 other solutions that can be implemented using Chronicle-Network, such as the server
 responding later to a client subscription.
@@ -120,7 +120,7 @@ public class WireEchoRequestHandler extends WireTcpHandler {
 
 #### Create and Start the Client
 
-Below is the client code that creates the TcpChannelHub, the TcpChannelHub is used to send your messages to the server and then read the servers response.
+The client code that creates the TcpChannelHub, the TcpChannelHub is used to send your messages to the server and then read the servers response.
 
 The TcpChannelHub ensures that each response is marshaled back onto the appropriate client thread. It does this through the use of a unique transaction ID ( we call this transaction ID the "tid" ), when the server responds to
 the client, its expected that the server sends back the tid as the very first field in the message.
