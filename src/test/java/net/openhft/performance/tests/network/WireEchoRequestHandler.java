@@ -1,4 +1,4 @@
-package net.openhft.chronicle.network.jmh;
+package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network.WireTcpHandler;
@@ -31,13 +31,7 @@ public class WireEchoRequestHandler extends WireTcpHandler {
     protected void process(@NotNull WireIn inWire,
                            @NotNull WireOut outWire,
                            @NotNull SessionDetailsProvider sd) {
-
-        inWire.readDocument(m -> {
-            outWire.writeDocument(true, meta -> meta.write(() -> "tid")
-                    .int64(inWire.read(() -> "tid").int64()));
-        }, d -> {
-            outWire.writeDocument(false, data -> data.write(() -> "payloadResponse")
-                    .text(inWire.read(() -> "payload").text()));
-        });
+        inWire.readDocument(null, d -> outWire.writeDocument(false, data -> data
+                .writeEventName(() -> "payloadResponse").text(inWire.readEventName(new StringBuilder()).text())));
     }
 }

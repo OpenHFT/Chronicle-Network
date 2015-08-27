@@ -496,7 +496,7 @@ public class TcpChannelHub implements Closeable {
 
         long start = Time.currentTimeMillis();
         try {
-            if (socketChannel.isOpen())
+            if (socketChannel.isBlocking())
                 socketChannel.configureBlocking(false);
         } catch (ClosedChannelException ignored) {
             closeSocket();
