@@ -20,7 +20,7 @@ Planned support for
 
 
 # Example
-## Creating a simple serer and client
+## Creates a Client and Server, exchanges an RPC message.
 
 
 The full source code of this example can be found at
