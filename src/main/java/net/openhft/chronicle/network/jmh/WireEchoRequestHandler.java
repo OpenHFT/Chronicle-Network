@@ -11,7 +11,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.Function;
 
 /**
- * Created by rob on 26/08/2015.
+ * This code is used to read the tid and payload from a wire message,
+ * and send the same tid and message back to the client
  */
 public class WireEchoRequestHandler extends WireTcpHandler {
 

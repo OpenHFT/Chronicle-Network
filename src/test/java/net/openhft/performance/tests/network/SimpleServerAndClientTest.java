@@ -28,17 +28,30 @@ public class SimpleServerAndClientTest {
 
     @Test
     public void test() throws IOException {
-        String desc = "host.port";
+
+        // this the name of a reference to the host name and port,
+        // allocated automatically when to a free port on localhost
+        final String desc = "host.port";
         TCPRegistry.createServerSocketChannelFor(desc);
+
+        // we use an event loop rather than lots of threads
         EventGroup eg = new EventGroup(true);
         eg.start();
-        String expectedMessage = "<my message>";
+
+        // an example message that we are going to send from the server to the client and back
+        final String expectedMessage = "<my message>";
         createServer(desc, eg);
 
         try (TcpChannelHub tcpChannelHub = createClient(eg, desc)) {
 
-            // create the message to send§
+            // create the message the client sends to the server
+
+            // the tid must be unique, its reflected back by the server, it must be at the start
+            // of each message sent from the server to the client. Its use by the client to identify which
+            // thread will handle this message
             final long tid = tcpChannelHub.nextUniqueTransaction(System.currentTimeMillis());
+
+            // we will use a text wire backed by a elasticByteBuffer
             final Wire wire = new TextWire(Bytes.elasticByteBuffer());
 
             wire.writeDocument(true, w -> w.write(() -> "tid").int64(tid));
@@ -47,7 +60,7 @@ public class SimpleServerAndClientTest {
             // write the data to the socket
             tcpChannelHub.lock(() -> tcpChannelHub.writeSocket(wire));
 
-            // read the reply from the socket ( timeout after 1 second )
+            // read the reply from the socket ( timeout after 1 second ), note: we have to pass the tid
             Wire reply = tcpChannelHub.proxyReply(TimeUnit.SECONDS.toMillis(1), tid);
 
             // read the reply and check the result
