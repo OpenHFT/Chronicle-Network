@@ -135,7 +135,8 @@ TcpChannelHub tcpChannelHub = TcpChannelHub(null, eg, WireType.TEXT, "",
 given in this example we are not implementing fail-over support the simple SocketAddressSupplier.uri(desc), is used.
 
 
-#### Create the message the client sends to the server
+#### Client Message
+Creates the message the client sends to the server
 ```java
 // the tid must be unique, its reflected back by the server, it must be at the start
 // of each message sent from the server to the client. Its use by the client to identify which
