@@ -31,11 +31,11 @@ The full source code of this example can be found at:
 net.openhft.performance.tests.network.SimpleServerAndClientTest.test
 ```
 
-Below are some of key parts of this code explained, in a bit more detail.
+Below are some of the key parts of this code explained, in a bit more detail.
 
 #### TCPRegistry
 
-The TCPRegistry is most useful for unit tests, it allows you to either provide a true host and port for example "localhost:8080" or if you would
+The TCPRegistry is most useful for unit tests, it allows you to either provide a true host and port, say "localhost:8080" or if you would
 rather let the application allocate you a free port at random, you can just provide a text reference to the port,
 such as, "host.port", you can provide any text you want, it will always be taken as a reference,
 that is unless its correctly formed like "hostname:port”, then it will use the exact host and port you provide.
