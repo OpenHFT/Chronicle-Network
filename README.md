@@ -44,13 +44,18 @@ Netty has a much wider range of functionality, however it creates some
 # Example
 ## Creating a simple serer and client
 
-The full source code of this example can be found at net.openhft.performance.tests.network.SimpleServerAndClientTest.test
 
-below are the main snippets of code that's of interest
+The full source code of this example can be found at
+
+```java
+net.openhft.performance.tests.network.SimpleServerAndClientTest.test
+```
+
+Below are the main snippets of code that's of interest
 
 #### TCPRegistry
 
-The TCPRegistry allows you to either provide a true host and port for example "localhost:8080" or if you would
+The TCPRegistry is most useful for unit test, it allows you to either provide a true host and port for example "localhost:8080" or if you would
 rather let the application allocate you a free port at random, you can just provide a text reference to the port,
 for example "host.port", you can provide any text you want, it will always be taken as a reference,
 that is unless its correctly formed like "<hostname>:<port>”, then it will use the exact host and port you provide.
@@ -73,8 +78,13 @@ eg.start();
 ```
 
 #### Create and start the Server
+
+This is an example of how to create and start a simple server, this server is configured with TextWire, so
+the client must also be configured with text wire. The port that we will used will be ( in this example ) determined
+by the TCP Registry, ofcource it a real life production environment you may decided not to use the
+TcpRegistry or provide it with a fixed host:port
+
 ```java
-// an example message that we are going to send from the server to the client and back
 final String expectedMessage = "<my message>";
 AcceptorEventHandler eah = new AcceptorEventHandler(desc,
     () -> new WireEchoRequestHandler(WireType.TEXT), VanillaSessionDetails::new, 0, 0);
