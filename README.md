@@ -17,8 +17,6 @@ Planned support for
 * Unreliable UDP
 
 
-
-
 # Example
 ## TCP Client/Server : Echo Example
 
@@ -181,12 +179,15 @@ TCPRegistry.reset();
 tcpChannelHub.close();
 ```
 
-# Support
-This library will require Java 8
+# Server Threading Strategy
 
-# Simplicity
-The library is a cut down version of the functionality Netty provides,
-    so it needs to be simpler to reflect this.
+By default the Chronicle-Network server uses a single thread, to process all messages. However, if you wish to dedicate each client connection, to its own thread, then you can change the server threading strategy, to :
+-DServerThreadingStrategy= MULTI_THREADED_BUSY_WAITING
+
+see the following enum for more details net.openhft.chronicle.network.ServerThreadingStrategy
+
+# Java Version
+This library will require Java 8
 
 # Testing
 The target environment is to support TCP over 10 Gig-E ethernet.  In prototype
@@ -204,4 +205,5 @@ This comes at the cost of scalability for large number os connections.
 Netty has a much wider range of functionality, however it creates some
    garbage in it's operation (less than using plain NIO Selectors) and isn't
    designed to support busy waiting which gives up a small but significant delay.
+
 
