@@ -225,9 +225,9 @@ public class TcpChannelHub implements Closeable {
     /**
      * prevents subscriptions upon reconnect for the following {@code tid} its useful to call this
      * method when an unsubscribe has been sent to the server, but before the server has acknoleged
-     * the unsubscribe, hence, perverting a resubscribe uppon reconnection.
+     * the unsubscribe, hence, perverting a resubscribe upon reconnection.
      *
-     * @param tid unique transcation id
+     * @param tid unique transaction id
      */
     public void preventSubscribeUponReconnect(long tid) {
         preventSubscribeUponReconnect.add(tid);
