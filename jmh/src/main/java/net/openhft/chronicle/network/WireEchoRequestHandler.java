@@ -14,10 +14,9 @@
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.sample;
+package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.network.WireTcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.WireIn;

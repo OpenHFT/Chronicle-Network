@@ -29,75 +29,47 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.sample;
+package net.openhft.performance.tests.network;
+
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaSessionDetails;
+import net.openhft.chronicle.network.WireEchoRequestHandler;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.WireType;
+import net.openhft.chronicle.wire.Wires;
 import org.jetbrains.annotations.NotNull;
-import org.openjdk.jmh.annotations.*;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.RunnerException;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
-import org.openjdk.jmh.runner.options.TimeValue;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.TimeUnit;
-
-import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri;
 
 
-@State(Scope.Thread)
-public class Main {
+public class VerySimpleClientTest {
 
     public static final WireType WIRE_TYPE = WireType.BINARY;
-    final Wire wire = WIRE_TYPE.apply(Bytes.elasticByteBuffer());
-    private TcpChannelHub tcpChannelHub;
+    final Wire outWire = WIRE_TYPE.apply(Bytes.elasticByteBuffer());
+    final Wire inWire = WIRE_TYPE.apply(Bytes.elasticByteBuffer());
+
     private EventGroup eg;
     private String expectedMessage;
+    private SocketChannel client;
 
-    public static void main(String[] args) throws RunnerException, InvocationTargetException, IllegalAccessException, IOException {
-        if (Jvm.isDebug()) {
-            Main main = new Main();
-            main.setUp();
-            for (Method m : Main.class.getMethods()) {
-                if (m.getAnnotation(Benchmark.class) != null) {
-                    m.invoke(main);
-                }
-            }
-            main.tearDown();
-        } else {
-            int time = Boolean.getBoolean("longTest") ? 30 : 2;
-            System.out.println("measurementTime: " + time + " secs");
-            Options opt = new OptionsBuilder()
-                    .include(Main.class.getSimpleName())
-                    .warmupIterations(5)
-//                .measurementIterations(5)
-                    .forks(1)
-                    .mode(Mode.SampleTime)
-                    .measurementTime(TimeValue.seconds(time))
-                    .timeUnit(TimeUnit.NANOSECONDS)
-                    .build();
-
-            new Runner(opt).run();
-        }
-    }
 
     /*
      * And, check the benchmark went fine afterwards:
      */
 
-    @Setup
+    @Before
     public void setUp() throws IOException {
         String desc = "host.port";
         TCPRegistry.createServerSocketChannelFor(desc);
@@ -105,43 +77,72 @@ public class Main {
         eg.start();
         expectedMessage = "<my message>";
         createServer(desc, eg);
-        tcpChannelHub = createClient(eg, desc);
+        client = createClient(eg, desc);
+
     }
 
-    @TearDown
+    @After
     public void tearDown() {
         eg.stop();
         TcpChannelHub.closeAllHubs();
         TCPRegistry.reset();
-        tcpChannelHub.close();
     }
 
-    @Benchmark
-    public String test() throws IOException {
+    @Test
+    public void test() throws IOException {
 
         // create the message to send§
-        final long tid = tcpChannelHub.nextUniqueTransaction(System.currentTimeMillis());
-        wire.clear();
-        wire.writeDocument(true, w -> w.writeEventName(() -> "tid").int64(tid));
-        wire.writeDocument(false, w -> w.writeEventName(() -> "payload").text(expectedMessage));
+        final long tid = 0;
+        outWire.clear();
+        outWire.writeDocument(true, w -> w.write(() -> "tid").int64(tid));
+        outWire.writeDocument(false, w -> w.write(() -> "payload").text(expectedMessage));
+
+        final ByteBuffer outBuff = (ByteBuffer) outWire.bytes().underlyingObject();
+
+        outBuff.clear();
+        outBuff.limit((int) outWire.bytes().writePosition());
 
         // write the data to the socket
-        tcpChannelHub.lock(() -> tcpChannelHub.writeSocket(wire));
+        while (outBuff.hasRemaining())
+            client.write(outBuff);
 
-        // read the reply from the socket ( timeout after 1 second )
-        Wire reply = tcpChannelHub.proxyReply(TimeUnit.SECONDS.toMillis(1), tid);
+        // meta data
+        readDocument(inWire);
 
-        String[] text = {null};
-        // read the reply and check the result
-        reply.readDocument(null, data -> {
-            text[0] = data.readEventName(new StringBuilder()).text();
+        // data
+        readDocument(inWire);
+
+        inWire.readDocument(null, data -> {
+            Assert.assertEquals(expectedMessage, data.read(() -> "payloadResponse").text());
         });
-        return text[0];
+
+    }
+
+    private void readDocument(Wire inMetaDataWire) throws IOException {
+        ByteBuffer inBuff = (ByteBuffer) inMetaDataWire.bytes().underlyingObject();
+
+        // write the data to the socket
+        long start = inMetaDataWire.bytes().readPosition();
+        while (inBuff.position() + start < 4)
+            client.read(inBuff);
+
+        inMetaDataWire.bytes().writePosition(inBuff.position());
+        int len = Wires.lengthOf(inMetaDataWire.bytes().readInt(start));
+        while (inBuff.position() < 4 + len + start)
+            client.read(inBuff);
     }
 
     @NotNull
-    private TcpChannelHub createClient(EventGroup eg, String desc) {
-        return new TcpChannelHub(null, eg, WIRE_TYPE, "", uri(desc), false);
+    private SocketChannel createClient(EventGroup eg, String desc) throws IOException {
+
+        SocketChannel result = TCPRegistry.createSocketChannel(desc);
+        int tcpBufferSize = 2 << 20;
+        Socket socket = result.socket();
+        socket.setTcpNoDelay(true);
+        socket.setReceiveBufferSize(tcpBufferSize);
+        socket.setSendBufferSize(tcpBufferSize);
+        result.configureBlocking(false);
+        return result;
     }
 
     private void createServer(String desc, EventGroup eg) throws IOException {
