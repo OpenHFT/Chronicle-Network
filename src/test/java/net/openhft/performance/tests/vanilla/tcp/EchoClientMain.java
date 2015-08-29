@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
+import java.util.Random;
 
 /**
  * @author peter.lawrey
@@ -39,20 +40,30 @@ Throughput was 2880.4 MB/s
 Loop back echo latency was 5.8/6.2 9.6/19.4 23.2us for 50/90 99/99.9 99.99%tile
 
 On an i7-3970X over loopback
-Throughput was 3259.0 MB/s
-Loop back echo latency was 4.7/5.2 6/7 11/97 us for 50/90 99/99.9 99.99/worst %tile
+Throughput was 2508.0 MB/s
+Loop back echo latency was 8.0/17.8 30/44 58/72 79 us for 50/90 99/99.9 99.99/99.999 worst %tile
 
 Two connections
-Throughput was 3925.0 MB/s
-Loop back echo latency was 6.5/7.3 9/10 13/49 us for 50/90 99/99.9 99.99/worst %tile
+Throughput was 2890.0 MB/s
+Loop back echo latency was 12.9/29.4 53/77 100/119 138 us for 50/90 99/99.9 99.99/99.999 worst %tile
+
+Three connections
+Throughput was 2357.7 MB/s
+Starting latency test rate: 100000
+Loop back echo latency was 21.0/55.3 110/962 2,106/2176 2,201 us for 50/90 99/99.9 99.99/99.999 worst %tile
+Starting latency test rate: 70000
+Loop back echo latency was 9.7/19.1 32/45 58/70 87 us for 50/90 99/99.9 99.99/99.999 worst %tile
 
 Four connections
-Throughput was 4109.9 MB/s
-Loop back echo latency was 10.9/12.2 18/21 33/425 us for 50/90 99/99.9 99.99/worst %tile
+Throughput was 2441.3 MB/s
+Starting latency test rate: 100000
+Loop back echo latency was 17.2/42.7 79/118 158/192 251 us for 50/90 99/99.9 99.99/99.999 worst %tile
+Starting latency test rate: 70000
+Loop back echo latency was 9.6/18.4 30/43 55/66 85 us for 50/90 99/99.9 99.99/99.999 worst %tile
 
-Ten connections
-Throughput was 2806.6 MB/s
-Loop back echo latency was 40.0/44.9 48/57 366/11880 us for 50/90 99/99.9 99.99/worst %tile
+Six connections
+Throughput was 3099.1 MB/s
+Loop back echo latency was 10.0/23.9 232/2,286 3,780/4326 4,398 us for 50/90 99/99.9 99.99/99.999 worst %tile
 
 Between two servers via Solarflare with onload on server & client (no minor GCs)
 Throughput was 1156.0 MB/s
@@ -61,6 +72,16 @@ Loop back echo latency was 12.2/12.5 21/25 28/465 us for 50/90 99/99.9 99.99/wor
 Between two servers via Solarflare with onload on client (no minor GCs)
 Throughput was 867.5 MB/s
 Loop back echo latency was 15.0/15.7 21/27 30/398 us for 50/90 99/99.9 99.99/worst %tile
+
+//////// EchServerMain with lowlatency kernel
+Throughput was 2450.3 MB/s
+Starting latency test rate: 100000
+Loop back echo latency was 9.1/20.5 35/50 65/76 81 us for 50/90 99/99.9 99.99/99.999 worst %tile
+
+With 2 clients
+Throughput was 2868.9 MB/s
+Starting latency test rate: 100000
+Loop back echo latency was 9.9/22.0 38/55 75/134 159 us for 50/90 99/99.9 99.99/99.999 worst %tile
 
 //////// NettyEchoServer
 Between two servers via Solarflare with onload on server & client (16 minor GCs)
@@ -79,15 +100,15 @@ public class EchoClientMain {
     public static final int TARGET_THROUGHPUT = Integer.getInteger("throughput", 20_000);
 
     public static void main(@NotNull String... args) throws IOException, InterruptedException {
-        Affinity.setAffinity(3);
+        Affinity.setAffinity(2);
         String[] hostnames = args.length > 0 ? args : "localhost".split(",");
 
         SocketChannel[] sockets = new SocketChannel[CLIENTS];
-//        openConnections(hostnames, PORT, sockets);
-//        testThroughput(sockets);
-//        closeConnections(sockets);
         openConnections(hostnames, PORT, sockets);
-        for (int i : new int[]{100000, 100000, 70000, 50000, 30000, 20000, 10000, 5000})
+        testThroughput(sockets);
+        closeConnections(sockets);
+        openConnections(hostnames, PORT, sockets);
+        for (int i : new int[]{100000, 100000, 70000, 50000, 30000, 20000})
             testByteLatency(i, sockets);
         closeConnections(sockets);
     }
@@ -194,32 +215,34 @@ public class EchoClientMain {
         long[] times = new long[tests * sockets.length];
         int count = 0;
         long now = System.nanoTime();
-        long rate = (long) (1e9 / targetThroughput);
+        int interval = (int) (1e9 / targetThroughput);
 
         ByteBuffer bb = ByteBuffer.allocateDirect(4);
         bb.putInt(0, 0x12345678);
-        SocketChannel socket = sockets[0];
-
+        Random rand = new Random();
         for (int i = -20000; i < tests; i++) {
-            now += rate;
-            while (System.nanoTime() < now)
-                ;
 
-            bb.position(0);
-            while (bb.remaining() > 0)
-                if (socket.write(bb) < 0)
-                    throw new EOFException();
+            for (SocketChannel socket : sockets) {
+                now += rand.nextInt(2 * interval);
+                while (System.nanoTime() < now)
+                    ;
 
-            bb.position(0);
-            while (bb.remaining() > 0)
-                if (socket.read(bb) < 0)
-                    throw new EOFException();
+                bb.position(0);
+                while (bb.remaining() > 0)
+                    if (socket.write(bb) < 0)
+                        throw new EOFException();
 
-            if (bb.getInt(0) != 0x12345678)
-                throw new AssertionError("read error");
+                bb.position(0);
+                while (bb.remaining() > 0)
+                    if (socket.read(bb) < 0)
+                        throw new EOFException();
 
-            if (i >= 0)
-                times[count++] = System.nanoTime() - now;
+                if (bb.getInt(0) != 0x12345678)
+                    throw new AssertionError("read error");
+
+                if (i >= 0)
+                    times[count++] = System.nanoTime() - now;
+            }
         }
         System.out.println("Average time " + (Arrays.stream(times).sum()/times.length)/1000);
         Arrays.sort(times);

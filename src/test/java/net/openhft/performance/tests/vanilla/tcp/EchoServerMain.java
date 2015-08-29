@@ -25,7 +25,8 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 /**
  * @author peter.lawrey
@@ -36,15 +37,18 @@ public class EchoServerMain {
         ServerSocketChannel ssc = ServerSocketChannel.open();
         ssc.bind(new InetSocketAddress(port));
         System.out.println("listening on " + ssc);
-        ReentrantLock lock = new ReentrantLock();
+        BlockingQueue<Integer> cpus = new ArrayBlockingQueue<>(128);
+        cpus.add(3);
+        cpus.add(9);
+        cpus.add(8);
         while (true) {
             final SocketChannel socket = ssc.accept();
             socket.socket().setTcpNoDelay(true);
             socket.configureBlocking(false);
             new Thread(() -> {
-                boolean locked = lock.tryLock();
-                if (locked)
-                    Affinity.setAffinity(1 << 2L);
+                Integer cpu = cpus.poll();
+                if (cpu != null)
+                    Affinity.setAffinity(cpu);
                 try {
                     System.out.println("Connected " + socket);
                     // simulate copying the data. 
@@ -77,8 +81,8 @@ public class EchoServerMain {
                         socket.close();
                     } catch (IOException ignored) {
                     }
-                    if (locked)
-                        lock.unlock();
+                    if (cpu != null)
+                        cpus.add(cpu);
                 }
             }).start();
         }
