@@ -139,6 +139,7 @@
             <artifactId>snappy-java</artifactId>
         </dependency>
 
+
     </dependencies>
 
     <build>

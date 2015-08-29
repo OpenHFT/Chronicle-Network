@@ -14,10 +14,9 @@
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.sample;
+package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.network.WireTcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.WireIn;
@@ -49,8 +48,10 @@ public class WireEchoRequestHandler extends WireTcpHandler {
                            @NotNull SessionDetailsProvider sd) {
 
         inWire.readDocument(m -> {
+            long tid = inWire.read(() -> "tid").int64();
             outWire.writeDocument(true, meta -> meta.write(() -> "tid")
-                    .int64(inWire.read(() -> "tid").int64()));
+                    .int64(tid));
+
         }, d -> {
             outWire.writeDocument(false, data -> data.write(() -> "payloadResponse")
                     .text(inWire.read(() -> "payload").text()));
