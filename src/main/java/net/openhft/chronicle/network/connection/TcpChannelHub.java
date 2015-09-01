@@ -154,7 +154,7 @@ public class TcpChannelHub implements Closeable {
     static void logToStandardOutMessageReceived(@NotNull Wire wire) {
         final Bytes<?> bytes = wire.bytes();
 
-        if (!Jvm.isDebug() || !YamlLogging.clientReads)
+        if (!YamlLogging.clientReads)
             return;
 
         final long position = bytes.writePosition();
@@ -547,7 +547,7 @@ public class TcpChannelHub implements Closeable {
     }
 
     private void logToStandardOutMessageSent(@NotNull WireOut wire, @NotNull ByteBuffer outBuffer) {
-        if (!Jvm.isDebug() || !YamlLogging.clientWrites)
+        if (!YamlLogging.clientWrites)
             return;
 
         Bytes<?> bytes = wire.bytes();

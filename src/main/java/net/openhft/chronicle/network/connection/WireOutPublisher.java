@@ -40,7 +40,7 @@ public class WireOutPublisher implements Closeable {
             wireConsumer.writeMarshallable(out);
 
 
-            if (Jvm.isDebug() && YamlLogging.showServerWrites)
+            if (YamlLogging.showServerWrites)
                 try {
                     LOG.info("\nServer Publishes (from async publisher ) :\n" +
                             Wires.fromSizePrefixedBlobs(out.bytes()));
