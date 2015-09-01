@@ -58,10 +58,14 @@ public class VerySimpleClient {
     public static final WireType WIRE_TYPE = WireType.BINARY;
     final Wire outWire = WIRE_TYPE.apply(Bytes.elasticByteBuffer());
     final Wire inWire = WIRE_TYPE.apply(Bytes.elasticByteBuffer());
-
+    long tid = 0;
     private EventGroup eg;
     private String expectedMessage;
     private SocketChannel client;
+
+    /*
+     * And, check the benchmark went fine afterwards:
+     */
 
     public static void main(String[] args) throws Exception {
         if (Jvm.isDebug()) {
@@ -98,10 +102,6 @@ public class VerySimpleClient {
         }
     }
 
-    /*
-     * And, check the benchmark went fine afterwards:
-     */
-
     @Setup
     public void setUp() throws Exception {
         String desc = "host.port";
@@ -124,8 +124,6 @@ public class VerySimpleClient {
         client.socket().close();
         System.out.println("closed");
     }
-
-    long tid = 0;
 
     @Benchmark
     public String test() throws IOException {

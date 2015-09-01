@@ -38,12 +38,12 @@ public abstract class WireTcpHandler implements TcpHandler {
     private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
     // this is the point at which it is worth doing more work to get more data.
     private static final int SMALL_WRITE_BUFFER = Integer.getInteger("WireTcpHandler.SMALL_WRITE_BUFFER", 32 << 10);
+    protected final WireOutPublisher publisher = new WireOutPublisher();
     @NotNull
     private final Function<Bytes, Wire> bytesToWire;
-    private Wire inWire;
     protected Wire outWire;
+    private Wire inWire;
     private boolean recreateWire;
-    protected final WireOutPublisher publisher = new WireOutPublisher();
 
     public WireTcpHandler(@NotNull final Function<Bytes, Wire> bytesToWire) {
         this.bytesToWire = bytesToWire;

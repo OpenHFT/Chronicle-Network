@@ -58,7 +58,6 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
 import static net.openhft.chronicle.core.Jvm.pause;
 import static net.openhft.chronicle.core.Jvm.rethrow;
-import static net.openhft.chronicle.wire.Wires.*;
 
 
 /**
@@ -165,7 +164,7 @@ public class TcpChannelHub implements Closeable {
 
                 LOG.info("\nreceives:\n" +
                         "```yaml\n" +
-                        fromSizePrefixedBlobs(bytes) +
+                        Wires.fromSizePrefixedBlobs(bytes) +
                         "```\n");
                 YamlLogging.title = "";
                 YamlLogging.writeMessage = "";
@@ -190,7 +189,7 @@ public class TcpChannelHub implements Closeable {
 
                 LOG.info("\nreceives IN ERROR:\n" +
                         "```yaml\n" +
-                        fromSizePrefixedBlobs(bytes) +
+                        Wires.fromSizePrefixedBlobs(bytes) +
                         "```\n");
                 YamlLogging.title = "";
                 YamlLogging.writeMessage = "";
@@ -562,7 +561,7 @@ public class TcpChannelHub implements Closeable {
                         "" : "\n\n") +
                         "sends:\n\n" +
                         "```yaml\n" +
-                        fromSizePrefixedBlobs(bytes) +
+                        Wires.fromSizePrefixedBlobs(bytes) +
                         "```");
             YamlLogging.title = "";
             YamlLogging.writeMessage = "";
@@ -923,9 +922,9 @@ public class TcpChannelHub implements Closeable {
                         final long messageSize = size(header);
 
                         // read the data
-                        if (isData(header)) {
+                        if (Wires.isData(header)) {
                             assert messageSize < Integer.MAX_VALUE;
-                            final boolean clearTid = processData(tid, isReady(header), header,
+                            final boolean clearTid = processData(tid, Wires.isReady(header), header,
                                     (int) messageSize, inWire);
                             if (clearTid)
                                 tid = -1;
@@ -974,7 +973,7 @@ public class TcpChannelHub implements Closeable {
          * @return the true size of the message
          */
         private long size(int header) {
-            final long messageSize = lengthOf(header);
+            final long messageSize = Wires.lengthOf(header);
             assert messageSize > 0 : "Invalid message size " + messageSize;
             assert messageSize < 1 << 30 : "Invalid message size " + messageSize;
             return messageSize;
@@ -1128,7 +1127,7 @@ public class TcpChannelHub implements Closeable {
 
             bytes.readLimit(byteBuffer.position());
 
-            final StringBuilder eventName = acquireStringBuilder();
+            final StringBuilder eventName = Wires.acquireStringBuilder();
             final Wire inWire = wire.apply(bytes);
             logToStandardOutMessageReceived(inWire);
             inWire.readDocument(null, d -> {
