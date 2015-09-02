@@ -1273,14 +1273,14 @@ public class TcpChannelHub implements Closeable {
             return true;
         }
 
-        private void checkConnectionState() throws IOException {
+        private void checkConnectionState() {
             if (clientChannel != null)
                 return;
 
             attemptConnect();
         }
 
-        private void attemptConnect() throws IOException {
+        private void attemptConnect() {
 
             keepSubscriptionsClearEverythingElse();
 

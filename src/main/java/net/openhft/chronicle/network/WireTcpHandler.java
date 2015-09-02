@@ -29,7 +29,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.StreamCorruptedException;
 import java.nio.BufferOverflowException;
 import java.util.function.Function;
 
@@ -163,11 +162,9 @@ public abstract class WireTcpHandler implements TcpHandler {
     /**
      * @param in  the wire to be processed
      * @param out the result of processing the {@code in}
-     * @throws StreamCorruptedException if the wire is corrupt
      */
     protected abstract void process(@NotNull WireIn in,
                                     @NotNull WireOut out,
-                                    @NotNull SessionDetailsProvider sessionDetails)
-            throws StreamCorruptedException;
+                                    @NotNull SessionDetailsProvider sessionDetails);
 
 }

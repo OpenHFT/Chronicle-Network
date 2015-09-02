@@ -114,7 +114,7 @@ public class ChanelHubTest {
     }
 
     @Benchmark
-    public String test() throws IOException {
+    public String test() {
 
         // create the message to send§
         final long tid = tcpChannelHub.nextUniqueTransaction(System.currentTimeMillis());
