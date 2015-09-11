@@ -1,6 +1,5 @@
 package net.openhft.performance.tests.network;
 
-
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.TCPRegistry;

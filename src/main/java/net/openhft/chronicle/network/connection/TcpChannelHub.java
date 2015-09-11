@@ -59,7 +59,6 @@ import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
 import static net.openhft.chronicle.core.Jvm.pause;
 import static net.openhft.chronicle.core.Jvm.rethrow;
 
-
 /**
  * The TcpChannelHub is used to send your messages to the server and then read the servers response.
  * The TcpChannelHub ensures that each response is marshalled back onto the appropriate client thread. It does this through the use of a unique transaction ID ( we call this transaction ID the "tid" ), when the server responds to
@@ -106,7 +105,6 @@ public class TcpChannelHub implements Closeable {
     // set up in the header
     private long limitOfLast = 0;
     private boolean shouldSendCloseMessage;
-
 
     public TcpChannelHub(@Nullable final SessionProvider sessionProvider,
                          @NotNull final EventLoop eventLoop,
@@ -181,7 +179,6 @@ public class TcpChannelHub implements Closeable {
     static void logToStandardOutMessageReceivedInERROR(@NotNull Wire wire) {
         final Bytes<?> bytes = wire.bytes();
 
-
         final long position = bytes.writePosition();
         final long limit = bytes.writeLimit();
         try {
@@ -219,7 +216,6 @@ public class TcpChannelHub implements Closeable {
         socket.setSendBufferSize(tcpBufferSize);
         return result;
     }
-
 
     /**
      * prevents subscriptions upon reconnect for the following {@code tid} its useful to call this
@@ -277,7 +273,6 @@ public class TcpChannelHub implements Closeable {
         tcpSocketConsumer.unsubscribe(tid);
     }
 
-
     @NotNull
     public ReentrantLock outBytesLock() {
         return outBytesLock;
@@ -294,7 +289,6 @@ public class TcpChannelHub implements Closeable {
 
             writeSocket1(handShakingWire, timeoutMs, socketChannel);
         }
-
 
     }
 
@@ -332,7 +326,6 @@ public class TcpChannelHub implements Closeable {
                 clientChannel.close();
             } catch (IOException ignored) {
             }
-
 
             this.clientChannel = null;
 
@@ -380,7 +373,6 @@ public class TcpChannelHub implements Closeable {
         }
     }
 
-
     /**
      * used to signal to the server that the client is going to drop the connection, and waits up to
      * one second for the server to acknowledge the receipt of this message
@@ -397,7 +389,6 @@ public class TcpChannelHub implements Closeable {
             writeSocket(outWire);
         }, false);
 
-
         // wait up to 1 seconds to receive an close request acknowledgment from the server
         try {
             final boolean await = receivedClosedAcknowledgement.await(1, TimeUnit.SECONDS);
@@ -408,7 +399,6 @@ public class TcpChannelHub implements Closeable {
             //
         }
     }
-
 
     /**
      * the transaction id are generated as unique timestamps
@@ -500,7 +490,6 @@ public class TcpChannelHub implements Closeable {
         updateLargestChunkSoFarSize(outBuffer);
 
         long start = Time.currentTimeMillis();
-
 
         try {
 
@@ -715,7 +704,6 @@ public class TcpChannelHub implements Closeable {
         @Nullable
         private volatile Throwable shutdownHere = null;
 
-
         /**
          * @param wireFunction converts bytes into wire, ie TextWire or BinaryWire
          */
@@ -793,7 +781,6 @@ public class TcpChannelHub implements Closeable {
                 bytes.clear();
 
                 registerSubscribe(tid, bytes);
-
 
                 do {
                     bytes.wait(timeoutTimeMs);
@@ -967,7 +954,6 @@ public class TcpChannelHub implements Closeable {
             return isShutdown;
         }
 
-
         /**
          * @param header message size in header form
          * @return the true size of the message
@@ -1059,7 +1045,6 @@ public class TcpChannelHub implements Closeable {
                     return isLastMessageForThisTid;
 
             }
-
 
             // heartbeat message sent from the server
             if (tid == 0) {

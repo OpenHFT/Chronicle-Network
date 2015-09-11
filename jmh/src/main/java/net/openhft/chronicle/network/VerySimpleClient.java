@@ -51,7 +51,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeUnit;
 
-
 @State(Scope.Thread)
 public class VerySimpleClient {
 
@@ -79,7 +78,6 @@ public class VerySimpleClient {
                         }
                         System.out.println("");
                     }
-
 
                 }
             }
@@ -127,7 +125,6 @@ public class VerySimpleClient {
     @Benchmark
     public String test() throws IOException {
 
-
         // create the message to send§
         tid++;
         outWire.clear();
@@ -140,7 +137,6 @@ public class VerySimpleClient {
 
         final ByteBuffer outBuff = (ByteBuffer) outWire.bytes().underlyingObject();
         outBuff.limit((int) outWire.bytes().writePosition());
-
 
         // write the data to the socket
         while (outBuff.hasRemaining())

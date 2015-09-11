@@ -13,15 +13,8 @@ public enum ServerThreadingStrategy {
     MULTI_THREADED_BUSY_WAITING("each client connection is devoted to its own busy waiting thread, " +
             "This is ideal when you have a small number of client connections on a server with a large number of free cores");
 
-
-    private final String description;
-
-    ServerThreadingStrategy(String description) {
-        this.description = description;
-    }
-
-    public static ServerThreadingStrategy value = ServerThreadingStrategy.SINGLE_THREADED;
     private static final Logger LOG = LoggerFactory.getLogger(ServerThreadingStrategy.class);
+    public static ServerThreadingStrategy value = ServerThreadingStrategy.SINGLE_THREADED;
 
     static {
         final String serverThreadingStrategy = System.getProperty("ServerThreadingStrategy");
@@ -35,12 +28,17 @@ public enum ServerThreadingStrategy {
             }
     }
 
+    private final String description;
 
-    public String getDescription() {
-        return description;
+    ServerThreadingStrategy(String description) {
+        this.description = description;
     }
 
     static ServerThreadingStrategy serverThreadingStrategy() {
         return value;
+    }
+
+    public String getDescription() {
+        return description;
     }
 }

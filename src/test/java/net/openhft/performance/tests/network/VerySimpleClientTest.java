@@ -31,7 +31,6 @@
 
 package net.openhft.performance.tests.network;
 
-
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.TCPRegistry;
@@ -52,7 +51,6 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-
 public class VerySimpleClientTest {
 
     public static final WireType WIRE_TYPE = WireType.BINARY;
@@ -62,7 +60,6 @@ public class VerySimpleClientTest {
     private EventGroup eg;
     private String expectedMessage;
     private SocketChannel client;
-
 
     /*
      * And, check the benchmark went fine afterwards:

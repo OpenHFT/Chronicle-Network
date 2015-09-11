@@ -15,13 +15,11 @@ import java.nio.channels.SocketChannel;
  * Created by peter.lawrey on 15/07/2015.
  */
 public class NetworkLog {
+    private static final Logger LOG =
+            LoggerFactory.getLogger(NetworkLog.class.getName());
     @NotNull
     private final String desc;
     private long lastOut = System.currentTimeMillis();
-
-    private static final Logger LOG =
-            LoggerFactory.getLogger(NetworkLog.class.getName());
-
 
     public NetworkLog(@NotNull SocketChannel channel, String op) throws IOException {
         this.desc = op

@@ -1,6 +1,5 @@
 package net.openhft.chronicle.network.connection;
 
-import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.wire.WireOut;
 import net.openhft.chronicle.wire.Wires;
@@ -38,7 +37,6 @@ public class WireOutPublisher implements Closeable {
             if (wireConsumer == null)
                 break;
             wireConsumer.writeMarshallable(out);
-
 
             if (YamlLogging.showServerWrites)
                 try {

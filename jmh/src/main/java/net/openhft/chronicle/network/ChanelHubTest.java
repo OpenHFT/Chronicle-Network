@@ -53,7 +53,6 @@ import java.util.concurrent.TimeUnit;
 
 import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri;
 
-
 @State(Scope.Thread)
 public class ChanelHubTest {
 

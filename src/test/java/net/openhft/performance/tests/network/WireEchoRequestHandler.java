@@ -20,7 +20,6 @@ public class WireEchoRequestHandler extends WireTcpHandler {
         super(bytesToWire);
     }
 
-
     /**
      * simply reads the csp,tid and payload and sends back the tid and payload
      *
