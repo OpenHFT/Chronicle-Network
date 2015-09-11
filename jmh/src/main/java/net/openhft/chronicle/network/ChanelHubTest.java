@@ -93,7 +93,6 @@ public class ChanelHubTest {
     /*
      * And, check the benchmark went fine afterwards:
      */
-
     @Setup
     public void setUp() throws IOException {
         String desc = "host.port";

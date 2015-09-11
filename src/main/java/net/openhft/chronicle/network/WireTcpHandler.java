@@ -158,7 +158,6 @@ public abstract class WireTcpHandler implements TcpHandler {
     /**
      * Process an incoming request
      */
-
     /**
      * @param in  the wire to be processed
      * @param out the result of processing the {@code in}

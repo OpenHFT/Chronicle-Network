@@ -66,7 +66,6 @@ public class VerySimpleClient {
     /*
      * And, check the benchmark went fine afterwards:
      */
-
     public static void main(String[] args) throws Exception {
         if (Jvm.isDebug()) {
             VerySimpleClient main = new VerySimpleClient();

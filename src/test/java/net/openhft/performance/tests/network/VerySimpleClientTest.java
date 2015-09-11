@@ -36,7 +36,6 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaSessionDetails;
-
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.Wire;
@@ -68,7 +67,6 @@ public class VerySimpleClientTest {
     /*
      * And, check the benchmark went fine afterwards:
      */
-
     @Before
     public void setUp() throws IOException {
         String desc = "host.port";
