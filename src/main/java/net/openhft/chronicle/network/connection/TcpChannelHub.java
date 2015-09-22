@@ -69,8 +69,12 @@ import static net.openhft.chronicle.core.Jvm.rethrow;
  */
 public class TcpChannelHub implements Closeable {
 
-    public static final int HEATBEAT_PING_PERIOD = getInteger("heartbeat.ping.period", 5_000);
-    public static final int HEATBEAT_TIMEOUT_PERIOD = getInteger("heartbeat.timeout", 20_000);
+    public static final int HEATBEAT_PING_PERIOD =
+            !Jvm.IS_DEBUG ? getInteger("heartbeat.ping.period", 5_000):
+                           getInteger("heartbeat.ping.period", 5_000 * 10);
+    public static final int HEATBEAT_TIMEOUT_PERIOD =
+            !Jvm.IS_DEBUG ? getInteger("heartbeat.timeout", 20_000):
+                           getInteger("heartbeat.timeout", 20_000 * 10);
 
     public static final int SIZE_OF_SIZE = 4;
     public static final Set<TcpChannelHub> hubs = new CopyOnWriteArraySet<>();
