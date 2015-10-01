@@ -656,7 +656,7 @@ public class TcpChannelHub implements Closeable {
             r.run();
             writeSocket(outWire());
         } catch (Exception e) {
-            LOG.debug("", e);
+            LOG.error("", e);
             return false;
         } finally {
             lock.unlock();
@@ -1118,7 +1118,8 @@ public class TcpChannelHub implements Closeable {
 
             final StringBuilder eventName = Wires.acquireStringBuilder();
             final Wire inWire = wire.apply(bytes);
-            logToStandardOutMessageReceived(inWire);
+            if(YamlLogging.showHeartBeats)
+                logToStandardOutMessageReceived(inWire);
             inWire.readDocument(null, d -> {
                         final ValueIn valueIn = d.readEventName(eventName);
                         if (EventId.heartbeat.contentEquals(eventName))
