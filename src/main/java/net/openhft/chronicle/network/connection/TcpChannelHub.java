@@ -288,7 +288,10 @@ public class TcpChannelHub implements Closeable {
             handShakingWire.clear();
             handShakingWire.bytes().clear();
             handShakingWire.writeDocument(false, wireOut -> {
-                wireOut.writeEventName(EventId.userid).text(sessionDetails.userId());
+                wireOut.writeEventName(EventId.userId).text(sessionDetails.userId());
+                wireOut.writeEventName(EventId.domain).text(sessionDetails.domain());
+                wireOut.writeEventName(EventId.sessionMode).text(sessionDetails.sessionMode().toString());
+                wireOut.writeEventName(EventId.securityToken).text(sessionDetails.securityToken());
             });
 
             writeSocket1(handShakingWire, timeoutMs, socketChannel);

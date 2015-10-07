@@ -16,6 +16,7 @@
 
 package net.openhft.chronicle.network.api.session;
 
+import net.openhft.chronicle.network.SessionMode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,6 +38,11 @@ public interface SessionDetails {
 
     @Nullable
     String securityToken();
+
+    @Nullable
+    String domain();
+
+    SessionMode sessionMode();
 
     @Nullable
     InetSocketAddress clientAddress();

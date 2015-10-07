@@ -18,6 +18,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.InetSocketAddress;
 import java.util.LinkedHashMap;
@@ -31,6 +32,8 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
     private final Map<Class, Object> infoMap = new LinkedHashMap<>();
     private String userId = "";
     private String securityToken = "";
+    private String domain = "";
+    SessionMode sessionMode = SessionMode.ACTIVE;
 
     // only set on a server not on a client
     private InetSocketAddress clientAddress;
@@ -41,10 +44,11 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
     }
 
     @NotNull
-    public static VanillaSessionDetails of(String userId, String securityToken) {
+    public static VanillaSessionDetails of(String userId, String securityToken, String domain) {
         final VanillaSessionDetails vanillaSessionDetails = new VanillaSessionDetails();
         vanillaSessionDetails.setUserId(userId);
         vanillaSessionDetails.setSecurityToken(securityToken);
+        vanillaSessionDetails.setDomain(domain);
         return vanillaSessionDetails;
     }
 
@@ -66,6 +70,26 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
     @Override
     public String securityToken() {
         return securityToken;
+    }
+
+    @Override
+    public String domain() {
+        return this.domain;
+    }
+
+    @Override
+    public SessionMode sessionMode() {
+        return sessionMode;
+    }
+
+    @Override
+    public void setDomain(String domain) {
+        this.domain = domain;
+    }
+
+    @Override
+    public void setSessionMode(SessionMode sessionMode) {
+        this.sessionMode = sessionMode;
     }
 
     @Override
@@ -114,6 +138,8 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
                 ", clientAddress=" + clientAddress +
                 ", connectTimeMS=" + connectTimeMS +
                 ", sessionId=" + sessionId +
+                ", sessionMode=" + sessionMode +
+                ", domain=" + domain +
                 '}';
     }
 }
