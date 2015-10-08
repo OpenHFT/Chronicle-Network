@@ -153,6 +153,7 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
                 ", sessionId=" + sessionId +
                 ", sessionMode=" + sessionMode +
                 ", domain=" + domain +
+                ", clientId=" + clientId +
                 '}';
     }
 }
