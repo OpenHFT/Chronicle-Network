@@ -26,5 +26,6 @@ public enum EventId implements WireKey {
     userId,
     sessionMode,
     domain,
-    securityToken
+    securityToken,
+    clientId
 }

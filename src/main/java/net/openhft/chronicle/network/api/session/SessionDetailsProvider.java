@@ -19,6 +19,7 @@ package net.openhft.chronicle.network.api.session;
 import net.openhft.chronicle.network.SessionMode;
 
 import java.net.InetSocketAddress;
+import java.util.UUID;
 
 /**
  * Created by Rob Austin
@@ -36,4 +37,6 @@ public interface SessionDetailsProvider extends SessionDetails {
     void setDomain(String domain);
 
     void setSessionMode(SessionMode sessionMode);
+
+    void setClientId(UUID clientId);
 }

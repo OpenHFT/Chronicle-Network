@@ -33,7 +33,8 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
     private String userId = "";
     private String securityToken = "";
     private String domain = "";
-    SessionMode sessionMode = SessionMode.ACTIVE;
+    private SessionMode sessionMode = SessionMode.ACTIVE;
+    private UUID clientId = null;
 
     // only set on a server not on a client
     private InetSocketAddress clientAddress;
@@ -60,6 +61,13 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
         if (sessionId == null)
             sessionId = UUID.randomUUID();
         return sessionId;
+    }
+
+    @Override
+    public UUID clientId() {
+        if (clientId == null)
+            clientId = UUID.randomUUID();
+        return clientId;
     }
 
     @Override
@@ -90,6 +98,11 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
     @Override
     public void setSessionMode(SessionMode sessionMode) {
         this.sessionMode = sessionMode;
+    }
+
+    @Override
+    public void setClientId(UUID clientId) {
+        this.clientId = clientId;
     }
 
     @Override

@@ -33,6 +33,9 @@ public interface SessionDetails {
     // a unique id used to identify this session, this field is by contract immutable
     UUID sessionId();
 
+    // a unique id used to identify the client
+    UUID clientId();
+
     @Nullable
     String userId();
 
