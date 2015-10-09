@@ -13,22 +13,24 @@ import java.lang.reflect.Constructor;
  * @author Rob Austin.
  */
 public interface WireOutPublisher extends Closeable {
+
     void applyAction(@NotNull WireOut out, @NotNull Runnable runnable);
 
     /**
-     * @param key   is NULL if the throttling is not required
-     * @param event the event to send
+     * @param key   the key to the event, only used when throttling, otherwise NULL if the
+     *              throttling is not required
+     * @param event the marshallable event
      */
     void put(@Nullable final Object key, WriteMarshallable event);
 
     boolean isClosed();
 
     /**
-     * a static factory that creates and instance in chronicle enterpise
+     * a static factory that creates and instance in chronicle enterprise
      *
-     * @param periodMs
-     * @param delegate
-     * @return
+     * @param periodMs the period between updates of the same key
+     * @param delegate the  WireOutPublisher the events will get delegated to
+     * @return a throttled WireOutPublisher
      */
     static WireOutPublisher newThrottledWireOutPublisher(int periodMs,
                                                          @NotNull WireOutPublisher delegate) {
