@@ -136,7 +136,7 @@ public class ChanelHubTest {
 
     @NotNull
     private TcpChannelHub createClient(EventGroup eg, String desc) {
-        return new TcpChannelHub(null, eg, WIRE_TYPE, "", uri(desc), false);
+        return new TcpChannelHub(null, eg, WIRE_TYPE, "", uri(desc), false, null);
     }
 
     private void createServer(String desc, EventGroup eg) throws IOException {
