@@ -6,6 +6,8 @@ import net.openhft.chronicle.wire.WireOut;
 import net.openhft.chronicle.wire.WriteMarshallable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 
@@ -13,6 +15,7 @@ import java.lang.reflect.Constructor;
  * @author Rob Austin.
  */
 public interface WireOutPublisher extends Closeable {
+    private static final Logger LOG = LoggerFactory.getLogger(WireOutPublisher.class);
 
     void applyAction(@NotNull WireOut out, @NotNull Runnable runnable);
 
@@ -40,6 +43,7 @@ public interface WireOutPublisher extends Closeable {
             final Constructor<WireOutPublisher> constructor = (Constructor) aClass.getConstructors()[0];
             return constructor.newInstance(periodMs, delegate);
         } catch (Exception e) {
+            LOG.warn("To use this feature please install Chronicle-Enterprise");
             throw Jvm.rethrow(e);
         }
 
