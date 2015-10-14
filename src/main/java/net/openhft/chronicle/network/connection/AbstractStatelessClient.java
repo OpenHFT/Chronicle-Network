@@ -86,7 +86,6 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         };
     }
 
-
     @Nullable
     protected <R> R proxyReturnWireTypedObject(
             @NotNull final E eventId,
@@ -124,7 +123,6 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
                 toParameters(eventId, args),
                 consumerIn);
     }
-
 
     @Nullable
     protected <R> R proxyReturnTypedObject(
@@ -304,7 +302,6 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         return false;
     }
 
-
     protected void sendEventAsyncWithoutLock(@NotNull final WireKey eventId,
                                              @Nullable final Consumer<ValueOut> consumer) {
 
@@ -380,7 +377,6 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
         throw new UnsupportedOperationException("unknown event=" + eventName);
     }
-
 
     @SuppressWarnings("SameParameterValue")
     protected boolean proxyReturnBooleanWithArgs(

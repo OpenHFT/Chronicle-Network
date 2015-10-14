@@ -29,7 +29,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 THE POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
@@ -49,11 +49,8 @@ THE POSSIBILITY OF SUCH DAMAGE.
         <maven>3.0</maven>
     </prerequisites>
 
-
-
     <dependencyManagement>
         <dependencies>
-
             <dependency>
                 <groupId>net.openhft</groupId>
                 <artifactId>third-party-bom</artifactId>
@@ -65,13 +62,11 @@ THE POSSIBILITY OF SUCH DAMAGE.
             <dependency>
                 <groupId>net.openhft</groupId>
                 <artifactId>chronicle-bom</artifactId>
-                <version>1.7.11-SNAPSHOT</version>
+                <version>1.8.11-SNAPSHOT</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
         </dependencies>
-
     </dependencyManagement>
 
     <dependencies>
@@ -198,5 +193,4 @@ THE POSSIBILITY OF SUCH DAMAGE.
             </plugins>
         </pluginManagement>
     </build>
-
 </project>

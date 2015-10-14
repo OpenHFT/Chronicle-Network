@@ -16,6 +16,7 @@
 
 package net.openhft.chronicle.network.api.session;
 
+import net.openhft.chronicle.network.SessionMode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,11 +33,19 @@ public interface SessionDetails {
     // a unique id used to identify this session, this field is by contract immutable
     UUID sessionId();
 
+    // a unique id used to identify the client
+    UUID clientId();
+
     @Nullable
     String userId();
 
     @Nullable
     String securityToken();
+
+    @Nullable
+    String domain();
+
+    SessionMode sessionMode();
 
     @Nullable
     InetSocketAddress clientAddress();

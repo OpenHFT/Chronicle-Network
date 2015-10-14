@@ -76,7 +76,6 @@ public enum TCPRegistry {
      * @param descriptions each string is the name to a reference of a host and port, or if correctly formed this example host and port are used instead
      * @throws IOException
      */
-
     public static void createServerSocketChannelFor(@NotNull String... descriptions) throws IOException {
         for (String description : descriptions) {
             InetSocketAddress address;

@@ -3,76 +3,45 @@ package net.openhft.chronicle.network.connection;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.wire.WireOut;
-import net.openhft.chronicle.wire.Wires;
 import net.openhft.chronicle.wire.WriteMarshallable;
-import net.openhft.chronicle.wire.YamlLogging;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.Queue;
-import java.util.concurrent.LinkedTransferQueue;
+import java.lang.reflect.Constructor;
 
 /**
- * Created by peter.lawrey on 09/07/2015.
+ * @author Rob Austin.
  */
-public class WireOutPublisher implements Closeable {
-    private static final int WARN_QUEUE_LENGTH = 50;
-    private static final Logger LOG = LoggerFactory.getLogger(WireOutPublisher.class);
-    private final Queue<WriteMarshallable> publisher = new LinkedTransferQueue<>();
-    private volatile boolean closed;
+public interface WireOutPublisher extends Closeable {
+
+    void applyAction(@NotNull WireOut out, @NotNull Runnable runnable);
 
     /**
-     * Apply waiting messages and return false if there was none.
-     *
-     * @param out buffer to write to.
+     * @param key   the key to the event, only used when throttling, otherwise NULL if the
+     *              throttling is not required
+     * @param event the marshallable event
      */
-    public void applyAction(@NotNull WireOut out, @NotNull Runnable runnable) {
-        if (publisher.isEmpty()) {
-            synchronized (this) {
-                runnable.run();
-            }
+    void put(@Nullable final Object key, WriteMarshallable event);
+
+    boolean isClosed();
+
+    /**
+     * a static factory that creates and instance in chronicle enterprise
+     *
+     * @param periodMs the period between updates of the same key
+     * @param delegate the  WireOutPublisher the events will get delegated to
+     * @return a throttled WireOutPublisher
+     */
+    static WireOutPublisher newThrottledWireOutPublisher(int periodMs,
+                                                         @NotNull WireOutPublisher delegate) {
+
+        try {
+            final Class<?> aClass = Class.forName("software.chronicle.enterprise.throttle.ThrottledWireOutPublisher");
+            final Constructor<WireOutPublisher> constructor = (Constructor) aClass.getConstructors()[0];
+            return constructor.newInstance(periodMs, delegate);
+        } catch (Exception e) {
+            throw Jvm.rethrow(e);
         }
-        while (out.bytes().writePosition() < out.bytes().realCapacity() / 4) {
-            WriteMarshallable wireConsumer = publisher.poll();
-            if (wireConsumer == null)
-                break;
-            wireConsumer.writeMarshallable(out);
 
-
-            if (Jvm.isDebug() && YamlLogging.showServerWrites)
-                try {
-                    LOG.info("\nServer Publishes (from async publisher ) :\n" +
-                            Wires.fromSizePrefixedBlobs(out.bytes()));
-
-                } catch (Exception e) {
-                    LOG.info("\nServer Publishes ( from async publisher - corrupted ) :\n" +
-                            out.bytes().toDebugString());
-                    LOG.error("", e);
-                }
-        }
-    }
-
-    public void add(WriteMarshallable outConsumer) {
-
-        if (closed) {
-            throw new IllegalStateException("Closed");
-
-        } else {
-            int size = publisher.size();
-            if (size > WARN_QUEUE_LENGTH)
-                LOG.debug("publish length: " + size);
-
-            publisher.add(outConsumer);
-        }
-    }
-
-    public boolean isClosed() {
-        return closed;
-    }
-
-    @Override
-    public void close() {
-        closed = true;
     }
 }

@@ -20,6 +20,7 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
+import net.openhft.chronicle.network.connection.VanillaWireOutPublisher;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.WireIn;
@@ -29,7 +30,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.StreamCorruptedException;
 import java.nio.BufferOverflowException;
 import java.util.function.Function;
 
@@ -38,12 +38,13 @@ public abstract class WireTcpHandler implements TcpHandler {
     private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
     // this is the point at which it is worth doing more work to get more data.
     private static final int SMALL_WRITE_BUFFER = Integer.getInteger("WireTcpHandler.SMALL_WRITE_BUFFER", 32 << 10);
+    protected final WireOutPublisher publisher = new VanillaWireOutPublisher();
+
     @NotNull
     private final Function<Bytes, Wire> bytesToWire;
-    private Wire inWire;
     protected Wire outWire;
+    private Wire inWire;
     private boolean recreateWire;
-    protected final WireOutPublisher publisher = new WireOutPublisher();
 
     public WireTcpHandler(@NotNull final Function<Bytes, Wire> bytesToWire) {
         this.bytesToWire = bytesToWire;
@@ -159,15 +160,12 @@ public abstract class WireTcpHandler implements TcpHandler {
     /**
      * Process an incoming request
      */
-
     /**
      * @param in  the wire to be processed
      * @param out the result of processing the {@code in}
-     * @throws StreamCorruptedException if the wire is corrupt
      */
     protected abstract void process(@NotNull WireIn in,
                                     @NotNull WireOut out,
-                                    @NotNull SessionDetailsProvider sessionDetails)
-            throws StreamCorruptedException;
+                                    @NotNull SessionDetailsProvider sessionDetails);
 
 }

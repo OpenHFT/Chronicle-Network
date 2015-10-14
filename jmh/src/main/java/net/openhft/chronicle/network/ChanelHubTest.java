@@ -53,7 +53,6 @@ import java.util.concurrent.TimeUnit;
 
 import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri;
 
-
 @State(Scope.Thread)
 public class ChanelHubTest {
 
@@ -93,7 +92,6 @@ public class ChanelHubTest {
     /*
      * And, check the benchmark went fine afterwards:
      */
-
     @Setup
     public void setUp() throws IOException {
         String desc = "host.port";
@@ -114,7 +112,7 @@ public class ChanelHubTest {
     }
 
     @Benchmark
-    public String test() throws IOException {
+    public String test() {
 
         // create the message to send§
         final long tid = tcpChannelHub.nextUniqueTransaction(System.currentTimeMillis());
@@ -138,7 +136,7 @@ public class ChanelHubTest {
 
     @NotNull
     private TcpChannelHub createClient(EventGroup eg, String desc) {
-        return new TcpChannelHub(null, eg, WIRE_TYPE, "", uri(desc), false);
+        return new TcpChannelHub(null, eg, WIRE_TYPE, "", uri(desc), false, null);
     }
 
     private void createServer(String desc, EventGroup eg) throws IOException {

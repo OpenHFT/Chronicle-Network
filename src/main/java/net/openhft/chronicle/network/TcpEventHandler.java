@@ -24,7 +24,6 @@ import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.threads.HandlerPriority;
 import net.openhft.chronicle.threads.api.EventHandler;
-import net.openhft.chronicle.threads.api.EventLoop;
 import net.openhft.chronicle.threads.api.InvalidEventHandlerException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -45,7 +44,6 @@ import static net.openhft.chronicle.network.ServerThreadingStrategy.serverThread
 class TcpEventHandler implements EventHandler, Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
 
-
     private static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 1 <<
             20);
     private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", 8 << 20);
@@ -59,6 +57,7 @@ class TcpEventHandler implements EventHandler, Closeable {
     private final WriteEventHandler writeEventHandler;
     @NotNull
     private final NetworkLog readLog, writeLog;
+    int oneInTen = 0;
     @Nullable
     private ByteBuffer inBB = ByteBuffer.allocateDirect(CAPACITY);
     @Nullable
@@ -68,7 +67,6 @@ class TcpEventHandler implements EventHandler, Closeable {
     @Nullable
     private Bytes outBBB;
     private long lastTickReadTime = Time.tickTime(), lastHeartBeatTick = lastTickReadTime + 1000;
-
 
     public TcpEventHandler(@NotNull SocketChannel sc, @NotNull TcpHandler handler, @NotNull final SessionDetailsProvider sessionDetails,
                            boolean unchecked, long heartBeatIntervalTicks, long heartBeatTimeoutTicks) throws IOException {
@@ -119,13 +117,6 @@ class TcpEventHandler implements EventHandler, Closeable {
     }
 
     @Override
-    public void eventLoop(@NotNull EventLoop eventLoop) {
-        // do nothing
-    }
-
-    int oneInTen = 0;
-
-    @Override
     public boolean action() throws InvalidEventHandlerException {
 
         if (!sc.isOpen()) {
@@ -145,7 +136,6 @@ class TcpEventHandler implements EventHandler, Closeable {
                 LOG.error("", e);
             }
         }
-
 
         try {
 
@@ -232,7 +222,6 @@ class TcpEventHandler implements EventHandler, Closeable {
         }
         return busy;
     }
-
 
     private void handleIOE(@NotNull IOException e, final boolean clientIntentionallyClosed) {
         try {

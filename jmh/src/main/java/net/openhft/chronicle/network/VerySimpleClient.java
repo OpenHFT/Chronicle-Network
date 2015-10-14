@@ -51,18 +51,20 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeUnit;
 
-
 @State(Scope.Thread)
 public class VerySimpleClient {
 
     public static final WireType WIRE_TYPE = WireType.BINARY;
     final Wire outWire = WIRE_TYPE.apply(Bytes.elasticByteBuffer());
     final Wire inWire = WIRE_TYPE.apply(Bytes.elasticByteBuffer());
-
+    long tid = 0;
     private EventGroup eg;
     private String expectedMessage;
     private SocketChannel client;
 
+    /*
+     * And, check the benchmark went fine afterwards:
+     */
     public static void main(String[] args) throws Exception {
         if (Jvm.isDebug()) {
             VerySimpleClient main = new VerySimpleClient();
@@ -76,7 +78,6 @@ public class VerySimpleClient {
                         }
                         System.out.println("");
                     }
-
 
                 }
             }
@@ -97,10 +98,6 @@ public class VerySimpleClient {
             new Runner(opt).run();
         }
     }
-
-    /*
-     * And, check the benchmark went fine afterwards:
-     */
 
     @Setup
     public void setUp() throws Exception {
@@ -125,11 +122,8 @@ public class VerySimpleClient {
         System.out.println("closed");
     }
 
-    long tid = 0;
-
     @Benchmark
     public String test() throws IOException {
-
 
         // create the message to send§
         tid++;
@@ -143,7 +137,6 @@ public class VerySimpleClient {
 
         final ByteBuffer outBuff = (ByteBuffer) outWire.bytes().underlyingObject();
         outBuff.limit((int) outWire.bytes().writePosition());
-
 
         // write the data to the socket
         while (outBuff.hasRemaining())

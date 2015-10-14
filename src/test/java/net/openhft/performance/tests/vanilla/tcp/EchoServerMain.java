@@ -19,13 +19,14 @@ package net.openhft.performance.tests.vanilla.tcp;
 import net.openhft.affinity.Affinity;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author peter.lawrey
@@ -36,55 +37,74 @@ public class EchoServerMain {
         ServerSocketChannel ssc = ServerSocketChannel.open();
         ssc.bind(new InetSocketAddress(port));
         System.out.println("listening on " + ssc);
-        ReentrantLock lock = new ReentrantLock();
+
+        AtomicReference<SocketChannel> nextSocket = new AtomicReference<>();
+
+        new Thread(() -> {
+            Affinity.setAffinity(3);
+
+            ByteBuffer bb = ByteBuffer.allocateDirect(32 * 1024);
+            ByteBuffer bb2 = ByteBuffer.allocateDirect(32 * 1024);
+            List<SocketChannel> sockets = new ArrayList<>();
+            for (; ; ) {
+                if (sockets.isEmpty())
+                    Thread.yield();
+                SocketChannel sc = nextSocket.getAndSet(null);
+                if (sc != null) {
+                    System.out.println("Connected " + sc);
+                    sockets.add(sc);
+                }
+                for (int i = 0; i < sockets.size(); i++) {
+                    SocketChannel socket = sockets.get(i);
+                    try {
+                        // simulate copying the data.
+                        // obviously faster if you don't touch the data but no real service would do that.
+                        bb.clear();
+                        int len = socket.read(bb);
+                        if (len < 0) {
+                            System.out.println("... closed " + socket + " on read");
+                            socket.close();
+                            sockets.remove(i--);
+                            continue;
+                        } else if (len == 0) {
+                            continue;
+                        }
+                        bb.flip();
+                        bb2.clear();
+                        bb2.put(bb);
+                        bb2.flip();
+                        // make sure there is enough space to do a full read the next time.
+
+                        while ((len = socket.write(bb2)) > 0) {
+                            // busy wait
+                        }
+                        if (len < 0) {
+                            System.out.println("... closed " + socket + " on write");
+                            socket.close();
+                            sockets.remove(i--);
+                            continue;
+                        }
+                    } catch (IOException ioe) {
+                        System.out.println("... closed " + socket + " on " + ioe);
+                        try {
+                            socket.close();
+                        } catch (IOException e) {
+                            // ignored
+                        }
+                        sockets.remove(i--);
+
+                    }
+                }
+            }
+        }).start();
+
         while (true) {
             final SocketChannel socket = ssc.accept();
             socket.socket().setTcpNoDelay(true);
             socket.configureBlocking(false);
-            new Thread(() -> {
-                boolean locked = lock.tryLock();
-                if (locked)
-                    Affinity.setAffinity(1 << 2L);
-                try {
-                    System.out.println("Connected " + socket);
-                    // simulate copying the data. 
-                    // obviously faster if you don't touch the data but no real service would do that.
-                    ByteBuffer bb = ByteBuffer.allocateDirect(64 * 1024);
-                    ByteBuffer bb2 = ByteBuffer.allocateDirect(256 * 1024);
-                    while (socket.read(bb) >= 0) {
-                        bb.flip();
-                        bb2.put(bb);
-                        bb2.flip();
-                        // make sure there is enough space to do a full read the next time.
-                        if (socket.write(bb2) < 0)
-                            throw new EOFException();
-                        while (freeSpace(bb2) < bb.capacity()) {
-                            System.out.println("Write blocking");
-                            if (socket.write(bb2) < 0)
-                                throw new EOFException();
-                        }
-
-                        if (bb2.remaining() > 0)
-                            bb2.compact();
-                        else
-                            bb2.clear();
-                        bb.clear();
-                    }
-                } catch (IOException ignored) {
-                } finally {
-                    System.out.println("... disconnected " + socket);
-                    try {
-                        socket.close();
-                    } catch (IOException ignored) {
-                    }
-                    if (locked)
-                        lock.unlock();
-                }
-            }).start();
+            while (!nextSocket.compareAndSet(null, socket)) {
+                // busy wait.
+            }
         }
-    }
-
-    static int freeSpace(@NotNull ByteBuffer bb2) {
-        return bb2.capacity() - bb2.remaining();
     }
 }

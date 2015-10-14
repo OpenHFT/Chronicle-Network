@@ -16,7 +16,6 @@
 
 package net.openhft.chronicle.network.connection;
 
-import net.openhft.chronicle.bytes.BytesUtil;
 import net.openhft.chronicle.wire.ValueIn;
 import net.openhft.chronicle.wire.WireIn;
 import net.openhft.chronicle.wire.WireKey;
@@ -44,7 +43,7 @@ public enum CoreFields implements WireKey {
             return valueIn.int64();
 
         throw new IllegalArgumentException("expecting a " + expecting
-                + " was\n" + BytesUtil.toHexString(wire.bytes(), position, wire.bytes().readLimit() - position));
+                + " was\n" + wire.bytes().toHexString(position, wire.bytes().readLimit() - position));
     }
 
     @NotNull

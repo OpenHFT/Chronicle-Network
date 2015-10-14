@@ -23,5 +23,9 @@ public enum EventId implements WireKey {
     heartbeatReply,
     onClientClosing,
     onClosingReply,
-    userid
+    userId,
+    sessionMode,
+    domain,
+    securityToken,
+    clientId
 }

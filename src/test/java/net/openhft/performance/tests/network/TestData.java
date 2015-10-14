@@ -29,12 +29,12 @@ import java.util.function.LongConsumer;
  * Created by peter.lawrey on 31/01/15.
  */
 class TestData implements DoubleConsumer, LongConsumer, IntConsumer {
-    public TestData() {
-    }
-
     int value1;
     long value2;
     double value3;
+
+    public TestData() {
+    }
 
     public void write(@NotNull WireOut wire) {
         wire.writeDocument(false, d ->
@@ -45,9 +45,9 @@ class TestData implements DoubleConsumer, LongConsumer, IntConsumer {
 
     public void read(@NotNull WireIn wire) {
         wire.readDocument(null, data ->
-                        data.read(Field.key1).int32(i -> value1 = i)
-                                .read(Field.key2).int64(i -> value2 = i)
-                                .read(Field.key3).float64(i -> value3 = i)
+                        data.read(Field.key1).int32(this, (o, i) -> value1 = i)
+                                .read(Field.key2).int64(this, (o, i) -> value2 = i)
+                                .read(Field.key3).float64(this, (o, i) -> value3 = i)
         );
     }
 

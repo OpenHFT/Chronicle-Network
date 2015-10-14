@@ -1,6 +1,5 @@
 package net.openhft.performance.tests.network;
 
-
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.TCPRegistry;
@@ -77,7 +76,7 @@ public class SimpleServerAndClientTest {
 
     @NotNull
     private TcpChannelHub createClient(EventGroup eg, String desc) {
-        return new TcpChannelHub(null, eg, WireType.TEXT, "", uri(desc), false);
+        return new TcpChannelHub(null, eg, WireType.TEXT, "", uri(desc), false, null);
     }
 
     private void createServer(String desc, EventGroup eg) throws IOException {
