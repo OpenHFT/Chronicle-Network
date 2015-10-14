@@ -117,13 +117,12 @@ public class VerySimpleClientTest {
         ByteBuffer inBuff = (ByteBuffer) inMetaDataWire.bytes().underlyingObject();
 
         // write the data to the socket
-        long start = inMetaDataWire.bytes().writePosition();
-
-        while (inBuff.position() < 4 + start)
+        long start = inMetaDataWire.bytes().readPosition();
+        while (inBuff.position() + start < 4)
             client.read(inBuff);
 
+        inMetaDataWire.bytes().writePosition(inBuff.position());
         int len = Wires.lengthOf(inMetaDataWire.bytes().readInt(start));
-        inMetaDataWire.bytes().readLimit(start + 4 + len);
         while (inBuff.position() < 4 + len + start)
             client.read(inBuff);
     }
