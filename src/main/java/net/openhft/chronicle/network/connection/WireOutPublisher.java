@@ -15,7 +15,7 @@ import java.lang.reflect.Constructor;
  * @author Rob Austin.
  */
 public interface WireOutPublisher extends Closeable {
-    private static final Logger LOG = LoggerFactory.getLogger(WireOutPublisher.class);
+    Logger LOG = LoggerFactory.getLogger(WireOutPublisher.class);
 
     void applyAction(@NotNull WireOut out, @NotNull Runnable runnable);
 
