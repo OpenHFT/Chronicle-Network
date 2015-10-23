@@ -12,10 +12,10 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * Provides support for the client to failover TCP connections to different servers, if the primary connection can not be
- * establish, after retrying up to a timeout,  see {@link SocketAddressSupplier#timeoutMS()} the
- * other connections will be attempted. The order of these connections are determined by the
- * order of the connectURIs
+ * Provides support for the client to failover TCP connections to different servers, if the primary
+ * connection can not be establish, after retrying up to a timeout,  see {@link
+ * SocketAddressSupplier#timeoutMS()} the other connections will be attempted. The order of these
+ * connections are determined by the order of the connectURIs
  *
  * @author Rob Austin.
  */
@@ -92,6 +92,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
     @Nullable
     @Override
     public SocketAddress get() {
+        final RemoteAddressSupplier current = this.current;
         if (current == null)
             return null;
         return current.get();
@@ -112,6 +113,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
         return socketAddress.toString().replaceAll("0:0:0:0:0:0:0:0", "localhost") + " - " +
                 current.toString();
     }
+
 
     private class RemoteAddressSupplier implements Supplier<SocketAddress> {
 

@@ -702,6 +702,18 @@ public class TcpChannelHub implements Closeable {
         }
     }
 
+    /**
+     * you are unlikely to want to call this method in a production environment the purpose of this
+     * method is to simulate a network outage
+     */
+    public void forceDisconnect() {
+        try {
+            clientChannel.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public interface Task {
         void run();
     }
@@ -1292,7 +1304,7 @@ public class TcpChannelHub implements Closeable {
 
         private void attemptConnect() {
 
-            keepSubscriptionsClearEverythingElse();
+            keepSubscriptionsAndClearEverythingElse();
 
             long start = System.currentTimeMillis();
             socketAddressSupplier.startAtFirstAddress();
@@ -1406,7 +1418,7 @@ public class TcpChannelHub implements Closeable {
             }
         }
 
-        private void keepSubscriptionsClearEverythingElse() {
+        private void keepSubscriptionsAndClearEverythingElse() {
 
             tid = 0;
             omap.clear();
