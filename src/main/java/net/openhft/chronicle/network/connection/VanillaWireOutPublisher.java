@@ -74,5 +74,6 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     @Override
     public void close() {
         closed = true;
+        publisher.clear();
     }
 }

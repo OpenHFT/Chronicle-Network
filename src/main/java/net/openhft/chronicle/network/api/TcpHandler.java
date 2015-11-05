@@ -18,6 +18,7 @@ package net.openhft.chronicle.network.api;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.annotation.NotNull;
+import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.ClientClosedProvider;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 
@@ -25,7 +26,7 @@ import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
  * Created by peter.lawrey on 22/01/15.
  */
 @FunctionalInterface
-public interface TcpHandler extends ClientClosedProvider {
+public interface TcpHandler extends ClientClosedProvider, Closeable {
 
     /**
      * The server reads the bytes {@code in} from the client and sends a response {@code out} back
@@ -42,4 +43,9 @@ public interface TcpHandler extends ClientClosedProvider {
 
     default void onEndOfConnection(boolean heartbeatTimeOut) {
     }
+
+    default void close() {
+    }
+
+
 }

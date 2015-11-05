@@ -247,6 +247,12 @@ class TcpEventHandler implements EventHandler, Closeable {
     }
 
     private void closeSC() {
+
+        try {
+            handler.close();
+        } catch (Exception ignored) {
+        }
+
         try {
             sc.close();
         } catch (IOException ignored) {
