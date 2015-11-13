@@ -145,7 +145,8 @@ class TcpEventHandler implements EventHandler, Closeable {
 
             if (read < 0) {
                 closeSC();
-                return false;
+                throw new InvalidEventHandlerException();
+                //return false;
             }
 
             if (read > 0) {
@@ -164,7 +165,8 @@ class TcpEventHandler implements EventHandler, Closeable {
             long tickTime = Time.tickTime();
             if (tickTime > lastTickReadTime + heartBeatTimeoutTicks) {
                 closeSC();
-                return false;
+                throw new InvalidEventHandlerException();
+                // return false;
             }
 
             if (tickTime > lastHeartBeatTick + heartBeatIntervalTicks) {

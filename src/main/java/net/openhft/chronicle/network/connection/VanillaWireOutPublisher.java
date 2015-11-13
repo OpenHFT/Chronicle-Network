@@ -20,6 +20,11 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     private final Queue<WriteMarshallable> publisher = new LinkedTransferQueue<>();
     private volatile boolean closed;
 
+
+    public VanillaWireOutPublisher() {
+        this.closed = false;
+    }
+
     /**
      * Apply waiting messages and return false if there was none.
      *
@@ -53,11 +58,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
     @Override
     public void put(final Object key, WriteMarshallable event) {
-
-        if (closed) {
-            throw new IllegalStateException("Closed");
-
-        } else {
+        if (!closed) {
             int size = publisher.size();
             if (size > WARN_QUEUE_LENGTH)
                 LOG.debug("publish length: " + size);

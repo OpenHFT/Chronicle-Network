@@ -69,6 +69,7 @@ public abstract class WireTcpHandler implements TcpHandler {
     @Override
     public void onEndOfConnection(boolean heartbeatTimeOut) {
         publisher.close();
+
     }
 
     /**

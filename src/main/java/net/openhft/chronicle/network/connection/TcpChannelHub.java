@@ -708,9 +708,11 @@ public class TcpChannelHub implements Closeable {
      */
     public void forceDisconnect() {
         try {
-            clientChannel.close();
+            final SocketChannel clientChannel = this.clientChannel;
+            if (clientChannel != null)
+                clientChannel.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error("", e);
         }
     }
 
