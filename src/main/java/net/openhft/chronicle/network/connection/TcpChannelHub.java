@@ -85,6 +85,7 @@ public class TcpChannelHub implements Closeable {
     protected final int tcpBufferSize;
     final Wire outWire;
     final Wire inWire;
+    private long serverIsUnavailableCount;
     @NotNull
     private final SocketAddressSupplier socketAddressSupplier;
     private final Set<Long> preventSubscribeUponReconnect = new ConcurrentSkipListSet<>();
@@ -1364,9 +1365,11 @@ public class TcpChannelHub implements Closeable {
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("attempting to connect to address=" + remote);
 
-                                if (socketChannel.connect(remote))
+                                if (socketChannel.connect(remote)) {
+                                    serverIsUnavailableCount = 0;
                                     // successfully connected
                                     break;
+                                }
                             }
 
                             LOG.error("Unable to connect to remoteAddress=" +
@@ -1374,8 +1377,15 @@ public class TcpChannelHub implements Closeable {
                             pause(250);
 
                         } catch (ConnectException e) {
-                            LOG.info("Server is unavailable, ConnectException to " +
-                                    "remoteAddress=" + socketAddressSupplier);
+
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Server is unavailable, ConnectException to " +
+                                        "remoteAddress=" + socketAddressSupplier);
+                            else if (serverIsUnavailableCount % (TimeUnit.MINUTES.toMillis(5)) == 0) {
+                                LOG.info("Server is unavailable, ConnectException to " +
+                                        "remoteAddress=" + socketAddressSupplier);
+                            }
+                            serverIsUnavailableCount += 250;
                             pause(250);
                         }
                     }
