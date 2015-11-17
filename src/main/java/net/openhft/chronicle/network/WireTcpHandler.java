@@ -90,7 +90,7 @@ public abstract class WireTcpHandler implements TcpHandler {
             return false;
         }
 
-        if (in.readRemaining() < length) {
+        if (in.readRemaining() < length + SIZE_OF_SIZE) {
             // we have to first read more data before this can be processed
             if (LOG.isDebugEnabled())
                 LOG.debug(String.format("required length=%d but only got %d bytes, " +
