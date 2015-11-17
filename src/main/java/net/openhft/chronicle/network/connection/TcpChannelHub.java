@@ -1368,7 +1368,6 @@ public class TcpChannelHub implements Closeable {
                                     // successfully connected
                                     break;
                             }
-
                             LOG.error("Unable to connect to remoteAddress=" +
                                     socketAddressSupplier);
                             pause(250);
