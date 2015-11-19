@@ -35,6 +35,7 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
+import net.openhft.chronicle.threads.HandlerPriority;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
@@ -136,7 +137,7 @@ public class ChanelHubTest {
 
     @NotNull
     private TcpChannelHub createClient(EventGroup eg, String desc) {
-        return new TcpChannelHub(null, eg, WIRE_TYPE, "", uri(desc), false, null);
+        return new TcpChannelHub(null, eg, WIRE_TYPE, "", uri(desc), false, null, HandlerPriority.MONITOR);
     }
 
     private void createServer(String desc, EventGroup eg) throws IOException {

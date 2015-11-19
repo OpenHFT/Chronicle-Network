@@ -110,6 +110,7 @@ public class TcpChannelHub implements Closeable {
     // set up in the header
     private long limitOfLast = 0;
     private boolean shouldSendCloseMessage;
+    private HandlerPriority priority;
 
     public TcpChannelHub(@Nullable final SessionProvider sessionProvider,
                          @NotNull final EventLoop eventLoop,
@@ -117,7 +118,9 @@ public class TcpChannelHub implements Closeable {
                          @NotNull final String name,
                          @NotNull final SocketAddressSupplier socketAddressSupplier,
                          boolean shouldSendCloseMessage,
-                         @Nullable ClientConnectionMonitor clientConnectionMonitor) {
+                         @Nullable ClientConnectionMonitor clientConnectionMonitor,
+                         @NotNull final HandlerPriority monitor) {
+        this.priority = monitor;
         this.socketAddressSupplier = socketAddressSupplier;
         this.eventLoop = eventLoop;
         this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", 2 << 20);
@@ -792,7 +795,7 @@ public class TcpChannelHub implements Closeable {
         @NotNull
         @Override
         public HandlerPriority priority() {
-            return HandlerPriority.MONITOR;
+            return priority;
         }
 
         /**

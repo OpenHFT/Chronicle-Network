@@ -6,6 +6,7 @@ import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaSessionDetails;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
+import net.openhft.chronicle.threads.HandlerPriority;
 import net.openhft.chronicle.wire.TextWire;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.WireType;
@@ -76,7 +77,7 @@ public class SimpleServerAndClientTest {
 
     @NotNull
     private TcpChannelHub createClient(EventGroup eg, String desc) {
-        return new TcpChannelHub(null, eg, WireType.TEXT, "", uri(desc), false, null);
+        return new TcpChannelHub(null, eg, WireType.TEXT, "", uri(desc), false, null, HandlerPriority.MONITOR);
     }
 
     private void createServer(String desc, EventGroup eg) throws IOException {
