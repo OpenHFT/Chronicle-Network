@@ -742,6 +742,7 @@ public class TcpChannelHub implements Closeable {
         private volatile boolean isShutdown;
         @Nullable
         private volatile Throwable shutdownHere = null;
+        private int failedConnectionPause;
 
         /**
          * @param wireFunction converts bytes into wire, ie TextWire or BinaryWire
@@ -1364,18 +1365,29 @@ public class TcpChannelHub implements Closeable {
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("attempting to connect to address=" + remote);
 
-                                if (socketChannel.connect(remote))
+                                if (socketChannel.connect(remote)) {
+                                    this.failedConnectionPause = 0;
                                     // successfully connected
                                     break;
+                                }
                             }
                             LOG.error("Unable to connect to remoteAddress=" +
                                     socketAddressSupplier);
                             pause(250);
 
                         } catch (ConnectException e) {
+
+                            //  logs with progressive back off, to prevent the log files from
+                            // being filled up
                             LOG.info("Server is unavailable, ConnectException to " +
                                     "remoteAddress=" + socketAddressSupplier);
-                            pause(15000);
+                            if (this.failedConnectionPause == 0)
+                                this.failedConnectionPause = 250;
+                            else if (this.failedConnectionPause < 15000)
+                                this.failedConnectionPause += this.failedConnectionPause * 2;
+
+                            pause(this.failedConnectionPause);
+
                         }
                     }
 
