@@ -5,6 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -91,7 +92,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
 
     @Nullable
     @Override
-    public SocketAddress get() {
+    public InetSocketAddress get() {
         final RemoteAddressSupplier current = this.current;
         if (current == null)
             return null;
@@ -117,7 +118,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
 
     private class RemoteAddressSupplier implements Supplier<SocketAddress> {
 
-        private final SocketAddress remoteAddress;
+        private final InetSocketAddress remoteAddress;
         private final String description;
 
         public RemoteAddressSupplier(String description) {
@@ -126,7 +127,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
         }
 
         @Override
-        public SocketAddress get() {
+        public InetSocketAddress get() {
             return remoteAddress;
         }
 

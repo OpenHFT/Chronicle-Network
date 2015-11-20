@@ -24,6 +24,8 @@ import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.util.Collection;
@@ -37,6 +39,9 @@ import static net.openhft.chronicle.network.connection.CoreFields.reply;
  * Created by Rob Austin
  */
 public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> implements Closeable {
+
+
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractStatelessClient.class);
 
     @NotNull
     protected final TcpChannelHub hub;
@@ -278,28 +283,29 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
         if (!reattemptUponFailure) {
 
-            hub.lock(() -> {
-                try {
-                    sendEventAsyncWithoutLock(eventId, consumer);
-                } catch (IORuntimeException e) {
-                    // this can occur if the socket is not currently connected
-                }
-            });
+            hub.lock(() -> quietSendEventAsyncWithoutLock(eventId, consumer));
             return true;
         }
 
         attempt(() -> {
-            hub.lock(() -> {
-                try {
-                    sendEventAsyncWithoutLock(eventId, consumer);
-                } catch (IORuntimeException e) {
-                    // this can occur if the socket is not currently connected
-                }
-            });
+            hub.lock(() -> quietSendEventAsyncWithoutLock(eventId, consumer));
             return true;
         });
 
         return false;
+    }
+
+    private void quietSendEventAsyncWithoutLock(final WireKey eventId, final Consumer<ValueOut> consumer) {
+        try {
+            sendEventAsyncWithoutLock(eventId, consumer);
+        } catch (ConnectionDroppedException e) {
+            if (LOG.isDebugEnabled())
+                LOG.error("", e);
+            else
+                LOG.info(e.toString());
+        } catch (IORuntimeException e) {
+            // this can occur if the socket is not currently connected
+        }
     }
 
     protected void sendEventAsyncWithoutLock(@NotNull final WireKey eventId,

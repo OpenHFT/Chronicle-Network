@@ -37,7 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.ConnectException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -217,13 +217,16 @@ public class TcpChannelHub implements Closeable {
     }
 
     @Nullable
-    SocketChannel openSocketChannel()
-            throws IOException {
-        SocketChannel result = SocketChannel.open();
+    SocketChannel openSocketChannel(InetSocketAddress socketAddress) throws IOException {
+        final SocketChannel result = SocketChannel.open(socketAddress);
+        result.configureBlocking(false);
         Socket socket = result.socket();
         socket.setTcpNoDelay(true);
         socket.setReceiveBufferSize(tcpBufferSize);
         socket.setSendBufferSize(tcpBufferSize);
+        socket.setSoTimeout(0);
+        socket.setSoLinger(false, 0);
+
         return result;
     }
 
@@ -386,19 +389,23 @@ public class TcpChannelHub implements Closeable {
             return;
 
         if (shouldSendCloseMessage)
-            sendCloseMessage();
+            try {
+                sendCloseMessage();
 
-        closed = true;
-        tcpSocketConsumer.stop();
+                closed = true;
+                tcpSocketConsumer.stop();
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("closing connection to " + socketAddressSupplier);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("closing connection to " + socketAddressSupplier);
 
-        while (clientChannel != null) {
+                while (clientChannel != null) {
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("waiting for disconnect to " + socketAddressSupplier);
-        }
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("waiting for disconnect to " + socketAddressSupplier);
+                }
+            } catch (ConnectionDroppedException ignore) {
+
+            }
     }
 
     /**
@@ -455,13 +462,18 @@ public class TcpChannelHub implements Closeable {
         assert outBytesLock().isHeldByCurrentThread();
         SocketChannel clientChannel = this.clientChannel;
         if (clientChannel == null)
-            throw new ConnectionDroppedException("Not Connected " + socketAddressSupplier);
-
+            throw new ConnectionDroppedException("Connection to server has been lost");
         try {
             writeSocket1(wire, timeoutMs, clientChannel);
         } catch (ClosedChannelException e) {
             closeSocket();
             throw new ConnectionDroppedException(e);
+        } catch (IOException e) {
+            if (!"Broken pipe".equals(e.getMessage()))
+                LOG.error("", e);
+            closeSocket();
+            throw new ConnectionDroppedException(e);
+
         } catch (Exception e) {
             LOG.error("", e);
             closeSocket();
@@ -523,6 +535,7 @@ public class TcpChannelHub implements Closeable {
 
             while (outBuffer.remaining() > 0) {
                 int prevRemaining = outBuffer.remaining();
+
                 int len = socketChannel.write(outBuffer);
 
                 // reset the timer if we wrote something.
@@ -535,7 +548,7 @@ public class TcpChannelHub implements Closeable {
 
                 long writeTime = Time.currentTimeMillis() - start;
 
-                if (writeTime > 5000) {
+                if (writeTime > 10_000) {
 
                     for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
                         Thread thread = entry.getKey();
@@ -679,9 +692,11 @@ public class TcpChannelHub implements Closeable {
         try {
             r.run();
             writeSocket(outWire());
+        } catch (ConnectionDroppedException e) {
+            Jvm.rethrow(e);
         } catch (Exception e) {
             LOG.error("", e);
-            return false;
+            Jvm.rethrow(e);
         } finally {
             lock.unlock();
         }
@@ -917,6 +932,9 @@ public class TcpChannelHub implements Closeable {
                 try {
                     running();
 
+
+                } catch (ConnectionDroppedException e) {
+                    LOG.info(e.toString());
                 } catch (IORuntimeException e) {
                     LOG.debug("", e);
                 } catch (Throwable e) {
@@ -975,7 +993,16 @@ public class TcpChannelHub implements Closeable {
                         if (isShutdown()) {
                             break;
                         } else {
-                            LOG.warn("reconnecting due to unexpected exception", e);
+                            if (e instanceof IOException && "Connection reset by peer".equals(e
+                                    .getMessage()))
+                                LOG.warn("reconnecting due to \"Connection reset by peer\" " + e
+                                        .getMessage());
+
+                            if (e instanceof ConnectionDroppedException)
+                                LOG.warn("reconnecting due to dropped connection " + ((e.getMessage
+                                        () == null) ? "" : e.getMessage()));
+                            else
+                                LOG.warn("reconnecting due to unexpected exception", e);
                             closeSocket();
                             Thread.sleep(50);
                         }
@@ -1201,7 +1228,7 @@ public class TcpChannelHub implements Closeable {
                 int numberOfBytesRead = clientChannel.read(buffer);
                 WanSimulator.dataRead(numberOfBytesRead);
                 if (numberOfBytesRead == -1)
-                    throw new IOException("Disconnection to server=" + socketAddressSupplier +
+                    throw new ConnectionDroppedException("Disconnection to server=" + socketAddressSupplier +
                             " read=-1 "
                             + ", name=" + name);
 
@@ -1209,8 +1236,8 @@ public class TcpChannelHub implements Closeable {
                     onMessageReceived();
 
                 if (isShutdown)
-                    throw new IOException("The server" + socketAddressSupplier + " was shutdown, " +
-                            "name=" + name);
+                    throw new ConnectionDroppedException(name + " is shutdown, was connected to " +
+                            "" + socketAddressSupplier);
             }
         }
 
@@ -1321,9 +1348,10 @@ public class TcpChannelHub implements Closeable {
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("attemptConnect remoteAddress=" + socketAddressSupplier);
-                SocketChannel socketChannel;
+                SocketChannel socketChannel = null;
                 try {
 
+                    OUTER_LOOP:
                     for (; ; ) {
 
                         if (isShutdown())
@@ -1349,36 +1377,29 @@ public class TcpChannelHub implements Closeable {
                             start = System.currentTimeMillis();
                         }
 
-                        socketChannel = openSocketChannel();
 
                         try {
+
+                            final InetSocketAddress socketAddress = socketAddressSupplier.get();
+                            if (socketAddress == null) {
+                                socketAddressSupplier.failoverToNextAddress();
+                                continue;
+                            }
+
+                            socketChannel = openSocketChannel(socketAddress);
+
                             if (socketChannel == null) {
                                 LOG.error("Unable to open socketChannel to remoteAddress=" +
                                         socketAddressSupplier);
                                 pause(250);
                                 continue;
-                            } else {
-
-                                final SocketAddress socketAddress = socketAddressSupplier.get();
-                                if (socketAddress == null)
-                                    throw new IORuntimeException("failed to connect as " +
-                                            "socketAddress=null");
-
-                                final SocketAddress remote = socketAddressSupplier.get();
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("attempting to connect to address=" + remote);
-
-                                if (socketChannel.connect(remote)) {
-                                    this.failedConnectionPause = 0;
-                                    // successfully connected
-                                    break;
-                                }
                             }
-                            LOG.error("Unable to connect to remoteAddress=" +
-                                    socketAddressSupplier);
-                            pause(250);
 
-                        } catch (ConnectException e) {
+                            socketChannel = openSocketChannel(socketAddress);
+                            this.failedConnectionPause = 0;
+                            break;
+                        } catch (IOException e) {
+                            socketAddressSupplier.failoverToNextAddress();
 
                             //  logs with progressive back off, to prevent the log files from
                             // being filled up
