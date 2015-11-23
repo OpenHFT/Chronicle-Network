@@ -71,10 +71,10 @@ public class TcpChannelHub implements Closeable {
 
     public static final int HEATBEAT_PING_PERIOD =
             !Jvm.IS_DEBUG ? getInteger("heartbeat.ping.period", 500) :
-                    getInteger("heartbeat.ping.period", 5_000 * 10);
+                    getInteger("heartbeat.ping.period", 500);
     public static final int HEATBEAT_TIMEOUT_PERIOD =
             !Jvm.IS_DEBUG ? getInteger("heartbeat.timeout", 1_000) :
-                    getInteger("heartbeat.timeout", 20_000 * 10);
+                    getInteger("heartbeat.timeout", 1_000);
 
     public static final int SIZE_OF_SIZE = 4;
     public static final Set<TcpChannelHub> hubs = new CopyOnWriteArraySet<>();
@@ -766,7 +766,8 @@ public class TcpChannelHub implements Closeable {
         private volatile boolean isShutdown;
         @Nullable
         private volatile Throwable shutdownHere = null;
-        private int failedConnectionPause;
+
+        private long failedConnectionCount;
         private volatile boolean prepareToShutdown;
 
         /**
@@ -786,7 +787,7 @@ public class TcpChannelHub implements Closeable {
          * net.openhft.chronicle.network.connection.AsyncSubscription#applySubscribe()} for each
          * subscription, this could should establish a subscription with the server.
          */
-        private void reconnect() {
+        private void onReconnect() {
 
             preventSubscribeUponReconnect.forEach(this::unsubscribe);
             map.values().forEach(v -> {
@@ -1365,7 +1366,7 @@ public class TcpChannelHub implements Closeable {
                 SocketChannel socketChannel = null;
                 try {
 
-                    OUTER_LOOP:
+                    INNER_LOOP:
                     for (; ; ) {
 
                         if (isShutdown())
@@ -1407,13 +1408,15 @@ public class TcpChannelHub implements Closeable {
                             if (socketChannel == null) {
                                 LOG.error("Unable to open socketChannel to remoteAddress=" +
                                         socketAddressSupplier);
-                                pause(250);
+                                pause(1_000);
                                 continue;
                             }
 
+                            // success
                             socketChannel = openSocketChannel(socketAddress);
-                            this.failedConnectionPause = 0;
+                            this.failedConnectionCount = 0;
                             break;
+
                         } catch (IOException e) {
 
                             if (prepareToShutdown) {
@@ -1423,14 +1426,13 @@ public class TcpChannelHub implements Closeable {
 
                             //  logs with progressive back off, to prevent the log files from
                             // being filled up
-                            LOG.info("Server is unavailable, ConnectException to " +
-                                    "remoteAddress=" + socketAddressSupplier);
-                            if (this.failedConnectionPause == 0)
-                                this.failedConnectionPause = 250;
-                            else if (this.failedConnectionPause < 15000)
-                                this.failedConnectionPause += this.failedConnectionPause * 2;
+                            if ((failedConnectionCount < 15 && failedConnectionCount % 5 == 0) ||
+                                    failedConnectionCount % 60 == 0)
+                                LOG.info("Server is unavailable, failed to  connect to" +
+                                        "address=" + socketAddressSupplier);
 
-                            pause(this.failedConnectionPause);
+                            failedConnectionCount++;
+                            pause(1_000);
 
                         }
                     }
@@ -1458,13 +1460,13 @@ public class TcpChannelHub implements Closeable {
                             LOG.debug("successfully connected to remoteAddress=" +
                                     socketAddressSupplier);
 
-                        reconnect();
+                        onReconnect();
                         onConnected();
                     } finally {
                         outBytesLock().unlock();
                     }
 
-                    break;
+                    return;
                 } catch (Exception e) {
                     if (!isShutdown && !prepareToShutdown) {
                         LOG.error("failed to connect remoteAddress=" + socketAddressSupplier
@@ -1472,7 +1474,7 @@ public class TcpChannelHub implements Closeable {
                         closeSocket();
                         break;
                     }
-                    throw e;
+                    Jvm.pause(1_000);
                 }
             }
         }
