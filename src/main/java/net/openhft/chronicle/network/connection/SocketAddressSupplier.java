@@ -72,6 +72,8 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
         if (LOG.isDebugEnabled())
             LOG.debug("failing over to next address");
         next();
+        if (this.current == null)
+            startAtFirstAddress();
     }
 
     private void next() {

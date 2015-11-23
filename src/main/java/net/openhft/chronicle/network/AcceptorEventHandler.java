@@ -81,7 +81,7 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
 
             if (sc != null) {
                 if (LOG.isInfoEnabled())
-                    LOG.info("Accepted " + sc);
+                    LOG.info("accepted connection " + sc);
 
                 final SessionDetailsProvider sessionDetails = sessionDetailsSupplier.get();
 

@@ -70,10 +70,10 @@ import static net.openhft.chronicle.core.Jvm.rethrow;
 public class TcpChannelHub implements Closeable {
 
     public static final int HEATBEAT_PING_PERIOD =
-            !Jvm.IS_DEBUG ? getInteger("heartbeat.ping.period", 5_000) :
+            !Jvm.IS_DEBUG ? getInteger("heartbeat.ping.period", 500) :
                     getInteger("heartbeat.ping.period", 5_000 * 10);
     public static final int HEATBEAT_TIMEOUT_PERIOD =
-            !Jvm.IS_DEBUG ? getInteger("heartbeat.timeout", 20_000) :
+            !Jvm.IS_DEBUG ? getInteger("heartbeat.timeout", 1_000) :
                     getInteger("heartbeat.timeout", 20_000 * 10);
 
     public static final int SIZE_OF_SIZE = 4;
@@ -150,10 +150,13 @@ public class TcpChannelHub implements Closeable {
     }
 
     public static void closeAllHubs() {
-        for (TcpChannelHub h : hubs) {
-            if (!h.isClosed()) {
-                LOG.warn("Closing " + h);
-                h.close();
+        final TcpChannelHub[] tcpChannelHub = hubs.toArray(new TcpChannelHub[hubs.size()]);
+        for (int i = tcpChannelHub.length - 1; i >= 0; i--) {
+
+            final TcpChannelHub tcpChannelHub1 = tcpChannelHub[i];
+            if (!tcpChannelHub1.isClosed()) {
+                LOG.warn("Closing " + tcpChannelHub1);
+                tcpChannelHub1.close();
             }
         }
         hubs.clear();
@@ -388,12 +391,15 @@ public class TcpChannelHub implements Closeable {
         if (closed)
             return;
 
+        tcpSocketConsumer.prepareToShutdown();
+
         if (shouldSendCloseMessage)
             try {
-                sendCloseMessage();
 
-                closed = true;
                 tcpSocketConsumer.stop();
+
+                sendCloseMessage();
+                closed = true;
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("closing connection to " + socketAddressSupplier);
@@ -428,7 +434,7 @@ public class TcpChannelHub implements Closeable {
         try {
             final boolean await = receivedClosedAcknowledgement.await(1, TimeUnit.SECONDS);
             if (!await)
-                LOG.warn("SERVER IGNORED CLOSE REQUEST: shutting down the client anyway as the " +
+                LOG.debug("SERVER IGNORED CLOSE REQUEST: shutting down the client anyway as the " +
                         "server did not respond to the close() request.");
         } catch (InterruptedException ignore) {
             //
@@ -761,6 +767,7 @@ public class TcpChannelHub implements Closeable {
         @Nullable
         private volatile Throwable shutdownHere = null;
         private int failedConnectionPause;
+        private volatile boolean prepareToShutdown;
 
         /**
          * @param wireFunction converts bytes into wire, ie TextWire or BinaryWire
@@ -931,14 +938,13 @@ public class TcpChannelHub implements Closeable {
             executorService.submit(() -> {
                 try {
                     running();
-
-
                 } catch (ConnectionDroppedException e) {
-                    LOG.info(e.toString());
+                    if (!tcpSocketConsumer.prepareToShutdown)
+                        LOG.info(e.toString());
                 } catch (IORuntimeException e) {
                     LOG.debug("", e);
                 } catch (Throwable e) {
-                    if (!isShutdown())
+                    if (!prepareToShutdown)
                         LOG.error("", e);
                 }
             });
@@ -947,6 +953,7 @@ public class TcpChannelHub implements Closeable {
         }
 
         public void checkNotShutdown() {
+
             if (isShutdown)
                 throw new IORuntimeException("Called after shutdown", shutdownHere);
         }
@@ -959,6 +966,7 @@ public class TcpChannelHub implements Closeable {
                 while (!isShutdown()) {
 
                     checkConnectionState();
+
 
                     try {
                         // if we have processed all the bytes that we have read in
@@ -990,7 +998,7 @@ public class TcpChannelHub implements Closeable {
                     } catch (@NotNull Exception e) {
 
                         tid = -1;
-                        if (isShutdown()) {
+                        if (isShutdown() || prepareToShutdown) {
                             break;
                         } else {
                             if (e instanceof IOException && "Connection reset by peer".equals(e
@@ -999,18 +1007,18 @@ public class TcpChannelHub implements Closeable {
                                         .getMessage());
 
                             if (e instanceof ConnectionDroppedException)
-                                LOG.warn("reconnecting due to dropped connection " + ((e.getMessage
+                                LOG.debug("reconnecting due to dropped connection " + ((e.getMessage
                                         () == null) ? "" : e.getMessage()));
                             else
                                 LOG.warn("reconnecting due to unexpected exception", e);
                             closeSocket();
-                            Thread.sleep(50);
+                            Thread.sleep(500);
                         }
                     } finally {
                         clear(inWire);
                     }
                 }
-                clear(inWire);
+
             } catch (Throwable e) {
                 if (!isShutdown())
                     LOG.error("", e);
@@ -1234,6 +1242,19 @@ public class TcpChannelHub implements Closeable {
 
                 if (numberOfBytesRead > 0)
                     onMessageReceived();
+                else if (numberOfBytesRead == 0) {
+                    // if we have not received a message from the server after the HEATBEAT_TIMEOUT_PERIOD
+                    // we will drop and then re-establish the connection.
+                    long millisecondsSinceLastMessageReceived = System.currentTimeMillis() - lastTimeMessageReceived;
+                    if (millisecondsSinceLastMessageReceived - HEATBEAT_TIMEOUT_PERIOD > 0) {
+                        throw new IOException("reconnecting due to heartbeat failure, time since " +
+                                "last message=" + millisecondsSinceLastMessageReceived + "ms " +
+                                "dropping connection to " + socketAddressSupplier);
+                    }
+
+                } else
+                    throw new ConnectionDroppedException(name + " is shutdown, was connected to "
+                            + socketAddressSupplier);
 
                 if (isShutdown)
                     throw new ConnectionDroppedException(name + " is shutdown, was connected to " +
@@ -1317,25 +1338,18 @@ public class TcpChannelHub implements Closeable {
                 lastheartbeatSentTime = Time.currentTimeMillis();
                 sendHeartbeat();
             }
-            // if we have not received a message from the server after the HEATBEAT_TIMEOUT_PERIOD
-            // we will drop and then re-establish the connection.
-            long x = millisecondsSinceLastMessageReceived - HEATBEAT_TIMEOUT_PERIOD;
-            if (x > 0) {
-                LOG.warn("reconnecting due to heartbeat failure, millisecondsSinceLastMessageReceived=" + millisecondsSinceLastMessageReceived);
-                closeSocket();
-                throw new InvalidEventHandlerException();
-            }
+
             return true;
         }
 
-        private void checkConnectionState() {
+        private void checkConnectionState() throws IOException {
             if (clientChannel != null)
                 return;
 
             attemptConnect();
         }
 
-        private void attemptConnect() {
+        private void attemptConnect() throws IOException {
 
             keepSubscriptionsAndClearEverythingElse();
 
@@ -1362,9 +1376,11 @@ public class TcpChannelHub implements Closeable {
                             String oldAddress = socketAddressSupplier.toString();
 
                             socketAddressSupplier.failoverToNextAddress();
-                            LOG.info("Connection Dropped to address=" +
-                                    oldAddress + ", so will fail over to" +
-                                    socketAddressSupplier + ", name=" + name);
+                            if ("(none)".equals(oldAddress)) {
+                                LOG.info("Connection Dropped to address=" +
+                                        oldAddress + ", so will fail over to" +
+                                        socketAddressSupplier + ", name=" + name);
+                            }
 
                             if (socketAddressSupplier.get() == null) {
                                 LOG.warn("failed to establish a socket " +
@@ -1399,6 +1415,10 @@ public class TcpChannelHub implements Closeable {
                             this.failedConnectionPause = 0;
                             break;
                         } catch (IOException e) {
+
+                            if (prepareToShutdown) {
+                                throw e;
+                            }
                             socketAddressSupplier.failoverToNextAddress();
 
                             //  logs with progressive back off, to prevent the log files from
@@ -1446,11 +1466,13 @@ public class TcpChannelHub implements Closeable {
 
                     break;
                 } catch (Exception e) {
-                    if (!isShutdown) {
+                    if (!isShutdown && !prepareToShutdown) {
                         LOG.error("failed to connect remoteAddress=" + socketAddressSupplier
                                 + " so will reconnect ", e);
                         closeSocket();
+                        break;
                     }
+                    throw e;
                 }
             }
         }
@@ -1469,6 +1491,10 @@ public class TcpChannelHub implements Closeable {
                     map.remove(k);
 
             });
+        }
+
+        public void prepareToShutdown() {
+            this.prepareToShutdown = true;
         }
     }
 }
