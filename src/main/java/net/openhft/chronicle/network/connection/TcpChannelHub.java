@@ -321,7 +321,7 @@ public class TcpChannelHub implements Closeable {
                 wireOut.writeEventName(EventId.clientId).text(sessionDetails.clientId().toString());
             });
 
-            writeSocket1(handShakingWire, timeoutMs);
+            writeSocket1(handShakingWire, timeoutMs, socketChannel);
         }
 
     }
@@ -469,7 +469,21 @@ public class TcpChannelHub implements Closeable {
         assert outBytesLock().isHeldByCurrentThread();
 
         try {
-            writeSocket1(wire, timeoutMs);
+
+            long start = System.currentTimeMillis();
+            SocketChannel clientChannel = this.clientChannel;
+
+            // wait for the channel to be non null
+            while (clientChannel == null) {
+                clientChannel = this.clientChannel;
+                Jvm.pause(500);
+
+                // wait 15 seconds to be come connected
+                if (start + 15_000 < System.currentTimeMillis())
+                    throw new IOException("Timed out waiting for socket to be non-null.");
+            }
+
+            writeSocket1(wire, timeoutMs, clientChannel);
         } catch (ClosedChannelException e) {
             closeSocket();
             throw new ConnectionDroppedException(e);
@@ -513,29 +527,19 @@ public class TcpChannelHub implements Closeable {
     }
 
     /**
-     * writes the bytes to the socket
+     * writes the bytes to the socket, onto the clientChannel provided
      *
-     * @param outWire     the data that you wish to write
-     * @param timeoutTime how long before a we timeout
+     * @param outWire       the data that you wish to write
+     * @param timeoutTime   how long before a we timeout
+     * @param clientChannel
      * @throws IOException
      */
-    private void writeSocket1(@NotNull WireOut outWire, long timeoutTime) throws
+    private void writeSocket1(@NotNull WireOut outWire, long timeoutTime, @NotNull SocketChannel clientChannel) throws
             IOException {
 
         long start = Time.currentTimeMillis();
         for (; ; ) {
 
-
-            SocketChannel clientChannel = this.clientChannel;
-
-            // this can occur as its not this thread that established the connection, we have to
-            // wait for the connection to be established.
-            if (clientChannel == null) {
-                if (System.currentTimeMillis() - start > 5_000)
-                    throw new ConnectionDroppedException("Connection to server has still not been established");
-                Jvm.pause(500);
-                continue;
-            }
 
             final Bytes<?> bytes = outWire.bytes();
             final ByteBuffer outBuffer = (ByteBuffer) bytes.underlyingObject();
@@ -548,16 +552,20 @@ public class TcpChannelHub implements Closeable {
             logToStandardOutMessageSent(outWire, outBuffer);
             updateLargestChunkSoFarSize(outBuffer);
 
-
-
             try {
 
                 while (outBuffer.remaining() > 0) {
                     int prevRemaining = outBuffer.remaining();
 
-                    // if the socket was changed
-                    if (clientChannel != this.clientChannel)
+                    // if the socket was changed, we need to resend using this one instead
+                    // unless the client channel still has not be set, then we will use this one
+                    // this can happen during the handshaking phase of a new connection
+                    if (this.clientChannel != null &&
+                            clientChannel != this.clientChannel) {
+                        clientChannel = this.clientChannel;
+                        Jvm.pause(500);
                         continue;
+                    }
 
                     int len = clientChannel.write(outBuffer);
 
@@ -973,7 +981,6 @@ public class TcpChannelHub implements Closeable {
         }
 
         public void checkNotShutdown() {
-
             if (isShutdown)
                 throw new IORuntimeException("Called after shutdown", shutdownHere);
         }
@@ -1261,7 +1268,7 @@ public class TcpChannelHub implements Closeable {
 
                 if (numberOfBytesRead > 0)
                     onMessageReceived();
-                else if (numberOfBytesRead == 0) {
+                else if (numberOfBytesRead == 0 && isOpen()) {
                     // if we have not received a message from the server after the HEATBEAT_TIMEOUT_PERIOD
                     // we will drop and then re-establish the connection.
                     long millisecondsSinceLastMessageReceived = System.currentTimeMillis() - lastTimeMessageReceived;
@@ -1431,11 +1438,10 @@ public class TcpChannelHub implements Closeable {
                             }
 
                             // success
-                            socketChannel = openSocketChannel(socketAddress);
                             this.failedConnectionCount = 0;
                             break;
 
-                        } catch (IOException e) {
+                        } catch (Throwable e) {
 
                             if (prepareToShutdown) {
                                 throw e;
@@ -1450,9 +1456,18 @@ public class TcpChannelHub implements Closeable {
                                         "address=" + socketAddressSupplier);
 
                             failedConnectionCount++;
+
+                            try {
+                                socketChannel.close();
+                            } catch (Exception ignore) {
+
+                            }
                             pause(1_000);
 
                         }
+
+
+
                     }
 
                     // this lock prevents the clients attempt to send data before we have
