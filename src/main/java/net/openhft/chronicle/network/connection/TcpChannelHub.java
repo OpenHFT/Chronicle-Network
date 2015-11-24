@@ -73,8 +73,8 @@ public class TcpChannelHub implements Closeable {
             !Jvm.IS_DEBUG ? getInteger("heartbeat.ping.period", 500) :
                     getInteger("heartbeat.ping.period", 500);
     public static final int HEATBEAT_TIMEOUT_PERIOD =
-            !Jvm.IS_DEBUG ? getInteger("heartbeat.timeout", 1_000) :
-                    getInteger("heartbeat.timeout", 1_000);
+            !Jvm.IS_DEBUG ? getInteger("heartbeat.timeout", 7_000) :
+                    getInteger("heartbeat.timeout", 7_000);
 
     public static final int SIZE_OF_SIZE = 4;
     public static final Set<TcpChannelHub> hubs = new CopyOnWriteArraySet<>();
@@ -554,7 +554,7 @@ public class TcpChannelHub implements Closeable {
 
                 long writeTime = Time.currentTimeMillis() - start;
 
-                if (writeTime > 10_000) {
+                if (writeTime > 20_000) {
 
                     for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
                         Thread thread = entry.getKey();
