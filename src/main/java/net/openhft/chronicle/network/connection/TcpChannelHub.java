@@ -321,7 +321,7 @@ public class TcpChannelHub implements Closeable {
                 wireOut.writeEventName(EventId.clientId).text(sessionDetails.clientId().toString());
             });
 
-            writeSocket1(handShakingWire, timeoutMs, socketChannel);
+            writeSocket1(handShakingWire, timeoutMs);
         }
 
     }
@@ -339,6 +339,7 @@ public class TcpChannelHub implements Closeable {
     protected synchronized void closeSocket() {
 
         SocketChannel clientChannel = this.clientChannel;
+
         if (clientChannel != null) {
 
             try {
@@ -466,11 +467,9 @@ public class TcpChannelHub implements Closeable {
      */
     public void writeSocket(@NotNull final WireOut wire) {
         assert outBytesLock().isHeldByCurrentThread();
-        SocketChannel clientChannel = this.clientChannel;
-        if (clientChannel == null)
-            throw new ConnectionDroppedException("Connection to server has been lost");
+
         try {
-            writeSocket1(wire, timeoutMs, clientChannel);
+            writeSocket1(wire, timeoutMs);
         } catch (ClosedChannelException e) {
             closeSocket();
             throw new ConnectionDroppedException(e);
@@ -520,66 +519,86 @@ public class TcpChannelHub implements Closeable {
      * @param timeoutTime how long before a we timeout
      * @throws IOException
      */
-    private void writeSocket1(@NotNull WireOut outWire, long timeoutTime, @NotNull SocketChannel socketChannel) throws
+    private void writeSocket1(@NotNull WireOut outWire, long timeoutTime) throws
             IOException {
-        final Bytes<?> bytes = outWire.bytes();
-
-        final ByteBuffer outBuffer = (ByteBuffer) bytes.underlyingObject();
-        outBuffer.limit((int) bytes.writePosition());
-        outBuffer.position(0);
-
-        // this check ensure that a put does not occur while currently re-subscribing
-        outBytesLock().isHeldByCurrentThread();
-
-        logToStandardOutMessageSent(outWire, outBuffer);
-
-        updateLargestChunkSoFarSize(outBuffer);
 
         long start = Time.currentTimeMillis();
+        for (; ; ) {
 
-        try {
 
-            while (outBuffer.remaining() > 0) {
-                int prevRemaining = outBuffer.remaining();
+            SocketChannel clientChannel = this.clientChannel;
 
-                int len = socketChannel.write(outBuffer);
-
-                // reset the timer if we wrote something.
-                if (prevRemaining != outBuffer.remaining())
-                    start = Time.currentTimeMillis();
-
-                if (len == -1)
-                    throw new IORuntimeException("Disconnection to server=" +
-                            socketAddressSupplier + ", name=" + name);
-
-                long writeTime = Time.currentTimeMillis() - start;
-
-                if (writeTime > 20_000) {
-
-                    for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
-                        Thread thread = entry.getKey();
-                        if (thread.getThreadGroup().getName().equals("system"))
-                            continue;
-                        StringBuilder sb = new StringBuilder();
-                        sb.append(thread).append(" ").append(thread.getState());
-                        Jvm.trimStackTrace(sb, entry.getValue());
-                        sb.append("\n");
-                        LOG.error("\n========= THREAD DUMP =========\n", sb);
-                    }
-
-                    closeSocket();
-
-                    throw new IORuntimeException("Took " + writeTime + " ms " +
-                            "to perform a write, remaining= " + outBuffer.remaining());
-                }
+            // this can occur as its not this thread that established the connection, we have to
+            // wait for the connection to be established.
+            if (clientChannel == null) {
+                if (System.currentTimeMillis() - start > 5_000)
+                    throw new ConnectionDroppedException("Connection to server has still not been established");
+                Jvm.pause(500);
+                continue;
             }
-        } catch (IOException e) {
-            closeSocket();
-            throw e;
-        }
 
-        outBuffer.clear();
-        bytes.clear();
+            final Bytes<?> bytes = outWire.bytes();
+            final ByteBuffer outBuffer = (ByteBuffer) bytes.underlyingObject();
+            outBuffer.limit((int) bytes.writePosition());
+            outBuffer.position(0);
+
+            // this check ensure that a put does not occur while currently re-subscribing
+            outBytesLock().isHeldByCurrentThread();
+
+            logToStandardOutMessageSent(outWire, outBuffer);
+            updateLargestChunkSoFarSize(outBuffer);
+
+
+
+            try {
+
+                while (outBuffer.remaining() > 0) {
+                    int prevRemaining = outBuffer.remaining();
+
+                    // if the socket was changed
+                    if (clientChannel != this.clientChannel)
+                        continue;
+
+                    int len = clientChannel.write(outBuffer);
+
+                    // reset the timer if we wrote something.
+                    if (prevRemaining != outBuffer.remaining())
+                        start = Time.currentTimeMillis();
+
+                    if (len == -1)
+                        throw new IORuntimeException("Disconnection to server=" +
+                                socketAddressSupplier + ", name=" + name);
+
+                    long writeTime = Time.currentTimeMillis() - start;
+
+                    if (writeTime > 20_000) {
+
+                        for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
+                            Thread thread = entry.getKey();
+                            if (thread.getThreadGroup().getName().equals("system"))
+                                continue;
+                            StringBuilder sb = new StringBuilder();
+                            sb.append(thread).append(" ").append(thread.getState());
+                            Jvm.trimStackTrace(sb, entry.getValue());
+                            sb.append("\n");
+                            LOG.error("\n========= THREAD DUMP =========\n", sb);
+                        }
+
+                        closeSocket();
+
+                        throw new IORuntimeException("Took " + writeTime + " ms " +
+                                "to perform a write, remaining= " + outBuffer.remaining());
+                    }
+                }
+            } catch (IOException e) {
+                closeSocket();
+                throw e;
+            }
+
+            outBuffer.clear();
+            bytes.clear();
+            return;
+        }
     }
 
     private void logToStandardOutMessageSent(@NotNull WireOut wire, @NotNull ByteBuffer outBuffer) {
@@ -967,7 +986,6 @@ public class TcpChannelHub implements Closeable {
                 while (!isShutdown()) {
 
                     checkConnectionState();
-
 
                     try {
                         // if we have processed all the bytes that we have read in
