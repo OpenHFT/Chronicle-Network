@@ -1304,7 +1304,6 @@ public class TcpChannelHub implements Closeable {
                 if (numberOfBytesRead > 0) {
                     onMessageReceived();
                     start = System.currentTimeMillis();
-                    System.out.println("number of bytes read=" + numberOfBytesRead + ", thread=" + Thread.currentThread().getName());
 
                 } else if (numberOfBytesRead == 0 && isOpen()) {
                     // if we have not received a message from the server after the HEATBEAT_TIMEOUT_PERIOD
