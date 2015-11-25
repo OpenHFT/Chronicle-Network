@@ -320,7 +320,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
                 consumer.accept(valueOut);
         });
 
-        hub.writeSocket(hub.outWire());
+        hub.asyncWriteSocket(hub.outWire());
     }
 
     /**

@@ -36,12 +36,18 @@ public abstract class AbstractAsyncSubscription implements AsyncSubscription {
 
     @Override
     public void applySubscribe() {
-        assert hub.outBytesLock().isHeldByCurrentThread();
+/*        assert hub.outBytesLock().isHeldByCurrentThread();
 
         hub.writeMetaDataForKnownTID(tid(), hub.outWire(), csp, 0);
         hub.outWire().writeDocument(false, this::onSubscribe);
-        hub.writeSocket(hub.outWire());
+        hub.asyncWriteSocket(hub.outWire());*/
 
+
+        hub.asyncWriteTask(() -> {
+            hub.writeMetaDataForKnownTID(tid(), hub.outWire(), csp, 0);
+            hub.outWire().writeDocument(false, this::onSubscribe);
+            hub.writeSocket(hub.outWire());
+        });
     }
 
     /**

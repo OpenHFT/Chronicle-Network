@@ -70,11 +70,11 @@ import static net.openhft.chronicle.core.Jvm.rethrow;
 public class TcpChannelHub implements Closeable {
 
     public static final int HEATBEAT_PING_PERIOD =
-            !Jvm.IS_DEBUG ? getInteger("heartbeat.ping.period", 500) :
-                    getInteger("heartbeat.ping.period", 500);
+            !Jvm.IS_DEBUG ? getInteger("heartbeat.ping.period", 5000) :
+                    getInteger("heartbeat.ping.period", 5000);
     public static final int HEATBEAT_TIMEOUT_PERIOD =
-            !Jvm.IS_DEBUG ? getInteger("heartbeat.timeout", 7_000) :
-                    getInteger("heartbeat.timeout", 7_000);
+            !Jvm.IS_DEBUG ? getInteger("heartbeat.timeout", 15_000) :
+                    getInteger("heartbeat.timeout", 15_000);
 
     public static final int SIZE_OF_SIZE = 4;
     public static final Set<TcpChannelHub> hubs = new CopyOnWriteArraySet<>();
@@ -111,6 +111,7 @@ public class TcpChannelHub implements Closeable {
     private long limitOfLast = 0;
     private boolean shouldSendCloseMessage;
     private HandlerPriority priority;
+    private final ExecutorService asycnWriteExecutor;
 
     public TcpChannelHub(@Nullable final SessionProvider sessionProvider,
                          @NotNull final EventLoop eventLoop,
@@ -135,6 +136,8 @@ public class TcpChannelHub implements Closeable {
         this.shouldSendCloseMessage = shouldSendCloseMessage;
         this.clientConnectionMonitor = clientConnectionMonitor;
         hubs.add(this);
+        asycnWriteExecutor = newSingleThreadExecutor(
+                new NamedThreadFactory("TcpChannelHub-async-writes-" + socketAddressSupplier, true));
     }
 
     public static void assertAllHubsClosed() {
@@ -460,12 +463,41 @@ public class TcpChannelHub implements Closeable {
         return id;
     }
 
+
+    /**
+     * sends data to the server via TCP/IP, using the event loop thread
+     *
+     * @param wire the {@code wire} containing the outbound data
+     */
+    public void asyncWriteSocket(@NotNull final WireOut wire) {
+        asyncWriteTask(() -> writeSocket(wire));
+
+    }
+
+    /**
+     * dispatcahes the task onto the async write thred and ensures that
+     * @param r
+     */
+    public void asyncWriteTask(@NotNull final Runnable r) {
+        asycnWriteExecutor.submit(() -> {
+                    try {
+                        lock(() -> r.run());
+                    } catch (Exception e) {
+                        LOG.error("", e);
+                    }
+                }
+        );
+    }
+
     /**
      * sends data to the server via TCP/IP
      *
      * @param wire the {@code wire} containing the outbound data
      */
     public void writeSocket(@NotNull final WireOut wire) {
+
+        assert Thread.currentThread() != tcpSocketConsumer.readThread : "if writes and reads are on the same thread this can lead " +
+                "to deadlocks with the server, if the server buffer becomes full";
         assert outBytesLock().isHeldByCurrentThread();
 
         try {
@@ -478,8 +510,8 @@ public class TcpChannelHub implements Closeable {
                 clientChannel = this.clientChannel;
                 Jvm.pause(500);
 
-                // wait 15 seconds to be come connected
-                if (start + 15_000 < System.currentTimeMillis())
+                // wait 5 seconds to be come connected
+                if (start + 5_000 < System.currentTimeMillis())
                     throw new IOException("Timed out waiting for socket to be non-null.");
             }
 
@@ -554,48 +586,53 @@ public class TcpChannelHub implements Closeable {
 
             try {
 
+                int prevRemaining = outBuffer.remaining();
                 while (outBuffer.remaining() > 0) {
-                    int prevRemaining = outBuffer.remaining();
+
+
 
                     // if the socket was changed, we need to resend using this one instead
                     // unless the client channel still has not be set, then we will use this one
                     // this can happen during the handshaking phase of a new connection
-                    if (this.clientChannel != null &&
-                            clientChannel != this.clientChannel) {
-                        clientChannel = this.clientChannel;
-                        Jvm.pause(500);
-                        continue;
-                    }
+                    SocketChannel clientChannel1 = this.clientChannel;
+                    if (clientChannel != clientChannel1 && clientChannel1 != null && isOpen())
+                        throw new ConnectionDroppedException("clientChannel has changed");
 
                     int len = clientChannel.write(outBuffer);
-
-                    // reset the timer if we wrote something.
-                    if (prevRemaining != outBuffer.remaining())
-                        start = Time.currentTimeMillis();
 
                     if (len == -1)
                         throw new IORuntimeException("Disconnection to server=" +
                                 socketAddressSupplier + ", name=" + name);
 
-                    long writeTime = Time.currentTimeMillis() - start;
+                    // reset the timer if we wrote something.
+                    if (prevRemaining != outBuffer.remaining()) {
+                        start = Time.currentTimeMillis();
+                        prevRemaining = outBuffer.remaining();
+                    }else {
+                        long writeTime = Time.currentTimeMillis() - start;
 
-                    if (writeTime > 20_000) {
+                        if (writeTime > 20_000) {
 
-                        for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
-                            Thread thread = entry.getKey();
-                            if (thread.getThreadGroup().getName().equals("system"))
-                                continue;
-                            StringBuilder sb = new StringBuilder();
-                            sb.append(thread).append(" ").append(thread.getState());
-                            Jvm.trimStackTrace(sb, entry.getValue());
-                            sb.append("\n");
-                            LOG.error("\n========= THREAD DUMP =========\n", sb);
+                            for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
+                                Thread thread = entry.getKey();
+                                if (thread.getThreadGroup().getName().equals("system"))
+                                    continue;
+                                StringBuilder sb = new StringBuilder();
+                                sb.append(thread).append(" ").append(thread.getState());
+                                Jvm.trimStackTrace(sb, entry.getValue());
+                                sb.append("\n");
+                                LOG.error("\n========= THREAD DUMP =========\n", sb);
+                            }
+
+                            closeSocket();
+
+                            throw new IORuntimeException("Took " + writeTime + " ms " +
+                                    "to perform a write, remaining= " + outBuffer.remaining());
                         }
 
-                        closeSocket();
-
-                        throw new IORuntimeException("Took " + writeTime + " ms " +
-                                "to perform a write, remaining= " + outBuffer.remaining());
+                        // its important to yield, if the read buffer gets full
+                        // we wont be able to write, lets give some time to the read thread !
+                        Thread.yield();
                     }
                 }
             } catch (IOException e) {
@@ -656,25 +693,19 @@ public class TcpChannelHub implements Closeable {
         // time stamp sent from the server, this is so that the server can calculate the round
         // trip time
         long timestamp = valueIn.int64();
-
-        this.lock(() -> {
-
+        asycnWriteExecutor.submit(() -> this.lock(() -> {
             TcpChannelHub.this.writeMetaDataForKnownTID(0, outWire, null, 0);
-
             TcpChannelHub.this.outWire.writeDocument(false, w ->
                     // send back the time stamp that was sent from the server
                     w.writeEventName(EventId.heartbeatReply).int64(timestamp));
             writeSocket(outWire);
-        }, true);
+        }, true));
     }
 
     public long writeMetaDataStartTime(long startTime, @NotNull Wire wire, String csp, long cid) {
         assert outBytesLock().isHeldByCurrentThread();
-
         long tid = nextUniqueTransaction(startTime);
-
         writeMetaDataForKnownTID(tid, wire, csp, cid);
-
         return tid;
     }
 
@@ -951,6 +982,8 @@ public class TcpChannelHub implements Closeable {
             map.remove(tid);
         }
 
+        private Thread readThread;
+
         /**
          * uses a single read thread, to process messages to waiting threads based on their {@code
          * tid}
@@ -960,10 +993,11 @@ public class TcpChannelHub implements Closeable {
             checkNotShutdown();
 
             final ExecutorService executorService = newSingleThreadExecutor(
-                    new NamedThreadFactory("TcpChannelHub-" + socketAddressSupplier, true));
+                    new NamedThreadFactory("TcpChannelHub-Reads-" + socketAddressSupplier, true));
             assert shutdownHere == null;
             assert !isShutdown;
             executorService.submit(() -> {
+                readThread = Thread.currentThread();
                 try {
                     running();
                 } catch (ConnectionDroppedException e) {
@@ -1139,7 +1173,6 @@ public class TcpChannelHub implements Closeable {
                                 "the subscription has just become unregistered ( an the server " +
                                 "has not yet processed the unregister event ) ");
                         return isLastMessageForThisTid;
-
                     }
                 }
 
@@ -1254,6 +1287,8 @@ public class TcpChannelHub implements Closeable {
         }
 
         private void readBuffer(@NotNull final ByteBuffer buffer) throws IOException {
+
+            long start = System.currentTimeMillis();
             while (buffer.remaining() > 0) {
                 final SocketChannel clientChannel = TcpChannelHub.this.clientChannel;
                 if (clientChannel == null)
@@ -1266,9 +1301,12 @@ public class TcpChannelHub implements Closeable {
                             " read=-1 "
                             + ", name=" + name);
 
-                if (numberOfBytesRead > 0)
+                if (numberOfBytesRead > 0) {
                     onMessageReceived();
-                else if (numberOfBytesRead == 0 && isOpen()) {
+                    start = System.currentTimeMillis();
+                    System.out.println("number of bytes read=" + numberOfBytesRead + ", thread=" + Thread.currentThread().getName());
+
+                } else if (numberOfBytesRead == 0 && isOpen()) {
                     // if we have not received a message from the server after the HEATBEAT_TIMEOUT_PERIOD
                     // we will drop and then re-establish the connection.
                     long millisecondsSinceLastMessageReceived = System.currentTimeMillis() - lastTimeMessageReceived;
@@ -1277,7 +1315,6 @@ public class TcpChannelHub implements Closeable {
                                 "last message=" + millisecondsSinceLastMessageReceived + "ms " +
                                 "dropping connection to " + socketAddressSupplier);
                     }
-
                 } else
                     throw new ConnectionDroppedException(name + " is shutdown, was connected to "
                             + socketAddressSupplier);
@@ -1285,6 +1322,22 @@ public class TcpChannelHub implements Closeable {
                 if (isShutdown)
                     throw new ConnectionDroppedException(name + " is shutdown, was connected to " +
                             "" + socketAddressSupplier);
+
+                if (start + 30_000 < System.currentTimeMillis()) {
+
+                    for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
+                        Thread thread = entry.getKey();
+                        if (thread.getThreadGroup().getName().equals("system"))
+                            continue;
+                        StringBuilder sb = new StringBuilder();
+                        sb.append(thread).append(" ").append(thread.getState());
+                        Jvm.trimStackTrace(sb, entry.getValue());
+                        sb.append("\n");
+                        LOG.error("\n========= THREAD DUMP =========\n" + sb);
+                    }
+
+                    LOG.error("", new ConnectionDroppedException(name + " the client is failing to get the data from the server"));
+                }
             }
         }
 
@@ -1463,11 +1516,7 @@ public class TcpChannelHub implements Closeable {
 
                             }
                             pause(1_000);
-
                         }
-
-
-
                     }
 
                     // this lock prevents the clients attempt to send data before we have
@@ -1485,6 +1534,7 @@ public class TcpChannelHub implements Closeable {
                         doHandShaking(socketChannel);
 
                         synchronized (this) {
+                            LOG.info("connected to " + socketChannel);
                             clientChannel = socketChannel;
                         }
 
@@ -1493,12 +1543,13 @@ public class TcpChannelHub implements Closeable {
                             LOG.debug("successfully connected to remoteAddress=" +
                                     socketAddressSupplier);
 
-                        onReconnect();
-                        onConnected();
+
                     } finally {
                         outBytesLock().unlock();
                     }
 
+                    onReconnect();
+                    onConnected();
                     return;
                 } catch (Exception e) {
                     if (!isShutdown && !prepareToShutdown) {
