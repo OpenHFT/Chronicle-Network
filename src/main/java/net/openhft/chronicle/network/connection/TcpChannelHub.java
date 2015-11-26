@@ -397,25 +397,28 @@ public class TcpChannelHub implements Closeable {
 
         tcpSocketConsumer.prepareToShutdown();
 
+
         if (shouldSendCloseMessage)
-            try {
+            asycnWriteExecutor.submit(() -> {
+                try {
 
-                tcpSocketConsumer.stop();
+                    tcpSocketConsumer.stop();
 
-                sendCloseMessage();
-                closed = true;
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("closing connection to " + socketAddressSupplier);
-
-                while (clientChannel != null) {
+                    sendCloseMessage();
+                    closed = true;
 
                     if (LOG.isDebugEnabled())
-                        LOG.debug("waiting for disconnect to " + socketAddressSupplier);
-                }
-            } catch (ConnectionDroppedException ignore) {
+                        LOG.debug("closing connection to " + socketAddressSupplier);
 
-            }
+                    while (clientChannel != null) {
+
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("waiting for disconnect to " + socketAddressSupplier);
+                    }
+                } catch (ConnectionDroppedException ignore) {
+
+                }
+            });
     }
 
     /**
@@ -476,6 +479,7 @@ public class TcpChannelHub implements Closeable {
 
     /**
      * dispatcahes the task onto the async write thred and ensures that
+     *
      * @param r
      */
     public void asyncWriteTask(@NotNull final Runnable r) {
@@ -590,7 +594,6 @@ public class TcpChannelHub implements Closeable {
                 while (outBuffer.remaining() > 0) {
 
 
-
                     // if the socket was changed, we need to resend using this one instead
                     // unless the client channel still has not be set, then we will use this one
                     // this can happen during the handshaking phase of a new connection
@@ -608,7 +611,7 @@ public class TcpChannelHub implements Closeable {
                     if (prevRemaining != outBuffer.remaining()) {
                         start = Time.currentTimeMillis();
                         prevRemaining = outBuffer.remaining();
-                    }else {
+                    } else {
                         long writeTime = Time.currentTimeMillis() - start;
 
                         if (writeTime > 20_000) {
@@ -1448,6 +1451,7 @@ public class TcpChannelHub implements Closeable {
 
                         if (isShutdown())
                             continue OUTER;
+
 
                         if (start + socketAddressSupplier.timeoutMS() < System.currentTimeMillis()) {
 
