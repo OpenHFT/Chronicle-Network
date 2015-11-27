@@ -37,8 +37,8 @@ public abstract class WireTcpHandler implements TcpHandler {
     private static final int SIZE_OF_SIZE = 4;
     private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
     // this is the point at which it is worth doing more work to get more data.
-    private static final int SMALL_WRITE_BUFFER = Integer.getInteger("WireTcpHandler.SMALL_WRITE_BUFFER", 32 << 10);
-    protected final WireOutPublisher publisher = new VanillaWireOutPublisher();
+
+    protected final WireOutPublisher publisher;
 
     @NotNull
     private final Function<Bytes, Wire> bytesToWire;
@@ -47,6 +47,7 @@ public abstract class WireTcpHandler implements TcpHandler {
     private boolean recreateWire;
 
     public WireTcpHandler(@NotNull final Function<Bytes, Wire> bytesToWire) {
+        publisher = new VanillaWireOutPublisher();
         this.bytesToWire = bytesToWire;
     }
 
@@ -55,7 +56,8 @@ public abstract class WireTcpHandler implements TcpHandler {
         checkWires(in, out);
 
         publisher.applyAction(outWire, () -> {
-            if (in.readRemaining() >= SIZE_OF_SIZE && out.writePosition() < SMALL_WRITE_BUFFER)
+            if (in.readRemaining() >= SIZE_OF_SIZE && out.writePosition() < TcpEventHandler
+                    .TCP_BUFFER)
                 read(in, out, sessionDetails);
         });
     }

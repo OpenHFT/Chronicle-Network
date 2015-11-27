@@ -434,7 +434,7 @@ public class TcpChannelHub implements Closeable {
             TcpChannelHub.this.outWire.writeDocument(false, w ->
                     w.writeEventName(EventId.onClientClosing).text(""));
 
-            writeSocket(outWire);
+
         }, false);
 
         // wait up to 1 seconds to receive an close request acknowledgment from the server
@@ -468,16 +468,6 @@ public class TcpChannelHub implements Closeable {
 
 
     /**
-     * sends data to the server via TCP/IP, using the event loop thread
-     *
-     * @param wire the {@code wire} containing the outbound data
-     */
-    public void asyncWriteSocket(@NotNull final WireOut wire) {
-        asyncWriteTask(() -> writeSocket(wire));
-
-    }
-
-    /**
      * dispatcahes the task onto the async write thred and ensures that
      *
      * @param r
@@ -500,8 +490,7 @@ public class TcpChannelHub implements Closeable {
      */
     public void writeSocket(@NotNull final WireOut wire) {
 
-        assert Thread.currentThread() != tcpSocketConsumer.readThread : "if writes and reads are on the same thread this can lead " +
-                "to deadlocks with the server, if the server buffer becomes full";
+
         assert outBytesLock().isHeldByCurrentThread();
 
         try {
@@ -510,14 +499,9 @@ public class TcpChannelHub implements Closeable {
             SocketChannel clientChannel = this.clientChannel;
 
             // wait for the channel to be non null
-            while (clientChannel == null) {
-                clientChannel = this.clientChannel;
-                Jvm.pause(500);
+            if (clientChannel == null)
+                throw new ConnectionDroppedException("clientChannel == null");
 
-                // wait 5 seconds to be come connected
-                if (start + 5_000 < System.currentTimeMillis())
-                    throw new IOException("Timed out waiting for socket to be non-null.");
-            }
 
             writeSocket1(wire, timeoutMs, clientChannel);
         } catch (ClosedChannelException e) {
@@ -585,6 +569,7 @@ public class TcpChannelHub implements Closeable {
             // this check ensure that a put does not occur while currently re-subscribing
             outBytesLock().isHeldByCurrentThread();
 
+            boolean isOutBufferFull = false;
             logToStandardOutMessageSent(outWire, outBuffer);
             updateLargestChunkSoFarSize(outBuffer);
 
@@ -606,15 +591,30 @@ public class TcpChannelHub implements Closeable {
                     if (len == -1)
                         throw new IORuntimeException("Disconnection to server=" +
                                 socketAddressSupplier + ", name=" + name);
+                    if (!isOutBufferFull)
+                        System.out.println("write : bytes=" + (prevRemaining - outBuffer
+                                .remaining()));
 
                     // reset the timer if we wrote something.
                     if (prevRemaining != outBuffer.remaining()) {
                         start = Time.currentTimeMillis();
+                        isOutBufferFull = false;
+                        if (outBuffer.remaining() == 0)
+                            System.out.println("write : bytes=" + (prevRemaining - outBuffer
+                                    .remaining()));
                         prevRemaining = outBuffer.remaining();
                     } else {
+                        if (!isOutBufferFull)
+                            System.out.println("-------------> Out Buffer is FULL!");
+                        isOutBufferFull = true;
+
                         long writeTime = Time.currentTimeMillis() - start;
 
-                        if (writeTime > 20_000) {
+
+                        // the reason that this is so large is that results from a bootstrap can
+                        // take a very long time to send all the data from the server to the client
+                        // we dont want this to fail as it will cause a disconnection !
+                        if (writeTime > TimeUnit.MINUTES.toMillis(15)) {
 
                             for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
                                 Thread thread = entry.getKey();
@@ -701,7 +701,6 @@ public class TcpChannelHub implements Closeable {
             TcpChannelHub.this.outWire.writeDocument(false, w ->
                     // send back the time stamp that was sent from the server
                     w.writeEventName(EventId.heartbeatReply).int64(timestamp));
-            writeSocket(outWire);
         }, true));
     }
 
@@ -751,13 +750,23 @@ public class TcpChannelHub implements Closeable {
             return tryLock;
         final ReentrantLock lock = outBytesLock();
         if (tryLock) {
-            if (!lock.tryLock())
+            if (!lock.tryLock()) {
+                LOG.warn("FAILED TO OBTAIN LOCK thread=" + Thread.currentThread());
                 return false;
-        } else
+            }
+        } else try {
+            if (!lock.tryLock())
+                LOG.warn("FAILED TO OBTAIN LOCK immediately thread=" + Thread.currentThread());
             lock.lock();
+        } catch (Throwable e) {
+            lock.unlock();
+            throw e;
+        }
 
         try {
             r.run();
+            assert Thread.currentThread() != tcpSocketConsumer.readThread : "if writes and reads are on the same thread this can lead " +
+                    "to deadlocks with the server, if the server buffer becomes full";
             writeSocket(outWire());
         } catch (ConnectionDroppedException e) {
             Jvm.rethrow(e);
@@ -1007,7 +1016,8 @@ public class TcpChannelHub implements Closeable {
                     if (!tcpSocketConsumer.prepareToShutdown)
                         LOG.info(e.toString());
                 } catch (IORuntimeException e) {
-                    LOG.debug("", e);
+                    if (!prepareToShutdown)
+                        LOG.error("", e);
                 } catch (Throwable e) {
                     if (!prepareToShutdown)
                         LOG.error("", e);
@@ -1298,6 +1308,12 @@ public class TcpChannelHub implements Closeable {
                     throw new IOException("Disconnection to server=" + socketAddressSupplier +
                             " channel is closed, name=" + name);
                 int numberOfBytesRead = clientChannel.read(buffer);
+                if (numberOfBytesRead > 0)
+                    System.out.println("read : bytes=" + numberOfBytesRead + " we have to " +
+                            "read " +
+                            buffer.remaining() +
+                            " more");
+
                 WanSimulator.dataRead(numberOfBytesRead);
                 if (numberOfBytesRead == -1)
                     throw new ConnectionDroppedException("Disconnection to server=" + socketAddressSupplier +
@@ -1359,7 +1375,9 @@ public class TcpChannelHub implements Closeable {
             subscribe(new AbstractAsyncTemporarySubscription(TcpChannelHub.this, null, name) {
                 @Override
                 public void onSubscribe(@NotNull WireOut wireOut) {
-                    wireOut.writeEventName(EventId.heartbeat).int64(Time.currentTimeMillis());
+                    System.out.println("sending heartbeat");
+                    lock(() -> wireOut.writeEventName(EventId.heartbeat).int64(Time
+                            .currentTimeMillis()));
                 }
 
                 @Override
@@ -1545,14 +1563,14 @@ public class TcpChannelHub implements Closeable {
                         if (LOG.isDebugEnabled())
                             LOG.debug("successfully connected to remoteAddress=" +
                                     socketAddressSupplier);
-
+                        onReconnect();
+                        onConnected();
 
                     } finally {
                         outBytesLock().unlock();
                     }
 
-                    onReconnect();
-                    onConnected();
+
                     return;
                 } catch (Exception e) {
                     if (!isShutdown && !prepareToShutdown) {

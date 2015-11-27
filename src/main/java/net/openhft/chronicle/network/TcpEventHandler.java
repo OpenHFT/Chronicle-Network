@@ -44,7 +44,7 @@ import static net.openhft.chronicle.network.ServerThreadingStrategy.serverThread
 class TcpEventHandler implements EventHandler, Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
 
-    private static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 1 <<
+    public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 1 <<
             20);
     private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", 8 << 20);
     @NotNull

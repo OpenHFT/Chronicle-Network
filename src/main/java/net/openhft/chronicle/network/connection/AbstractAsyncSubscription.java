@@ -43,11 +43,11 @@ public abstract class AbstractAsyncSubscription implements AsyncSubscription {
         hub.asyncWriteSocket(hub.outWire());*/
 
 
-        hub.asyncWriteTask(() -> {
+        //  hub.asyncWriteTask(() -> {
             hub.writeMetaDataForKnownTID(tid(), hub.outWire(), csp, 0);
             hub.outWire().writeDocument(false, this::onSubscribe);
             hub.writeSocket(hub.outWire());
-        });
+        // });
     }
 
     /**
