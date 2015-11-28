@@ -113,7 +113,7 @@ public class TcpChannelHub implements Closeable {
     private long limitOfLast = 0;
     private boolean shouldSendCloseMessage;
     private HandlerPriority priority;
-    private final ExecutorService asycnWriteExecutor;
+
 
     public TcpChannelHub(@Nullable final SessionProvider sessionProvider,
                          @NotNull final EventLoop eventLoop,
@@ -138,8 +138,6 @@ public class TcpChannelHub implements Closeable {
         this.shouldSendCloseMessage = shouldSendCloseMessage;
         this.clientConnectionMonitor = clientConnectionMonitor;
         hubs.add(this);
-        asycnWriteExecutor = newSingleThreadExecutor(
-                new NamedThreadFactory("TcpChannelHub-async-writes-" + socketAddressSupplier, true));
     }
 
     public static void assertAllHubsClosed() {
@@ -400,7 +398,10 @@ public class TcpChannelHub implements Closeable {
         tcpSocketConsumer.prepareToShutdown();
 
         if (shouldSendCloseMessage)
-            asycnWriteExecutor.submit(() -> {
+
+            newSingleThreadExecutor(
+                    new NamedThreadFactory("TcpChannelHub-Close-" + socketAddressSupplier,
+                            true)).submit(() -> {
                 try {
                     sendCloseMessage();
                     tcpSocketConsumer.stop();
@@ -465,22 +466,6 @@ public class TcpChannelHub implements Closeable {
         return id;
     }
 
-
-    /**
-     * dispatcahes the task onto the async write thred and ensures that
-     *
-     * @param r
-     */
-    public void asyncWriteTask(@NotNull final Runnable r) {
-        asycnWriteExecutor.submit(() -> {
-                    try {
-                        lock(() -> r.run());
-                    } catch (Exception e) {
-                        LOG.error("", e);
-                    }
-                }
-        );
-    }
 
     /**
      * sends data to the server via TCP/IP
@@ -612,7 +597,7 @@ public class TcpChannelHub implements Closeable {
                         // the reason that this is so large is that results from a bootstrap can
                         // take a very long time to send all the data from the server to the client
                         // we don't want this to fail as it will cause a disconnection !
-                        if (writeTime > TimeUnit.SECONDS.toMillis(Jvm.isDebug() ? 20 : 20)) {
+                        if (writeTime > TimeUnit.MINUTES.toMillis(15)) {
 
                             for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
                                 Thread thread = entry.getKey();
@@ -691,15 +676,22 @@ public class TcpChannelHub implements Closeable {
 
     void reflectServerHeartbeatMessage(@NotNull ValueIn valueIn) {
 
-        // time stamp sent from the server, this is so that the server can calculate the round
-        // trip time
-        long timestamp = valueIn.int64();
-        asycnWriteExecutor.submit(() -> this.lock(() -> {
-            TcpChannelHub.this.writeMetaDataForKnownTID(0, outWire, null, 0);
-            TcpChannelHub.this.outWire.writeDocument(false, w ->
-                    // send back the time stamp that was sent from the server
-                    w.writeEventName(EventId.heartbeatReply).int64(timestamp));
-        }, true));
+        if (outBytesLock().tryLock()) {
+            try {
+                // time stamp sent from the server, this is so that the server can calculate the round
+                // trip time
+                long timestamp = valueIn.int64();
+                TcpChannelHub.this.writeMetaDataForKnownTID(0, outWire, null, 0);
+                TcpChannelHub.this.outWire.writeDocument(false, w ->
+                        // send back the time stamp that was sent from the server
+                        w.writeEventName(EventId.heartbeatReply).int64(timestamp));
+                writeSocket(outWire());
+
+            } finally {
+                outBytesLock().unlock();
+            }
+        }
+
     }
 
     public long writeMetaDataStartTime(long startTime, @NotNull Wire wire, String csp, long cid) {
@@ -1452,7 +1444,7 @@ public class TcpChannelHub implements Closeable {
         private void attemptConnect() throws IOException {
 
             keepSubscriptionsAndClearEverythingElse();
-
+            clientChannel = null;
             long start = System.currentTimeMillis();
             socketAddressSupplier.startAtFirstAddress();
 
@@ -1545,7 +1537,7 @@ public class TcpChannelHub implements Closeable {
                     // finished the handshaking
 
                     if (!outBytesLock().tryLock(20, TimeUnit.SECONDS))
-                        throw new IORuntimeException("failed to obtain the outBytesLock");
+                        throw new IORuntimeException("failed to obtain the outBytesLock " + outBytesLock);
 
                     try {
 
