@@ -36,10 +36,24 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
         }
 
-        if (wire.bytes().readRemaining() == 0)
+
+        final long sourceBytesRemaining = wire.bytes().readRemaining();
+
+
+        if (sourceBytesRemaining == 0)
             return;
 
+        if (out.bytes().writeRemaining() < sourceBytesRemaining)
+            return;
+
+        final long targetBytesRemaining = out.bytes().writeRemaining();
         out.bytes().write(wire.bytes());
+
+        final long bytesWritten = targetBytesRemaining - out.bytes().writeRemaining();
+
+        assert bytesWritten == sourceBytesRemaining : "bytesWritten=" + bytesWritten + ", " +
+                "sourceBytesRemaining=" + sourceBytesRemaining;
+
         wire.bytes().clear();
 
         if (YamlLogging.showServerWrites)
