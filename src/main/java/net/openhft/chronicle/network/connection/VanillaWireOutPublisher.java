@@ -60,7 +60,6 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     public synchronized void put(final Object key, WriteMarshallable event) {
         assert isEmpty();
         event.writeMarshallable(wire);
-        System.out.println("pos=" + wire.bytes().writePosition());
     }
 
     @Override
@@ -72,7 +71,6 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     public synchronized boolean isEmpty() {
         return wire.bytes().writePosition() == 0;
     }
-
 
     @Override
     public synchronized void close() {

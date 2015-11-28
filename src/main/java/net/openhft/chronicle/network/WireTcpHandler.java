@@ -63,9 +63,11 @@ public abstract class WireTcpHandler implements TcpHandler {
     }
 
     public void sendHeartBeat(Bytes out, SessionDetailsProvider sessionDetails) {
-        final WireOut outWire = bytesToWire.apply(out);
-        outWire.writeDocument(true, w -> w.write(() -> "tid").int64(0));
-        outWire.writeDocument(false, w -> w.writeEventName(() -> "heartbeat").int64(Time.currentTimeMillis()));
+        if (out.writeRemaining() > 100) {
+            final WireOut outWire = bytesToWire.apply(out);
+            outWire.writeDocument(true, w -> w.write(() -> "tid").int64(0));
+            outWire.writeDocument(false, w -> w.writeEventName(() -> "heartbeat").int64(Time.currentTimeMillis()));
+        }
     }
 
     @Override

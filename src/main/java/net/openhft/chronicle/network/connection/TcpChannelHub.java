@@ -789,7 +789,7 @@ public class TcpChannelHub implements Closeable {
 
             if (start + timeoutMs > Time.currentTimeMillis())
                 condition.await(50, TimeUnit.MILLISECONDS);
-             else
+            else
                 throw new IORuntimeException("Not connected to " + socketAddressSupplier);
         }
     }
@@ -1365,6 +1365,9 @@ public class TcpChannelHub implements Closeable {
          * sends a heartbeat from the client to the server and logs the round trip time
          */
         private void sendHeartbeat() {
+
+            if (outWire.bytes().writeRemaining() < 100)
+                return;
 
             long l = System.nanoTime();
 

@@ -45,8 +45,8 @@ class TcpEventHandler implements EventHandler, Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
 
     public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 1 <<
-            20);
-    private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", 8 << 20);
+            21);
+    private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", 8 << 21);
     @NotNull
     private final SocketChannel sc;
     private final TcpHandler handler;
