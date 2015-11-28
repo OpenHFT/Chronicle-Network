@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
@@ -88,7 +89,8 @@ public class TcpChannelHub implements Closeable {
     @NotNull
     private final SocketAddressSupplier socketAddressSupplier;
     private final Set<Long> preventSubscribeUponReconnect = new ConcurrentSkipListSet<>();
-    private final ReentrantLock outBytesLock = new ReentrantLock();
+    private final ReentrantLock outBytesLock = TraceLock.create();
+    private final Condition condition = outBytesLock.newCondition();
     @NotNull
     private final AtomicLong transactionID = new AtomicLong(0);
     @NotNull
@@ -397,14 +399,11 @@ public class TcpChannelHub implements Closeable {
 
         tcpSocketConsumer.prepareToShutdown();
 
-
         if (shouldSendCloseMessage)
             asycnWriteExecutor.submit(() -> {
                 try {
-
-                    tcpSocketConsumer.stop();
-
                     sendCloseMessage();
+                    tcpSocketConsumer.stop();
                     closed = true;
 
                     if (LOG.isDebugEnabled())
@@ -610,11 +609,10 @@ public class TcpChannelHub implements Closeable {
 
                         long writeTime = Time.currentTimeMillis() - start;
 
-
                         // the reason that this is so large is that results from a bootstrap can
                         // take a very long time to send all the data from the server to the client
-                        // we dont want this to fail as it will cause a disconnection !
-                        if (writeTime > TimeUnit.MINUTES.toMillis(15)) {
+                        // we don't want this to fail as it will cause a disconnection !
+                        if (writeTime > TimeUnit.SECONDS.toMillis(Jvm.isDebug() ? 20 : 20)) {
 
                             for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
                                 Thread thread = entry.getKey();
@@ -790,8 +788,8 @@ public class TcpChannelHub implements Closeable {
             tcpSocketConsumer.checkNotShutdown();
 
             if (start + timeoutMs > Time.currentTimeMillis())
-                Thread.sleep(50);
-            else
+                condition.await(50, TimeUnit.MILLISECONDS);
+             else
                 throw new IORuntimeException("Not connected to " + socketAddressSupplier);
         }
     }
@@ -1542,7 +1540,10 @@ public class TcpChannelHub implements Closeable {
 
                     // this lock prevents the clients attempt to send data before we have
                     // finished the handshaking
-                    outBytesLock().lock();
+
+                    if (!outBytesLock().tryLock(20, TimeUnit.SECONDS))
+                        throw new IORuntimeException("failed to obtain the outBytesLock");
+
                     try {
 
                         clear(outWire);
@@ -1565,7 +1566,7 @@ public class TcpChannelHub implements Closeable {
                                     socketAddressSupplier);
                         onReconnect();
                         onConnected();
-
+                        condition.signalAll();
                     } finally {
                         outBytesLock().unlock();
                     }

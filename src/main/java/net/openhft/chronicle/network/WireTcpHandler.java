@@ -47,7 +47,7 @@ public abstract class WireTcpHandler implements TcpHandler {
     private boolean recreateWire;
 
     public WireTcpHandler(@NotNull final Function<Bytes, Wire> bytesToWire) {
-        publisher = new VanillaWireOutPublisher();
+        publisher = new VanillaWireOutPublisher(bytesToWire);
         this.bytesToWire = bytesToWire;
     }
 
@@ -71,7 +71,6 @@ public abstract class WireTcpHandler implements TcpHandler {
     @Override
     public void onEndOfConnection(boolean heartbeatTimeOut) {
         publisher.close();
-
     }
 
     /**

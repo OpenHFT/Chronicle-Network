@@ -1,28 +1,24 @@
 package net.openhft.chronicle.network.connection;
 
-import net.openhft.chronicle.wire.WireOut;
-import net.openhft.chronicle.wire.Wires;
-import net.openhft.chronicle.wire.WriteMarshallable;
-import net.openhft.chronicle.wire.YamlLogging;
+import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Queue;
-import java.util.concurrent.LinkedTransferQueue;
+import java.util.function.Function;
 
 /**
  * Created by peter.lawrey on 09/07/2015.
  */
 public class VanillaWireOutPublisher implements WireOutPublisher {
-    private static final int WARN_QUEUE_LENGTH = 50;
     private static final Logger LOG = LoggerFactory.getLogger(VanillaWireOutPublisher.class);
-    private final Queue<WriteMarshallable> publisher = new LinkedTransferQueue<>();
     private volatile boolean closed;
+    private final Wire wire;
 
-
-    public VanillaWireOutPublisher() {
+    public VanillaWireOutPublisher(@NotNull Function<Bytes, Wire> wireType) {
         this.closed = false;
+        this.wire = wireType.apply(Bytes.elasticByteBuffer());
     }
 
     /**
@@ -31,40 +27,40 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
      * @param out buffer to write to.
      */
     @Override
-    public void applyAction(@NotNull WireOut out, @NotNull Runnable runnable) {
-        if (publisher.isEmpty()) {
+    public synchronized void applyAction(@NotNull WireOut out, @NotNull Runnable runnable) {
+
+        if (isEmpty()) {
             synchronized (this) {
                 runnable.run();
             }
-        }
-        while (out.bytes().writePosition() < out.bytes().realCapacity() / 4) {
-            WriteMarshallable wireConsumer = publisher.poll();
-            if (wireConsumer == null)
-                break;
-            wireConsumer.writeMarshallable(out);
 
-            if (YamlLogging.showServerWrites)
-                try {
-                    LOG.info("\nServer Publishes (from async publisher ) :\n" +
-                            Wires.fromSizePrefixedBlobs(out.bytes()));
-
-                } catch (Exception e) {
-                    LOG.info("\nServer Publishes ( from async publisher - corrupted ) :\n" +
-                            out.bytes().toDebugString());
-                    LOG.error("", e);
-                }
         }
+
+        if (wire.bytes().readRemaining() == 0)
+            return;
+
+        out.bytes().write(wire.bytes());
+        wire.bytes().clear();
+
+        if (YamlLogging.showServerWrites)
+            try {
+                LOG.info("\nServer Publishes (from async publisher ) :\n" +
+                        Wires.fromSizePrefixedBlobs(out.bytes()));
+
+            } catch (Exception e) {
+                LOG.info("\nServer Publishes ( from async publisher - corrupted ) :\n" +
+                        out.bytes().toDebugString());
+                LOG.error("", e);
+            }
+
+
     }
 
     @Override
-    public void put(final Object key, WriteMarshallable event) {
-        if (!closed) {
-            int size = publisher.size();
-            if (size > WARN_QUEUE_LENGTH)
-                LOG.debug("publish length: " + size);
-
-            publisher.add(event);
-        }
+    public synchronized void put(final Object key, WriteMarshallable event) {
+        assert isEmpty();
+        event.writeMarshallable(wire);
+        System.out.println("pos=" + wire.bytes().writePosition());
     }
 
     @Override
@@ -73,8 +69,14 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     }
 
     @Override
-    public void close() {
+    public synchronized boolean isEmpty() {
+        return wire.bytes().writePosition() == 0;
+    }
+
+
+    @Override
+    public synchronized void close() {
         closed = true;
-        publisher.clear();
+        wire.clear();
     }
 }
