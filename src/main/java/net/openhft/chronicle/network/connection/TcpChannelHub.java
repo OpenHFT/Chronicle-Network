@@ -311,7 +311,9 @@ public class TcpChannelHub implements Closeable {
         return outBytesLock;
     }
 
-    private synchronized void doHandShaking(@NotNull SocketChannel socketChannel) throws IOException {
+    private void doHandShaking(@NotNull SocketChannel socketChannel) throws IOException {
+
+        assert outBytesLock.isHeldByCurrentThread();
         final SessionDetails sessionDetails = sessionDetails();
         if (sessionDetails != null) {
             handShakingWire.clear();
@@ -324,7 +326,7 @@ public class TcpChannelHub implements Closeable {
                 wireOut.writeEventName(EventId.clientId).text(sessionDetails.clientId().toString());
             });
 
-            writeSocket1(handShakingWire, timeoutMs, socketChannel);
+            writeSocket1(handShakingWire, socketChannel);
         }
 
     }
@@ -399,9 +401,8 @@ public class TcpChannelHub implements Closeable {
 
         if (shouldSendCloseMessage)
 
-            newSingleThreadExecutor(
-                    new NamedThreadFactory("TcpChannelHub-Close-" + socketAddressSupplier,
-                            true)).submit(() -> {
+            eventLoop.addHandler(() ->
+            {
                 try {
                     sendCloseMessage();
                     tcpSocketConsumer.stop();
@@ -417,7 +418,12 @@ public class TcpChannelHub implements Closeable {
                     }
                 } catch (ConnectionDroppedException ignore) {
 
+
                 }
+
+                // we just want this to run once
+                throw new InvalidEventHandlerException();
+
             });
     }
 
@@ -484,10 +490,10 @@ public class TcpChannelHub implements Closeable {
 
             // wait for the channel to be non null
             if (clientChannel == null)
-                throw new ConnectionDroppedException("clientChannel == null");
+                condition.await(10, TimeUnit.SECONDS);
 
 
-            writeSocket1(wire, timeoutMs, clientChannel);
+            writeSocket1(wire, clientChannel);
         } catch (ClosedChannelException e) {
             closeSocket();
             throw new ConnectionDroppedException(e);
@@ -534,12 +540,13 @@ public class TcpChannelHub implements Closeable {
      * writes the bytes to the socket, onto the clientChannel provided
      *
      * @param outWire       the data that you wish to write
-     * @param timeoutTime   how long before a we timeout
      * @param clientChannel
      * @throws IOException
      */
-    private void writeSocket1(@NotNull WireOut outWire, long timeoutTime, @NotNull SocketChannel clientChannel) throws
+    private void writeSocket1(@NotNull WireOut outWire, @Nullable SocketChannel clientChannel) throws
             IOException {
+
+        assert outBytesLock.isHeldByCurrentThread();
 
         long start = Time.currentTimeMillis();
         for (; ; ) {
@@ -562,13 +569,17 @@ public class TcpChannelHub implements Closeable {
                 int prevRemaining = outBuffer.remaining();
                 while (outBuffer.remaining() > 0) {
 
+                    if (this.clientChannel == null)
+                        throw new ConnectionDroppedException("Connection Dropped");
 
                     // if the socket was changed, we need to resend using this one instead
                     // unless the client channel still has not be set, then we will use this one
                     // this can happen during the handshaking phase of a new connection
                     SocketChannel clientChannel1 = this.clientChannel;
-                    if (clientChannel != clientChannel1 && clientChannel1 != null && isOpen())
-                        throw new ConnectionDroppedException("clientChannel has changed");
+
+
+                    if (clientChannel != clientChannel1)
+                        throw new ConnectionDroppedException("Connection has Changed");
 
                     int len = clientChannel.write(outBuffer);
 
@@ -674,23 +685,35 @@ public class TcpChannelHub implements Closeable {
         return outWire;
     }
 
+    public boolean outWireIsEmpty() {
+        return outWire.bytes().writePosition() == 0;
+    }
+
+
     void reflectServerHeartbeatMessage(@NotNull ValueIn valueIn) {
 
-        if (outBytesLock().tryLock()) {
-            try {
-                // time stamp sent from the server, this is so that the server can calculate the round
-                // trip time
-                long timestamp = valueIn.int64();
-                TcpChannelHub.this.writeMetaDataForKnownTID(0, outWire, null, 0);
-                TcpChannelHub.this.outWire.writeDocument(false, w ->
-                        // send back the time stamp that was sent from the server
-                        w.writeEventName(EventId.heartbeatReply).int64(timestamp));
-                writeSocket(outWire());
-
-            } finally {
-                outBytesLock().unlock();
-            }
+        if (!outBytesLock().tryLock()) {
+            System.out.println("skipped sending back heartbeat, because lock is held !" +
+                    outBytesLock);
+            return;
         }
+
+        try {
+
+            // time stamp sent from the server, this is so that the server can calculate the round
+            // trip time
+            long timestamp = valueIn.int64();
+            TcpChannelHub.this.writeMetaDataForKnownTID(0, outWire, null, 0);
+            TcpChannelHub.this.outWire.writeDocument(false, w ->
+                    // send back the time stamp that was sent from the server
+                    w.writeEventName(EventId.heartbeatReply).int64(timestamp));
+            writeSocket(outWire());
+
+        } finally {
+            outBytesLock().unlock();
+            assert !outBytesLock.isHeldByCurrentThread();
+        }
+
 
     }
 
@@ -736,37 +759,42 @@ public class TcpChannelHub implements Closeable {
     }
 
     public boolean lock(@NotNull Task r, boolean tryLock) {
-        if (clientChannel == null)
-            return tryLock;
-        final ReentrantLock lock = outBytesLock();
-        if (tryLock) {
-            if (!lock.tryLock()) {
-                LOG.warn("FAILED TO OBTAIN LOCK thread=" + Thread.currentThread());
-                return false;
-            }
-        } else try {
-            if (!lock.tryLock())
-                LOG.warn("FAILED TO OBTAIN LOCK immediately thread=" + Thread.currentThread());
-            lock.lock();
-        } catch (Throwable e) {
-            lock.unlock();
-            throw e;
-        }
-
+        assert !outBytesLock.isHeldByCurrentThread();
         try {
-            r.run();
-            assert Thread.currentThread() != tcpSocketConsumer.readThread : "if writes and reads are on the same thread this can lead " +
-                    "to deadlocks with the server, if the server buffer becomes full";
-            writeSocket(outWire());
-        } catch (ConnectionDroppedException e) {
-            Jvm.rethrow(e);
-        } catch (Exception e) {
-            LOG.error("", e);
-            Jvm.rethrow(e);
+            if (clientChannel == null)
+                return tryLock;
+            final ReentrantLock lock = outBytesLock();
+            if (tryLock) {
+                if (!lock.tryLock()) {
+                    LOG.warn("FAILED TO OBTAIN LOCK thread=" + Thread.currentThread());
+                    return false;
+                }
+            } else try {
+                if (!lock.tryLock())
+                    LOG.warn("FAILED TO OBTAIN LOCK immediately thread=" + Thread.currentThread());
+                lock.lock();
+            } catch (Throwable e) {
+                lock.unlock();
+                throw e;
+            }
+
+            try {
+                r.run();
+                assert Thread.currentThread() != tcpSocketConsumer.readThread : "if writes and reads are on the same thread this can lead " +
+                        "to deadlocks with the server, if the server buffer becomes full";
+                writeSocket(outWire());
+            } catch (ConnectionDroppedException e) {
+                Jvm.rethrow(e);
+            } catch (Exception e) {
+                LOG.error("", e);
+                Jvm.rethrow(e);
+            } finally {
+                lock.unlock();
+            }
+            return true;
         } finally {
-            lock.unlock();
+            assert !outBytesLock.isHeldByCurrentThread();
         }
-        return true;
     }
 
     /**
@@ -1060,6 +1088,7 @@ public class TcpChannelHub implements Closeable {
 
                     } catch (@NotNull Exception e) {
 
+                        e.printStackTrace();
                         tid = -1;
                         if (isShutdown() || prepareToShutdown) {
                             break;
@@ -1358,7 +1387,7 @@ public class TcpChannelHub implements Closeable {
          */
         private void sendHeartbeat() {
 
-            if (outWire.bytes().writeRemaining() < 100)
+            if (outWire.bytes().writePosition() > 100)
                 return;
 
             long l = System.nanoTime();
@@ -1444,7 +1473,6 @@ public class TcpChannelHub implements Closeable {
         private void attemptConnect() throws IOException {
 
             keepSubscriptionsAndClearEverythingElse();
-            clientChannel = null;
             long start = System.currentTimeMillis();
             socketAddressSupplier.startAtFirstAddress();
 
@@ -1546,14 +1574,14 @@ public class TcpChannelHub implements Closeable {
                         // resets the heartbeat timer
                         onMessageReceived();
 
-                        // the hand-shaking is assigned before setting the clientChannel, so that it can
-                        // be assured to go first
-                        doHandShaking(socketChannel);
-
                         synchronized (this) {
                             LOG.info("connected to " + socketChannel);
                             clientChannel = socketChannel;
                         }
+
+                        // the hand-shaking is assigned before setting the clientChannel, so that it can
+                        // be assured to go first
+                        doHandShaking(socketChannel);
 
                         eventLoop.addHandler(this);
                         if (LOG.isDebugEnabled())
@@ -1564,17 +1592,20 @@ public class TcpChannelHub implements Closeable {
                         condition.signalAll();
                     } finally {
                         outBytesLock().unlock();
+                        assert !outBytesLock.isHeldByCurrentThread();
                     }
-
 
                     return;
                 } catch (Exception e) {
-                    if (!isShutdown && !prepareToShutdown) {
+                    if (isShutdown || prepareToShutdown) {
+                        closeSocket();
+                        throw new IORuntimeException("shutting down");
+                    } else {
                         LOG.error("failed to connect remoteAddress=" + socketAddressSupplier
                                 + " so will reconnect ", e);
                         closeSocket();
-                        break;
                     }
+
                     Jvm.pause(1_000);
                 }
             }

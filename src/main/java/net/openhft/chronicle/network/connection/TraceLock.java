@@ -24,6 +24,8 @@ public class TraceLock extends ReentrantLock {
 
     @Override
     public void lock() {
+
+
         super.lock();
         here = new Throwable();
     }
@@ -39,6 +41,8 @@ public class TraceLock extends ReentrantLock {
         for (StackTraceElement s : here.getStackTrace()) {
             sb.append("\n\tat ").append(s);
         }
+
+
         return sb.toString();
 
     }

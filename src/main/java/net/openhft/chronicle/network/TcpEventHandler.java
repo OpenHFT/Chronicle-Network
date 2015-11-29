@@ -250,6 +250,9 @@ class TcpEventHandler implements EventHandler, Closeable {
 
     private void closeSC() {
 
+        System.out.println("disconnecting");
+        new RuntimeException().printStackTrace();
+
         try {
             handler.close();
         } catch (Exception ignored) {
@@ -267,12 +270,14 @@ class TcpEventHandler implements EventHandler, Closeable {
             return false;
         int start = outBB.position();
         int wrote = sc.write(outBB);
+
+
         writeLog.log(outBB, start, outBB.position());
 
         if (wrote < 0) {
             closeSC();
-
         } else if (wrote > 0) {
+            lastTickReadTime = Time.tickTime();
             outBB.compact().flip();
             assert outBBB != null;
             outBBB.writeLimit(outBB.capacity());

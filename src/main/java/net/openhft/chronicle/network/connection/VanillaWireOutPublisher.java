@@ -27,18 +27,13 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
      * @param out buffer to write to.
      */
     @Override
-    public synchronized void applyAction(@NotNull WireOut out, @NotNull Runnable runnable) {
+    public synchronized void applyAction(@NotNull WireOut out, @NotNull Runnable read) {
 
         if (isEmpty()) {
-            synchronized (this) {
-                runnable.run();
-            }
-
+            read.run();
         }
 
-
         final long sourceBytesRemaining = wire.bytes().readRemaining();
-
 
         if (sourceBytesRemaining == 0)
             return;
@@ -66,14 +61,14 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
                         out.bytes().toDebugString());
                 LOG.error("", e);
             }
-
-
     }
 
     @Override
-    public synchronized void put(final Object key, WriteMarshallable event) {
-        assert isEmpty();
-        event.writeMarshallable(wire);
+    public void put(final Object key, WriteMarshallable event) {
+        assert Thread.holdsLock(this);
+        synchronized (this) {
+            event.writeMarshallable(wire);
+        }
     }
 
     @Override
@@ -82,8 +77,12 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     }
 
     @Override
-    public synchronized boolean isEmpty() {
-        return wire.bytes().writePosition() == 0;
+    public boolean isEmpty() {
+        assert Thread.holdsLock(this);
+
+        synchronized (this) {
+            return wire.bytes().writePosition() == 0;
+        }
     }
 
     @Override
