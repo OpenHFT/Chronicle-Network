@@ -236,14 +236,10 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         long tid;
         if (hub.outBytesLock().isHeldByCurrentThread())
             throw new IllegalStateException("Cannot view map while debugging");
-        try {
-            hub.checkConnection();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
 
         // can't use lock() as we are setting tid.
         hub.outBytesLock().lock();
+        hub.checkConnection();
         try {
             tid = writeMetaDataStartTime(startTime);
             hub.outWire().writeDocument(false, wireOut -> {
@@ -273,11 +269,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
                                      boolean reattemptUponFailure) {
 
         if (reattemptUponFailure)
-            try {
-                hub.checkConnection();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            hub.lock(hub::checkConnection);
         else if (!hub.isOpen())
             return false;
 
@@ -304,11 +296,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
                                 boolean reattemptUponFailure) {
 
         if (reattemptUponFailure)
-            try {
-                hub.checkConnection();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            hub.lock(hub::checkConnection);
         else if (!hub.isOpen())
             return false;
 

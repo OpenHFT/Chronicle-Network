@@ -586,16 +586,13 @@ public class TcpChannelHub implements Closeable {
                     if (len == -1)
                         throw new IORuntimeException("Disconnection to server=" +
                                 socketAddressSupplier + ", name=" + name);
-                    if (!isOutBufferFull)
-                        System.out.println("write : bytes=" + (prevRemaining - outBuffer
-                                .remaining()));
 
                     // reset the timer if we wrote something.
                     if (prevRemaining != outBuffer.remaining()) {
                         start = Time.currentTimeMillis();
                         isOutBufferFull = false;
                         if (outBuffer.remaining() == 0)
-                            System.out.println("write : bytes=" + (prevRemaining - outBuffer
+                            System.out.println("W: " + (prevRemaining - outBuffer
                                     .remaining()));
                         prevRemaining = outBuffer.remaining();
                     } else {
@@ -766,13 +763,14 @@ public class TcpChannelHub implements Closeable {
             final ReentrantLock lock = outBytesLock();
             if (tryLock) {
                 if (!lock.tryLock()) {
-                    LOG.warn("FAILED TO OBTAIN LOCK thread=" + Thread.currentThread());
+                    LOG.warn("FAILED TO OBTAIN LOCK thread=" + Thread.currentThread() + " on " + lock);
                     return false;
                 }
             } else try {
-                if (!lock.tryLock())
-                    LOG.warn("FAILED TO OBTAIN LOCK immediately thread=" + Thread.currentThread());
-                lock.lock();
+                if (!lock.tryLock()) {
+                    LOG.info("FAILED TO OBTAIN LOCK immediately thread=" + Thread.currentThread() + " on " + lock);
+                    lock.lock();
+                }
             } catch (Throwable e) {
                 lock.unlock();
                 throw e;
@@ -784,10 +782,10 @@ public class TcpChannelHub implements Closeable {
                         "to deadlocks with the server, if the server buffer becomes full";
                 writeSocket(outWire());
             } catch (ConnectionDroppedException e) {
-                Jvm.rethrow(e);
+                throw Jvm.rethrow(e);
             } catch (Exception e) {
                 LOG.error("", e);
-                Jvm.rethrow(e);
+                throw Jvm.rethrow(e);
             } finally {
                 lock.unlock();
             }
@@ -800,7 +798,7 @@ public class TcpChannelHub implements Closeable {
     /**
      * blocks until there is a connection
      */
-    public void checkConnection() throws InterruptedException {
+    public void checkConnection() {
         long start = Time.currentTimeMillis();
 
         while (clientChannel == null) {
@@ -808,7 +806,11 @@ public class TcpChannelHub implements Closeable {
             tcpSocketConsumer.checkNotShutdown();
 
             if (start + timeoutMs > Time.currentTimeMillis())
-                condition.await(50, TimeUnit.MILLISECONDS);
+                try {
+                    condition.await(50, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             else
                 throw new IORuntimeException("Not connected to " + socketAddressSupplier);
         }
@@ -857,6 +859,7 @@ public class TcpChannelHub implements Closeable {
 
         private long failedConnectionCount;
         private volatile boolean prepareToShutdown;
+        private Thread readThread;
 
         /**
          * @param wireFunction converts bytes into wire, ie TextWire or BinaryWire
@@ -1012,8 +1015,6 @@ public class TcpChannelHub implements Closeable {
             map.remove(tid);
         }
 
-        private Thread readThread;
-
         /**
          * uses a single read thread, to process messages to waiting threads based on their {@code
          * tid}
@@ -1055,7 +1056,7 @@ public class TcpChannelHub implements Closeable {
                 final Wire inWire = wireFunction.apply(elasticByteBuffer());
                 assert inWire != null;
 
-                while (!isShutdown()) {
+                while (!isShuttingdown()) {
 
                     checkConnectionState();
 
@@ -1088,19 +1089,16 @@ public class TcpChannelHub implements Closeable {
 
                     } catch (@NotNull Exception e) {
 
-                        e.printStackTrace();
                         tid = -1;
-                        if (isShutdown() || prepareToShutdown) {
+                        if (isShuttingdown()) {
                             break;
                         } else {
-                            if (e instanceof IOException && "Connection reset by peer".equals(e
-                                    .getMessage()))
-                                LOG.warn("reconnecting due to \"Connection reset by peer\" " + e
-                                        .getMessage());
+                            String message = e.getMessage();
+                            if (e instanceof IOException && "Connection reset by peer".equals(message))
+                                LOG.warn("reconnecting due to \"Connection reset by peer\" " + message);
 
                             if (e instanceof ConnectionDroppedException)
-                                LOG.debug("reconnecting due to dropped connection " + ((e.getMessage
-                                        () == null) ? "" : e.getMessage()));
+                                LOG.debug("reconnecting due to dropped connection " + ((message == null) ? "" : message));
                             else
                                 LOG.warn("reconnecting due to unexpected exception", e);
                             closeSocket();
@@ -1112,15 +1110,19 @@ public class TcpChannelHub implements Closeable {
                 }
 
             } catch (Throwable e) {
-                if (!isShutdown())
+                if (!isShuttingdown())
                     LOG.error("", e);
             } finally {
                 closeSocket();
             }
         }
 
-        private boolean isShutdown() {
+        boolean isShutdown() {
             return isShutdown;
+        }
+
+        boolean isShuttingdown() {
+            return isShutdown || prepareToShutdown;
         }
 
         /**
@@ -1163,7 +1165,7 @@ public class TcpChannelHub implements Closeable {
                     return false;
 
                 // this loop if to handle the rare case where we receive the tid before its been registered by this class
-                for (; !isShutdown() && c.isOpen(); ) {
+                for (; !isShuttingdown() && c.isOpen(); ) {
 
                     o = map.get(tid);
 
@@ -1328,10 +1330,8 @@ public class TcpChannelHub implements Closeable {
                             " channel is closed, name=" + name);
                 int numberOfBytesRead = clientChannel.read(buffer);
                 if (numberOfBytesRead > 0)
-                    System.out.println("read : bytes=" + numberOfBytesRead + " we have to " +
-                            "read " +
-                            buffer.remaining() +
-                            " more");
+                    System.out.println("R:" + numberOfBytesRead + " plus " +
+                            buffer.remaining());
 
                 WanSimulator.dataRead(numberOfBytesRead);
                 if (numberOfBytesRead == -1)
@@ -1488,7 +1488,7 @@ public class TcpChannelHub implements Closeable {
                     INNER_LOOP:
                     for (; ; ) {
 
-                        if (isShutdown())
+                        if (isShuttingdown())
                             continue OUTER;
 
 

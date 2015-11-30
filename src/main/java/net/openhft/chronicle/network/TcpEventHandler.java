@@ -42,10 +42,9 @@ import static net.openhft.chronicle.network.ServerThreadingStrategy.serverThread
  * Created by peter.lawrey on 22/01/15.
  */
 class TcpEventHandler implements EventHandler, Closeable {
-    private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
-
     public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 1 <<
             21);
+    private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
     private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", 8 << 21);
     @NotNull
     private final SocketChannel sc;
@@ -250,8 +249,10 @@ class TcpEventHandler implements EventHandler, Closeable {
 
     private void closeSC() {
 
-        System.out.println("disconnecting");
-        new RuntimeException().printStackTrace();
+        if (!sc.isOpen()) {
+            System.out.println("disconnecting");
+            new RuntimeException().printStackTrace(System.out);
+        }
 
         try {
             handler.close();
