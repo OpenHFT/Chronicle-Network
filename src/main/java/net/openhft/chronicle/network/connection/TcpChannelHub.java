@@ -370,7 +370,7 @@ public class TcpChannelHub implements Closeable {
             this.clientChannel = null;
 
             clear(inWire);
-            clear(outWire);
+            lock(() -> clear(outWire));
 
             final TcpSocketConsumer tcpSocketConsumer = this.tcpSocketConsumer;
 
