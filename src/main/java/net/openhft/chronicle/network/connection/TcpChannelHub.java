@@ -1496,7 +1496,7 @@ public class TcpChannelHub implements Closeable {
             socketAddressSupplier.startAtFirstAddress();
 
             OUTER:
-            for (; ; ) {
+            for (int i = 1; ; i++) {
                 checkNotShutdown();
 
                 if (LOG.isDebugEnabled())
@@ -1571,11 +1571,7 @@ public class TcpChannelHub implements Closeable {
 
                             failedConnectionCount++;
 
-                            try {
-                                socketChannel.close();
-                            } catch (Exception ignore) {
-
-                            }
+                            Closeable.closeQuietly(socketChannel);
                             pause(1_000);
                         }
                     }
