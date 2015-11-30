@@ -29,9 +29,9 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     @Override
     public synchronized void applyAction(@NotNull WireOut out, @NotNull Runnable read) {
 
-        if (isEmpty()) {
+//        if (isEmpty()) {
             read.run();
-        }
+//        }
 
         final long sourceBytesRemaining = wire.bytes().readRemaining();
 

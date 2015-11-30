@@ -43,10 +43,10 @@ import static net.openhft.chronicle.network.ServerThreadingStrategy.serverThread
  * Created by peter.lawrey on 22/01/15.
  */
 class TcpEventHandler implements EventHandler, Closeable {
-    public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 1 <<
-            21);
+    public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 8 <<
+            20);
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
-    private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", 8 << 21);
+    private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", 8 << 20);
     @NotNull
     private final SocketChannel sc;
     private final TcpHandler handler;
@@ -141,7 +141,7 @@ class TcpEventHandler implements EventHandler, Closeable {
 
             assert inBB != null;
             int start = inBB.position();
-            int read = inBB.remaining() > 0 ? sc.read(inBB) : 1;
+            int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
 
             if (read < 0) {
                 closeSC();
@@ -151,6 +151,8 @@ class TcpEventHandler implements EventHandler, Closeable {
 
             if (read > 0) {
                 WanSimulator.dataRead(read);
+                if (Jvm.isDebug())
+                    System.out.println("Read: " + read + " start: " + start + " " + inBB);
                 readLog.log(inBB, start, inBB.position());
                 lastTickReadTime = Time.tickTime();
                 // inBB.position() where the data has been read() up to.
@@ -174,6 +176,7 @@ class TcpEventHandler implements EventHandler, Closeable {
                 sendHeartBeat();
             }
         } catch (ClosedChannelException e) {
+
             closeSC();
         } catch (IOException e) {
             handleIOE(e, handler.hasClientClosed());
@@ -205,21 +208,29 @@ class TcpEventHandler implements EventHandler, Closeable {
         assert outBB != null;
         assert outBBB != null;
         outBBB.writePosition(outBB.limit());
-        handler.process(inBBB, outBBB, sessionDetails);
+        long lastInBBBReadPosition;
+        do {
+            lastInBBBReadPosition = inBBB.readPosition();
+            handler.process(inBBB, outBBB, sessionDetails);
+            // did it write something?
+            if (outBBB.writePosition() > outBB.limit() || outBBB.writePosition() >= 4) {
+                outBB.limit(Maths.toInt32(outBBB.writePosition()));
+                busy |= tryWrite();
+                break;
+            }
+        } while (lastInBBBReadPosition != inBBB.readPosition());
 
-        // did it write something?
-        if (outBBB.writePosition() > outBB.limit() || outBBB.writePosition() >= 4) {
-            outBB.limit(Maths.toInt32(outBBB.writePosition()));
-            busy |= tryWrite();
-        }
         // TODO Optimise.
         // if it read some data compact();
         if (inBBB.readPosition() > 0) {
             inBB.position((int) inBBB.readPosition());
             inBB.limit((int) inBBB.readLimit());
+//            if (inBBB.readPosition() *2 > inBBB.realCapacity() || inBBB.readRemaining() <= 128) {
             inBB.compact();
             inBBB.readPosition(0);
             inBBB.readLimit(inBB.position());
+//            }
+
             busy = true;
         }
         return busy;
@@ -250,10 +261,8 @@ class TcpEventHandler implements EventHandler, Closeable {
 
     private void closeSC() {
 
-        if (Jvm.isDebug() && !sc.isOpen()) {
-            System.out.println("disconnecting");
+        if (Jvm.isDebug())
             new RuntimeException().printStackTrace(System.out);
-        }
 
         try {
             handler.close();
@@ -266,7 +275,7 @@ class TcpEventHandler implements EventHandler, Closeable {
         }
     }
 
-    private boolean tryWrite() throws IOException {
+    boolean tryWrite() throws IOException {
         assert outBB != null;
         if (outBB.remaining() <= 0)
             return false;

@@ -126,7 +126,7 @@ public class TcpChannelHub implements Closeable {
         this.priority = monitor;
         this.socketAddressSupplier = socketAddressSupplier;
         this.eventLoop = eventLoop;
-        this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", 2 << 20);
+        this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", 8 << 20);
         this.outWire = wire.apply(elasticByteBuffer());
         this.inWire = wire.apply(elasticByteBuffer());
         this.name = name;
@@ -370,6 +370,7 @@ public class TcpChannelHub implements Closeable {
             this.clientChannel = null;
 
             clear(inWire);
+            System.out.println("clearing outWire in closeSocket");
             lock(() -> clear(outWire));
 
             final TcpSocketConsumer tcpSocketConsumer = this.tcpSocketConsumer;
@@ -399,7 +400,7 @@ public class TcpChannelHub implements Closeable {
      * called when we are completed finished with using the TcpChannelHub
      */
     public void close() {
-
+        System.out.println("closing");
         if (closed)
             return;
 
@@ -1417,8 +1418,8 @@ public class TcpChannelHub implements Closeable {
                 @Override
                 public void onSubscribe(@NotNull WireOut wireOut) {
                     System.out.println("sending heartbeat");
-                    lock(() -> wireOut.writeEventName(EventId.heartbeat).int64(Time
-                            .currentTimeMillis()));
+                    wireOut.writeEventName(EventId.heartbeat).int64(Time
+                            .currentTimeMillis());
                 }
 
                 @Override
