@@ -591,7 +591,7 @@ public class TcpChannelHub implements Closeable {
                     if (prevRemaining != outBuffer.remaining()) {
                         start = Time.currentTimeMillis();
                         isOutBufferFull = false;
-                        if (outBuffer.remaining() == 0)
+                        if (Jvm.isDebug() && outBuffer.remaining() == 0)
                             System.out.println("W: " + (prevRemaining - outBuffer
                                     .remaining()));
                         prevRemaining = outBuffer.remaining();
@@ -767,10 +767,10 @@ public class TcpChannelHub implements Closeable {
                     return false;
                 }
             } else try {
-                if (!lock.tryLock()) {
-                    LOG.info("FAILED TO OBTAIN LOCK immediately thread=" + Thread.currentThread() + " on " + lock);
-                    lock.lock();
-                }
+                if (lock.isLocked())
+                    LOG.info("Lock for thread=" + Thread.currentThread() + " was held by " + lock);
+                lock.lock();
+
             } catch (Throwable e) {
                 lock.unlock();
                 throw e;
@@ -1329,8 +1329,8 @@ public class TcpChannelHub implements Closeable {
                     throw new IOException("Disconnection to server=" + socketAddressSupplier +
                             " channel is closed, name=" + name);
                 int numberOfBytesRead = clientChannel.read(buffer);
-                if (numberOfBytesRead > 0)
-                    System.out.println("R:" + numberOfBytesRead + " plus " +
+                if (Jvm.isDebug() && numberOfBytesRead > 0)
+                    System.out.println("R: " + numberOfBytesRead + " plus " +
                             buffer.remaining());
 
                 WanSimulator.dataRead(numberOfBytesRead);

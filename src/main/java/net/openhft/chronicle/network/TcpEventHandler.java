@@ -17,6 +17,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.util.Time;
@@ -249,7 +250,7 @@ class TcpEventHandler implements EventHandler, Closeable {
 
     private void closeSC() {
 
-        if (!sc.isOpen()) {
+        if (Jvm.isDebug() && !sc.isOpen()) {
             System.out.println("disconnecting");
             new RuntimeException().printStackTrace(System.out);
         }
