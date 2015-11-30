@@ -57,7 +57,7 @@ public class SimpleServerAndClientTest {
             wire.writeDocument(false, w -> w.write(() -> "payload").text(expectedMessage));
 
             // write the data to the socket
-            tcpChannelHub.lock(() -> tcpChannelHub.writeSocket(wire));
+            tcpChannelHub.lock(() -> tcpChannelHub.writeSocket(wire, true));
 
             // read the reply from the socket ( timeout after 1 second ), note: we have to pass the tid
             Wire reply = tcpChannelHub.proxyReply(TimeUnit.SECONDS.toMillis(1), tid);

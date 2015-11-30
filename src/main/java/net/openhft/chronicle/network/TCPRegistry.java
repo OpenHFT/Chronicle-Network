@@ -52,7 +52,7 @@ public enum TCPRegistry {
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.values().forEach(Closeable::closeQuietly);
         HOSTNAME_PORT_ALIAS.clear();
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.clear();
-        Jvm.pause(500);
+        Jvm.pause(100);
     }
 
     public static void assertAllServersStopped() {

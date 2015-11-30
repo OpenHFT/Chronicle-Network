@@ -311,7 +311,7 @@ public class TcpChannelHub implements Closeable {
         return outBytesLock;
     }
 
-    private void doHandShaking(@NotNull SocketChannel socketChannel) throws IOException {
+    void doHandShaking(@NotNull SocketChannel socketChannel) throws IOException {
 
         assert outBytesLock.isHeldByCurrentThread();
         final SessionDetails sessionDetails = sessionDetails();
@@ -389,6 +389,12 @@ public class TcpChannelHub implements Closeable {
         return closed;
     }
 
+    @Override
+    public void notifyClosing() {
+        // close early if possible.
+        close();
+    }
+
     /**
      * called when we are completed finished with using the TcpChannelHub
      */
@@ -450,7 +456,7 @@ public class TcpChannelHub implements Closeable {
                 LOG.debug("SERVER IGNORED CLOSE REQUEST: shutting down the client anyway as the " +
                         "server did not respond to the close() request.");
         } catch (InterruptedException ignore) {
-            //
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -478,25 +484,29 @@ public class TcpChannelHub implements Closeable {
      *
      * @param wire the {@code wire} containing the outbound data
      */
-    public void writeSocket(@NotNull final WireOut wire) {
+    public void writeSocket(@NotNull final WireOut wire, boolean reconnectOnFailure) {
 
 
         assert outBytesLock().isHeldByCurrentThread();
 
         try {
 
-            long start = System.currentTimeMillis();
             SocketChannel clientChannel = this.clientChannel;
 
             // wait for the channel to be non null
-            if (clientChannel == null)
-                condition.await(10, TimeUnit.SECONDS);
+            if (clientChannel == null) {
+                if (reconnectOnFailure)
+                    condition.await(10, TimeUnit.SECONDS);
+                else
+                    return;
+            }
 
 
             writeSocket1(wire, clientChannel);
         } catch (ClosedChannelException e) {
             closeSocket();
-            throw new ConnectionDroppedException(e);
+            if (reconnectOnFailure)
+                throw new ConnectionDroppedException(e);
         } catch (IOException e) {
             if (!"Broken pipe".equals(e.getMessage()))
                 LOG.error("", e);
@@ -546,6 +556,9 @@ public class TcpChannelHub implements Closeable {
     private void writeSocket1(@NotNull WireOut outWire, @Nullable SocketChannel clientChannel) throws
             IOException {
 
+        if (clientChannel == null)
+            throw new ConnectionDroppedException("Connection Dropped");
+
         assert outBytesLock.isHeldByCurrentThread();
 
         long start = Time.currentTimeMillis();
@@ -558,7 +571,7 @@ public class TcpChannelHub implements Closeable {
             outBuffer.position(0);
 
             // this check ensure that a put does not occur while currently re-subscribing
-            outBytesLock().isHeldByCurrentThread();
+            assert outBytesLock().isHeldByCurrentThread();
 
             boolean isOutBufferFull = false;
             logToStandardOutMessageSent(outWire, outBuffer);
@@ -568,9 +581,6 @@ public class TcpChannelHub implements Closeable {
 
                 int prevRemaining = outBuffer.remaining();
                 while (outBuffer.remaining() > 0) {
-
-                    if (this.clientChannel == null)
-                        throw new ConnectionDroppedException("Connection Dropped");
 
                     // if the socket was changed, we need to resend using this one instead
                     // unless the client channel still has not be set, then we will use this one
@@ -596,7 +606,7 @@ public class TcpChannelHub implements Closeable {
                                     .remaining()));
                         prevRemaining = outBuffer.remaining();
                     } else {
-                        if (!isOutBufferFull)
+                        if (!isOutBufferFull && Jvm.isDebug())
                             System.out.println("-------------> Out Buffer is FULL!");
                         isOutBufferFull = true;
 
@@ -704,7 +714,7 @@ public class TcpChannelHub implements Closeable {
             TcpChannelHub.this.outWire.writeDocument(false, w ->
                     // send back the time stamp that was sent from the server
                     w.writeEventName(EventId.heartbeatReply).int64(timestamp));
-            writeSocket(outWire());
+            writeSocket(outWire(), false);
 
         } finally {
             outBytesLock().unlock();
@@ -756,10 +766,15 @@ public class TcpChannelHub implements Closeable {
     }
 
     public boolean lock(@NotNull Task r, boolean tryLock) {
+        return lock2(r, false, tryLock);
+    }
+
+    public boolean lock2(@NotNull Task r, boolean reconnectOnFailure, boolean tryLock) {
         assert !outBytesLock.isHeldByCurrentThread();
         try {
-            if (clientChannel == null)
+            if (clientChannel == null && !reconnectOnFailure)
                 return tryLock;
+
             final ReentrantLock lock = outBytesLock();
             if (tryLock) {
                 if (!lock.tryLock()) {
@@ -777,10 +792,14 @@ public class TcpChannelHub implements Closeable {
             }
 
             try {
+                if (clientChannel == null && reconnectOnFailure)
+                    checkConnection();
+
                 r.run();
                 assert Thread.currentThread() != tcpSocketConsumer.readThread : "if writes and reads are on the same thread this can lead " +
                         "to deadlocks with the server, if the server buffer becomes full";
-                writeSocket(outWire());
+                writeSocket(outWire(), reconnectOnFailure);
+
             } catch (ConnectionDroppedException e) {
                 throw Jvm.rethrow(e);
             } catch (Exception e) {

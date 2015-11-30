@@ -160,7 +160,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
     protected <T> T attempt(@NotNull final Supplier<T> s) {
 
         ConnectionDroppedException t = null;
-        for (int i = 1; i <= 10; i++) {
+        for (int i = 1; i <= 20; i++) {
 
             try {
                 return s.get();
@@ -172,7 +172,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
             // do NOT make this value too small, we have to give time of the connection to be
             // re-established
-            Jvm.pause(200);
+            Jvm.pause(i * 25);
         }
 
         throw t;
@@ -252,7 +252,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
                     consumer.accept(valueOut);
             });
 
-            hub.writeSocket(hub.outWire());
+            hub.writeSocket(hub.outWire(), true);
         } finally {
             hub.outBytesLock().unlock();
         }
@@ -268,19 +268,16 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
                                      @Nullable final Consumer<ValueOut> consumer,
                                      boolean reattemptUponFailure) {
 
-        if (reattemptUponFailure)
-            hub.lock(hub::checkConnection);
-        else if (!hub.isOpen())
+        if (!reattemptUponFailure && !hub.isOpen())
             return false;
 
         if (!reattemptUponFailure) {
-
             hub.lock(() -> quietSendEventAsyncWithoutLock(eventId, consumer));
             return true;
         }
 
         attempt(() -> {
-            hub.lock(() -> quietSendEventAsyncWithoutLock(eventId, consumer));
+            hub.lock2(() -> quietSendEventAsyncWithoutLock(eventId, consumer), true, false);
             return true;
         });
 
@@ -344,7 +341,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
     protected void sendBytesAsyncWithoutLock(@NotNull final Bytes bytes) {
         writeAsyncMetaData();
         hub.outWire().bytes().write(bytes);
-        hub.writeSocket(hub.outWire());
+        hub.writeSocket(hub.outWire(), true);
     }
 
     protected void sendEventAsyncWithoutLock(@NotNull final WireKey eventId,
@@ -359,7 +356,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
                 consumer.accept(valueOut);
         });
 
-        hub.writeSocket(hub.outWire());
+        hub.writeSocket(hub.outWire(), true);
     }
 
     /**
