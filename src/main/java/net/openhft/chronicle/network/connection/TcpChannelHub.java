@@ -400,7 +400,6 @@ public class TcpChannelHub implements Closeable {
      * called when we are completed finished with using the TcpChannelHub
      */
     public void close() {
-        System.out.println("closing");
         if (closed)
             return;
 
