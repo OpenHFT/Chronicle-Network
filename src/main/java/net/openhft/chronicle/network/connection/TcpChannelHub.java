@@ -126,7 +126,7 @@ public class TcpChannelHub implements Closeable {
         this.priority = monitor;
         this.socketAddressSupplier = socketAddressSupplier;
         this.eventLoop = eventLoop;
-        this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", 8 << 20);
+        this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", 3 << 20);
         this.outWire = wire.apply(elasticByteBuffer());
         this.inWire = wire.apply(elasticByteBuffer());
         this.name = name;
@@ -370,6 +370,7 @@ public class TcpChannelHub implements Closeable {
             this.clientChannel = null;
 
             clear(inWire);
+            if (Jvm.isDebug())
             System.out.println("clearing outWire in closeSocket");
             lock(() -> clear(outWire));
 
@@ -607,7 +608,7 @@ public class TcpChannelHub implements Closeable {
                         prevRemaining = outBuffer.remaining();
                     } else {
                         if (!isOutBufferFull && Jvm.isDebug())
-                            System.out.println("-------------> Out Buffer is FULL!");
+                            System.out.println("----> TCP write buffer is FULL! " + outBuffer.remaining() + " bytes remaining.");
                         isOutBufferFull = true;
 
                         long writeTime = Time.currentTimeMillis() - start;
