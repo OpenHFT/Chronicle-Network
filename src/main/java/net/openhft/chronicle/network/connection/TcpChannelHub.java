@@ -1417,6 +1417,7 @@ public class TcpChannelHub implements Closeable {
             subscribe(new AbstractAsyncTemporarySubscription(TcpChannelHub.this, null, name) {
                 @Override
                 public void onSubscribe(@NotNull WireOut wireOut) {
+                    if (Jvm.isDebug())
                     System.out.println("sending heartbeat");
                     wireOut.writeEventName(EventId.heartbeat).int64(Time
                             .currentTimeMillis());

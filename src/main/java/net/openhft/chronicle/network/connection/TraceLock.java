@@ -10,11 +10,11 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class TraceLock extends ReentrantLock {
 
+    private volatile Throwable here;
+
     public static ReentrantLock create() {
         return Jvm.isDebug() ? new TraceLock() : new ReentrantLock();
     }
-
-    private volatile Throwable here;
 
     @Override
     public void lockInterruptibly() throws InterruptedException {
@@ -33,6 +33,7 @@ public class TraceLock extends ReentrantLock {
     @Override
     public String toString() {
 
+        Throwable here = this.here;
         if (here == null)
             return super.toString();
 
