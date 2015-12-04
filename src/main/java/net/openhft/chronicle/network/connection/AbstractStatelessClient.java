@@ -325,7 +325,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
     }
 
 
-    private void quietSendBytesAsyncWithoutLock(final Bytes bytes) {
+    void quietSendBytesAsyncWithoutLock(final Bytes bytes) {
         try {
             sendBytesAsyncWithoutLock(bytes);
         } catch (ConnectionDroppedException e) {
