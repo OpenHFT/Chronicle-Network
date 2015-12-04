@@ -321,6 +321,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
                 LOG.info(e.toString());
         } catch (IORuntimeException e) {
             // this can occur if the socket is not currently connected
+            LOG.trace("socket is not currently connected.", e);
         }
     }
 
@@ -335,6 +336,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
                 LOG.info(e.toString());
         } catch (IORuntimeException e) {
             // this can occur if the socket is not currently connected
+            LOG.trace("socket is not currently connected.", e);
         }
     }
 
