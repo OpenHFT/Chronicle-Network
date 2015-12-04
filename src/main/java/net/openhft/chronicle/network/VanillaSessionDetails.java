@@ -18,7 +18,6 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.net.InetSocketAddress;
 import java.util.LinkedHashMap;
@@ -34,7 +33,7 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
     private String securityToken = "";
     private String domain = "";
     private SessionMode sessionMode = SessionMode.ACTIVE;
-    private UUID clientId = null;
+    private UUID clientId;
 
     // only set on a server not on a client
     private InetSocketAddress clientAddress;
