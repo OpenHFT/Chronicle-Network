@@ -44,6 +44,7 @@ public interface TcpHandler extends ClientClosedProvider, Closeable {
     default void onEndOfConnection(boolean heartbeatTimeOut) {
     }
 
+    @Override
     default void close() {
     }
 
