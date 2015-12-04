@@ -701,6 +701,7 @@ public class TcpChannelHub implements Closeable {
     void reflectServerHeartbeatMessage(@NotNull ValueIn valueIn) {
 
         if (!outBytesLock().tryLock()) {
+            if (Jvm.isDebug())
             System.out.println("skipped sending back heartbeat, because lock is held !" +
                     outBytesLock);
             return;
