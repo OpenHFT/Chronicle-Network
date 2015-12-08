@@ -126,18 +126,22 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
         return (I) infoMap.get(infoClass);
     }
 
+    @Override
     public void setConnectTimeMS(long connectTimeMS) {
         this.connectTimeMS = connectTimeMS;
     }
 
+    @Override
     public void setClientAddress(InetSocketAddress clientAddress) {
         this.clientAddress = clientAddress;
     }
 
+    @Override
     public void setSecurityToken(String securityToken) {
         this.securityToken = securityToken;
     }
 
+    @Override
     public void setUserId(String userId) {
         this.userId = userId;
     }

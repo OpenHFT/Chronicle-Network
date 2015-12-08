@@ -400,6 +400,7 @@ public class TcpChannelHub implements Closeable {
     /**
      * called when we are completed finished with using the TcpChannelHub
      */
+    @Override
     public void close() {
         if (closed)
             return;
