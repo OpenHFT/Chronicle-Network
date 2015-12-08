@@ -10,6 +10,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class TraceLock extends ReentrantLock {
 
+    private static final long serialVersionUID = 1997992705529515418L;
     private volatile Throwable here;
 
     public static ReentrantLock create() {
