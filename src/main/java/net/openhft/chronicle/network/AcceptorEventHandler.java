@@ -39,6 +39,7 @@ import java.util.function.Supplier;
  */
 public class AcceptorEventHandler implements EventHandler, Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(AcceptorEventHandler.class);
+    private static final int tcpBufferSize = Integer.getInteger("tcp.server.buffer.size", 3 << 20);
     @NotNull
     private final Supplier<TcpHandler> tcpHandlerSupplier;
     @NotNull
@@ -80,6 +81,10 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
             SocketChannel sc = ssc.accept();
 
             if (sc != null) {
+                sc.socket().setReceiveBufferSize(tcpBufferSize);
+                sc.socket().setSendBufferSize(tcpBufferSize);
+                sc.socket().setTcpNoDelay(true);
+
                 if (LOG.isInfoEnabled())
                     LOG.info("accepted connection " + sc);
 
