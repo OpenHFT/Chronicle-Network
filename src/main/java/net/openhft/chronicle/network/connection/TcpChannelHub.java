@@ -851,9 +851,6 @@ public class TcpChannelHub implements Closeable {
         }
     }
 
-    public boolean isOutBytesLocked() {
-        return outBytesLock.isLocked();
-    }
 
     public interface Task {
         void run();
