@@ -693,8 +693,8 @@ public class TcpChannelHub implements Closeable {
         return outWire;
     }
 
-    public boolean outWireIsEmpty() {
-        return outWire.bytes().writePosition() == 0;
+    public boolean isOutBytesLocked() {
+        return outBytesLock.isLocked();
     }
 
 
