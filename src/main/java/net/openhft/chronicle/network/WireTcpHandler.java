@@ -62,6 +62,7 @@ public abstract class WireTcpHandler implements TcpHandler {
         });
     }
 
+    @Override
     public void sendHeartBeat(Bytes out, SessionDetailsProvider sessionDetails) {
         if (out.writePosition() == 0) {
             final WireOut outWire = bytesToWire.apply(out);

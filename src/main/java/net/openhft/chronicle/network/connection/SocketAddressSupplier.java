@@ -42,7 +42,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
             this.remoteAddresses.add(new RemoteAddressSupplier(connectURI));
         }
 
-        assert this.remoteAddresses.size() > 0;
+        assert !this.remoteAddresses.isEmpty();
 
         // for (String descriptions : descriptions) {
         this.iterator = remoteAddresses.iterator();
@@ -101,6 +101,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
         return current.get();
     }
 
+    @Override
     @NotNull
     public String toString() {
 
