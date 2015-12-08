@@ -371,7 +371,7 @@ public class TcpChannelHub implements Closeable {
 
             clear(inWire);
             if (Jvm.isDebug())
-            System.out.println("clearing outWire in closeSocket");
+                System.out.println("clearing outWire in closeSocket");
             lock(() -> clear(outWire));
 
             final TcpSocketConsumer tcpSocketConsumer = this.tcpSocketConsumer;
@@ -702,8 +702,8 @@ public class TcpChannelHub implements Closeable {
 
         if (!outBytesLock().tryLock()) {
             if (Jvm.isDebug())
-            System.out.println("skipped sending back heartbeat, because lock is held !" +
-                    outBytesLock);
+                System.out.println("skipped sending back heartbeat, because lock is held !" +
+                        outBytesLock);
             return;
         }
 
@@ -849,6 +849,10 @@ public class TcpChannelHub implements Closeable {
         } catch (IOException e) {
             LOG.error("", e);
         }
+    }
+
+    public boolean isOutBytesLocked() {
+        return outBytesLock.isLocked();
     }
 
     public interface Task {
@@ -1419,7 +1423,7 @@ public class TcpChannelHub implements Closeable {
                 @Override
                 public void onSubscribe(@NotNull WireOut wireOut) {
                     if (Jvm.isDebug())
-                    System.out.println("sending heartbeat");
+                        System.out.println("sending heartbeat");
                     wireOut.writeEventName(EventId.heartbeat).int64(Time
                             .currentTimeMillis());
                 }
