@@ -237,9 +237,8 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         if (hub.outBytesLock().isHeldByCurrentThread())
             throw new IllegalStateException("Cannot view map while debugging");
 
-        // can't use lock() as we are setting tid.
-        hub.outBytesLock().lock();
-        hub.checkConnection();
+        hub.timedLock(60);
+
         try {
             tid = writeMetaDataStartTime(startTime);
             hub.outWire().writeDocument(false, wireOut -> {
@@ -258,6 +257,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         }
         return tid;
     }
+
 
     /**
      * @param eventId              the wire event id
