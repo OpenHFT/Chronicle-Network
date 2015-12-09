@@ -799,8 +799,12 @@ public class TcpChannelHub implements Closeable {
                     checkConnection();
 
                 r.run();
-                assert Thread.currentThread() != tcpSocketConsumer.readThread : "if writes and reads are on the same thread this can lead " +
-                        "to deadlocks with the server, if the server buffer becomes full";
+                try {
+                    assert Thread.currentThread() != tcpSocketConsumer.readThread : "if writes and reads are on the same thread this can lead " +
+                            "to deadlocks with the server, if the server buffer becomes full";
+                } catch (Error e) {
+                    e.printStackTrace();
+                }
                 writeSocket(outWire(), reconnectOnFailure);
 
             } catch (ConnectionDroppedException e) {
@@ -850,6 +854,10 @@ public class TcpChannelHub implements Closeable {
         } catch (IOException e) {
             LOG.error("", e);
         }
+    }
+
+    public synchronized boolean isOutBytesEmpty() {
+        return outWire.bytes().readRemaining() == 0;
     }
 
 
