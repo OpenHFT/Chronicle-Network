@@ -57,7 +57,7 @@ class TcpEventHandler implements EventHandler, Closeable {
     private final WriteEventHandler writeEventHandler;
     @NotNull
     private final NetworkLog readLog, writeLog;
-    int oneInTen = 0;
+    int oneInTen;
     @Nullable
     private ByteBuffer inBB = ByteBuffer.allocateDirect(CAPACITY);
     @Nullable

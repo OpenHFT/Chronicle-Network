@@ -47,7 +47,7 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
     private final long heartbeatIntervalTicks;
     private final long heartbeatTimeOutTicks;
     private EventLoop eventLoop;
-    private boolean unchecked = false;
+    private boolean unchecked;
     private volatile boolean closed;
 
     public AcceptorEventHandler(@NotNull String description,

@@ -12,7 +12,7 @@ public enum WanSimulator {
     private static final int NET_BANDWIDTH = Integer.getInteger("wanMB", 0);
     private static final int BYTES_PER_MS = NET_BANDWIDTH * 1000;
     private static final Random RANDOM = new Random();
-    private static long totalRead = 0;
+    private static long totalRead;
 
     public static void dataRead(int bytes) {
         if (NET_BANDWIDTH <= 0) return;
