@@ -17,7 +17,6 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.util.Time;
@@ -57,7 +56,7 @@ class TcpEventHandler implements EventHandler, Closeable {
     private final WriteEventHandler writeEventHandler;
     @NotNull
     private final NetworkLog readLog, writeLog;
-    int oneInTen = 0;
+    int oneInTen;
     @Nullable
     private ByteBuffer inBB = ByteBuffer.allocateDirect(CAPACITY);
     @Nullable
@@ -151,8 +150,9 @@ class TcpEventHandler implements EventHandler, Closeable {
 
             if (read > 0) {
                 WanSimulator.dataRead(read);
-                if (Jvm.isDebug())
-                    System.out.println("Read: " + read + " start: " + start + " pos: " + inBB.position());
+                //    if (Jvm.isDebug())
+                //        System.out.println("Read: " + read + " start: " + start + " pos: " + inBB
+                //       .position());
                 readLog.log(inBB, start, inBB.position());
                 lastTickReadTime = Time.tickTime();
                 // inBB.position() where the data has been read() up to.
@@ -261,8 +261,8 @@ class TcpEventHandler implements EventHandler, Closeable {
 
     private void closeSC() {
 
-        if (Jvm.isDebug())
-            new RuntimeException().printStackTrace(System.out);
+        //   if (Jvm.isDebug())
+        //      new RuntimeException().printStackTrace(System.out);
 
         try {
             handler.close();

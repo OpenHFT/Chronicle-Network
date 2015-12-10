@@ -371,15 +371,21 @@ public class TcpChannelHub implements Closeable {
 
             clear(inWire);
             if (Jvm.isDebug())
-            System.out.println("clearing outWire in closeSocket");
-            lock(() -> clear(outWire));
+                System.out.println("clearing outWire in closeSocket");
+
+            //    new RuntimeException("closing").printStackTrace();
 
             final TcpSocketConsumer tcpSocketConsumer = this.tcpSocketConsumer;
+
 
             tcpSocketConsumer.tid = 0;
             tcpSocketConsumer.omap.clear();
 
             onDisconnected();
+
+            clear(outWire);
+
+
         }
     }
 
@@ -400,6 +406,7 @@ public class TcpChannelHub implements Closeable {
     /**
      * called when we are completed finished with using the TcpChannelHub
      */
+    @Override
     public void close() {
         if (closed)
             return;
@@ -503,7 +510,7 @@ public class TcpChannelHub implements Closeable {
             }
 
 
-            writeSocket1(wire, clientChannel);
+            writeSocket1(wire, this.clientChannel);
         } catch (ClosedChannelException e) {
             closeSocket();
             if (reconnectOnFailure)
@@ -602,9 +609,9 @@ public class TcpChannelHub implements Closeable {
                     if (prevRemaining != outBuffer.remaining()) {
                         start = Time.currentTimeMillis();
                         isOutBufferFull = false;
-                        if (Jvm.isDebug() && outBuffer.remaining() == 0)
-                            System.out.println("W: " + (prevRemaining - outBuffer
-                                    .remaining()));
+                        //  if (Jvm.isDebug() && outBuffer.remaining() == 0)
+                        //    System.out.println("W: " + (prevRemaining - outBuffer
+                        //          .remaining()));
                         prevRemaining = outBuffer.remaining();
                     } else {
                         if (!isOutBufferFull && Jvm.isDebug())
@@ -702,8 +709,8 @@ public class TcpChannelHub implements Closeable {
 
         if (!outBytesLock().tryLock()) {
             if (Jvm.isDebug())
-            System.out.println("skipped sending back heartbeat, because lock is held !" +
-                    outBytesLock);
+                System.out.println("skipped sending back heartbeat, because lock is held !" +
+                        outBytesLock);
             return;
         }
 
@@ -798,8 +805,12 @@ public class TcpChannelHub implements Closeable {
                     checkConnection();
 
                 r.run();
-                assert Thread.currentThread() != tcpSocketConsumer.readThread : "if writes and reads are on the same thread this can lead " +
-                        "to deadlocks with the server, if the server buffer becomes full";
+                try {
+                    assert Thread.currentThread() != tcpSocketConsumer.readThread : "if writes and reads are on the same thread this can lead " +
+                            "to deadlocks with the server, if the server buffer becomes full";
+                } catch (Error e) {
+                    e.printStackTrace();
+                }
                 writeSocket(outWire(), reconnectOnFailure);
 
             } catch (ConnectionDroppedException e) {
@@ -828,13 +839,16 @@ public class TcpChannelHub implements Closeable {
 
             if (start + timeoutMs > Time.currentTimeMillis())
                 try {
-                    condition.await(50, TimeUnit.MILLISECONDS);
+                    condition.await(1, TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
             else
                 throw new IORuntimeException("Not connected to " + socketAddressSupplier);
         }
+
+        if (clientChannel == null)
+            throw new IORuntimeException("Not connected to " + socketAddressSupplier);
     }
 
     /**
@@ -850,6 +864,34 @@ public class TcpChannelHub implements Closeable {
             LOG.error("", e);
         }
     }
+
+    public synchronized boolean isOutBytesEmpty() {
+        return outWire.bytes().readRemaining() == 0;
+    }
+
+    /**
+     * waits for the connection to be established and  the lock to be available
+     *
+     * @param seconds the time to wait
+     */
+    void timedLock(int seconds) {
+
+        int i = seconds;
+        // can't use lock() as we are setting tid.
+        for (; i > 0; i--) {
+            try {
+                final boolean success = outBytesLock().tryLock(1, TimeUnit.SECONDS);
+                if (success)
+                    break;
+            } catch (InterruptedException e) {
+                checkConnection();
+            }
+        }
+
+        if (i == 0)
+            throw new IORuntimeException("timed out obtaining write lock");
+    }
+
 
     public interface Task {
         void run();
@@ -983,7 +1025,8 @@ public class TcpChannelHub implements Closeable {
         private void registerSubscribe(long tid, Object bytes) {
             // this check ensure that a put does not occur while currently re-subscribing
             outBytesLock().isHeldByCurrentThread();
-
+            if (bytes instanceof AbstractAsyncSubscription && !(bytes instanceof AsyncTemporarySubscription))
+                System.out.println("");
             final Object prev = map.put(tid, bytes);
             assert prev == null;
         }
@@ -1350,9 +1393,9 @@ public class TcpChannelHub implements Closeable {
                     throw new IOException("Disconnection to server=" + socketAddressSupplier +
                             " channel is closed, name=" + name);
                 int numberOfBytesRead = clientChannel.read(buffer);
-                if (Jvm.isDebug() && numberOfBytesRead > 0)
-                    System.out.println("R: " + numberOfBytesRead + " plus " +
-                            buffer.remaining());
+                //    if (Jvm.isDebug() && numberOfBytesRead > 0)
+                //      System.out.println("R: " + numberOfBytesRead + " plus " +
+                //            buffer.remaining());
 
                 WanSimulator.dataRead(numberOfBytesRead);
                 if (numberOfBytesRead == -1)
@@ -1419,7 +1462,7 @@ public class TcpChannelHub implements Closeable {
                 @Override
                 public void onSubscribe(@NotNull WireOut wireOut) {
                     if (Jvm.isDebug())
-                    System.out.println("sending heartbeat");
+                        System.out.println("sending heartbeat");
                     wireOut.writeEventName(EventId.heartbeat).int64(Time
                             .currentTimeMillis());
                 }

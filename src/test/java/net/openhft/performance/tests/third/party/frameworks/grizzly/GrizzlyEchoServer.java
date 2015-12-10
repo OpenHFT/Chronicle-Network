@@ -32,7 +32,7 @@ import static org.glassfish.grizzly.nio.transport.TCPNIOTransportBuilder.newInst
  */
 public class GrizzlyEchoServer {
 
-    static final Logger LOG = Logger.getLogger(GrizzlyEchoServer.class.getName());
+    private static final Logger LOG = Logger.getLogger(GrizzlyEchoServer.class.getName());
     static final int PORT = Integer.parseInt(System.getProperty("port", "9124"));
 
     @NotNull
