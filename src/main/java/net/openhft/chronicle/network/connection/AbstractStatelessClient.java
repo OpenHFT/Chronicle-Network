@@ -237,10 +237,18 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         if (hub.outBytesLock().isHeldByCurrentThread())
             throw new IllegalStateException("Cannot view map while debugging");
 
-        hub.timedLock(60);
-
         try {
+            System.out.println("waiting timed lock");
+            hub.timedLock(15);
+            System.out.println("finished timed lock");
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
+        try {
+
             tid = writeMetaDataStartTime(startTime);
+            System.out.println("about to send : tid= " + tid);
             hub.outWire().writeDocument(false, wireOut -> {
 
                 final ValueOut valueOut = wireOut.writeEventName(eventId);
@@ -250,6 +258,9 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
                 else
                     consumer.accept(valueOut);
             });
+            LOG.error("about to send :" + Wires.fromSizePrefixedBlobs(hub.outWire().bytes
+                    ()));
+
 
             hub.writeSocket(hub.outWire(), true);
         } finally {

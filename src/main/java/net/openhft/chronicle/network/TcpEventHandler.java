@@ -260,10 +260,6 @@ class TcpEventHandler implements EventHandler, Closeable {
     }
 
     private void closeSC() {
-
-        //   if (Jvm.isDebug())
-        //      new RuntimeException().printStackTrace(System.out);
-
         try {
             handler.close();
         } catch (Exception ignored) {
