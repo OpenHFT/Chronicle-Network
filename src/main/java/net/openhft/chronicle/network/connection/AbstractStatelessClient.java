@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -238,17 +239,17 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
             throw new IllegalStateException("Cannot view map while debugging");
 
         try {
-            System.out.println("waiting timed lock");
-            hub.timedLock(15);
-            System.out.println("finished timed lock");
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
+            final boolean success = hub.outBytesLock().tryLock(10, TimeUnit.SECONDS);
+            if (!success)
+                throw new IORuntimeException("failed to obtain write lock");
+        } catch (InterruptedException e) {
+            throw new IORuntimeException(e);
         }
+
         try {
 
             tid = writeMetaDataStartTime(startTime);
-            System.out.println("about to send : tid= " + tid);
+
             hub.outWire().writeDocument(false, wireOut -> {
 
                 final ValueOut valueOut = wireOut.writeEventName(eventId);

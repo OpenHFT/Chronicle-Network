@@ -370,13 +370,8 @@ public class TcpChannelHub implements Closeable {
             this.clientChannel = null;
 
             clear(inWire);
-            if (Jvm.isDebug())
-                System.out.println("clearing outWire in closeSocket");
-
-            //    new RuntimeException("closing").printStackTrace();
 
             final TcpSocketConsumer tcpSocketConsumer = this.tcpSocketConsumer;
-
 
             tcpSocketConsumer.tid = 0;
             tcpSocketConsumer.omap.clear();
@@ -493,7 +488,6 @@ public class TcpChannelHub implements Closeable {
      * @param wire the {@code wire} containing the outbound data
      */
     public void writeSocket(@NotNull final WireOut wire, boolean reconnectOnFailure) {
-
 
         assert outBytesLock().isHeldByCurrentThread();
 
@@ -867,28 +861,7 @@ public class TcpChannelHub implements Closeable {
         return outWire.bytes().readRemaining() == 0;
     }
 
-    /**
-     * waits for the connection to be established and  the lock to be available
-     *
-     * @param seconds the time to wait
-     */
-    void timedLock(int seconds) {
 
-        int i = seconds;
-        // can't use lock() as we are setting tid.
-        for (; i > 0; i--) {
-            try {
-                final boolean success = outBytesLock().tryLock(1, TimeUnit.SECONDS);
-                if (success)
-                    break;
-            } catch (InterruptedException e) {
-                checkConnection();
-            }
-        }
-
-        if (i == 0)
-            throw new IORuntimeException("timed out obtaining write lock");
-    }
 
 
     public interface Task {
