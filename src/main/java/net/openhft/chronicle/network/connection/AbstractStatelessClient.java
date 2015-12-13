@@ -259,8 +259,6 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
                 else
                     consumer.accept(valueOut);
             });
-            LOG.error("about to send :" + Wires.fromSizePrefixedBlobs(hub.outWire().bytes
-                    ()));
 
 
             hub.writeSocket(hub.outWire(), true);
