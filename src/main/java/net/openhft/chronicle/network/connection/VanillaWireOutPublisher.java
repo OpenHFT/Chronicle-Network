@@ -65,7 +65,6 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
     @Override
     public void put(final Object key, WriteMarshallable event) {
-        assert Thread.holdsLock(this);
         synchronized (this) {
             event.writeMarshallable(wire);
         }
