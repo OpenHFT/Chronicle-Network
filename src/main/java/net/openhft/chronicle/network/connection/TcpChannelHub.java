@@ -606,8 +606,9 @@ public class TcpChannelHub implements Closeable {
                     //          .remaining()));
                     prevRemaining = outBuffer.remaining();
                 } else {
-                    if (!isOutBufferFull && Jvm.isDebug())
-                        System.out.println("----> TCP write buffer is FULL! " + outBuffer.remaining() + " bytes remaining.");
+                    if (!isOutBufferFull && Jvm.isDebug() && LOG.isDebugEnabled())
+                        LOG.debug("----> TCP write buffer is FULL! " + outBuffer.remaining() + " bytes" +
+                                " remaining.");
                     isOutBufferFull = true;
 
                     long writeTime = Time.currentTimeMillis() - start;
@@ -860,8 +861,6 @@ public class TcpChannelHub implements Closeable {
     public synchronized boolean isOutBytesEmpty() {
         return outWire.bytes().readRemaining() == 0;
     }
-
-
 
 
     public interface Task {
@@ -1395,11 +1394,14 @@ public class TcpChannelHub implements Closeable {
                     throw new ConnectionDroppedException(name + " is shutdown, was connected to " +
                             "" + socketAddressSupplier);
 
-                if (start + 30_000 < System.currentTimeMillis()) {
+                if (start + 60_000 < System.currentTimeMillis()) {
 
                     for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
                         Thread thread = entry.getKey();
-                        if (thread.getThreadGroup().getName().equals("system"))
+                        if (thread == null ||
+                                thread.getThreadGroup() == null ||
+                                thread.getThreadGroup().getName() == null ||
+                                thread.getThreadGroup().getName().equals("system"))
                             continue;
                         StringBuilder sb = new StringBuilder();
                         sb.append(thread).append(" ").append(thread.getState());
@@ -1408,7 +1410,9 @@ public class TcpChannelHub implements Closeable {
                         LOG.error("\n========= THREAD DUMP =========\n" + sb);
                     }
 
-                    LOG.error("", new ConnectionDroppedException(name + " the client is failing to get the data from the server"));
+                    new ConnectionDroppedException(name + " the client is failing to get the " +
+                            "data from the server, so we are going to drop the connection and " +
+                            "reconnect.");
                 }
             }
         }
