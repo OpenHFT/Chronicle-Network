@@ -369,6 +369,7 @@ public class TcpChannelHub implements Closeable {
 
             this.clientChannel = null;
 
+            LOG.info("closing", new RuntimeException());
             clear(inWire);
 
             final TcpSocketConsumer tcpSocketConsumer = this.tcpSocketConsumer;
@@ -508,17 +509,20 @@ public class TcpChannelHub implements Closeable {
             writeSocket1(wire, this.clientChannel);
         } catch (ClosedChannelException e) {
             closeSocket();
+            Jvm.pause(500);
             if (reconnectOnFailure)
                 throw new ConnectionDroppedException(e);
         } catch (IOException e) {
             if (!"Broken pipe".equals(e.getMessage()))
                 LOG.error("", e);
             closeSocket();
+            Jvm.pause(500);
             throw new ConnectionDroppedException(e);
 
         } catch (Exception e) {
             LOG.error("", e);
             closeSocket();
+            Jvm.pause(500);
             throw new ConnectionDroppedException(e);
         }
     }
@@ -558,6 +562,9 @@ public class TcpChannelHub implements Closeable {
      */
     private void writeSocket1(@NotNull WireOut outWire, @Nullable SocketChannel clientChannel) throws
             IOException {
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("sending :" + Wires.fromSizePrefixedBlobs(outWire.bytes()));
 
         if (clientChannel == null) {
             LOG.error("Connection Dropped");
@@ -605,6 +612,10 @@ public class TcpChannelHub implements Closeable {
                     //    System.out.println("W: " + (prevRemaining - outBuffer
                     //          .remaining()));
                     prevRemaining = outBuffer.remaining();
+                    final TcpSocketConsumer tcpSocketConsumer = this.tcpSocketConsumer;
+
+                    if (tcpSocketConsumer != null)
+                        this.tcpSocketConsumer.lastTimeMessageReceivedOrSent = start;
                 } else {
                     if (!isOutBufferFull && Jvm.isDebug() && LOG.isDebugEnabled())
                         LOG.debug("----> TCP write buffer is FULL! " + outBuffer.remaining() + " bytes" +
@@ -701,8 +712,8 @@ public class TcpChannelHub implements Closeable {
     void reflectServerHeartbeatMessage(@NotNull ValueIn valueIn) {
 
         if (!outBytesLock().tryLock()) {
-            if (Jvm.isDebug())
-                System.out.println("skipped sending back heartbeat, because lock is held !" +
+            if (Jvm.isDebug() && LOG.isDebugEnabled())
+                LOG.debug("skipped sending back heartbeat, because lock is held !" +
                         outBytesLock);
             return;
         }
@@ -784,8 +795,9 @@ public class TcpChannelHub implements Closeable {
                     return false;
                 }
             } else try {
-                if (lock.isLocked())
-                    LOG.info("Lock for thread=" + Thread.currentThread() + " was held by " + lock);
+                //   if (lock.isLocked())
+                //     LOG.info("Lock for thread=" + Thread.currentThread() + " was held by " +
+                // lock);
                 lock.lock();
 
             } catch (Throwable e) {
@@ -885,7 +897,7 @@ public class TcpChannelHub implements Closeable {
                 elasticByteBuffer()));
         private Bytes serverHeartBeatHandler = Bytes.elasticByteBuffer();
 
-        private volatile long lastTimeMessageReceived = Time.currentTimeMillis();
+        private volatile long lastTimeMessageReceivedOrSent = Time.currentTimeMillis();
         private volatile boolean isShutdown;
         @Nullable
         private volatile Throwable shutdownHere = null;
@@ -1356,7 +1368,7 @@ public class TcpChannelHub implements Closeable {
 
         private void readBuffer(@NotNull final ByteBuffer buffer) throws IOException {
 
-            long start = System.currentTimeMillis();
+            //  long start = System.currentTimeMillis();
             while (buffer.remaining() > 0) {
                 final SocketChannel clientChannel = TcpChannelHub.this.clientChannel;
                 if (clientChannel == null)
@@ -1375,12 +1387,13 @@ public class TcpChannelHub implements Closeable {
 
                 if (numberOfBytesRead > 0) {
                     onMessageReceived();
-                    start = System.currentTimeMillis();
+
+                    System.out.println("numberOfBytesRead=" + numberOfBytesRead);
 
                 } else if (numberOfBytesRead == 0 && isOpen()) {
                     // if we have not received a message from the server after the HEATBEAT_TIMEOUT_PERIOD
                     // we will drop and then re-establish the connection.
-                    long millisecondsSinceLastMessageReceived = System.currentTimeMillis() - lastTimeMessageReceived;
+                    long millisecondsSinceLastMessageReceived = System.currentTimeMillis() - lastTimeMessageReceivedOrSent;
                     if (millisecondsSinceLastMessageReceived - HEATBEAT_TIMEOUT_PERIOD > 0) {
                         throw new IOException("reconnecting due to heartbeat failure, time since " +
                                 "last message=" + millisecondsSinceLastMessageReceived + "ms " +
@@ -1394,7 +1407,7 @@ public class TcpChannelHub implements Closeable {
                     throw new ConnectionDroppedException(name + " is shutdown, was connected to " +
                             "" + socketAddressSupplier);
 
-                if (start + 60_000 < System.currentTimeMillis()) {
+                if (lastTimeMessageReceivedOrSent + 60_000 < System.currentTimeMillis()) {
 
                     for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
                         Thread thread = entry.getKey();
@@ -1418,7 +1431,7 @@ public class TcpChannelHub implements Closeable {
         }
 
         private void onMessageReceived() {
-            lastTimeMessageReceived = Time.currentTimeMillis();
+            lastTimeMessageReceivedOrSent = Time.currentTimeMillis();
         }
 
         /**
@@ -1491,7 +1504,7 @@ public class TcpChannelHub implements Closeable {
             // a heartbeat only gets sent out if we have not received any data in the last
             // HEATBEAT_PING_PERIOD milliseconds
             long currentTime = Time.currentTimeMillis();
-            long millisecondsSinceLastMessageReceived = currentTime - lastTimeMessageReceived;
+            long millisecondsSinceLastMessageReceived = currentTime - lastTimeMessageReceivedOrSent;
             long millisecondsSinceLastHeatbeatSend = currentTime - lastheartbeatSentTime;
 
             if (millisecondsSinceLastMessageReceived >= HEATBEAT_PING_PERIOD &&
@@ -1587,7 +1600,7 @@ public class TcpChannelHub implements Closeable {
                             // being filled up
                             if ((failedConnectionCount < 15 && failedConnectionCount % 5 == 0) ||
                                     failedConnectionCount % 60 == 0)
-                                LOG.info("Server is unavailable, failed to  connect to" +
+                                LOG.info("Server is unavailable, failed to connect to " +
                                         "address=" + socketAddressSupplier);
 
                             failedConnectionCount++;
