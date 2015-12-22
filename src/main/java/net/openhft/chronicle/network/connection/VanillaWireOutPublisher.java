@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.function.Function;
 
 /**
@@ -30,43 +31,78 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     public synchronized void applyAction(@NotNull WireOut out, @NotNull Runnable read) {
 
 //        if (isEmpty()) {
-            read.run();
+        read.run();
 //        }
+        boolean hasReadData = false;
 
-        final long sourceBytesRemaining = wire.bytes().readRemaining();
 
-        if (sourceBytesRemaining == 0)
-            return;
+        final Bytes<?> bytes = wire.bytes();
+        synchronized (wire) {
+            if (bytes.readRemaining() < 4)
+                return;
 
-        if (out.bytes().writeRemaining() < sourceBytesRemaining)
-            return;
+            for (; ; ) {
+                final long nextElementSize = bytes.readInt(bytes.readPosition());
 
-        final long targetBytesRemaining = out.bytes().writeRemaining();
-        out.bytes().write(wire.bytes());
+                if (nextElementSize == 0)
+                    return;
 
-        final long bytesWritten = targetBytesRemaining - out.bytes().writeRemaining();
+                if (out.bytes().writeRemaining() < nextElementSize)
+                    break;
 
-        assert bytesWritten == sourceBytesRemaining : "bytesWritten=" + bytesWritten + ", " +
-                "sourceBytesRemaining=" + sourceBytesRemaining;
+                bytes.readSkip(4);
+                out.bytes().write(bytes, bytes.readPosition(), nextElementSize);
 
-        wire.bytes().clear();
+                bytes.readSkip(nextElementSize);
+                hasReadData = true;
 
-        if (YamlLogging.showServerWrites)
-            try {
-                LOG.info("\nServer Publishes (from async publisher ) :\n" +
-                        Wires.fromSizePrefixedBlobs(out.bytes()));
-
-            } catch (Exception e) {
-                LOG.info("\nServer Publishes ( from async publisher - corrupted ) :\n" +
-                        out.bytes().toDebugString());
-                LOG.error("", e);
+                if (bytes.readRemaining() < 4)
+                    break;
             }
+
+            if (!hasReadData)
+                return;
+
+            if (bytes.readRemaining() == 0)
+                bytes.clear();
+            else {
+                final ByteBuffer o = (ByteBuffer) bytes.underlyingObject();
+                o.position(0);
+                o.limit((int) bytes.readLimit());
+                o.position((int) bytes.readPosition());
+
+                o.compact();
+                final int byteCoppied = o.position();
+
+                bytes.readPosition(0);
+                bytes.writePosition(byteCoppied);
+
+            }
+
+            if (YamlLogging.showServerWrites)
+                try {
+                    LOG.info("\nServer Publishes (from async publisher ) :\n" +
+                            Wires.fromSizePrefixedBlobs(out.bytes()));
+
+                } catch (Exception e) {
+                    LOG.info("\nServer Publishes ( from async publisher - corrupted ) :\n" +
+                            out.bytes().toDebugString());
+                    LOG.error("", e);
+                }
+        }
     }
 
     @Override
     public void put(final Object key, WriteMarshallable event) {
-        synchronized (this) {
+        final Bytes<?> bytes = wire.bytes();
+        // writes the data and its size
+        synchronized (wire) {
+            final long sizePosition = bytes.writePosition();
+            bytes.writeSkip(4);
+            final long start = bytes.writePosition();
             event.writeMarshallable(wire);
+            final int size = (int) (bytes.writePosition() - start);
+            bytes.writeInt(sizePosition, size);
         }
     }
 
@@ -78,8 +114,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     @Override
     public boolean isEmpty() {
         assert Thread.holdsLock(this);
-
-        synchronized (this) {
+        synchronized (wire) {
             return wire.bytes().writePosition() == 0;
         }
     }
@@ -87,6 +122,9 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     @Override
     public synchronized void close() {
         closed = true;
-        wire.clear();
+        synchronized (wire) {
+            wire.clear();
+        }
     }
 }
+

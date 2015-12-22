@@ -604,6 +604,10 @@ public class TcpChannelHub implements Closeable {
                     throw new IORuntimeException("Disconnection to server=" +
                             socketAddressSupplier + ", name=" + name);
 
+
+                System.out.println("W:" + len + ",socket=" + socketAddressSupplier
+                        .get());
+
                 // reset the timer if we wrote something.
                 if (prevRemaining != outBuffer.remaining()) {
                     start = Time.currentTimeMillis();
@@ -1388,7 +1392,8 @@ public class TcpChannelHub implements Closeable {
                 if (numberOfBytesRead > 0) {
                     onMessageReceived();
 
-                    System.out.println("numberOfBytesRead=" + numberOfBytesRead);
+                    System.out.println("R:" + numberOfBytesRead + ",socket=" + socketAddressSupplier
+                            .get());
 
                 } else if (numberOfBytesRead == 0 && isOpen()) {
                     // if we have not received a message from the server after the HEATBEAT_TIMEOUT_PERIOD
