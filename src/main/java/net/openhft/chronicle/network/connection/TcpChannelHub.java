@@ -369,7 +369,9 @@ public class TcpChannelHub implements Closeable {
 
             this.clientChannel = null;
 
-            LOG.info("closing", new Throwable("only added for logging - please ignore !"));
+            if (LOG.isDebugEnabled())
+                LOG.debug("closing", new Throwable("only added for logging - please ignore !"));
+
             clear(inWire);
 
             final TcpSocketConsumer tcpSocketConsumer = this.tcpSocketConsumer;
@@ -449,7 +451,6 @@ public class TcpChannelHub implements Closeable {
 
             TcpChannelHub.this.outWire.writeDocument(false, w ->
                     w.writeEventName(EventId.onClientClosing).text(""));
-
 
         }, false);
 
@@ -814,12 +815,15 @@ public class TcpChannelHub implements Closeable {
                     checkConnection();
 
                 r.run();
+/*
                 try {
-                    assert Thread.currentThread() != tcpSocketConsumer.readThread : "if writes and reads are on the same thread this can lead " +
+                    assert Thread.currentThread() != tcpSocketConsumer.readThread : "if writes" +
+                            " and reads are on the same thread this can lead " +
                             "to deadlocks with the server, if the server buffer becomes full";
                 } catch (Error e) {
                     e.printStackTrace();
                 }
+*/
                 writeSocket(outWire(), reconnectOnFailure);
 
             } catch (ConnectionDroppedException e) {
