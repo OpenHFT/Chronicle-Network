@@ -369,7 +369,7 @@ public class TcpChannelHub implements Closeable {
 
             this.clientChannel = null;
 
-            LOG.info("closing", new RuntimeException());
+            LOG.info("closing", new Throwable("only added for logging - please ignore !"));
             clear(inWire);
 
             final TcpSocketConsumer tcpSocketConsumer = this.tcpSocketConsumer;
