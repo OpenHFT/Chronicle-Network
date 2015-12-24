@@ -186,7 +186,8 @@ class TcpEventHandler implements EventHandler, Closeable {
     }
 
     private void sendHeartBeat() throws IOException {
-        System.out.println("sendHeartbeat - " + sc.getRemoteAddress());
+        if (LOG.isDebugEnabled())
+            LOG.debug("sendHeartbeat - " + sc.getRemoteAddress());
         assert outBB != null;
         assert outBBB != null;
         outBBB.writePosition(outBB.limit());

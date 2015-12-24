@@ -605,9 +605,8 @@ public class TcpChannelHub implements Closeable {
                     throw new IORuntimeException("Disconnection to server=" +
                             socketAddressSupplier + ", name=" + name);
 
-
-                System.out.println("W:" + len + ",socket=" + socketAddressSupplier
-                        .get());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("W:" + len + ",socket=" + socketAddressSupplier.get());
 
                 // reset the timer if we wrote something.
                 if (prevRemaining != outBuffer.remaining()) {
@@ -1367,6 +1366,7 @@ public class TcpChannelHub implements Closeable {
 
             final ByteBuffer buffer = (ByteBuffer) bytes.underlyingObject();
             final int start = (int) bytes.writePosition();
+            //noinspection ConstantConditions
             buffer.position(start);
 
             buffer.limit((int) (start + numberOfBytes));
@@ -1383,9 +1383,6 @@ public class TcpChannelHub implements Closeable {
                     throw new IOException("Disconnection to server=" + socketAddressSupplier +
                             " channel is closed, name=" + name);
                 int numberOfBytesRead = clientChannel.read(buffer);
-                //    if (Jvm.isDebug() && numberOfBytesRead > 0)
-                //      System.out.println("R: " + numberOfBytesRead + " plus " +
-                //            buffer.remaining());
 
                 WanSimulator.dataRead(numberOfBytesRead);
                 if (numberOfBytesRead == -1)
@@ -1396,8 +1393,8 @@ public class TcpChannelHub implements Closeable {
                 if (numberOfBytesRead > 0) {
                     onMessageReceived();
 
-                    System.out.println("R:" + numberOfBytesRead + ",socket=" + socketAddressSupplier
-                            .get());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("R:" + numberOfBytesRead + ",socket=" + socketAddressSupplier.get());
 
                 } else if (numberOfBytesRead == 0 && isOpen()) {
                     // if we have not received a message from the server after the HEATBEAT_TIMEOUT_PERIOD
