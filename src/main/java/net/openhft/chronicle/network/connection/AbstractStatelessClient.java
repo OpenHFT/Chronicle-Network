@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -63,8 +62,8 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
     }
 
     protected static <E extends ParameterizeWireKey>
-    Consumer<ValueOut> toParameters(@NotNull final E eventId,
-                                    @Nullable final Object... args) {
+    WriteValue toParameters(@NotNull final E eventId,
+                            @Nullable final Object... args) {
         return out -> {
             final WireKey[] paramNames = eventId.params();
 
@@ -82,12 +81,10 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
             }
 
             out.marshallable(m -> {
-
                 for (int i = 0; i < paramNames.length; i++) {
                     final ValueOut vo = m.write(paramNames[i]);
                     vo.object(args[i]);
                 }
-
             });
         };
     }
@@ -210,7 +207,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
     protected <T> T proxyReturnWireConsumerInOut(@NotNull final WireKey eventId,
                                                  @NotNull final WireKey reply,
-                                                 @Nullable final Consumer<ValueOut> consumerOut,
+                                                 @Nullable final WriteValue consumerOut,
                                                  @NotNull final Function<ValueIn, T> consumerIn) {
         final long startTime = Time.currentTimeMillis();
         return attempt(() -> readWire(sendEvent(startTime, eventId, consumerOut), startTime,
@@ -219,7 +216,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
     @SuppressWarnings("SameParameterValue")
     private void proxyReturnVoid(@NotNull final WireKey eventId,
-                                 @Nullable final Consumer<ValueOut> consumer) {
+                                 @Nullable final WriteValue consumer) {
         final long startTime = Time.currentTimeMillis();
 
         attempt(() -> readWire(sendEvent(startTime, eventId, consumer), startTime, CoreFields
@@ -233,7 +230,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
     protected long sendEvent(final long startTime,
                              @NotNull final WireKey eventId,
-                             @Nullable final Consumer<ValueOut> consumer) {
+                             @Nullable final WriteValue consumer) {
         long tid;
         if (hub.outBytesLock().isHeldByCurrentThread())
             throw new IllegalStateException("Cannot view map while debugging");
@@ -257,7 +254,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
                 if (consumer == null)
                     valueOut.marshallable(WriteMarshallable.EMPTY);
                 else
-                    consumer.accept(valueOut);
+                    consumer.writeValue(valueOut);
             });
 
 
@@ -275,7 +272,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
      * @param reattemptUponFailure if false - will only be sent if the connection is valid
      */
     protected boolean sendEventAsync(@NotNull final WireKey eventId,
-                                     @Nullable final Consumer<ValueOut> consumer,
+                                     @Nullable final WriteValue consumer,
                                      boolean reattemptUponFailure) {
 
         if (!reattemptUponFailure && !hub.isOpen())
@@ -321,7 +318,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
     }
 
 
-    private void quietSendEventAsyncWithoutLock(final WireKey eventId, final Consumer<ValueOut> consumer) {
+    private void quietSendEventAsyncWithoutLock(final WireKey eventId, final WriteValue consumer) {
         try {
             sendEventAsyncWithoutLock(eventId, consumer);
         } catch (ConnectionDroppedException e) {
@@ -357,7 +354,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
     }
 
     protected void sendEventAsyncWithoutLock(@NotNull final WireKey eventId,
-                                             @Nullable final Consumer<ValueOut> consumer) {
+                                             @Nullable final WriteValue consumer) {
 
         writeAsyncMetaData();
         hub.outWire().writeDocument(false, wireOut -> {
@@ -365,7 +362,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
             if (consumer == null)
                 valueOut.marshallable(WriteMarshallable.EMPTY);
             else
-                consumer.accept(valueOut);
+                consumer.writeValue(valueOut);
         });
 
         hub.writeSocket(hub.outWire(), true);
