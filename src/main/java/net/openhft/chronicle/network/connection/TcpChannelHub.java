@@ -1142,6 +1142,8 @@ public class TcpChannelHub implements Closeable {
 
                     } catch (@NotNull Exception e) {
 
+                        e.printStackTrace();
+
                         tid = -1;
                         if (isShuttingdown()) {
                             break;
