@@ -1431,7 +1431,8 @@ public class TcpChannelHub implements Closeable {
                         LOG.error("\n========= THREAD DUMP =========\n" + sb);
                     }
 
-                    new ConnectionDroppedException(name + " the client is failing to get the " +
+                    throw new ConnectionDroppedException(name + " the client is failing to get the" +
+                            " " +
                             "data from the server, so we are going to drop the connection and " +
                             "reconnect.");
                 }
