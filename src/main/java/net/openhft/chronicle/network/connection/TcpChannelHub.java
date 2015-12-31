@@ -1084,12 +1084,11 @@ public class TcpChannelHub implements Closeable {
                 readThread = Thread.currentThread();
                 try {
                     running();
+
                 } catch (ConnectionDroppedException e) {
                     if (!tcpSocketConsumer.prepareToShutdown)
                         LOG.info(e.toString());
-                } catch (IORuntimeException e) {
-                    if (!prepareToShutdown)
-                        LOG.error("", e);
+
                 } catch (Throwable e) {
                     if (!prepareToShutdown)
                         LOG.error("", e);
@@ -1141,12 +1140,13 @@ public class TcpChannelHub implements Closeable {
                         }
 
                     } catch (@NotNull Exception e) {
-
-                        e.printStackTrace();
+                        if (Jvm.isDebug())
+                            e.printStackTrace();
 
                         tid = -1;
                         if (isShuttingdown()) {
                             break;
+
                         } else {
                             String message = e.getMessage();
                             if (e instanceof IOException && "Connection reset by peer".equals(message))
@@ -1157,7 +1157,7 @@ public class TcpChannelHub implements Closeable {
                             else
                                 LOG.warn("reconnecting due to unexpected exception", e);
                             closeSocket();
-                            Thread.sleep(500);
+                            Jvm.pause(500);
                         }
                     } finally {
                         clear(inWire);
