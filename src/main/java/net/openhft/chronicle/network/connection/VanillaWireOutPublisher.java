@@ -19,7 +19,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
     public VanillaWireOutPublisher(@NotNull Function<Bytes, Wire> wireType) {
         this.closed = false;
-        this.wire = wireType.apply(Bytes.elasticByteBuffer());
+        this.wire = wireType.apply(Bytes.elasticByteBuffer(128 << 10, 128 << 20));
     }
 
     /**
