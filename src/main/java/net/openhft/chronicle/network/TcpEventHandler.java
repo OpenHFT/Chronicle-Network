@@ -112,7 +112,6 @@ class TcpEventHandler implements EventHandler, Closeable {
             default:
                 throw new UnsupportedOperationException("todo");
         }
-
     }
 
     @Override
@@ -253,7 +252,6 @@ class TcpEventHandler implements EventHandler, Closeable {
         } finally {
             closeSC();
         }
-
     }
 
     @Override
@@ -279,7 +277,6 @@ class TcpEventHandler implements EventHandler, Closeable {
             return false;
         int start = outBB.position();
         int wrote = sc.write(outBB);
-
 
         writeLog.log(outBB, start, outBB.position());
 

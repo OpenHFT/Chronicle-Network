@@ -18,7 +18,6 @@ public interface ClientConnectionMonitor {
      */
     void onConnected(@Nullable String name, @NotNull SocketAddress socketAddress);
 
-
     /**
      * call just after the client has disconnect to the server, this maybe called as part of a
      * failover

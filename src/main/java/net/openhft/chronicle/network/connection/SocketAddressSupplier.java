@@ -118,7 +118,6 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
                 current.toString();
     }
 
-
     private class RemoteAddressSupplier implements Supplier<SocketAddress> {
 
         private final InetSocketAddress remoteAddress;

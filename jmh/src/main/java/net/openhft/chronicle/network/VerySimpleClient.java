@@ -78,7 +78,6 @@ public class VerySimpleClient {
                         }
                         System.out.println("");
                     }
-
                 }
             }
             main.tearDown();

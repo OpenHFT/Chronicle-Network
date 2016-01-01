@@ -14,8 +14,8 @@ import java.util.function.Function;
  */
 public class VanillaWireOutPublisher implements WireOutPublisher {
     private static final Logger LOG = LoggerFactory.getLogger(VanillaWireOutPublisher.class);
-    private volatile boolean closed;
     private final Wire wire;
+    private volatile boolean closed;
 
     public VanillaWireOutPublisher(@NotNull Function<Bytes, Wire> wireType) {
         this.closed = false;
@@ -34,7 +34,6 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         read.run();
 //        }
         boolean hasReadData = false;
-
 
         final Bytes<?> bytes = wire.bytes();
         synchronized (wire) {

@@ -17,17 +17,6 @@ import java.lang.reflect.Constructor;
 public interface WireOutPublisher extends Closeable {
     Logger LOG = LoggerFactory.getLogger(WireOutPublisher.class);
 
-    void applyAction(@NotNull WireOut out, @NotNull Runnable runnable);
-
-    /**
-     * @param key   the key to the event, only used when throttling, otherwise NULL if the
-     *              throttling is not required
-     * @param event the marshallable event
-     */
-    void put(@Nullable final Object key, WriteMarshallable event);
-
-    boolean isClosed();
-
     /**
      * a static factory that creates and instance in chronicle enterprise
      *
@@ -46,8 +35,18 @@ public interface WireOutPublisher extends Closeable {
             LOG.warn("To use this feature please install Chronicle-Enterprise");
             throw Jvm.rethrow(e);
         }
-
     }
+
+    void applyAction(@NotNull WireOut out, @NotNull Runnable runnable);
+
+    /**
+     * @param key   the key to the event, only used when throttling, otherwise NULL if the
+     *              throttling is not required
+     * @param event the marshallable event
+     */
+    void put(@Nullable final Object key, WriteMarshallable event);
+
+    boolean isClosed();
 
     /**
      * @return if the publisher has any events queued

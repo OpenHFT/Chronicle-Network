@@ -114,7 +114,6 @@ public class TcpChannelHub implements Closeable {
     private boolean shouldSendCloseMessage;
     private HandlerPriority priority;
 
-
     public TcpChannelHub(@Nullable final SessionProvider sessionProvider,
                          @NotNull final EventLoop eventLoop,
                          @NotNull final Function<Bytes, Wire> wire,
@@ -266,7 +265,6 @@ public class TcpChannelHub implements Closeable {
             if (socketAddress != null)
                 clientConnectionMonitor.onDisconnected(name, socketAddress);
         }
-
     }
 
     private void onConnected() {
@@ -328,7 +326,6 @@ public class TcpChannelHub implements Closeable {
 
             writeSocket1(handShakingWire, socketChannel);
         }
-
     }
 
     @Nullable
@@ -383,7 +380,6 @@ public class TcpChannelHub implements Closeable {
 
             clear(outWire);
 
-
         }
     }
 
@@ -429,7 +425,6 @@ public class TcpChannelHub implements Closeable {
                             LOG.debug("waiting for disconnect to " + socketAddressSupplier);
                     }
                 } catch (ConnectionDroppedException ignore) {
-
 
                 }
 
@@ -483,7 +478,6 @@ public class TcpChannelHub implements Closeable {
         return id;
     }
 
-
     /**
      * sends data to the server via TCP/IP
      *
@@ -499,12 +493,12 @@ public class TcpChannelHub implements Closeable {
 
             // wait for the channel to be non null
             if (clientChannel == null) {
-                if (reconnectOnFailure) {
-                    final byte[] bytes = wire.bytes().toByteArray();
-                    condition.await(10, TimeUnit.SECONDS);
-                    wire.bytes().clear().write(bytes);
-                } else
+                if (!reconnectOnFailure) {
                     return;
+                }
+                final byte[] bytes = wire.bytes().toByteArray();
+                condition.await(10, TimeUnit.SECONDS);
+                wire.bytes().clear().write(bytes);
             }
 
             writeSocket1(wire, this.clientChannel);
@@ -665,7 +659,6 @@ public class TcpChannelHub implements Closeable {
 
     }
 
-
     private void logToStandardOutMessageSent(@NotNull WireOut wire, @NotNull ByteBuffer outBuffer) {
         if (!YamlLogging.clientWrites)
             return;
@@ -712,7 +705,6 @@ public class TcpChannelHub implements Closeable {
         return outBytesLock.isLocked();
     }
 
-
     void reflectServerHeartbeatMessage(@NotNull ValueIn valueIn) {
 
         if (!outBytesLock().tryLock()) {
@@ -737,8 +729,6 @@ public class TcpChannelHub implements Closeable {
             outBytesLock().unlock();
             assert !outBytesLock.isHeldByCurrentThread();
         }
-
-
     }
 
     public long writeMetaDataStartTime(long startTime, @NotNull Wire wire, String csp, long cid) {
@@ -880,7 +870,6 @@ public class TcpChannelHub implements Closeable {
     public boolean isOutBytesEmpty() {
         return outWire.bytes().readRemaining() == 0;
     }
-
 
     public interface Task {
         void run();
@@ -1407,9 +1396,10 @@ public class TcpChannelHub implements Closeable {
                                 "last message=" + millisecondsSinceLastMessageReceived + "ms " +
                                 "dropping connection to " + socketAddressSupplier);
                     }
-                } else
+                } else {
                     throw new ConnectionDroppedException(name + " is shutdown, was connected to "
                             + socketAddressSupplier);
+                }
 
                 if (isShutdown)
                     throw new ConnectionDroppedException(name + " is shutdown, was connected to " +
@@ -1553,7 +1543,6 @@ public class TcpChannelHub implements Closeable {
                         if (isShuttingdown())
                             continue OUTER;
 
-
                         if (start + socketAddressSupplier.timeoutMS() < System.currentTimeMillis()) {
 
                             String oldAddress = socketAddressSupplier.toString();
@@ -1575,7 +1564,6 @@ public class TcpChannelHub implements Closeable {
                             // reset the timer, so that we can try this new address for a while
                             start = System.currentTimeMillis();
                         }
-
 
                         try {
 

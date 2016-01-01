@@ -40,7 +40,6 @@ import static net.openhft.chronicle.network.connection.CoreFields.reply;
  */
 public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> implements Closeable {
 
-
     private static final Logger LOG = LoggerFactory.getLogger(AbstractStatelessClient.class);
 
     @NotNull
@@ -257,14 +256,12 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
                     consumer.writeValue(valueOut);
             });
 
-
             hub.writeSocket(hub.outWire(), true);
         } finally {
             hub.outBytesLock().unlock();
         }
         return tid;
     }
-
 
     /**
      * @param eventId              the wire event id
@@ -291,7 +288,6 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         return false;
     }
 
-
     /**
      * @param bytes                the bytes to send
      * @param reattemptUponFailure if false - will only be sent if the connection is valid
@@ -317,7 +313,6 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         return false;
     }
 
-
     private void quietSendEventAsyncWithoutLock(final WireKey eventId, final WriteValue consumer) {
         try {
             sendEventAsyncWithoutLock(eventId, consumer);
@@ -331,7 +326,6 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
             LOG.trace("socket is not currently connected.", e);
         }
     }
-
 
     void quietSendBytesAsyncWithoutLock(final Bytes bytes) {
         try {
@@ -480,6 +474,5 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
     public void close() {
         hub.close();
     }
-
 
 }
