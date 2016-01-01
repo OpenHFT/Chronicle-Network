@@ -877,7 +877,7 @@ public class TcpChannelHub implements Closeable {
         }
     }
 
-    public synchronized boolean isOutBytesEmpty() {
+    public boolean isOutBytesEmpty() {
         return outWire.bytes().readRemaining() == 0;
     }
 
