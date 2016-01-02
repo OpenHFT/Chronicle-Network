@@ -1042,10 +1042,13 @@ public class TcpChannelHub implements Closeable {
                     return;
             } else {
                 try {
-                    while (!lock.tryLock(1, SECONDS)) {
-                        if (isShuttingdown())
-                            throw new IllegalStateException("Shutting down");
-                        LOG.info("Waiting for lock " + Jvm.lockWithStack(lock));
+                    // do a quick lock so you can see if it could not get the lock the first time.
+                    if (!lock.tryLock()) {
+                        while (!lock.tryLock(1, SECONDS)) {
+                            if (isShuttingdown())
+                                throw new IllegalStateException("Shutting down");
+                            LOG.info("Waiting for lock " + Jvm.lockWithStack(lock));
+                        }
                     }
                 } catch (InterruptedException e) {
                     throw new IllegalStateException(e);
