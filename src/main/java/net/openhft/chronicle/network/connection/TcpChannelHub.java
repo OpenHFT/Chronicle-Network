@@ -56,6 +56,7 @@ import static java.lang.Integer.getInteger;
 import static java.lang.ThreadLocal.withInitial;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
 import static net.openhft.chronicle.core.Jvm.pause;
 import static net.openhft.chronicle.core.Jvm.rethrow;
@@ -409,28 +410,34 @@ public class TcpChannelHub implements Closeable {
 
         if (shouldSendCloseMessage)
 
-            eventLoop.addHandler(() ->
-            {
-                try {
-                    sendCloseMessage();
-                    tcpSocketConsumer.stop();
-                    closed = true;
-
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("closing connection to " + socketAddressSupplier);
-
-                    while (clientChannel != null) {
+            eventLoop.addHandler(new EventHandler() {
+                @Override
+                public boolean action() throws InvalidEventHandlerException {
+                    try {
+                        TcpChannelHub.this.sendCloseMessage();
+                        tcpSocketConsumer.stop();
+                        closed = true;
 
                         if (LOG.isDebugEnabled())
-                            LOG.debug("waiting for disconnect to " + socketAddressSupplier);
-                    }
-                } catch (ConnectionDroppedException ignore) {
+                            LOG.debug("closing connection to " + socketAddressSupplier);
 
+                        while (clientChannel != null) {
+
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("waiting for disconnect to " + socketAddressSupplier);
+                        }
+                    } catch (ConnectionDroppedException ignore) {
+
+                    }
+
+                    // we just want this to run once
+                    throw new InvalidEventHandlerException();
                 }
 
-                // we just want this to run once
-                throw new InvalidEventHandlerException();
-
+                @Override
+                public String toString() {
+                    return TcpChannelHub.class.getSimpleName() + "..close()";
+                }
             });
     }
 
@@ -1029,12 +1036,20 @@ public class TcpChannelHub implements Closeable {
             }
 
             // we have lock here to prevent a race with the resubscribe upon a reconnection
-            final ReentrantLock reentrantLock = outBytesLock();
+            final ReentrantLock lock = outBytesLock();
             if (tryLock) {
-                if (!reentrantLock.tryLock())
+                if (!lock.tryLock())
                     return;
             } else {
-                reentrantLock.lock();
+                try {
+                    while (!lock.tryLock(1, SECONDS)) {
+                        if (isShuttingdown())
+                            throw new IllegalStateException("Shutting down");
+                        LOG.info("Waiting for lock " + Jvm.lockWithStack(lock));
+                    }
+                } catch (InterruptedException e) {
+                    throw new IllegalStateException(e);
+                }
             }
             try {
 
@@ -1044,7 +1059,7 @@ public class TcpChannelHub implements Closeable {
             } catch (Exception e) {
                 LOG.error("", e);
             } finally {
-                reentrantLock.unlock();
+                lock.unlock();
             }
         }
 
@@ -1138,11 +1153,10 @@ public class TcpChannelHub implements Closeable {
 
                         } else {
                             String message = e.getMessage();
-                            if (e instanceof IOException && "Connection reset by peer".equals(message))
-                                LOG.warn("reconnecting due to \"Connection reset by peer\" " + message);
-
                             if (e instanceof ConnectionDroppedException)
                                 LOG.debug("reconnecting due to dropped connection " + ((message == null) ? "" : message));
+                            else if (e instanceof IOException && "Connection reset by peer".equals(message))
+                                LOG.warn("reconnecting due to \"Connection reset by peer\" " + message);
                             else
                                 LOG.warn("reconnecting due to unexpected exception", e);
                             closeSocket();
