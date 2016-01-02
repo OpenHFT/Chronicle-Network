@@ -521,6 +521,10 @@ public class TcpChannelHub implements Closeable {
             Jvm.pause(500);
             throw new ConnectionDroppedException(e);
 
+        } catch (ConnectionDroppedException e) {
+            closeSocket();
+            Jvm.pause(500);
+            throw e;
         } catch (Exception e) {
             LOG.error("", e);
             closeSocket();
@@ -569,7 +573,7 @@ public class TcpChannelHub implements Closeable {
             LOG.debug("sending :" + Wires.fromSizePrefixedBlobs(outWire.bytes()));
 
         if (clientChannel == null) {
-            LOG.error("Connection Dropped");
+            LOG.info("Connection Dropped");
             throw new ConnectionDroppedException("Connection Dropped");
         }
 
@@ -1093,7 +1097,7 @@ public class TcpChannelHub implements Closeable {
                     running();
 
                 } catch (ConnectionDroppedException e) {
-                    if (!tcpSocketConsumer.prepareToShutdown)
+                    if (!tcpSocketConsumer.prepareToShutdown && Jvm.isDebug())
                         LOG.info(e.toString());
 
                 } catch (Throwable e) {
