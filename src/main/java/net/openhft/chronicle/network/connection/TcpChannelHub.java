@@ -1089,6 +1089,7 @@ public class TcpChannelHub implements Closeable {
 
             final ExecutorService executorService = newSingleThreadExecutor(
                     new NamedThreadFactory("TcpChannelHub-Reads-" + socketAddressSupplier, true));
+
             assert shutdownHere == null;
             assert !isShutdown;
             executorService.submit(() -> {
@@ -1136,8 +1137,15 @@ public class TcpChannelHub implements Closeable {
                         // read the data
                         if (Wires.isData(header)) {
                             assert messageSize < Integer.MAX_VALUE;
+
+                            long start = System.currentTimeMillis();
                             final boolean clearTid = processData(tid, Wires.isReady(header), header,
                                     (int) messageSize, inWire);
+
+                            long timeTaken = System.currentTimeMillis() - start;
+                            if (timeTaken > 100)
+                                LOG.info("Processing data=" + timeTaken + "ms");
+
                             if (clearTid)
                                 tid = -1;
 
