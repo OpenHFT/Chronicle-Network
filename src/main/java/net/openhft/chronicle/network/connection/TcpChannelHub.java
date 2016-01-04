@@ -1139,11 +1139,12 @@ public class TcpChannelHub implements Closeable {
                             assert messageSize < Integer.MAX_VALUE;
 
                             long start = System.currentTimeMillis();
+
                             final boolean clearTid = processData(tid, Wires.isReady(header), header,
                                     (int) messageSize, inWire);
 
                             long timeTaken = System.currentTimeMillis() - start;
-                            if (timeTaken > 100)
+                            if (timeTaken > 5)
                                 LOG.info("Processing data=" + timeTaken + "ms");
 
                             if (clearTid)
