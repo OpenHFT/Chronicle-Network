@@ -81,6 +81,7 @@ public class TcpChannelHub implements Closeable {
     public static final int SIZE_OF_SIZE = 4;
     public static final Set<TcpChannelHub> hubs = new CopyOnWriteArraySet<>();
     private static final Logger LOG = LoggerFactory.getLogger(TcpChannelHub.class);
+    public static final int BUFFER_SIZE = 32 << 20;
     public final long timeoutMs;
     @NotNull
     protected final String name;
@@ -126,7 +127,7 @@ public class TcpChannelHub implements Closeable {
         this.priority = monitor;
         this.socketAddressSupplier = socketAddressSupplier;
         this.eventLoop = eventLoop;
-        this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", 3 << 20);
+        this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", BUFFER_SIZE);
         this.outWire = wire.apply(elasticByteBuffer());
         this.inWire = wire.apply(elasticByteBuffer());
         this.name = name;

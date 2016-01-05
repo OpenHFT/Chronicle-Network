@@ -22,6 +22,7 @@ import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
+import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.HandlerPriority;
 import net.openhft.chronicle.threads.api.EventHandler;
 import net.openhft.chronicle.threads.api.InvalidEventHandlerException;
@@ -42,10 +43,10 @@ import static net.openhft.chronicle.network.ServerThreadingStrategy.serverThread
  * Created by peter.lawrey on 22/01/15.
  */
 class TcpEventHandler implements EventHandler, Closeable {
-    public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 4 <<
-            21);
+    public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", TcpChannelHub.BUFFER_SIZE);
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
-    private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", 4 << 21);
+    private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", TCP_BUFFER);
+
     @NotNull
     private final SocketChannel sc;
     private final TcpHandler handler;

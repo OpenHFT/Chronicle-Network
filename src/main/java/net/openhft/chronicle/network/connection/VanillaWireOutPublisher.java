@@ -19,7 +19,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
     public VanillaWireOutPublisher(@NotNull Function<Bytes, Wire> wireType) {
         this.closed = false;
-        this.wire = wireType.apply(Bytes.elasticByteBuffer(128 << 10, 128 << 20));
+        this.wire = wireType.apply(Bytes.elasticByteBuffer(TcpChannelHub.BUFFER_SIZE));
     }
 
     /**
@@ -28,11 +28,10 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
      * @param out buffer to write to.
      */
     @Override
-    public synchronized void applyAction(@NotNull WireOut out, @NotNull Runnable read) {
+    public void applyAction(@NotNull WireOut out, @NotNull Runnable read) {
 
-//        if (isEmpty()) {
         read.run();
-//        }
+
         boolean hasReadData = false;
 
         final Bytes<?> bytes = wire.bytes();
