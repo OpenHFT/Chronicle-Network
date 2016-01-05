@@ -48,8 +48,5 @@ public interface WireOutPublisher extends Closeable {
 
     boolean isClosed();
 
-    /**
-     * @return if the publisher has any events queued
-     */
-    boolean isEmpty();
+    boolean canTakeMoreData();
 }

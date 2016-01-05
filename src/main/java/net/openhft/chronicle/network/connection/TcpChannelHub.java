@@ -662,6 +662,7 @@ public class TcpChannelHub implements Closeable {
                 }
             }
         } catch (IOException e) {
+            e.printStackTrace();
             closeSocket();
             throw e;
         }
@@ -816,7 +817,7 @@ public class TcpChannelHub implements Closeable {
                     checkConnection();
 
                 r.run();
-/*
+
                 try {
                     assert Thread.currentThread() != tcpSocketConsumer.readThread : "if writes" +
                             " and reads are on the same thread this can lead " +
@@ -824,10 +825,11 @@ public class TcpChannelHub implements Closeable {
                 } catch (Error e) {
                     e.printStackTrace();
                 }
-*/
+
                 writeSocket(outWire(), reconnectOnFailure);
 
             } catch (ConnectionDroppedException e) {
+                e.printStackTrace();
                 throw Jvm.rethrow(e);
             } catch (Exception e) {
                 LOG.error("", e);
@@ -1161,7 +1163,7 @@ public class TcpChannelHub implements Closeable {
                         }
 
                     } catch (@NotNull Exception e) {
-                        if (Jvm.isDebug())
+                      //  if (Jvm.isDebug())
                             e.printStackTrace();
 
                         tid = -1;

@@ -109,13 +109,6 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         return closed;
     }
 
-    @Override
-    public boolean isEmpty() {
-        assert Thread.holdsLock(this);
-        synchronized (wire) {
-            return wire.bytes().writePosition() == 0;
-        }
-    }
 
     @Override
     public synchronized void close() {
@@ -123,6 +116,10 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         synchronized (wire) {
             wire.clear();
         }
+    }
+
+    public boolean canTakeMoreData() {
+        return wire.bytes().writePosition() < TcpChannelHub.BUFFER_SIZE;
     }
 }
 
