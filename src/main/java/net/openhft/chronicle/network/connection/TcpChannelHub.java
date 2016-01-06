@@ -54,7 +54,7 @@ import java.util.function.Function;
 
 import static java.lang.Integer.getInteger;
 import static java.lang.ThreadLocal.withInitial;
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
@@ -81,7 +81,7 @@ public class TcpChannelHub implements Closeable {
     public static final int SIZE_OF_SIZE = 4;
     public static final Set<TcpChannelHub> hubs = new CopyOnWriteArraySet<>();
     private static final Logger LOG = LoggerFactory.getLogger(TcpChannelHub.class);
-    public static final int BUFFER_SIZE = 32 << 20;
+    public static final int BUFFER_SIZE = 8 << 20;
     public final long timeoutMs;
     @NotNull
     protected final String name;
@@ -446,7 +446,7 @@ public class TcpChannelHub implements Closeable {
      * used to signal to the server that the client is going to drop the connection, and waits up to
      * one second for the server to acknowledge the receipt of this message
      */
-    private void sendCloseMessage() {
+    void sendCloseMessage() {
 
         this.lock(() -> {
 
@@ -1090,7 +1090,7 @@ public class TcpChannelHub implements Closeable {
         private ExecutorService start() {
             checkNotShutdown();
 
-            final ExecutorService executorService = newSingleThreadExecutor(
+            final ExecutorService executorService = newCachedThreadPool(
                     new NamedThreadFactory("TcpChannelHub-Reads-" + socketAddressSupplier, true));
 
             assert shutdownHere == null;
@@ -1110,8 +1110,30 @@ public class TcpChannelHub implements Closeable {
                 }
             });
 
+            executorService.submit(() -> {
+                int count = 0;
+                while (!isShuttingdown()) {
+                    Jvm.pause(10);
+                    if (count++ < 200)
+                        continue;
+
+                    long delay = System.currentTimeMillis() - start;
+                    if (delay > 20) {
+                        StringBuilder sb = new StringBuilder().append(readThread).append(" at ").append(delay).append(" ms");
+                        Jvm.trimStackTrace(sb, readThread.getStackTrace());
+
+                        String msg = sb.toString();
+                        if (!msg.contains("sun.nio.ch.IOUtil.read")) {
+                            LOG.info(msg);
+                        }
+                    }
+                }
+            });
+
             return executorService;
         }
+
+        volatile long start = Long.MAX_VALUE;
 
         public void checkNotShutdown() {
             if (isShutdown)
@@ -1138,16 +1160,16 @@ public class TcpChannelHub implements Closeable {
                         final long messageSize = size(header);
 
                         // read the data
+                        start = System.currentTimeMillis();
                         if (Wires.isData(header)) {
                             assert messageSize < Integer.MAX_VALUE;
-
-                            long start = System.currentTimeMillis();
 
                             final boolean clearTid = processData(tid, Wires.isReady(header), header,
                                     (int) messageSize, inWire);
 
                             long timeTaken = System.currentTimeMillis() - start;
-                            if (timeTaken > 5)
+                            start = Long.MAX_VALUE;
+                            if (timeTaken > 20)
                                 LOG.info("Processing data=" + timeTaken + "ms");
 
                             if (clearTid)
@@ -1163,8 +1185,10 @@ public class TcpChannelHub implements Closeable {
                         }
 
                     } catch (@NotNull Exception e) {
-                      //  if (Jvm.isDebug())
-                            e.printStackTrace();
+                        start = Long.MAX_VALUE;
+
+                        //  if (Jvm.isDebug())
+                        e.printStackTrace();
 
                         tid = -1;
                         if (isShuttingdown()) {
@@ -1179,9 +1203,10 @@ public class TcpChannelHub implements Closeable {
                             else
                                 LOG.warn("reconnecting due to unexpected exception", e);
                             closeSocket();
-                            Jvm.pause(500);
+                            Jvm.pause(1000);
                         }
                     } finally {
+                        start = Long.MAX_VALUE;
                         clear(inWire);
                     }
                 }
