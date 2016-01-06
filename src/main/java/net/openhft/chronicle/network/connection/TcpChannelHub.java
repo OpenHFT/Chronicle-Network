@@ -1112,19 +1112,27 @@ public class TcpChannelHub implements Closeable {
 
             executorService.submit(() -> {
                 int count = 0;
+                String lastMsg = null;
                 while (!isShuttingdown()) {
                     Jvm.pause(10);
                     if (count++ < 200)
                         continue;
 
                     long delay = System.currentTimeMillis() - start;
-                    if (delay > 20) {
+                    if (delay > 10) {
                         StringBuilder sb = new StringBuilder().append(readThread).append(" at ").append(delay).append(" ms");
                         Jvm.trimStackTrace(sb, readThread.getStackTrace());
 
                         String msg = sb.toString();
-                        if (!msg.contains("sun.nio.ch.IOUtil.read")) {
-                            LOG.info(msg);
+                        if (!msg.contains("sun.nio.ch.SocketChannelImpl.read")) {
+                            if (delay < 20) {
+                                lastMsg = msg;
+                            } else {
+                                if (lastMsg != null)
+                                    LOG.info(lastMsg);
+                                LOG.info(msg);
+                                lastMsg = null;
+                            }
                         }
                     }
                 }
