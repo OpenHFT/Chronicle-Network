@@ -80,8 +80,8 @@ public class TcpChannelHub implements Closeable {
 
     public static final int SIZE_OF_SIZE = 4;
     public static final Set<TcpChannelHub> hubs = new CopyOnWriteArraySet<>();
-    private static final Logger LOG = LoggerFactory.getLogger(TcpChannelHub.class);
     public static final int BUFFER_SIZE = 8 << 20;
+    private static final Logger LOG = LoggerFactory.getLogger(TcpChannelHub.class);
     public final long timeoutMs;
     @NotNull
     protected final String name;
@@ -124,13 +124,14 @@ public class TcpChannelHub implements Closeable {
                          boolean shouldSendCloseMessage,
                          @Nullable ClientConnectionMonitor clientConnectionMonitor,
                          @NotNull final HandlerPriority monitor) {
+        assert !name.trim().isEmpty();
         this.priority = monitor;
         this.socketAddressSupplier = socketAddressSupplier;
         this.eventLoop = eventLoop;
         this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", BUFFER_SIZE);
         this.outWire = wire.apply(elasticByteBuffer());
         this.inWire = wire.apply(elasticByteBuffer());
-        this.name = name;
+        this.name = name.trim();
         this.timeoutMs = Integer.getInteger("tcp.client.timeout", 10_000);
         this.wire = wire;
         this.handShakingWire = wire.apply(Bytes.elasticByteBuffer());
@@ -900,18 +901,17 @@ public class TcpChannelHub implements Closeable {
         private final Map<Long, Object> map = new ConcurrentHashMap<>();
         private final Map<Long, Object> omap = new ConcurrentHashMap<>();
         long lastheartbeatSentTime = 0;
+        volatile long start = Long.MAX_VALUE;
         private Function<Bytes, Wire> wireFunction;
         private long tid;
         @NotNull
         private ThreadLocal<Wire> syncInWireThreadLocal = withInitial(() -> wire.apply(
                 elasticByteBuffer()));
         private Bytes serverHeartBeatHandler = Bytes.elasticByteBuffer();
-
         private volatile long lastTimeMessageReceivedOrSent = Time.currentTimeMillis();
         private volatile boolean isShutdown;
         @Nullable
         private volatile Throwable shutdownHere = null;
-
         private long failedConnectionCount;
         private volatile boolean prepareToShutdown;
         private Thread readThread;
@@ -1132,8 +1132,6 @@ public class TcpChannelHub implements Closeable {
 
             return executorService;
         }
-
-        volatile long start = Long.MAX_VALUE;
 
         public void checkNotShutdown() {
             if (isShutdown)
