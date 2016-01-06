@@ -77,7 +77,7 @@ public class SimpleServerAndClientTest {
 
     @NotNull
     private TcpChannelHub createClient(EventGroup eg, String desc) {
-        return new TcpChannelHub(null, eg, WireType.TEXT, "", uri(desc), false, null, HandlerPriority.TIMER);
+        return new TcpChannelHub(null, eg, WireType.TEXT, "/", uri(desc), false, null, HandlerPriority.TIMER);
     }
 
     private void createServer(String desc, EventGroup eg) throws IOException {
