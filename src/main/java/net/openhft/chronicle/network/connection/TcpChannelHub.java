@@ -1193,8 +1193,8 @@ public class TcpChannelHub implements Closeable {
                     } catch (@NotNull Exception e) {
                         start = Long.MAX_VALUE;
 
-                        //  if (Jvm.isDebug())
-                        e.printStackTrace();
+                        if (Jvm.isDebug() && LOG.isDebugEnabled())
+                            LOG.debug("", e);
 
                         tid = -1;
                         if (isShuttingdown()) {
