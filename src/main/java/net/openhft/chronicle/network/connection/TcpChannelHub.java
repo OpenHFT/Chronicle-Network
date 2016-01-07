@@ -25,8 +25,7 @@ import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.WanSimulator;
 import net.openhft.chronicle.network.api.session.SessionDetails;
 import net.openhft.chronicle.network.api.session.SessionProvider;
-import net.openhft.chronicle.threads.HandlerPriority;
-import net.openhft.chronicle.threads.NamedThreadFactory;
+import net.openhft.chronicle.threads.*;
 import net.openhft.chronicle.threads.api.EventHandler;
 import net.openhft.chronicle.threads.api.EventLoop;
 import net.openhft.chronicle.threads.api.InvalidEventHandlerException;
@@ -105,6 +104,7 @@ public class TcpChannelHub implements Closeable {
     private final Function<Bytes, Wire> wire;
     private final Wire handShakingWire;
     private final ClientConnectionMonitor clientConnectionMonitor;
+    Pauser pauser = new LongPauser(1, 25, 50, 20_000, TimeUnit.MICROSECONDS);
     // private final String description;
     private long largestChunkSoFar = 0;
     @Nullable
@@ -140,6 +140,7 @@ public class TcpChannelHub implements Closeable {
         this.shouldSendCloseMessage = shouldSendCloseMessage;
         this.clientConnectionMonitor = clientConnectionMonitor;
         hubs.add(this);
+        eventLoop.addHandler(new PauserMonitor(pauser, "async-read", 30));
     }
 
     public static void assertAllHubsClosed() {
@@ -1450,6 +1451,7 @@ public class TcpChannelHub implements Closeable {
 
                     if (LOG.isDebugEnabled())
                         LOG.debug("R:" + numberOfBytesRead + ",socket=" + socketAddressSupplier.get());
+                    pauser.reset();
 
                 } else if (numberOfBytesRead == 0 && isOpen()) {
                     // if we have not received a message from the server after the HEATBEAT_TIMEOUT_PERIOD
@@ -1460,6 +1462,8 @@ public class TcpChannelHub implements Closeable {
                                 "last message=" + millisecondsSinceLastMessageReceived + "ms " +
                                 "dropping connection to " + socketAddressSupplier);
                     }
+                    pauser.pause();
+
                 } else {
                     throw new ConnectionDroppedException(name + " is shutdown, was connected to "
                             + socketAddressSupplier);
