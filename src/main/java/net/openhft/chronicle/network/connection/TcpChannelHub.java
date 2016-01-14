@@ -1018,8 +1018,9 @@ public class TcpChannelHub implements Closeable {
         private void registerSubscribe(long tid, Object bytes) {
             // this check ensure that a put does not occur while currently re-subscribing
             outBytesLock().isHeldByCurrentThread();
-            if (bytes instanceof AbstractAsyncSubscription && !(bytes instanceof AsyncTemporarySubscription))
-                System.out.println("");
+            //    if (bytes instanceof AbstractAsyncSubscription && !(bytes instanceof
+            //          AsyncTemporarySubscription))
+            //         System.out.println("");
             final Object prev = map.put(tid, bytes);
             assert prev == null;
         }
