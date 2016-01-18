@@ -277,15 +277,16 @@ class TcpEventHandler implements EventHandler, Closeable {
         if (outBB.remaining() <= 0)
             return false;
         int start = outBB.position();
-        handler.onWriteTime(Time.tickTime());
+        long writeTickTime = Time.tickTime();
         int wrote = sc.write(outBB);
+        handler.onWriteTime(writeTickTime);
 
         writeLog.log(outBB, start, outBB.position());
 
         if (wrote < 0) {
             closeSC();
         } else if (wrote > 0) {
-            lastTickReadTime = Time.tickTime();
+            lastTickReadTime = writeTickTime;
             outBB.compact().flip();
             assert outBBB != null;
             outBBB.writeLimit(outBB.capacity());
