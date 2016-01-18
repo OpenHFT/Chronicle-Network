@@ -215,7 +215,6 @@ class TcpEventHandler implements EventHandler, Closeable {
             lastInBBBReadPosition = inBBB.readPosition();
             handler.process(inBBB, outBBB, sessionDetails);
             // did it write something?
-            handler.onWriteTime(Time.tickTime());
             if (outBBB.writePosition() > outBB.limit() || outBBB.writePosition() >= 4) {
                 outBB.limit(Maths.toInt32(outBBB.writePosition()));
                 busy |= tryWrite();
@@ -278,6 +277,7 @@ class TcpEventHandler implements EventHandler, Closeable {
         if (outBB.remaining() <= 0)
             return false;
         int start = outBB.position();
+        handler.onWriteTime(Time.tickTime());
         int wrote = sc.write(outBB);
 
         writeLog.log(outBB, start, outBB.position());
