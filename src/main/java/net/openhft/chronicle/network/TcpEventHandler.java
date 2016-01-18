@@ -144,7 +144,8 @@ class TcpEventHandler implements EventHandler, Closeable {
 
             if (read > 0) {
                 WanSimulator.dataRead(read);
-                handler.onReadTime(lastTickReadTime = Time.tickTime());
+                handler.onReadTime(System.nanoTime());
+                lastTickReadTime = Time.tickTime();
                 //    if (Jvm.isDebug())
                 //        System.out.println("Read: " + read + " start: " + start + " pos: " + inBB
                 //       .position());
@@ -278,8 +279,9 @@ class TcpEventHandler implements EventHandler, Closeable {
             return false;
         int start = outBB.position();
         long writeTickTime = Time.tickTime();
+        long writeTime = System.nanoTime();
         int wrote = sc.write(outBB);
-        handler.onWriteTime(writeTickTime);
+        handler.onWriteTime(writeTime);
 
         writeLog.log(outBB, start, outBB.position());
 
