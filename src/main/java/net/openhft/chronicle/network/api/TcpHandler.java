@@ -48,4 +48,9 @@ public interface TcpHandler extends ClientClosedProvider, Closeable {
     default void close() {
     }
 
+    default void onReadTime(long readTickTime) {
+    }
+
+    default void onWriteTime(long writeTickTime) {
+    }
 }

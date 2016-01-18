@@ -142,21 +142,21 @@ class TcpEventHandler implements EventHandler, Closeable {
             int start = inBB.position();
             int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
 
-            if (read < 0) {
-                closeSC();
-                throw new InvalidEventHandlerException();
-                //return false;
-            }
-
             if (read > 0) {
                 WanSimulator.dataRead(read);
+                handler.onReadTime(lastTickReadTime = Time.tickTime());
                 //    if (Jvm.isDebug())
                 //        System.out.println("Read: " + read + " start: " + start + " pos: " + inBB
                 //       .position());
                 readLog.log(inBB, start, inBB.position());
-                lastTickReadTime = Time.tickTime();
                 // inBB.position() where the data has been read() up to.
                 return invokeHandler();
+            }
+
+            if (read < 0) {
+                closeSC();
+                throw new InvalidEventHandlerException();
+                //return false;
             }
 
             readLog.idle();
@@ -220,6 +220,7 @@ class TcpEventHandler implements EventHandler, Closeable {
                 busy |= tryWrite();
                 break;
             }
+            handler.onWriteTime(Time.tickTime());
         } while (lastInBBBReadPosition != inBBB.readPosition());
 
         // TODO Optimise.
