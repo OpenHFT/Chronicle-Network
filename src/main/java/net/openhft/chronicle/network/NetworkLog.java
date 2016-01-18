@@ -39,6 +39,11 @@ public class NetworkLog {
     public void log(@NotNull ByteBuffer bytes, int start, int end) {
         if (!Jvm.isDebug() || !LOG.isDebugEnabled()) return;
 
+        // avoid inlining this.
+        log0(bytes, start, end);
+    }
+
+    public void log0(@NotNull ByteBuffer bytes, int start, int end) {
         final StringBuilder sb = new StringBuilder(desc);
         sb.append(" len: ").append(end - start)
                 .append(" - ");
