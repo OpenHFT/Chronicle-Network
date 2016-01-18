@@ -215,12 +215,12 @@ class TcpEventHandler implements EventHandler, Closeable {
             lastInBBBReadPosition = inBBB.readPosition();
             handler.process(inBBB, outBBB, sessionDetails);
             // did it write something?
+            handler.onWriteTime(Time.tickTime());
             if (outBBB.writePosition() > outBB.limit() || outBBB.writePosition() >= 4) {
                 outBB.limit(Maths.toInt32(outBBB.writePosition()));
                 busy |= tryWrite();
                 break;
             }
-            handler.onWriteTime(Time.tickTime());
         } while (lastInBBBReadPosition != inBBB.readPosition());
 
         // TODO Optimise.
