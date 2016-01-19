@@ -101,7 +101,6 @@ class TcpEventHandler implements EventHandler, Closeable {
     @NotNull
     @Override
     public HandlerPriority priority() {
-
         switch (serverThreadingStrategy()) {
 
             case SINGLE_THREADED:
