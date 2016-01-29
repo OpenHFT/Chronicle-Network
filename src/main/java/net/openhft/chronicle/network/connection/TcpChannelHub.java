@@ -1116,12 +1116,12 @@ public class TcpChannelHub implements Closeable {
                 int count = 0;
                 String lastMsg = null;
                 while (!isShuttingdown()) {
-                    Jvm.pause(10);
-                    if (count++ < 200)
+                    Jvm.pause(50);
+                    if (count++ < 2000 / 50)
                         continue;
 
                     long delay = System.currentTimeMillis() - start;
-                    if (delay > 10) {
+                    if (delay >= 150) {
                         StringBuilder sb = new StringBuilder().append(readThread).append(" at ").append(delay).append(" ms");
                         Jvm.trimStackTrace(sb, readThread.getStackTrace());
 
@@ -1434,6 +1434,7 @@ public class TcpChannelHub implements Closeable {
         private void readBuffer(@NotNull final ByteBuffer buffer) throws IOException {
 
             //  long start = System.currentTimeMillis();
+            boolean emptyRead = true;
             while (buffer.remaining() > 0) {
                 final SocketChannel clientChannel = TcpChannelHub.this.clientChannel;
                 if (clientChannel == null)
@@ -1449,6 +1450,7 @@ public class TcpChannelHub implements Closeable {
 
                 if (numberOfBytesRead > 0) {
                     onMessageReceived();
+                    emptyRead = false;
 
                     if (LOG.isDebugEnabled())
                         LOG.debug("R:" + numberOfBytesRead + ",socket=" + socketAddressSupplier.get());
@@ -1463,7 +1465,11 @@ public class TcpChannelHub implements Closeable {
                                 "last message=" + millisecondsSinceLastMessageReceived + "ms " +
                                 "dropping connection to " + socketAddressSupplier);
                     }
+                    if (emptyRead)
+                        start = Long.MAX_VALUE;
                     pauser.pause();
+                    if (start == Long.MAX_VALUE)
+                        start = System.currentTimeMillis();
 
                 } else {
                     throw new ConnectionDroppedException(name + " is shutdown, was connected to "
