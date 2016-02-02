@@ -27,6 +27,7 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
@@ -53,6 +54,10 @@ public enum TCPRegistry {
         HOSTNAME_PORT_ALIAS.clear();
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.clear();
         Jvm.pause(100);
+    }
+
+    public static Set<String> aliases() {
+        return HOSTNAME_PORT_ALIAS.keySet();
     }
 
     public static void assertAllServersStopped() {
