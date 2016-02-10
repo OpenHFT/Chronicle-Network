@@ -3,6 +3,8 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.threads.HandlerPriority;
+import net.openhft.chronicle.threads.LongPauser;
+import net.openhft.chronicle.threads.Pauser;
 import net.openhft.chronicle.threads.api.EventHandler;
 import net.openhft.chronicle.threads.api.EventLoop;
 import net.openhft.chronicle.threads.api.InvalidEventHandlerException;
@@ -13,29 +15,32 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
  * Created by daniel on 09/02/2016.
+ * This class handles the creation, running and monitoring of client connections
  */
 public class ConnectorEventHandler implements EventHandler, Closeable {
 
     private EventLoop eventLoop;
     private Map<String, ConnectionDetails> nameToConnectionDetails;
     @NotNull
-    private final Supplier<TcpHandler> tcpHandlerSupplier;
+    private final Function<ConnectionDetails, TcpHandler> tcpHandlerSupplier;
     @NotNull
     private final Supplier<SessionDetailsProvider> sessionDetailsSupplier;
     private final long heartbeatIntervalTicks;
     private final long heartbeatTimeOutTicks;
     private boolean unchecked;
     private final Map<String, SocketChannel> descriptionToChannel = new ConcurrentHashMap<>();
+    private final Pauser pauser = new LongPauser(0, 0, 5, 5, TimeUnit.SECONDS);
 
     public ConnectorEventHandler(@NotNull Map<String, ConnectionDetails> nameToConnectionDetails,
-                                 @NotNull final Supplier<TcpHandler> tcpHandlerSupplier,
+                                 @NotNull final Function<ConnectionDetails, TcpHandler> tcpHandlerSupplier,
                                  @NotNull final Supplier<SessionDetailsProvider> sessionDetailsSupplier,
                                  long heartbeatIntervalTicks, long heartbeatTimeOutTicks) throws IOException {
         this.nameToConnectionDetails = nameToConnectionDetails;
@@ -47,7 +52,6 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
 
     @Override
     public boolean action() throws InvalidEventHandlerException, InterruptedException {
-
         nameToConnectionDetails.entrySet().forEach(entry -> {
             try {
                 SocketChannel socketChannel = descriptionToChannel.get(entry.getKey());
@@ -65,14 +69,10 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
                     sessionDetails.setClientAddress((InetSocketAddress) socketChannel.getRemoteAddress());
 
                     eventLoop.addHandler(new TcpEventHandler(socketChannel,
-                            tcpHandlerSupplier.get(),
+                            tcpHandlerSupplier.apply(entry.getValue()),
                             sessionDetails, unchecked,
                             heartbeatIntervalTicks, heartbeatTimeOutTicks));
-                }else if(!socketChannel.isConnected()){
-                    //the socketChannel has disconnected
-                    entry.getValue().setConnected(false);
-                    descriptionToChannel.remove(entry.getKey());
-                }else{
+                }else if (socketChannel.isOpen()) {
                     //the socketChannel is doing fine
                     //check whether it should be disabled
                     if(entry.getValue().isDisable()){
@@ -80,21 +80,37 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
                         entry.getValue().setConnected(false);
                         descriptionToChannel.remove(entry.getKey());
                     }
+                } else {
+                    //the socketChannel has disconnected
+                    entry.getValue().setConnected(false);
+                    descriptionToChannel.remove(entry.getKey());
                 }
             } catch (ConnectException e) {
-                //todo add a timer
                 //Not a problem try again next time round
+                System.out.println(entry.getKey() + e.getMessage());
             } catch (IOException e) {
+                System.out.println(entry.getKey() + e.getMessage());
                 e.printStackTrace();
             }
         });
 
+        pauser.pause();
 
         return false;
     }
 
     public void updateConnectionDetails(ConnectionDetails connectionDetails){
+        //todo this is not strictly necessary
         nameToConnectionDetails.put(connectionDetails.getName(), connectionDetails);
+        forceRescan();
+    }
+
+    /**
+     * By default the connections are monitored every 5 seconds
+     * If you want to force the map to check immediately use forceRescan
+     */
+    public void forceRescan(){
+        pauser.unpause();
     }
 
     public void unchecked(boolean unchecked) {
@@ -117,43 +133,4 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
 
     }
 
-    public static class ConnectionDetails {
-        private boolean isConnected;
-        private String name;
-        private String hostNameDescription;
-        private boolean disable;
-
-        public ConnectionDetails(String name, String hostNameDescription) {
-            this.name = name;
-            this.hostNameDescription = hostNameDescription;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        boolean isConnected() {
-            return isConnected;
-        }
-
-        public String getHostNameDescription() {
-            return hostNameDescription;
-        }
-
-        public void setHostNameDescription(String hostNameDescription) {
-            this.hostNameDescription = hostNameDescription;
-        }
-
-        void setConnected(boolean connected) {
-            isConnected = connected;
-        }
-
-        public boolean isDisable() {
-            return disable;
-        }
-
-        public void setDisable(boolean disable) {
-            this.disable = disable;
-        }
-    }
 }
