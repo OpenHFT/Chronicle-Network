@@ -94,7 +94,7 @@ public class TcpChannelHub implements Closeable {
     private final Condition condition = outBytesLock.newCondition();
     @NotNull
     private final AtomicLong transactionID = new AtomicLong(0);
-    @Nullable
+    @NotNull
     private final SessionProvider sessionProvider;
     @NotNull
     private final TcpSocketConsumer tcpSocketConsumer;
@@ -130,7 +130,7 @@ public class TcpChannelHub implements Closeable {
         this.eventLoop = eventLoop;
         this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", BUFFER_SIZE);
         this.outWire = wire.apply(elasticByteBuffer());
-        this.inWire = WireType.READ_ANY.apply(elasticByteBuffer());
+        this.inWire = wire.apply(elasticByteBuffer());
         this.name = name.trim();
         this.timeoutMs = Integer.getInteger("tcp.client.timeout", 10_000);
         this.wire = wire;
