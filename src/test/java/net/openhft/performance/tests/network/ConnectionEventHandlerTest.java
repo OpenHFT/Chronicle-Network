@@ -3,14 +3,15 @@ package net.openhft.performance.tests.network;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.NotNull;
+import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.AcceptorEventHandler;
+import net.openhft.chronicle.network.ConnectionDetails;
 import net.openhft.chronicle.network.ConnectorEventHandler;
 import net.openhft.chronicle.network.VanillaSessionDetails;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.threads.BusyPauser;
 import net.openhft.chronicle.threads.EventGroup;
-import net.openhft.chronicle.network.ConnectionDetails;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -47,14 +48,14 @@ public class ConnectionEventHandlerTest {
         ConnectionDetails test1 = new ConnectionDetails("Test1", "localhost:5678");
         nameToConnectionDetails.put("Test1", test1);
 
-        EventGroup eg2 = new EventGroup(false, Throwable::printStackTrace, BusyPauser.INSTANCE, true);
+        EventLoop eg2 = new EventGroup(false, Throwable::printStackTrace, BusyPauser.INSTANCE, true);
         eg2.start();
         ConnectorEventHandler ceh = new ConnectorEventHandler(nameToConnectionDetails,
                 cd -> new TcpClientHandler(cd, messages), VanillaSessionDetails::new, 0,0);
         ceh.unchecked(true);
         eg2.addHandler(ceh);
 
-        EventGroup eg1 = new EventGroup(false, Throwable::printStackTrace, BusyPauser.INSTANCE, true);
+        EventLoop eg1 = new EventGroup(false, Throwable::printStackTrace, BusyPauser.INSTANCE, true);
         eg1.start();
         AcceptorEventHandler eah = new AcceptorEventHandler("localhost:5678",
                 TcpServerHandler::new, VanillaSessionDetails::new, 0,0);

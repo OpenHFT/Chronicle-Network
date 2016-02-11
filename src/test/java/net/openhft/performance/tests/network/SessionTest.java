@@ -17,6 +17,7 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaSessionDetails;
@@ -99,7 +100,7 @@ public class SessionTest {
      */
     @Test
     public void testProcess() throws IOException {
-        EventGroup eg = new EventGroup(true);
+        EventLoop eg = new EventGroup(true);
         eg.start();
         TCPRegistry.createServerSocketChannelFor("test");
 

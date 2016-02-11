@@ -52,7 +52,7 @@ final String desc = "host.port";
 TCPRegistry.createServerSocketChannelFor(desc);
 
 // we use an event loop rather than lots of threads
-EventGroup eg = new EventGroup(true);
+EventLoop eg = new EventGroup(true);
 eg.start();
 ```
 

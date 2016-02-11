@@ -33,6 +33,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.threads.HandlerPriority;
@@ -60,7 +61,7 @@ public class ChanelHubTest {
     public static final WireType WIRE_TYPE = WireType.BINARY;
     final Wire wire = WIRE_TYPE.apply(Bytes.elasticByteBuffer());
     private TcpChannelHub tcpChannelHub;
-    private EventGroup eg;
+    private EventLoop eg;
     private String expectedMessage;
 
     public static void main(String[] args) throws RunnerException, InvocationTargetException, IllegalAccessException, IOException {
@@ -136,11 +137,11 @@ public class ChanelHubTest {
     }
 
     @NotNull
-    private TcpChannelHub createClient(EventGroup eg, String desc) {
+    private TcpChannelHub createClient(EventLoop eg, String desc) {
         return new TcpChannelHub(null, eg, WIRE_TYPE, "", uri(desc), false, null, HandlerPriority.MONITOR);
     }
 
-    private void createServer(String desc, EventGroup eg) throws IOException {
+    private void createServer(String desc, EventLoop eg) throws IOException {
         AcceptorEventHandler eah = new AcceptorEventHandler(desc,
                 () -> new WireEchoRequestHandler(WIRE_TYPE), VanillaSessionDetails::new, 0, 0);
         eg.addHandler(eah);
