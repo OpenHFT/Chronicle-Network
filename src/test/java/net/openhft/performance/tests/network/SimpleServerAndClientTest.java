@@ -1,12 +1,13 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.threads.EventLoop;
+import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaSessionDetails;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
-import net.openhft.chronicle.threads.HandlerPriority;
 import net.openhft.chronicle.wire.TextWire;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.WireType;
@@ -34,7 +35,7 @@ public class SimpleServerAndClientTest {
         TCPRegistry.createServerSocketChannelFor(desc);
 
         // we use an event loop rather than lots of threads
-        EventGroup eg = new EventGroup(true);
+        EventLoop eg = new EventGroup(true);
         eg.start();
 
         // an example message that we are going to send from the server to the client and back
@@ -76,11 +77,11 @@ public class SimpleServerAndClientTest {
     }
 
     @NotNull
-    private TcpChannelHub createClient(EventGroup eg, String desc) {
+    private TcpChannelHub createClient(EventLoop eg, String desc) {
         return new TcpChannelHub(null, eg, WireType.TEXT, "/", uri(desc), false, null, HandlerPriority.TIMER);
     }
 
-    private void createServer(String desc, EventGroup eg) throws IOException {
+    private void createServer(String desc, EventLoop eg) throws IOException {
         AcceptorEventHandler eah = new AcceptorEventHandler(desc,
                 () -> new WireEchoRequestHandler(WireType.TEXT), VanillaSessionDetails::new, 0, 0);
         eg.addHandler(eah);
