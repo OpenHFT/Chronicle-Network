@@ -16,7 +16,6 @@
 
 package net.openhft.chronicle.network.api.session;
 
-import net.openhft.chronicle.core.annotation.Nullable;
 import net.openhft.chronicle.network.SessionMode;
 import net.openhft.chronicle.wire.WireType;
 
@@ -42,8 +41,6 @@ public interface SessionDetailsProvider extends SessionDetails {
 
     void clientId(UUID clientId);
 
-    void wireType(WireType uuid);
+    void wireType(WireType wireType);
 
-    @Nullable
-    WireType wireType();
 }

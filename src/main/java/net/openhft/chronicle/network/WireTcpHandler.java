@@ -188,7 +188,11 @@ public abstract class WireTcpHandler implements TcpHandler {
         }
 
         if (inWire == null) {
-            inWire = wireType.apply(in);
+            try {
+                inWire = wireType.apply(in);
+            } catch (NullPointerException e) {
+                e.printStackTrace();
+            }
             recreateWire = false;
         }
 

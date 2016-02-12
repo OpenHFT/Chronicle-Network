@@ -108,6 +108,8 @@ public class TcpChannelHub implements Closeable {
     private final Function<Bytes, Wire> wire;
     private final Wire handShakingWire;
     private final ClientConnectionMonitor clientConnectionMonitor;
+    @NotNull
+    private final WireType wireType;
     Pauser pauser = new LongPauser(1, 25, 50, 20_000, TimeUnit.MICROSECONDS);
     // private final String description;
     private long largestChunkSoFar = 0;
@@ -122,7 +124,7 @@ public class TcpChannelHub implements Closeable {
 
     public TcpChannelHub(@Nullable final SessionProvider sessionProvider,
                          @NotNull final EventLoop eventLoop,
-                         @NotNull final Function<Bytes, Wire> wire,
+                         @NotNull final WireType wireType,
                          @NotNull final String name,
                          @NotNull final SocketAddressSupplier socketAddressSupplier,
                          boolean shouldSendCloseMessage,
@@ -133,16 +135,17 @@ public class TcpChannelHub implements Closeable {
         this.socketAddressSupplier = socketAddressSupplier;
         this.eventLoop = eventLoop;
         this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", BUFFER_SIZE);
-        this.outWire = wire.apply(elasticByteBuffer());
-        this.inWire = wire.apply(elasticByteBuffer());
+        this.outWire = wireType.apply(elasticByteBuffer());
+        this.inWire = wireType.apply(elasticByteBuffer());
         this.name = name.trim();
         this.timeoutMs = Integer.getInteger("tcp.client.timeout", 10_000);
-        this.wire = wire;
-        this.handShakingWire = wire.apply(Bytes.elasticByteBuffer());
+        this.wire = wireType;
+        this.handShakingWire = wireType.apply(Bytes.elasticByteBuffer());
         this.sessionProvider = sessionProvider;
-        this.tcpSocketConsumer = new TcpSocketConsumer(wire);
+        this.tcpSocketConsumer = new TcpSocketConsumer(wireType);
         this.shouldSendCloseMessage = shouldSendCloseMessage;
         this.clientConnectionMonitor = clientConnectionMonitor;
+        this.wireType = wireType;
         hubs.add(this);
         eventLoop.addHandler(new PauserMonitor(pauser, "async-read", 30));
     }
@@ -330,6 +333,17 @@ public class TcpChannelHub implements Closeable {
                 wireOut.writeEventName(EventId.sessionMode).text(sessionDetails.sessionMode().toString());
                 wireOut.writeEventName(EventId.securityToken).text(sessionDetails.securityToken());
                 wireOut.writeEventName(EventId.clientId).text(sessionDetails.clientId().toString());
+                WireType wt = wireType;
+
+                if (wt != null)
+
+                    try {
+                        wireOut.writeEventName(EventId.wireType).text(wt.toString());
+                    } catch (NullPointerException e) {
+                        final String charSequence = wt.toString();
+                        final ValueOut valueOut = wireOut.writeEventName(EventId.wireType);
+                        valueOut.text(charSequence);
+                    }
             });
 
             writeSocket1(handShakingWire, socketChannel);
