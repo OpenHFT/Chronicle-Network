@@ -22,10 +22,7 @@ import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.connection.VanillaWireOutPublisher;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
-import net.openhft.chronicle.wire.Wire;
-import net.openhft.chronicle.wire.WireIn;
-import net.openhft.chronicle.wire.WireOut;
-import net.openhft.chronicle.wire.Wires;
+import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,21 +143,27 @@ public abstract class WireTcpHandler implements TcpHandler {
     private void checkWires(Bytes in, Bytes out) {
         if (recreateWire) {
             recreateWire = false;
-            inWire = bytesToWire.apply(in);
-            outWire = bytesToWire.apply(out);
+            inWire = WireType.READ_ANY.apply(in);
+            outWire = new DeferredTypeWire(in, () -> WireType.valueOf(inWire));
             return;
         }
 
-        if ((inWire == null || inWire.bytes() != in)) {
-            inWire = bytesToWire.apply(in);
+        if (inWire == null) {
+            inWire = WireType.READ_ANY.apply(in);
+            recreateWire = false;
+        }
+
+        if (inWire.bytes() != in) {
+            inWire = new DeferredTypeWire(in, () -> WireType.valueOf(inWire));
             recreateWire = false;
         }
 
         if ((outWire == null || outWire.bytes() != out)) {
-            outWire = bytesToWire.apply(out);
+            outWire = new DeferredTypeWire(out, () -> WireType.valueOf(inWire));
             recreateWire = false;
         }
     }
+
 
     /**
      * Process an incoming request
