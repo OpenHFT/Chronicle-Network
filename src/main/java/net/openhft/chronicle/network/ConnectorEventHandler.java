@@ -1,13 +1,13 @@
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.core.threads.EventHandler;
+import net.openhft.chronicle.core.threads.EventLoop;
+import net.openhft.chronicle.core.threads.HandlerPriority;
+import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
-import net.openhft.chronicle.threads.HandlerPriority;
 import net.openhft.chronicle.threads.LongPauser;
 import net.openhft.chronicle.threads.Pauser;
-import net.openhft.chronicle.threads.api.EventHandler;
-import net.openhft.chronicle.threads.api.EventLoop;
-import net.openhft.chronicle.threads.api.InvalidEventHandlerException;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
@@ -27,17 +27,17 @@ import java.util.function.Supplier;
  */
 public class ConnectorEventHandler implements EventHandler, Closeable {
 
-    private EventLoop eventLoop;
-    private Map<String, ConnectionDetails> nameToConnectionDetails;
     @NotNull
     private final Function<ConnectionDetails, TcpHandler> tcpHandlerSupplier;
     @NotNull
     private final Supplier<SessionDetailsProvider> sessionDetailsSupplier;
     private final long heartbeatIntervalTicks;
     private final long heartbeatTimeOutTicks;
-    private boolean unchecked;
     private final Map<String, SocketChannel> descriptionToChannel = new ConcurrentHashMap<>();
     private final Pauser pauser = new LongPauser(0, 0, 5, 5, TimeUnit.SECONDS);
+    private EventLoop eventLoop;
+    private Map<String, ConnectionDetails> nameToConnectionDetails;
+    private boolean unchecked;
 
     public ConnectorEventHandler(@NotNull Map<String, ConnectionDetails> nameToConnectionDetails,
                                  @NotNull final Function<ConnectionDetails, TcpHandler> tcpHandlerSupplier,

@@ -16,6 +16,7 @@
 
 package net.openhft.performance.tests.network;
 
+import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaSessionDetails;
@@ -123,7 +124,7 @@ public class TcpServerEventGroupTest {
     @Ignore("fix JIRA https://higherfrequencytrading.atlassian.net/browse/NET-13")
     @Test
     public void testStart() throws IOException, InterruptedException {
-        EventGroup eg = new EventGroup(true);
+        EventLoop eg = new EventGroup(true);
         eg.start();
         TCPRegistry.createServerSocketChannelFor("TcpServerEventGroupTest");
         AcceptorEventHandler eah = new AcceptorEventHandler("TcpServerEventGroupTest", EchoHandler::new,
