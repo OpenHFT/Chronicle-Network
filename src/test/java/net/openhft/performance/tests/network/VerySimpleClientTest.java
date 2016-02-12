@@ -32,6 +32,7 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaSessionDetails;
@@ -57,7 +58,7 @@ public class VerySimpleClientTest {
     final Wire outWire = WIRE_TYPE.apply(Bytes.elasticByteBuffer());
     final Wire inWire = WIRE_TYPE.apply(Bytes.elasticByteBuffer());
 
-    private EventGroup eg;
+    private EventLoop eg;
     private String expectedMessage;
     private SocketChannel client;
 
@@ -128,7 +129,7 @@ public class VerySimpleClientTest {
     }
 
     @NotNull
-    private SocketChannel createClient(EventGroup eg, String desc) throws IOException {
+    private SocketChannel createClient(EventLoop eg, String desc) throws IOException {
 
         SocketChannel result = TCPRegistry.createSocketChannel(desc);
         int tcpBufferSize = 2 << 20;
@@ -140,7 +141,7 @@ public class VerySimpleClientTest {
         return result;
     }
 
-    private void createServer(String desc, EventGroup eg) throws IOException {
+    private void createServer(String desc, EventLoop eg) throws IOException {
         AcceptorEventHandler eah = new AcceptorEventHandler(desc,
                 () -> new WireEchoRequestHandler(WIRE_TYPE), VanillaSessionDetails::new, 0, 0);
         eg.addHandler(eah);

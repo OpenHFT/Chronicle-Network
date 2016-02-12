@@ -17,6 +17,7 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.VanillaSessionDetails;
 import net.openhft.chronicle.network.api.TcpHandler;
@@ -33,7 +34,7 @@ import java.io.IOException;
 class EchoHandler implements TcpHandler {
 
     public static void main(String[] args) throws IOException {
-        EventGroup eg = new EventGroup(false);
+        EventLoop eg = new EventGroup(false);
         eg.start();
         AcceptorEventHandler eah = new AcceptorEventHandler("*:" + EchoClientMain.PORT,
                 EchoHandler::new, VanillaSessionDetails::new, 0, 0);

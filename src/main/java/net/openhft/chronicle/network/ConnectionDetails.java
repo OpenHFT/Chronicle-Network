@@ -5,17 +5,17 @@ package net.openhft.chronicle.network;
  */
 public class ConnectionDetails {
     private boolean isConnected;
-    private String name;
+    private String id;
     private String hostNameDescription;
     private boolean disable;
 
-    public ConnectionDetails(String name, String hostNameDescription) {
-        this.name = name;
+    public ConnectionDetails(String id, String hostNameDescription) {
+        this.id = id;
         this.hostNameDescription = hostNameDescription;
     }
 
-    public String getName() {
-        return name;
+    public String getID() {
+        return id;
     }
 
     boolean isConnected() {
@@ -40,5 +40,15 @@ public class ConnectionDetails {
 
     public void setDisable(boolean disable) {
         this.disable = disable;
+    }
+
+    @Override
+    public String toString() {
+        return "ConnectionDetails{" +
+                "isConnected=" + isConnected +
+                ", id='" + id + '\'' +
+                ", hostNameDescription='" + hostNameDescription + '\'' +
+                ", disable=" + disable +
+                '}';
     }
 }

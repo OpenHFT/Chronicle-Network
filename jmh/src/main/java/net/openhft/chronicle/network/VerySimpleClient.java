@@ -58,7 +58,7 @@ public class VerySimpleClient {
     final Wire outWire = WIRE_TYPE.apply(Bytes.elasticByteBuffer());
     final Wire inWire = WIRE_TYPE.apply(Bytes.elasticByteBuffer());
     long tid = 0;
-    private EventGroup eg;
+    private EventLoop eg;
     private String expectedMessage;
     private SocketChannel client;
 
@@ -173,7 +173,7 @@ public class VerySimpleClient {
     }
 
     @NotNull
-    private SocketChannel createClient(EventGroup eg, String desc) throws Exception {
+    private SocketChannel createClient(EventLoop eg, String desc) throws Exception {
 
         Exception e = null;
         for (int i = 0; i < 10; i++) {
@@ -202,7 +202,7 @@ public class VerySimpleClient {
         throw e;
     }
 
-    private void createServer(String desc, EventGroup eg) throws IOException {
+    private void createServer(String desc, EventLoop eg) throws IOException {
         AcceptorEventHandler eah = new AcceptorEventHandler(desc,
                 () -> new WireEchoRequestHandler(WIRE_TYPE), VanillaSessionDetails::new, 0, 0);
         eg.addHandler(eah);
