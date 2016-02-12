@@ -17,7 +17,9 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
+import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.InetSocketAddress;
 import java.util.LinkedHashMap;
@@ -39,6 +41,8 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
     private InetSocketAddress clientAddress;
     private long connectTimeMS;
     private UUID sessionId;
+    @Nullable
+    private WireType wireType;
 
     public VanillaSessionDetails() {
     }
@@ -46,9 +50,9 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
     @NotNull
     public static VanillaSessionDetails of(String userId, String securityToken, String domain) {
         final VanillaSessionDetails vanillaSessionDetails = new VanillaSessionDetails();
-        vanillaSessionDetails.setUserId(userId);
-        vanillaSessionDetails.setSecurityToken(securityToken);
-        vanillaSessionDetails.setDomain(domain);
+        vanillaSessionDetails.userId(userId);
+        vanillaSessionDetails.securityToken(securityToken);
+        vanillaSessionDetails.domain(domain);
         return vanillaSessionDetails;
     }
 
@@ -90,18 +94,29 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
     }
 
     @Override
-    public void setDomain(String domain) {
+    public void domain(String domain) {
         this.domain = domain;
     }
 
     @Override
-    public void setSessionMode(SessionMode sessionMode) {
+    public void sessionMode(SessionMode sessionMode) {
         this.sessionMode = sessionMode;
     }
 
     @Override
-    public void setClientId(UUID clientId) {
+    public void clientId(UUID clientId) {
         this.clientId = clientId;
+    }
+
+    @Override
+    public void wireType(@NotNull WireType wireType) {
+        this.wireType = wireType;
+    }
+
+    @Override
+    @Nullable
+    public WireType wireType() {
+        return wireType;
     }
 
     @Override
@@ -126,22 +141,22 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
     }
 
     @Override
-    public void setConnectTimeMS(long connectTimeMS) {
+    public void connectTimeMS(long connectTimeMS) {
         this.connectTimeMS = connectTimeMS;
     }
 
     @Override
-    public void setClientAddress(InetSocketAddress clientAddress) {
+    public void clientAddress(InetSocketAddress clientAddress) {
         this.clientAddress = clientAddress;
     }
 
     @Override
-    public void setSecurityToken(String securityToken) {
+    public void securityToken(String securityToken) {
         this.securityToken = securityToken;
     }
 
     @Override
-    public void setUserId(String userId) {
+    public void userId(String userId) {
         this.userId = userId;
     }
 
@@ -157,6 +172,7 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
                 ", sessionMode=" + sessionMode +
                 ", domain=" + domain +
                 ", clientId=" + clientId +
+                ", wiretype=" + wireType +
                 '}';
     }
 }

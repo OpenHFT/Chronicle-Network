@@ -36,21 +36,25 @@ public abstract class WireTcpHandler implements TcpHandler {
     // this is the point at which it is worth doing more work to get more data.
 
     protected final WireOutPublisher publisher;
-
-    @NotNull
-    private final Function<Bytes, Wire> bytesToWire;
     protected Wire outWire;
     private Wire inWire;
     private boolean recreateWire;
 
     public WireTcpHandler(@NotNull final Function<Bytes, Wire> bytesToWire) {
         publisher = new VanillaWireOutPublisher(bytesToWire);
-        this.bytesToWire = bytesToWire;
     }
+
+    boolean firstTime = true;
+    WireType wireType;
 
     @Override
     public void process(@NotNull Bytes in, @NotNull Bytes out, @NotNull SessionDetailsProvider sessionDetails) {
-        checkWires(in, out);
+
+        if (firstTime)
+            // reads the header and set the wireType
+            firstTime = !readHeader(in, sessionDetails);
+
+        checkWires(in, out, wireType);
 
         publisher.applyAction(outWire, () -> {
             if (in.readRemaining() >= SIZE_OF_SIZE && out.writePosition() < TcpEventHandler
@@ -59,10 +63,45 @@ public abstract class WireTcpHandler implements TcpHandler {
         });
     }
 
+    /**
+     * reads the header and sets the wire type
+     *
+     * @param in             the in bytes
+     * @param sessionDetails the session details
+     * @return true - if able to read the header
+     */
+    public boolean readHeader(@NotNull Bytes in, @NotNull SessionDetailsProvider sessionDetails) {
+
+        // read the wire type of the messages from the header - the header its self must be
+        // of type TEXT or BINARY
+        if (in.readRemaining() < 5)
+            return false;
+
+        final int required = Wires.lengthOf(in.readInt(in.readPosition()));
+
+        if (in.readRemaining() < required + 4)
+            return false;
+
+        final WireType headerWireType = (in.readByte(4) & 0x80) == 0 ? WireType.TEXT
+                : WireType.BINARY;
+
+        // the type of the header
+        final Wire wire = headerWireType.apply(in);
+
+        // try to read the wire-type from the header
+        process(wire, headerWireType.apply(Bytes.wrapForWrite(new byte[]{})), sessionDetails);
+
+        // if the header contains a wire type then will will use that
+        // otherwise we assume all the messages to be the same type as the header
+        wireType = sessionDetails.wireType() == null ? headerWireType : sessionDetails.wireType();
+
+        return true;
+    }
+
     @Override
     public void sendHeartBeat(Bytes out, SessionDetailsProvider sessionDetails) {
         if (out.writePosition() == 0) {
-            final WireOut outWire = bytesToWire.apply(out);
+            final WireOut outWire = wireType.apply(out);
             outWire.writeDocument(true, w -> w.write(() -> "tid").int64(0));
             outWire.writeDocument(false, w -> w.writeEventName(() -> "heartbeat").int64(Time.currentTimeMillis()));
         }
@@ -140,26 +179,26 @@ public abstract class WireTcpHandler implements TcpHandler {
         return true;
     }
 
-    private void checkWires(Bytes in, Bytes out) {
+    private void checkWires(Bytes in, Bytes out, WireType wireType) {
         if (recreateWire) {
             recreateWire = false;
-            inWire = WireType.READ_ANY.apply(in);
-            outWire = new DeferredTypeWire(in, () -> WireType.valueOf(inWire));
+            inWire = wireType.apply(in);
+            outWire = wireType.apply(out);
             return;
         }
 
         if (inWire == null) {
-            inWire = WireType.READ_ANY.apply(in);
+            inWire = wireType.apply(in);
             recreateWire = false;
         }
 
         if (inWire.bytes() != in) {
-            inWire = new DeferredTypeWire(in, () -> WireType.valueOf(inWire));
+            inWire = wireType.apply(in);
             recreateWire = false;
         }
 
         if ((outWire == null || outWire.bytes() != out)) {
-            outWire = new DeferredTypeWire(out, () -> WireType.valueOf(inWire));
+            outWire = wireType.apply(out);
             recreateWire = false;
         }
     }

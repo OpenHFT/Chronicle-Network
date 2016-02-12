@@ -66,7 +66,7 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
                     entry.getValue().setConnected(true);
                     final SessionDetailsProvider sessionDetails = sessionDetailsSupplier.get();
 
-                    sessionDetails.setClientAddress((InetSocketAddress) socketChannel.getRemoteAddress());
+                    sessionDetails.clientAddress((InetSocketAddress) socketChannel.getRemoteAddress());
 
                     eventLoop.addHandler(new TcpEventHandler(socketChannel,
                             tcpHandlerSupplier.apply(entry.getValue()),

@@ -16,7 +16,9 @@
 
 package net.openhft.chronicle.network.api.session;
 
+import net.openhft.chronicle.core.annotation.Nullable;
 import net.openhft.chronicle.network.SessionMode;
+import net.openhft.chronicle.wire.WireType;
 
 import java.net.InetSocketAddress;
 import java.util.UUID;
@@ -26,17 +28,22 @@ import java.util.UUID;
  */
 public interface SessionDetailsProvider extends SessionDetails {
 
-    void setConnectTimeMS(long connectTimeMS);
+    void connectTimeMS(long connectTimeMS);
 
-    void setClientAddress(InetSocketAddress connectionAddress);
+    void clientAddress(InetSocketAddress connectionAddress);
 
-    void setSecurityToken(String securityToken);
+    void securityToken(String securityToken);
 
-    void setUserId(String userId);
+    void userId(String userId);
 
-    void setDomain(String domain);
+    void domain(String domain);
 
-    void setSessionMode(SessionMode sessionMode);
+    void sessionMode(SessionMode sessionMode);
 
-    void setClientId(UUID clientId);
+    void clientId(UUID clientId);
+
+    void wireType(WireType uuid);
+
+    @Nullable
+    WireType wireType();
 }
