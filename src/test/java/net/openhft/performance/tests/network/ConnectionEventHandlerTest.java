@@ -122,8 +122,8 @@ public class ConnectionEventHandlerTest {
         public void process(@NotNull Bytes in, @NotNull Bytes out, @NotNull SessionDetailsProvider sessionDetails) {
             if (in.readRemaining() != 0) {
                 double v = in.readDouble();
-                messages.add("Client " + cd.getName() + " receives:" + v);
-                System.out.println("Client " + cd.getName() + " receives:" + v);
+                messages.add("Client " + cd.getID() + " receives:" + v);
+                System.out.println("Client " + cd.getID() + " receives:" + v);
             }
             if(i.get() != -1) {
                 System.out.println("Client sends:" + i.get());

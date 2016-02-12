@@ -101,7 +101,7 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
 
     public void updateConnectionDetails(ConnectionDetails connectionDetails){
         //todo this is not strictly necessary
-        nameToConnectionDetails.put(connectionDetails.getName(), connectionDetails);
+        nameToConnectionDetails.put(connectionDetails.getID(), connectionDetails);
         forceRescan();
     }
 
