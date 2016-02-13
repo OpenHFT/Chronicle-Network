@@ -61,9 +61,10 @@ public class WireTcpHandlerTest {
     @Parameterized.Parameters
     public static Collection<Object[]> combinations() {
         return Arrays.asList(
-//                new Object[]{"TextWire", WireType.TEXT},
-                new Object[]{"BinaryWire", WireType.BINARY},
-                new Object[]{"RawWire", WireType.RAW}
+                new Object[]{"TextWire", WireType.TEXT},
+                new Object[]{"BinaryWire", WireType.BINARY}
+                //,
+                //   new Object[]{"RawWire", WireType.RAW}
         );
     }
 

@@ -7,19 +7,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Created by peter.lawrey on 09/07/2015.
  */
 public class VanillaWireOutPublisher implements WireOutPublisher {
     private static final Logger LOG = LoggerFactory.getLogger(VanillaWireOutPublisher.class);
-    private final Wire wire;
+    private final Supplier<WireType> wireType;
+    private Wire wire;
     private volatile boolean closed;
 
-    public VanillaWireOutPublisher(@NotNull Function<Bytes, Wire> wireType) {
+    public VanillaWireOutPublisher(@NotNull Supplier<WireType> wireType) {
         this.closed = false;
-        this.wire = wireType.apply(Bytes.elasticByteBuffer(TcpChannelHub.BUFFER_SIZE));
+        this.wireType = wireType;
+        //this.wire = wireType.apply(Bytes.elasticByteBuffer(TcpChannelHub.BUFFER_SIZE));
     }
 
     /**
@@ -33,6 +35,11 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         read.run();
 
         boolean hasReadData = false;
+
+
+        if (wire == null) {
+            wire = wireType.get().apply(Bytes.elasticByteBuffer(TcpChannelHub.BUFFER_SIZE));
+        }
 
         final Bytes<?> bytes = wire.bytes();
         synchronized (wire) {

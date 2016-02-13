@@ -41,7 +41,7 @@ public abstract class WireTcpHandler implements TcpHandler {
     private boolean recreateWire;
 
     public WireTcpHandler(@NotNull final Function<Bytes, Wire> bytesToWire) {
-        publisher = new VanillaWireOutPublisher(bytesToWire);
+        publisher = new VanillaWireOutPublisher(() -> wireType);
     }
 
     boolean firstTime = true;
@@ -50,15 +50,22 @@ public abstract class WireTcpHandler implements TcpHandler {
     @Override
     public void process(@NotNull Bytes in, @NotNull Bytes out, @NotNull SessionDetailsProvider sessionDetails) {
 
-        if (firstTime)
+        if (firstTime) {
             // reads the header and set the wireType
-            firstTime = !readHeader(in, sessionDetails);
+            final boolean success = readHeader(in, out, sessionDetails);
+            if (!success) {
+                Thread.yield();
+                return;
+            }
+
+            firstTime = false;
+        }
+
 
         checkWires(in, out, wireType);
 
         publisher.applyAction(outWire, () -> {
-            if (in.readRemaining() >= SIZE_OF_SIZE && out.writePosition() < TcpEventHandler
-                    .TCP_BUFFER)
+            if (in.readRemaining() >= SIZE_OF_SIZE && out.writePosition() < TcpEventHandler.TCP_BUFFER)
                 read(in, out, sessionDetails);
         });
     }
@@ -67,10 +74,11 @@ public abstract class WireTcpHandler implements TcpHandler {
      * reads the header and sets the wire type
      *
      * @param in             the in bytes
+     * @param out
      * @param sessionDetails the session details
      * @return true - if able to read the header
      */
-    public boolean readHeader(@NotNull Bytes in, @NotNull SessionDetailsProvider sessionDetails) {
+    public boolean readHeader(@NotNull Bytes in, Bytes out, @NotNull SessionDetailsProvider sessionDetails) {
 
         // read the wire type of the messages from the header - the header its self must be
         // of type TEXT or BINARY
@@ -82,14 +90,16 @@ public abstract class WireTcpHandler implements TcpHandler {
         if (in.readRemaining() < required + 4)
             return false;
 
-        final WireType headerWireType = (in.readByte(4) & 0x80) == 0 ? WireType.TEXT
+        final byte b = in.readByte(4);
+        final WireType headerWireType = (b & 0x80) == 0 ? WireType.TEXT
                 : WireType.BINARY;
 
         // the type of the header
-        final Wire wire = headerWireType.apply(in);
+        final Wire inWire = headerWireType.apply(in);
+        final Wire outWire = headerWireType.apply(out);
 
         // try to read the wire-type from the header
-        process(wire, headerWireType.apply(Bytes.wrapForWrite(new byte[]{})), sessionDetails);
+        process(inWire, outWire, sessionDetails);
 
         // if the header contains a wire type then will will use that
         // otherwise we assume all the messages to be the same type as the header
@@ -179,7 +189,7 @@ public abstract class WireTcpHandler implements TcpHandler {
         return true;
     }
 
-    private void checkWires(Bytes in, Bytes out, WireType wireType) {
+    private void checkWires(Bytes in, Bytes out, @NotNull WireType wireType) {
         if (recreateWire) {
             recreateWire = false;
             inWire = wireType.apply(in);
@@ -188,11 +198,7 @@ public abstract class WireTcpHandler implements TcpHandler {
         }
 
         if (inWire == null) {
-            try {
-                inWire = wireType.apply(in);
-            } catch (NullPointerException e) {
-                e.printStackTrace();
-            }
+            inWire = wireType.apply(in);
             recreateWire = false;
         }
 
