@@ -213,10 +213,6 @@
                         <Export-Package>
                             net.openhft.chronicle.network.*;-noimport:=true
                         </Export-Package>
-                        <Import-Package>
-                            net.openhft.chronicle.wire;resolution:=optional,
-                            *
-                        </Import-Package>
                     </instructions>
                 </configuration>
                 <executions>
