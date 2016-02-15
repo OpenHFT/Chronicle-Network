@@ -66,8 +66,8 @@ public class ConnectionEventHandlerTest {
         ceh.forceRescan();
 
         Jvm.pause(2000);
-        //should receive 3 messages
-        Assert.assertEquals(2, messages.size());
+        //should receive 2 or 3 depends on timing messages
+        Assert.assertTrue(messages.size()==2 || messages.size()==3);
         messages.clear();
 
         System.out.println("** DISABLE");
