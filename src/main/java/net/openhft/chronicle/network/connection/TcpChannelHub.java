@@ -140,7 +140,11 @@ public class TcpChannelHub implements Closeable {
         this.name = name.trim();
         this.timeoutMs = Integer.getInteger("tcp.client.timeout", 10_000);
         this.wire = wireType;
-        this.handShakingWire = wireType.apply(Bytes.elasticByteBuffer());
+
+        // we are always going to send the header as text wire, the server will
+        // respond in the wire define by the wireType field, all subsequent types must be in wireType
+        this.handShakingWire = WireType.TEXT.apply(Bytes.elasticByteBuffer());
+
         this.sessionProvider = sessionProvider;
         this.tcpSocketConsumer = new TcpSocketConsumer(wireType);
         this.shouldSendCloseMessage = shouldSendCloseMessage;
@@ -326,7 +330,12 @@ public class TcpChannelHub implements Closeable {
         final SessionDetails sessionDetails = sessionDetails();
         if (sessionDetails != null) {
             handShakingWire.clear();
-            handShakingWire.bytes().clear();
+            final Bytes<?> bytes = handShakingWire.bytes();
+            bytes.clear();
+
+            // we are always going to send the header as text wire, the server will
+            // respond in the wire define by the wireType field, all subsequent types must be in wireType
+
             handShakingWire.writeDocument(false, wireOut -> {
                 wireOut.writeEventName(EventId.userId).text(sessionDetails.userId());
                 wireOut.writeEventName(EventId.domain).text(sessionDetails.domain());
