@@ -26,9 +26,10 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>chronicle-network</artifactId>
-    <version>1.0.65-SNAPSHOT</version>
+    <version>1.0.66-SNAPSHOT</version>
     <name>OpenHFT/Chronicle-Network</name>
     <description>Chronicle-Network</description>
+    <packaging>bundle</packaging>
 
     <dependencyManagement>
         <dependencies>
@@ -44,7 +45,7 @@
             <dependency>
                 <groupId>net.openhft</groupId>
                 <artifactId>chronicle-bom</artifactId>
-                <version>1.11.14-SNAPSHOT</version>
+                <version>1.11.15</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -206,12 +207,11 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Bundle-SymbolicName>${project.groupId}.${project.artifactId}
-                        </Bundle-SymbolicName>
+                        <Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Name>OpenHFT :: ${project.artifactId}</Bundle-Name>
                         <Bundle-Version>${project.version}</Bundle-Version>
                         <Export-Package>
-                            net.openhft.chronicle.network.*
+                            net.openhft.chronicle.network.*;-noimport:=true
                         </Export-Package>
                     </instructions>
                 </configuration>
