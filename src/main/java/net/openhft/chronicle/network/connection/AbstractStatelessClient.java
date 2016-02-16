@@ -408,6 +408,18 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
     }
 
+    protected long readLong(long tid, long startTime) throws ConnectionDroppedException {
+        assert !hub.outBytesLock().isHeldByCurrentThread();
+
+        long timeoutTime = startTime + hub.timeoutMs;
+
+        // receive
+        final Wire wireIn = hub.proxyReply(timeoutTime, tid);
+        checkIsData(wireIn);
+
+        return readReply(wireIn, CoreFields.reply, ValueIn::int64);
+    }
+
     private <R> R readReply(@NotNull WireIn wireIn, @NotNull WireKey replyId, @NotNull Function<ValueIn, R> function) {
 
         final StringBuilder eventName = Wires.acquireStringBuilder();
@@ -429,6 +441,16 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
             @NotNull final Object... args) {
         final long startTime = Time.currentTimeMillis();
         return attempt(() -> readBoolean(sendEvent(startTime, eventId, toParameters(eventId, args)
+        ), startTime));
+    }
+
+
+    @SuppressWarnings("SameParameterValue")
+    protected long proxyReturnLongWithArgs(
+            @NotNull final E eventId,
+            @NotNull final Object... args) {
+        final long startTime = Time.currentTimeMillis();
+        return attempt(() -> readLong(sendEvent(startTime, eventId, toParameters(eventId, args)
         ), startTime));
     }
 

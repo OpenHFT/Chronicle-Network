@@ -555,7 +555,7 @@ public class TcpChannelHub implements Closeable {
     }
 
     /**
-     * blocks for a message with the appreciate {@code tid}
+     * blocks for a message with the appropriate {@code tid}
      *
      * @param timeoutTime the amount of time to wait ( in MS ) before a time out exceptions
      * @param tid         the {@code tid} of the message that we are waiting for
