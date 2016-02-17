@@ -153,7 +153,7 @@ public class WireTcpHandlerTest {
         private final TestData td = new TestData();
 
           EchoRequestHandler(@NotNull Function<Bytes, Wire> bytesToWire) {
-            super(bytesToWire);
+              super();
         }
 
         @Override

@@ -17,7 +17,7 @@ import java.util.function.Function;
 public class WireEchoRequestHandler extends WireTcpHandler {
 
     public WireEchoRequestHandler(@NotNull Function<Bytes, Wire> bytesToWire) {
-        super(bytesToWire);
+        super();
     }
 
     /**

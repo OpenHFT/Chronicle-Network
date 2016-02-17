@@ -28,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.BufferOverflowException;
-import java.util.function.Function;
 
 public abstract class WireTcpHandler implements TcpHandler {
     private static final int SIZE_OF_SIZE = 4;
@@ -40,7 +39,7 @@ public abstract class WireTcpHandler implements TcpHandler {
     private Wire inWire;
     private boolean recreateWire;
 
-    public WireTcpHandler(@NotNull final Function<Bytes, Wire> bytesToWire) {
+    public WireTcpHandler() {
         publisher = new VanillaWireOutPublisher(() -> wireType);
     }
 

@@ -134,7 +134,7 @@ public class SessionTest {
     public static class SessionIdRefector extends WireTcpHandler {
 
         public SessionIdRefector(@NotNull Function<Bytes, Wire> bytesToWire) {
-            super(bytesToWire);
+            super();
         }
 
         @Override
