@@ -202,7 +202,7 @@ class TcpEventHandler implements EventHandler, Closeable {
         }
     }
 
-    private boolean invokeHandler() throws IOException {
+    boolean invokeHandler() throws IOException {
         boolean busy = false;
         assert inBB != null;
         assert inBBB != null;
@@ -301,6 +301,8 @@ class TcpEventHandler implements EventHandler, Closeable {
         @Override
         public boolean action() throws InvalidEventHandlerException {
             if (!sc.isOpen()) throw new InvalidEventHandlerException();
+
+            handler.onReadTime(Long.MAX_VALUE);
 
             boolean busy = false;
             try {
