@@ -16,7 +16,6 @@ import java.util.function.Function;
  */
 public class LegacyHandedFactory {
 
-
     public static <T extends NetworkContext> Function<T, TcpEventHandler>
     legacyTcpEventHandlerFactory(@NotNull final Function<T, TcpHandler> defaultHandedFactory,
                                  final long heartbeatIntervalTicks,
