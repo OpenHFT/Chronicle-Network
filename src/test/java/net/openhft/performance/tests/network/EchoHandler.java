@@ -19,9 +19,10 @@ package net.openhft.performance.tests.network;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.AcceptorEventHandler;
-import net.openhft.chronicle.network.VanillaSessionDetails;
+import net.openhft.chronicle.network.LegacyHandedFactory;
+import net.openhft.chronicle.network.NetworkContext;
+import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.api.TcpHandler;
-import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.performance.tests.vanilla.tcp.EchoClientMain;
 import org.jetbrains.annotations.NotNull;
@@ -33,16 +34,21 @@ import java.io.IOException;
  */
 class EchoHandler implements TcpHandler {
 
-    public static void main(String[] args) throws IOException {
+    public <T extends NetworkContext> EchoHandler(T t) {
+
+    }
+
+    public static <T extends NetworkContext> void main(String[] args) throws IOException {
         EventLoop eg = new EventGroup(false);
         eg.start();
         AcceptorEventHandler eah = new AcceptorEventHandler("*:" + EchoClientMain.PORT,
-                EchoHandler::new, VanillaSessionDetails::new, 0, 0);
+                LegacyHandedFactory.legacyTcpEventHandlerFactory(EchoHandler::new),
+                VanillaNetworkContext::new);
         eg.addHandler(eah);
     }
 
     @Override
-    public void process(@NotNull final Bytes in, @NotNull final Bytes out, final SessionDetailsProvider sessionDetails) {
+    public void process(@NotNull final Bytes in, @NotNull final Bytes out) {
         if (in.readRemaining() == 0)
             return;
 //        System.out.println("P start " + in.toDebugString());

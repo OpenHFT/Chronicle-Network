@@ -22,8 +22,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * Created by daniel on 09/02/2016.
- * This class handles the creation, running and monitoring of client connections
+ * Created by daniel on 09/02/2016. This class handles the creation, running and monitoring of
+ * client connections
  */
 public class ConnectorEventHandler implements EventHandler, Closeable {
 
@@ -31,65 +31,62 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
     private final Function<ConnectionDetails, TcpHandler> tcpHandlerSupplier;
     @NotNull
     private final Supplier<SessionDetailsProvider> sessionDetailsSupplier;
-    private final long heartbeatIntervalTicks;
-    private final long heartbeatTimeOutTicks;
+
     private final Map<String, SocketChannel> descriptionToChannel = new ConcurrentHashMap<>();
     private final Pauser pauser = new LongPauser(0, 0, 5, 5, TimeUnit.SECONDS);
     private EventLoop eventLoop;
     private Map<String, ConnectionDetails> nameToConnectionDetails;
-    private boolean unchecked;
+
 
     public ConnectorEventHandler(@NotNull Map<String, ConnectionDetails> nameToConnectionDetails,
                                  @NotNull final Function<ConnectionDetails, TcpHandler> tcpHandlerSupplier,
-                                 @NotNull final Supplier<SessionDetailsProvider> sessionDetailsSupplier,
-                                 long heartbeatIntervalTicks, long heartbeatTimeOutTicks) throws IOException {
+                                 @NotNull final Supplier<SessionDetailsProvider>
+                                         sessionDetailsSupplier) throws IOException {
         this.nameToConnectionDetails = nameToConnectionDetails;
         this.tcpHandlerSupplier = tcpHandlerSupplier;
         this.sessionDetailsSupplier = sessionDetailsSupplier;
-        this.heartbeatIntervalTicks = heartbeatIntervalTicks;
-        this.heartbeatTimeOutTicks = heartbeatTimeOutTicks;
     }
 
     @Override
     public boolean action() throws InvalidEventHandlerException, InterruptedException {
-        nameToConnectionDetails.entrySet().forEach(entry -> {
+        nameToConnectionDetails.forEach((k, v) -> {
             try {
-                SocketChannel socketChannel = descriptionToChannel.get(entry.getKey());
+                SocketChannel socketChannel = descriptionToChannel.get(k);
 
                 if (socketChannel == null) {
-                    if(entry.getValue().isDisable()){
+                    if (v.isDisable()) {
                         //we shouldn't create anything
                         return;
                     }
-                    socketChannel = TCPRegistry.createSocketChannel(entry.getValue().getHostNameDescription());
-                    descriptionToChannel.put(entry.getKey(), socketChannel);
-                    entry.getValue().setConnected(true);
+                    socketChannel = TCPRegistry.createSocketChannel(v.getHostNameDescription());
+                    descriptionToChannel.put(k, socketChannel);
+                    v.setConnected(true);
                     final SessionDetailsProvider sessionDetails = sessionDetailsSupplier.get();
 
                     sessionDetails.clientAddress((InetSocketAddress) socketChannel.getRemoteAddress());
-
-                    eventLoop.addHandler(new TcpEventHandler(socketChannel,
-                            tcpHandlerSupplier.apply(entry.getValue()),
-                            sessionDetails, unchecked,
-                            heartbeatIntervalTicks, heartbeatTimeOutTicks));
-                }else if (socketChannel.isOpen()) {
+                    NetworkContext nc = new VanillaNetworkContext();
+                    nc.socketChannel(socketChannel);
+                    final TcpEventHandler evntHandler = new TcpEventHandler(nc);
+                    evntHandler.tcpHandler(tcpHandlerSupplier.apply(v));
+                    eventLoop.addHandler(evntHandler);
+                } else if (socketChannel.isOpen()) {
                     //the socketChannel is doing fine
                     //check whether it should be disabled
-                    if(entry.getValue().isDisable()){
+                    if (v.isDisable()) {
                         socketChannel.close();
-                        entry.getValue().setConnected(false);
-                        descriptionToChannel.remove(entry.getKey());
+                        v.setConnected(false);
+                        descriptionToChannel.remove(k);
                     }
                 } else {
                     //the socketChannel has disconnected
-                    entry.getValue().setConnected(false);
-                    descriptionToChannel.remove(entry.getKey());
+                    v.setConnected(false);
+                    descriptionToChannel.remove(k);
                 }
             } catch (ConnectException e) {
                 //Not a problem try again next time round
-                System.out.println(entry.getKey() + e.getMessage());
+                System.out.println(k + e.getMessage());
             } catch (IOException e) {
-                System.out.println(entry.getKey() + e.getMessage());
+                System.out.println(k + e.getMessage());
                 e.printStackTrace();
             }
         });
@@ -99,23 +96,20 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
         return false;
     }
 
-    public void updateConnectionDetails(ConnectionDetails connectionDetails){
+    public void updateConnectionDetails(ConnectionDetails connectionDetails) {
         //todo this is not strictly necessary
         nameToConnectionDetails.put(connectionDetails.getID(), connectionDetails);
         forceRescan();
     }
 
     /**
-     * By default the connections are monitored every 5 seconds
-     * If you want to force the map to check immediately use forceRescan
+     * By default the connections are monitored every 5 seconds If you want to force the map to
+     * check immediately use forceRescan
      */
-    public void forceRescan(){
+    public void forceRescan() {
         pauser.unpause();
     }
 
-    public void unchecked(boolean unchecked) {
-        this.unchecked = unchecked;
-    }
 
     @Override
     public void eventLoop(EventLoop eventLoop) {

@@ -37,7 +37,9 @@ public interface WireOutPublisher extends Closeable {
         }
     }
 
-    void applyAction(@NotNull WireOut out, @NotNull Runnable runnable);
+    default void applyAction(@NotNull WireOut out, @NotNull Runnable runnable) {
+
+    }
 
     /**
      * @param key   the key to the event, only used when throttling, otherwise NULL if the
@@ -46,7 +48,16 @@ public interface WireOutPublisher extends Closeable {
      */
     void put(@Nullable final Object key, WriteMarshallable event);
 
-    boolean isClosed();
+    default boolean isClosed() {
+        return false;
+    }
 
-    boolean canTakeMoreData();
+    default boolean canTakeMoreData() {
+        return true;
+    }
+
+    @Override
+    default void close(){
+
+    }
 }

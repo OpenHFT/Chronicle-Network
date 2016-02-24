@@ -16,8 +16,13 @@
 
 package net.openhft.chronicle.network.api.session;
 
+import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.network.SessionMode;
+import net.openhft.chronicle.network.connection.EventId;
+import net.openhft.chronicle.wire.Marshallable;
+import net.openhft.chronicle.wire.WireIn;
 import net.openhft.chronicle.wire.WireType;
+import org.jetbrains.annotations.NotNull;
 
 import java.net.InetSocketAddress;
 import java.util.UUID;
@@ -25,7 +30,7 @@ import java.util.UUID;
 /**
  * Created by Rob Austin
  */
-public interface SessionDetailsProvider extends SessionDetails {
+public interface SessionDetailsProvider extends SessionDetails, Marshallable {
 
     void connectTimeMS(long connectTimeMS);
 
@@ -43,4 +48,15 @@ public interface SessionDetailsProvider extends SessionDetails {
 
     void wireType(WireType wireType);
 
+    void hostId(byte id);
+
+    @Override
+    default void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
+        domain(wire.read(EventId.domain).text());
+        sessionMode(wire.read(EventId.sessionMode).object(SessionMode.class));
+        securityToken(wire.read(EventId.securityToken).text());
+        clientId(wire.read(EventId.clientId).object(UUID.class));
+        wireType(wire.read(EventId.wireType).object(WireType.class));
+        hostId(wire.read(EventId.hostId).int8());
+    }
 }

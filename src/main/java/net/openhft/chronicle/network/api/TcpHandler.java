@@ -21,6 +21,7 @@ import net.openhft.chronicle.core.annotation.NotNull;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.ClientClosedProvider;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
+import net.openhft.chronicle.wire.WireType;
 
 /**
  * Created by peter.lawrey on 22/01/15.
@@ -31,12 +32,10 @@ public interface TcpHandler extends ClientClosedProvider, Closeable {
     /**
      * The server reads the bytes {@code in} from the client and sends a response {@code out} back
      * to the client.
-     *
-     * @param in             the bytes send from the client
+     *  @param in             the bytes send from the client
      * @param out            the response send back to the client
-     * @param sessionDetails an instance per session
      */
-    void process(@NotNull Bytes in, @NotNull Bytes out, @NotNull SessionDetailsProvider sessionDetails);
+    void process(@NotNull Bytes in, @NotNull Bytes out);
 
     default void sendHeartBeat(Bytes out, SessionDetailsProvider sessionDetails) {
     }
@@ -52,5 +51,8 @@ public interface TcpHandler extends ClientClosedProvider, Closeable {
     }
 
     default void onWriteTime(long writeTimeNS) {
+    }
+
+    default void wireType(WireType wireType) {
     }
 }

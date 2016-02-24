@@ -4,12 +4,8 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.NotNull;
 import net.openhft.chronicle.core.threads.EventLoop;
-import net.openhft.chronicle.network.AcceptorEventHandler;
-import net.openhft.chronicle.network.ConnectionDetails;
-import net.openhft.chronicle.network.ConnectorEventHandler;
-import net.openhft.chronicle.network.VanillaSessionDetails;
+import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.api.TcpHandler;
-import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.threads.BusyPauser;
 import net.openhft.chronicle.threads.EventGroup;
 import org.junit.Assert;
@@ -51,15 +47,17 @@ public class ConnectionEventHandlerTest {
         EventLoop eg2 = new EventGroup(false, Throwable::printStackTrace, BusyPauser.INSTANCE, true);
         eg2.start();
         ConnectorEventHandler ceh = new ConnectorEventHandler(nameToConnectionDetails,
-                cd -> new TcpClientHandler(cd, messages), VanillaSessionDetails::new, 0,0);
-        ceh.unchecked(true);
+                cd -> new TcpClientHandler(cd, messages), VanillaSessionDetails::new);
+        //     ceh.unchecked(true);
         eg2.addHandler(ceh);
 
         EventLoop eg1 = new EventGroup(false, Throwable::printStackTrace, BusyPauser.INSTANCE, true);
         eg1.start();
         AcceptorEventHandler eah = new AcceptorEventHandler("localhost:5678",
-                TcpServerHandler::new, VanillaSessionDetails::new, 0,0);
-        eah.unchecked(true);
+                LegacyHandedFactory.simpleTcpEventHandlerFactory(TcpServerHandler::new),
+                VanillaNetworkContext::new);
+
+        //  eah.unchecked(true);
         eg1.addHandler(eah);
         //Give the server a chance to start
         Jvm.pause(200);
@@ -67,7 +65,7 @@ public class ConnectionEventHandlerTest {
 
         Jvm.pause(2000);
         //should receive 2 or 3 depends on timing messages
-        Assert.assertTrue(messages.size()==2 || messages.size()==3);
+        Assert.assertTrue(messages.size() == 2 || messages.size() == 3);
         messages.clear();
 
         System.out.println("** DISABLE");
@@ -89,9 +87,13 @@ public class ConnectionEventHandlerTest {
         Assert.assertEquals(2, messages.size());
     }
 
-    private class TcpServerHandler implements TcpHandler{
+    private class TcpServerHandler implements TcpHandler {
+        public <T extends NetworkContext> TcpServerHandler(T t) {
+
+        }
+
         @Override
-        public void process(@NotNull Bytes in, @NotNull Bytes out, @NotNull SessionDetailsProvider sessionDetails) {
+        public void process(@NotNull Bytes in, @NotNull Bytes out) {
             if (in.readRemaining() == 0)
                 return;
             int v = in.readInt();
@@ -101,7 +103,7 @@ public class ConnectionEventHandlerTest {
         }
     }
 
-    private class TcpClientHandler implements TcpHandler{
+    private class TcpClientHandler implements TcpHandler {
         AtomicInteger i = new AtomicInteger(2);
         private ConnectionDetails cd;
         private List<String> messages;
@@ -111,7 +113,7 @@ public class ConnectionEventHandlerTest {
             i.set(2);
             this.cd = cd;
 
-            Executors.newSingleThreadExecutor().submit(()->{
+            Executors.newSingleThreadExecutor().submit(() -> {
                 while (true) {
                     Jvm.pause(1000);
                     i.set(2);
@@ -120,13 +122,13 @@ public class ConnectionEventHandlerTest {
         }
 
         @Override
-        public void process(@NotNull Bytes in, @NotNull Bytes out, @NotNull SessionDetailsProvider sessionDetails) {
+        public void process(@NotNull Bytes in, @NotNull Bytes out) {
             if (in.readRemaining() != 0) {
                 double v = in.readDouble();
                 messages.add("Client " + cd.getID() + " receives:" + v);
                 System.out.println("Client " + cd.getID() + " receives:" + v);
             }
-            if(i.get() != -1) {
+            if (i.get() != -1) {
                 System.out.println("Client sends:" + i.get());
                 out.writeInt(i.get());
                 i.set(-1);

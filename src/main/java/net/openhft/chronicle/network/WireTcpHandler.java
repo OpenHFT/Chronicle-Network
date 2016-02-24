@@ -20,7 +20,6 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
-import net.openhft.chronicle.network.connection.VanillaWireOutPublisher;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
@@ -28,83 +27,39 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.BufferOverflowException;
+import java.util.function.Supplier;
 
-public abstract class WireTcpHandler implements TcpHandler {
+public abstract class WireTcpHandler implements TcpHandler, Supplier<WireOutPublisher> {
+
     private static final int SIZE_OF_SIZE = 4;
     private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
     // this is the point at which it is worth doing more work to get more data.
 
-    protected final WireOutPublisher publisher;
+    protected WireOutPublisher publisher;
     protected Wire outWire;
     private Wire inWire;
     private boolean recreateWire;
+    private WireType wireType;
 
-    public WireTcpHandler() {
-        publisher = new VanillaWireOutPublisher(() -> wireType);
+    public WireTcpHandler(@NotNull final NetworkContext nc) {
+        this.wireType = nc.wireType();
+        this.publisher = nc.wireOutPublisher();
     }
 
-    boolean firstTime = true;
-    WireType wireType;
+    public WireOutPublisher get() {
+        return publisher;
+    }
+
 
     @Override
-    public void process(@NotNull Bytes in, @NotNull Bytes out, @NotNull SessionDetailsProvider sessionDetails) {
+    public void process(@NotNull Bytes in, @NotNull Bytes out) {
 
-        if (firstTime) {
-            // reads the header and set the wireType
-            final boolean success = readHeader(in, out, sessionDetails);
-            if (!success) {
-                Thread.yield();
-                return;
-            }
-
-            firstTime = false;
-        }
-
-
-        checkWires(in, out, wireType);
+        checkWires(in, out, wireType());
 
         publisher.applyAction(outWire, () -> {
             if (in.readRemaining() >= SIZE_OF_SIZE && out.writePosition() < TcpEventHandler.TCP_BUFFER)
-                read(in, out, sessionDetails);
+                read(in, out);
         });
-    }
-
-    /**
-     * reads the header and sets the wire type
-     *
-     * @param in             the in bytes
-     * @param out
-     * @param sessionDetails the session details
-     * @return true - if able to read the header
-     */
-    public boolean readHeader(@NotNull Bytes in, Bytes out, @NotNull SessionDetailsProvider sessionDetails) {
-
-        // read the wire type of the messages from the header - the header its self must be
-        // of type TEXT or BINARY
-        if (in.readRemaining() < 5)
-            return false;
-
-        final int required = Wires.lengthOf(in.readInt(in.readPosition()));
-
-        if (in.readRemaining() < required + 4)
-            return false;
-
-        final byte b = in.readByte(4);
-        final WireType headerWireType = (b & 0x80) == 0 ? WireType.TEXT
-                : WireType.BINARY;
-
-        // the type of the header
-        final Wire inWire = headerWireType.apply(in);
-        final Wire outWire = headerWireType.apply(out);
-
-        // try to read the wire-type from the header
-        process(inWire, outWire, sessionDetails);
-
-        // if the header contains a wire type then will will use that
-        // otherwise we assume all the messages to be the same type as the header
-        wireType = sessionDetails.wireType() == null ? headerWireType : sessionDetails.wireType();
-
-        return true;
     }
 
     @Override
@@ -128,7 +83,7 @@ public abstract class WireTcpHandler implements TcpHandler {
      * @param out the destination bytes
      * @return true if we can read attempt the next
      */
-    private boolean read(@NotNull Bytes in, @NotNull Bytes out, @NotNull SessionDetailsProvider sessionDetails) {
+    private boolean read(@NotNull Bytes in, @NotNull Bytes out) {
         final long header = in.readInt(in.readPosition());
         long length = Wires.lengthOf(header);
         assert length >= 0 && length < 1 << 23 : "length=" + length + ",in=" + in + ", hex=" + in.toHexString();
@@ -158,7 +113,7 @@ public abstract class WireTcpHandler implements TcpHandler {
 
             final long position = inWire.bytes().readPosition();
             try {
-                process(inWire, outWire, sessionDetails);
+                process(inWire, outWire);
             } finally {
                 try {
                     inWire.bytes().readPosition(position + length);
@@ -188,7 +143,7 @@ public abstract class WireTcpHandler implements TcpHandler {
         return true;
     }
 
-    private void checkWires(Bytes in, Bytes out, @NotNull WireType wireType) {
+    protected void checkWires(Bytes in, Bytes out, @NotNull WireType wireType) {
         if (recreateWire) {
             recreateWire = false;
             inWire = wireType.apply(in);
@@ -216,12 +171,15 @@ public abstract class WireTcpHandler implements TcpHandler {
     /**
      * Process an incoming request
      */
+    public WireType wireType() {
+        return this.wireType;
+    }
+
     /**
      * @param in  the wire to be processed
      * @param out the result of processing the {@code in}
      */
     protected abstract void process(@NotNull WireIn in,
-                                    @NotNull WireOut out,
-                                    @NotNull SessionDetailsProvider sessionDetails);
+                                    @NotNull WireOut out);
 
 }

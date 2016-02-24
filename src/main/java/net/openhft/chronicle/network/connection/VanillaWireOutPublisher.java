@@ -7,21 +7,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.function.Supplier;
 
 /**
  * Created by peter.lawrey on 09/07/2015.
  */
 public class VanillaWireOutPublisher implements WireOutPublisher {
     private static final Logger LOG = LoggerFactory.getLogger(VanillaWireOutPublisher.class);
-    private final Supplier<WireType> wireType;
     private Wire wire;
     private volatile boolean closed;
 
-    public VanillaWireOutPublisher(@NotNull Supplier<WireType> wireType) {
+    public VanillaWireOutPublisher(@NotNull WireType wireType) {
         this.closed = false;
-        this.wireType = wireType;
-        //this.wire = wireType.apply(Bytes.elasticByteBuffer(TcpChannelHub.BUFFER_SIZE));
+        this.wire = wireType.apply(Bytes.elasticByteBuffer(TcpChannelHub.BUFFER_SIZE));
     }
 
     /**
@@ -36,13 +33,10 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
         boolean hasReadData = false;
 
-
-        if (wire == null) {
-            wire = wireType.get().apply(Bytes.elasticByteBuffer(TcpChannelHub.BUFFER_SIZE));
-        }
-
-        final Bytes<?> bytes = wire.bytes();
         synchronized (wire) {
+
+            final Bytes<?> bytes = wire.bytes();
+
             if (bytes.readRemaining() < 4)
                 return;
 
@@ -99,16 +93,37 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
     @Override
     public void put(final Object key, WriteMarshallable event) {
-        final Bytes<?> bytes = wire.bytes();
+      /*  if (wire == null) {
+            final WireType wireType = this.wireType.get();
+
+            if (wireType == null)
+
+                System.out.println("");
+            wire = wireType.apply(Bytes.elasticByteBuffer(TcpChannelHub.BUFFER_SIZE));
+        }
+*/
+
         // writes the data and its size
         synchronized (wire) {
+            final Bytes<?> bytes = wire.bytes();
             final long sizePosition = bytes.writePosition();
             bytes.writeSkip(4);
             final long start = bytes.writePosition();
-            event.writeMarshallable(wire);
-            final int size = (int) (bytes.writePosition() - start);
-            bytes.writeInt(sizePosition, size);
+
+            try {
+                event.writeMarshallable(wire);
+                final int size = (int) (bytes.writePosition() - start);
+                bytes.writeInt(sizePosition, size);
+
+                //     System.out.println("PUBLISHER -> size=" + size + "\n" +
+                //            Wires.fromSizePrefixedBlobs(bytes, start, size));
+            } catch (Exception e) {
+                bytes.writePosition(start - 4);
+                throw e;
+            }
         }
+
+
     }
 
     @Override

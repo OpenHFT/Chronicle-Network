@@ -20,18 +20,16 @@ import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
-import net.openhft.chronicle.network.api.TcpHandler;
-import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -40,30 +38,23 @@ import java.util.function.Supplier;
 public class AcceptorEventHandler implements EventHandler, Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(AcceptorEventHandler.class);
     @NotNull
-    private final Supplier<TcpHandler> tcpHandlerSupplier;
+    private final Function<NetworkContext, TcpEventHandler> handlerFactory;
     @NotNull
-    private final Supplier<SessionDetailsProvider> sessionDetailsSupplier;
+
     private final ServerSocketChannel ssc;
-    private final long heartbeatIntervalTicks;
-    private final long heartbeatTimeOutTicks;
+    private final Supplier<NetworkContext> ncFactory;
+
     private EventLoop eventLoop;
-    private boolean unchecked;
+
     private volatile boolean closed;
 
     public AcceptorEventHandler(@NotNull String description,
-                                @NotNull final Supplier<TcpHandler> tcpHandlerSupplier,
-                                @NotNull final Supplier<SessionDetailsProvider> sessionDetailsSupplier,
-                                long heartbeatIntervalTicks, long heartbeatTimeOutTicks) throws
-            IOException {
-        this.tcpHandlerSupplier = tcpHandlerSupplier;
-        ssc = TCPRegistry.acquireServerSocketChannel(description);
-        this.sessionDetailsSupplier = sessionDetailsSupplier;
-        this.heartbeatIntervalTicks = heartbeatIntervalTicks;
-        this.heartbeatTimeOutTicks = heartbeatTimeOutTicks;
-    }
-
-    public void unchecked(boolean unchecked) {
-        this.unchecked = unchecked;
+                                @NotNull final Function<NetworkContext, TcpEventHandler> handlerFactory,
+                                @NotNull Supplier<NetworkContext> ncFactory)
+            throws IOException {
+        this.handlerFactory = handlerFactory;
+        this.ssc = TCPRegistry.acquireServerSocketChannel(description);
+        this.ncFactory = ncFactory;
     }
 
     @Override
@@ -84,14 +75,11 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
                 if (LOG.isInfoEnabled())
                     LOG.info("accepted connection " + sc);
 
-                final SessionDetailsProvider sessionDetails = sessionDetailsSupplier.get();
+                final NetworkContext nc = ncFactory.get();
+                nc.socketChannel(sc);
+                nc.isServerSocket(true);
 
-                sessionDetails.clientAddress((InetSocketAddress) sc.getRemoteAddress());
-
-                eventLoop.addHandler(new TcpEventHandler(sc,
-                        tcpHandlerSupplier.get(),
-                        sessionDetails, unchecked,
-                        heartbeatIntervalTicks, heartbeatTimeOutTicks));
+                eventLoop.addHandler(handlerFactory.apply(nc));
             }
 
         } catch (AsynchronousCloseException e) {

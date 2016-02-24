@@ -34,10 +34,8 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
      * @param connectURIs the socket connections defined in order with the primary first
      * @param name        the name of this service
      */
-    public SocketAddressSupplier(@NotNull final String[] connectURIs, String name) {
-
+    public SocketAddressSupplier(@NotNull final String[] connectURIs, @NotNull final String name) {
         this.name = name;
-
         for (String connectURI : connectURIs) {
             this.remoteAddresses.add(new RemoteAddressSupplier(connectURI));
         }

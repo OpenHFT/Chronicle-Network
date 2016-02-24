@@ -44,6 +44,8 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
     @Nullable
     private WireType wireType;
 
+    private byte hostId;
+
     public VanillaSessionDetails() {
     }
 
@@ -113,10 +115,19 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
         this.wireType = wireType;
     }
 
-    @Override
     @Nullable
+    @Override
     public WireType wireType() {
         return wireType;
+    }
+
+    public void hostId(byte hostId) {
+        this.hostId = hostId;
+    }
+
+    @Override
+    public byte hostId() {
+        return this.hostId;
     }
 
     @Override
@@ -173,6 +184,7 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
                 ", domain=" + domain +
                 ", clientId=" + clientId +
                 ", wiretype=" + wireType +
+                ", hostId=" + hostId +
                 '}';
     }
 }

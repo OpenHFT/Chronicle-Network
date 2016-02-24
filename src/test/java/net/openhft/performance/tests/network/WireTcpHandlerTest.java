@@ -18,11 +18,7 @@ package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.threads.EventLoop;
-import net.openhft.chronicle.network.AcceptorEventHandler;
-import net.openhft.chronicle.network.TCPRegistry;
-import net.openhft.chronicle.network.VanillaSessionDetails;
-import net.openhft.chronicle.network.WireTcpHandler;
-import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
+import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.*;
@@ -135,7 +131,8 @@ public class WireTcpHandlerTest {
         eg.start();
         TCPRegistry.createServerSocketChannelFor(desc);
         AcceptorEventHandler eah = new AcceptorEventHandler(desc,
-                () -> new EchoRequestHandler(wireWrapper), VanillaSessionDetails::new, 0, 0);
+                LegacyHandedFactory.simpleTcpEventHandlerFactory(EchoRequestHandler::new),
+                VanillaNetworkContext::new);
         eg.addHandler(eah);
 
         SocketChannel sc = TCPRegistry.createSocketChannel(desc);
@@ -149,17 +146,16 @@ public class WireTcpHandlerTest {
         TCPRegistry.reset();
     }
 
-      static class EchoRequestHandler extends WireTcpHandler {
+    static class EchoRequestHandler extends WireTcpHandler {
         private final TestData td = new TestData();
 
-          EchoRequestHandler(@NotNull Function<Bytes, Wire> bytesToWire) {
-              super();
+        public EchoRequestHandler(NetworkContext networkContext) {
+            super(networkContext);
         }
 
         @Override
         protected void process(@NotNull WireIn inWire,
-                               @NotNull WireOut outWire,
-                               @NotNull SessionDetailsProvider sd) {
+                               @NotNull WireOut outWire) {
             td.read(inWire);
             td.write(outWire);
         }

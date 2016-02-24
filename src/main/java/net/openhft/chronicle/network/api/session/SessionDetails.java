@@ -17,7 +17,10 @@
 package net.openhft.chronicle.network.api.session;
 
 import net.openhft.chronicle.network.SessionMode;
+import net.openhft.chronicle.network.connection.EventId;
+import net.openhft.chronicle.wire.WireOut;
 import net.openhft.chronicle.wire.WireType;
+import net.openhft.chronicle.wire.WriteMarshallable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,7 +30,7 @@ import java.util.UUID;
 /**
  * Session local details stored here. <p> Created by peter on 01/06/15.
  */
-public interface SessionDetails {
+public interface SessionDetails extends WriteMarshallable {
 
     // a unique id used to identify this session, this field is by contract immutable
     UUID sessionId();
@@ -58,4 +61,21 @@ public interface SessionDetails {
 
     @Nullable
     WireType wireType();
+
+    byte hostId();
+
+
+    default void writeMarshallable(@NotNull WireOut w) {
+                w.writeEventName(EventId.userId).text(userId())
+                .writeEventName(EventId.domain).text(domain())
+                .writeEventName(EventId.sessionMode).text(sessionMode().toString())
+                .writeEventName(EventId.securityToken).text(securityToken())
+                .writeEventName(EventId.clientId).text(clientId().toString())
+                .writeEventName(EventId.hostId).int8(hostId())
+                .writeEventName(EventId.wireType).asEnum(wireType());
+    }
+
+
+
+
 }

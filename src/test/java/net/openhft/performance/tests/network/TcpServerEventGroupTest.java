@@ -18,8 +18,9 @@ package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.AcceptorEventHandler;
+import net.openhft.chronicle.network.LegacyHandedFactory;
 import net.openhft.chronicle.network.TCPRegistry;
-import net.openhft.chronicle.network.VanillaSessionDetails;
+import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
 import org.jetbrains.annotations.NotNull;
@@ -127,8 +128,11 @@ public class TcpServerEventGroupTest {
         EventLoop eg = new EventGroup(true);
         eg.start();
         TCPRegistry.createServerSocketChannelFor("TcpServerEventGroupTest");
-        AcceptorEventHandler eah = new AcceptorEventHandler("TcpServerEventGroupTest", EchoHandler::new,
-                VanillaSessionDetails::new, 0, 0);
+        AcceptorEventHandler eah = new AcceptorEventHandler("TcpServerEventGroupTest",
+                LegacyHandedFactory.legacyTcpEventHandlerFactory(EchoHandler::new),
+                VanillaNetworkContext::new);
+
+
         eg.addHandler(eah);
 
         SocketChannel sc = TCPRegistry.createSocketChannel("TcpServerEventGroupTest");
