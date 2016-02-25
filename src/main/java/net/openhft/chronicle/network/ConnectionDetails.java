@@ -3,7 +3,7 @@ package net.openhft.chronicle.network;
 /**
  * Created by daniel on 10/02/2016.
  */
-public class ConnectionDetails {
+public class ConnectionDetails extends VanillaNetworkContext {
     private boolean isConnected;
     private String id;
     private String hostNameDescription;
