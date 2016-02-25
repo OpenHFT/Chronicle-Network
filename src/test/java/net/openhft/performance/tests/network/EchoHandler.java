@@ -19,7 +19,7 @@ package net.openhft.performance.tests.network;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.AcceptorEventHandler;
-import net.openhft.chronicle.network.LegacyHandedFactory;
+import net.openhft.chronicle.network.LegacyHanderFactory;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.api.TcpHandler;
@@ -42,7 +42,7 @@ class EchoHandler implements TcpHandler {
         EventLoop eg = new EventGroup(false);
         eg.start();
         AcceptorEventHandler eah = new AcceptorEventHandler("*:" + EchoClientMain.PORT,
-                LegacyHandedFactory.legacyTcpEventHandlerFactory(EchoHandler::new),
+                LegacyHanderFactory.legacyTcpEventHandlerFactory(EchoHandler::new),
                 VanillaNetworkContext::new);
         eg.addHandler(eah);
     }

@@ -42,14 +42,15 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
     @NotNull
 
     private final ServerSocketChannel ssc;
-    private final Supplier<NetworkContext> ncFactory;
+    private final Supplier<? extends NetworkContext> ncFactory;
 
     private EventLoop eventLoop;
 
     private volatile boolean closed;
 
     public AcceptorEventHandler(@NotNull String description,
-                                @NotNull final Function<NetworkContext, TcpEventHandler> handlerFactory,
+                                @NotNull final Function<NetworkContext, TcpEventHandler>
+                                        handlerFactory,
                                 @NotNull Supplier<NetworkContext> ncFactory)
             throws IOException {
         this.handlerFactory = handlerFactory;

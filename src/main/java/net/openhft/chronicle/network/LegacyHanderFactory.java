@@ -14,7 +14,7 @@ import java.util.function.Function;
 /**
  * @author Rob Austin.
  */
-public class LegacyHandedFactory {
+public class LegacyHanderFactory {
 
     public static <T extends NetworkContext> Function<T, TcpEventHandler>
     legacyTcpEventHandlerFactory(@NotNull final Function<T, TcpHandler> defaultHandedFactory,

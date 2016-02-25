@@ -18,7 +18,7 @@ package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.AcceptorEventHandler;
-import net.openhft.chronicle.network.LegacyHandedFactory;
+import net.openhft.chronicle.network.LegacyHanderFactory;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
@@ -129,7 +129,7 @@ public class TcpServerEventGroupTest {
         eg.start();
         TCPRegistry.createServerSocketChannelFor("TcpServerEventGroupTest");
         AcceptorEventHandler eah = new AcceptorEventHandler("TcpServerEventGroupTest",
-                LegacyHandedFactory.legacyTcpEventHandlerFactory(EchoHandler::new),
+                LegacyHanderFactory.legacyTcpEventHandlerFactory(EchoHandler::new),
                 VanillaNetworkContext::new);
 
 

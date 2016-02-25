@@ -54,7 +54,7 @@ public class ConnectionEventHandlerTest {
         EventLoop eg1 = new EventGroup(false, Throwable::printStackTrace, BusyPauser.INSTANCE, true);
         eg1.start();
         AcceptorEventHandler eah = new AcceptorEventHandler("localhost:5678",
-                LegacyHandedFactory.simpleTcpEventHandlerFactory(TcpServerHandler::new),
+                LegacyHanderFactory.simpleTcpEventHandlerFactory(TcpServerHandler::new),
                 VanillaNetworkContext::new);
 
         //  eah.unchecked(true);

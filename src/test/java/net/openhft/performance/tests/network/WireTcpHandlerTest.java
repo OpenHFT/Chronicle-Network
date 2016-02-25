@@ -131,7 +131,7 @@ public class WireTcpHandlerTest {
         eg.start();
         TCPRegistry.createServerSocketChannelFor(desc);
         AcceptorEventHandler eah = new AcceptorEventHandler(desc,
-                LegacyHandedFactory.simpleTcpEventHandlerFactory(EchoRequestHandler::new),
+                LegacyHanderFactory.simpleTcpEventHandlerFactory(EchoRequestHandler::new),
                 VanillaNetworkContext::new);
         eg.addHandler(eah);
 

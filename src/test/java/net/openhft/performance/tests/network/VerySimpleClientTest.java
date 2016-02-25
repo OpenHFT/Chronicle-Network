@@ -34,7 +34,7 @@ package net.openhft.performance.tests.network;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.AcceptorEventHandler;
-import net.openhft.chronicle.network.LegacyHandedFactory;
+import net.openhft.chronicle.network.LegacyHanderFactory;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
@@ -144,7 +144,7 @@ public class VerySimpleClientTest {
 
     private void createServer(String desc, EventLoop eg) throws IOException {
         AcceptorEventHandler eah = new AcceptorEventHandler(desc,
-                LegacyHandedFactory.simpleTcpEventHandlerFactory(WireEchoRequestHandler::new),
+                LegacyHanderFactory.simpleTcpEventHandlerFactory(WireEchoRequestHandler::new),
                 VanillaNetworkContext::new);
 
 
