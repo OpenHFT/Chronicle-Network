@@ -49,8 +49,7 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
     private volatile boolean closed;
 
     public AcceptorEventHandler(@NotNull String description,
-                                @NotNull final Function<NetworkContext, TcpEventHandler>
-                                        handlerFactory,
+                                @NotNull final Function<NetworkContext, TcpEventHandler> handlerFactory,
                                 @NotNull Supplier<NetworkContext> ncFactory)
             throws IOException {
         this.handlerFactory = handlerFactory;
@@ -78,7 +77,7 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
 
                 final NetworkContext nc = ncFactory.get();
                 nc.socketChannel(sc);
-                nc.isServerSocket(true);
+                nc.isAcceptor(true);
 
                 eventLoop.addHandler(handlerFactory.apply(nc));
             }

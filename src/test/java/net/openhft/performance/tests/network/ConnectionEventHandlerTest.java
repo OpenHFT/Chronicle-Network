@@ -8,6 +8,7 @@ import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.threads.BusyPauser;
 import net.openhft.chronicle.threads.EventGroup;
+import net.openhft.chronicle.wire.WireType;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -40,8 +41,11 @@ public class ConnectionEventHandlerTest {
         List<String> messages = new ArrayList<>();
 
 
+        TCPRegistry.createServerSocketChannelFor("host.port1");
+
+
         Map<String, ConnectionDetails> nameToConnectionDetails = new ConcurrentHashMap<>();
-        ConnectionDetails test1 = new ConnectionDetails("Test1", "localhost:5678");
+        ConnectionDetails test1 = new ConnectionDetails("Test1", "host.port1");
         nameToConnectionDetails.put("Test1", test1);
 
         EventLoop eg2 = new EventGroup(false, Throwable::printStackTrace, BusyPauser.INSTANCE, true);
@@ -53,8 +57,8 @@ public class ConnectionEventHandlerTest {
 
         EventLoop eg1 = new EventGroup(false, Throwable::printStackTrace, BusyPauser.INSTANCE, true);
         eg1.start();
-        AcceptorEventHandler eah = new AcceptorEventHandler("localhost:5678",
-                LegacyHanderFactory.simpleTcpEventHandlerFactory(TcpServerHandler::new),
+        AcceptorEventHandler eah = new AcceptorEventHandler("host.port1",
+                LegacyHanderFactory.simpleTcpEventHandlerFactory(TcpServerHandler::new, WireType.TEXT),
                 VanillaNetworkContext::new);
 
         //  eah.unchecked(true);
@@ -93,7 +97,7 @@ public class ConnectionEventHandlerTest {
         }
 
         @Override
-        public void process(@NotNull Bytes in, @NotNull Bytes out) {
+        public void process(@org.jetbrains.annotations.NotNull @NotNull Bytes in, @org.jetbrains.annotations.NotNull @NotNull Bytes out) {
             if (in.readRemaining() == 0)
                 return;
             int v = in.readInt();
@@ -122,7 +126,7 @@ public class ConnectionEventHandlerTest {
         }
 
         @Override
-        public void process(@NotNull Bytes in, @NotNull Bytes out) {
+        public void process(@org.jetbrains.annotations.NotNull @NotNull Bytes in, @org.jetbrains.annotations.NotNull @NotNull Bytes out) {
             if (in.readRemaining() != 0) {
                 double v = in.readDouble();
                 messages.add("Client " + cd.getID() + " receives:" + v);

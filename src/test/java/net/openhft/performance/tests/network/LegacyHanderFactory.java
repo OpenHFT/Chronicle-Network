@@ -1,15 +1,21 @@
-package net.openhft.chronicle.network;
+package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.network.HeaderTcpHandler;
+import net.openhft.chronicle.network.NetworkContext;
+import net.openhft.chronicle.network.TcpEventHandler;
+import net.openhft.chronicle.network.WireTypeSniffingTcpHandler;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.connection.VanillaWireOutPublisher;
-import net.openhft.chronicle.wire.Marshallable;
+import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.function.Function;
+
+import static net.openhft.chronicle.wire.WireType.TEXT;
 
 /**
  * @author Rob Austin.
@@ -26,21 +32,27 @@ public class LegacyHanderFactory {
 
                 final TcpEventHandler handler = new TcpEventHandler(networkContext);
 
-                final Function<Marshallable, TcpHandler> consumer = o -> {
+                final Function<Object, TcpHandler> consumer = o -> {
                     if (o instanceof SessionDetailsProvider) {
 
-                        final NetworkContext nc = networkContext;
-                        nc.heartbeatIntervalTicks(heartbeatIntervalTicks);
-                        nc.heartBeatTimeoutTicks(heartbeatIntervalTimeout);
-                        nc.sessionDetails((SessionDetailsProvider) o);
-                        return defaultHandedFactory.apply((T) nc);
+                        networkContext.heartbeatIntervalTicks(heartbeatIntervalTicks);
+                        networkContext.heartBeatTimeoutTicks(heartbeatIntervalTimeout);
+                        networkContext.sessionDetails((SessionDetailsProvider) o);
+                        return defaultHandedFactory.apply(networkContext);
                     } else if (o instanceof TcpHandler)
                         return (TcpHandler) o;
 
                     throw new UnsupportedOperationException("");
                 };
 
-                final HeaderTcpHandler headerTcpHandler = new HeaderTcpHandler(handler, consumer, networkContext);
+                final Function<WireType, WireOutPublisher> f = wireType -> new
+                        VanillaWireOutPublisher(wireType);
+
+                final HeaderTcpHandler headerTcpHandler = new HeaderTcpHandler(handler,
+                        consumer,
+                        networkContext
+                );
+
 
                 final WireTypeSniffingTcpHandler wireTypeSniffingTcpHandler = new
                         WireTypeSniffingTcpHandler(handler, networkContext, (nc) -> headerTcpHandler);
@@ -61,12 +73,11 @@ public class LegacyHanderFactory {
 
 
     public static <T extends NetworkContext> Function<T, TcpEventHandler>
-    simpleTcpEventHandlerFactory(@NotNull final Function<T, TcpHandler> defaultHandedFactory) {
+    simpleTcpEventHandlerFactory(@NotNull final Function<T, TcpHandler> defaultHandedFactory, final WireType text) {
         return (networkContext) -> {
 
+            networkContext.wireOutPublisher(new VanillaWireOutPublisher(TEXT));
             try {
-                networkContext.wireOutPublisher(new VanillaWireOutPublisher(WireType.TEXT));
-
                 final TcpEventHandler handler = new TcpEventHandler(networkContext);
                 handler.tcpHandler(new WireTypeSniffingTcpHandler(handler, networkContext,
                         defaultHandedFactory));

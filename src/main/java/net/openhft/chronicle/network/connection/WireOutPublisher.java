@@ -1,8 +1,9 @@
 package net.openhft.chronicle.network.connection;
 
+import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
-import net.openhft.chronicle.wire.WireOut;
+import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.WriteMarshallable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -24,8 +25,7 @@ public interface WireOutPublisher extends Closeable {
      * @param delegate the  WireOutPublisher the events will get delegated to
      * @return a throttled WireOutPublisher
      */
-    static WireOutPublisher newThrottledWireOutPublisher(int periodMs,
-                                                         @NotNull WireOutPublisher delegate) {
+    static WireOutPublisher newThrottledWireOutPublisher(int periodMs, @NotNull WireOutPublisher delegate) {
 
         try {
             final Class<?> aClass = Class.forName("software.chronicle.enterprise.throttle.ThrottledWireOutPublisher");
@@ -37,9 +37,8 @@ public interface WireOutPublisher extends Closeable {
         }
     }
 
-    default void applyAction(@NotNull WireOut out, @NotNull Runnable runnable) {
+    void applyAction(@NotNull Bytes out);
 
-    }
 
     /**
      * @param key   the key to the event, only used when throttling, otherwise NULL if the
@@ -57,7 +56,10 @@ public interface WireOutPublisher extends Closeable {
     }
 
     @Override
-    default void close(){
+    default void close() {
 
     }
+
+    void wireType(WireType wireType);
+
 }

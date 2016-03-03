@@ -55,7 +55,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private final SocketChannel sc;
     private final NetworkContext nc;
     @Nullable
-    private TcpHandler tcpHandler;
+    private volatile TcpHandler tcpHandler;
     private final SessionDetailsProvider sessionDetails;
 
     @NotNull
@@ -204,7 +204,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
         if (isCleaned)
             return;
-        isCleaned = false;
+        isCleaned = true;
         final long usedDirectMemory = Jvm.usedDirectMemory();
         IOTools.clean(inBB);
         IOTools.clean(outBB);

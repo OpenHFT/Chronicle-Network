@@ -12,13 +12,19 @@ import java.nio.ByteBuffer;
  * Created by peter.lawrey on 09/07/2015.
  */
 public class VanillaWireOutPublisher implements WireOutPublisher {
-    private static final Logger LOG = LoggerFactory.getLogger(VanillaWireOutPublisher.class);
-    private Wire wire;
-    private volatile boolean closed;
 
-    public VanillaWireOutPublisher(@NotNull WireType wireType) {
+    private static final Logger LOG = LoggerFactory.getLogger(VanillaWireOutPublisher.class);
+
+    private Wire wrapperWire;
+    private volatile boolean closed;
+    private final Bytes<ByteBuffer> bytes;
+    private Wire wire;
+
+    public VanillaWireOutPublisher(WireType wireType) {
         this.closed = false;
-        this.wire = wireType.apply(Bytes.elasticByteBuffer(TcpChannelHub.BUFFER_SIZE));
+        bytes = Bytes.elasticByteBuffer(TcpChannelHub.BUFFER_SIZE);
+        wrapperWire = WireType.BINARY.apply(bytes);
+        wire = wireType.apply(bytes);
     }
 
     /**
@@ -27,103 +33,39 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
      * @param out buffer to write to.
      */
     @Override
-    public void applyAction(@NotNull WireOut out, @NotNull Runnable read) {
+    public void applyAction(@NotNull Bytes out) {
 
-        read.run();
+        synchronized (bytes) {
 
-        boolean hasReadData = false;
+            for (; bytes.readRemaining() > 0; ) {
 
-        synchronized (wire) {
+                final long readPosition = bytes.readPosition();
+                try (final ReadDocumentContext dc = (ReadDocumentContext) wrapperWire.readingDocument()) {
 
-            final Bytes<?> bytes = wire.bytes();
+                    if (!dc.isPresent() ||
+                            out.writeRemaining() < bytes.readRemaining()) {
+                        dc.closeReadPosition(readPosition);
+                        return;
+                    }
 
-            if (bytes.readRemaining() < 4)
-                return;
-
-            for (; ; ) {
-                final long nextElementSize = bytes.readInt(bytes.readPosition());
-
-                if (nextElementSize == 0)
-                    return;
-
-                if (out.bytes().writeRemaining() < nextElementSize)
-                    break;
-
-                bytes.readSkip(4);
-                out.bytes().write(bytes, bytes.readPosition(), nextElementSize);
-
-                bytes.readSkip(nextElementSize);
-                hasReadData = true;
-
-                if (bytes.readRemaining() < 4)
-                    break;
+                    while (bytes.readRemaining() > 0) {
+                        out.writeSome(bytes);
+                    }
+                }
             }
-
-            if (!hasReadData)
-                return;
 
             if (bytes.readRemaining() == 0)
                 bytes.clear();
-            else {
-                final ByteBuffer o = (ByteBuffer) bytes.underlyingObject();
-                o.position(0);
-                o.limit((int) bytes.readLimit());
-                o.position((int) bytes.readPosition());
 
-                o.compact();
-                final int byteCoppied = o.position();
-
-                bytes.readPosition(0);
-                bytes.writePosition(byteCoppied);
-
-            }
-
-            if (YamlLogging.showServerWrites)
-                try {
-                    LOG.info("\nServer Publishes (from async publisher ) :\n" +
-                            Wires.fromSizePrefixedBlobs(out.bytes()));
-
-                } catch (Exception e) {
-                    LOG.info("\nServer Publishes ( from async publisher - corrupted ) :\n" +
-                            out.bytes().toDebugString());
-                    LOG.error("", e);
-                }
         }
     }
 
     @Override
     public void put(final Object key, WriteMarshallable event) {
-      /*  if (wire == null) {
-            final WireType wireType = this.wireType.get();
-
-            if (wireType == null)
-
-                System.out.println("");
-            wire = wireType.apply(Bytes.elasticByteBuffer(TcpChannelHub.BUFFER_SIZE));
-        }
-*/
-
         // writes the data and its size
-        synchronized (wire) {
-            final Bytes<?> bytes = wire.bytes();
-            final long sizePosition = bytes.writePosition();
-            bytes.writeSkip(4);
-            final long start = bytes.writePosition();
-
-            try {
-                event.writeMarshallable(wire);
-                final int size = (int) (bytes.writePosition() - start);
-                bytes.writeInt(sizePosition, size);
-
-                //     System.out.println("PUBLISHER -> size=" + size + "\n" +
-                //            Wires.fromSizePrefixedBlobs(bytes, start, size));
-            } catch (Exception e) {
-                bytes.writePosition(start - 4);
-                throw e;
-            }
+        synchronized (bytes) {
+            wrapperWire.writeDocument(false, d -> event.writeMarshallable(wire));
         }
-
-
     }
 
     @Override
@@ -131,17 +73,29 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         return closed;
     }
 
-
     @Override
     public synchronized void close() {
         closed = true;
-        synchronized (wire) {
-            wire.clear();
+        synchronized (bytes) {
+            wrapperWire.clear();
         }
     }
 
     public boolean canTakeMoreData() {
-        return wire.bytes().writePosition() < TcpChannelHub.BUFFER_SIZE;
+        return wrapperWire.bytes().writePosition() < TcpChannelHub.BUFFER_SIZE;
+    }
+
+    @Override
+    public String toString() {
+        return Wires.fromSizePrefixedBlobs(bytes);
+    }
+
+
+    @Override
+    public void wireType(WireType wireType) {
+        synchronized (bytes) {
+            wire = wireType.apply(bytes);
+        }
     }
 }
 

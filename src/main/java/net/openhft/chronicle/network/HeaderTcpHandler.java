@@ -1,27 +1,29 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.core.annotation.NotNull;
 import net.openhft.chronicle.network.api.TcpHandler;
-import net.openhft.chronicle.wire.DocumentContext;
-import net.openhft.chronicle.wire.Marshallable;
-import net.openhft.chronicle.wire.ValueIn;
-import net.openhft.chronicle.wire.Wire;
+import net.openhft.chronicle.network.api.session.SessionDetails;
+import net.openhft.chronicle.wire.*;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
 
 /**
  * @author Rob Austin.
  */
-public class HeaderTcpHandler implements TcpHandler {
-
+public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(HeaderTcpHandler.class);
+    public static final String HANDLER = "handler";
     private final TcpEventHandler handlerManager;
-    private final Function<Marshallable, TcpHandler> handlerFunction;
+    private final Function<Object, TcpHandler> handlerFunction;
     private final NetworkContext nc;
 
+
     public HeaderTcpHandler(@NotNull final TcpEventHandler handlerManager,
-                            @NotNull final Function<Marshallable, TcpHandler> handlerFunction,
-                            @NotNull final NetworkContext nc) {
+                            @NotNull final Function<Object, TcpHandler> handlerFunction,
+                            @NotNull final T nc) {
         this.handlerManager = handlerManager;
         this.handlerFunction = handlerFunction;
         this.nc = nc;
@@ -30,33 +32,62 @@ public class HeaderTcpHandler implements TcpHandler {
     @Override
     public void process(@NotNull Bytes in, @NotNull Bytes out) {
 
+        assert nc.wireType() != null;
+
         // the type of the header
         final Wire inWire = nc.wireType().apply(in);
+
+        long start = in.readPosition();
 
         try (final DocumentContext dc = inWire.readingDocument()) {
 
             if (!dc.isPresent())
                 return;
 
-            if (dc.isMetaData())
-                throw new IllegalStateException("expecting a header of type data");
+            if (!dc.isData())
+                throw new IllegalStateException("expecting a header of type data.");
 
-            final ValueIn valueIn = inWire.getValueIn();
+            if (YamlLogging.showServerReads)
+                LOG.info("read:\n" + Wires.fromSizePrefixedBlobs(in, start));
 
-            Marshallable marshallable;
+            final TcpHandler handler;
 
-            if (valueIn.isTyped())
-                marshallable = valueIn.typedMarshallable();
-            else {
-                marshallable = new VanillaSessionDetails();
-                valueIn.marshallable(marshallable);
-            }
+            final ValueIn read = inWire.read(() -> HANDLER);
 
-            final TcpHandler handler = handlerFunction.apply(marshallable);
+            final Object o = read.isTyped()
+                    ? read.<TcpHandler>typedMarshallable() : toSessionDetails(inWire);
+
+            handler = handlerFunction.apply(o);
+
+            if (handler instanceof NetworkContextManager)
+                ((NetworkContextManager) handler).nc(nc);
+
             handlerManager.tcpHandler(handler);
+
+        } catch (Exception e) {
+            LOG.error("wirein=" + Wires.fromSizePrefixedBlobs(in), e);
         }
 
 
+    }
+
+    public static WriteMarshallable toHeader(final WriteMarshallable m) {
+        return wire -> {
+            try (final DocumentContext dc = wire.writingDocument(false)) {
+                wire.write(() -> HANDLER).typedMarshallable(m);
+            }
+        };
+    }
+
+
+    @NotNull
+    public SessionDetails toSessionDetails(Wire inWire) {
+        VanillaSessionDetails sd = new VanillaSessionDetails();
+        sd.readMarshallable(inWire);
+        final WireType wireType = sd.wireType();
+        if (wireType != null)
+            nc.wireType(wireType);
+        return sd;
     }
 
 

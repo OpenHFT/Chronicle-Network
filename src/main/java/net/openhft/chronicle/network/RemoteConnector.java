@@ -16,6 +16,7 @@
 
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
@@ -29,7 +30,8 @@ import java.net.Socket;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 public class RemoteConnector implements Closeable {
@@ -59,71 +61,74 @@ public class RemoteConnector implements Closeable {
 
     public void connect(final String remoteHostPort,
                         final EventLoop eventLoop,
-                        final Consumer<SocketChannel> onHandshaking,
                         NetworkContext nc,
-                        final double timeOutMs) throws
-            InvalidEventHandlerException {
+                        final long timeOutMs) throws InvalidEventHandlerException {
 
         this.address = TCPRegistry.lookup(remoteHostPort);
 
+        long timeoutTime = System.currentTimeMillis() + timeOutMs;
 
-        try {
 
-            final long start = System.currentTimeMillis();
-            Exception exception = null;
-            for (; ; ) {
-                try {
-                    sc = openSocketChannel(address);
-                    exception = null;
-                    break;
-                } catch (IOException e) {
-                    if (exception == null)
-                        exception = e;
-                    // sleep then retry
-                    Thread.sleep(100);
-                    if (System.currentTimeMillis() - timeOutMs > start)
-                        throw exception;
-                }
+        final AtomicLong nextPeriod = new AtomicLong();
+
+        eventLoop.addHandler(() -> {
+
+            final long time = System.currentTimeMillis();
+            if (time > nextPeriod.get())
+                nextPeriod.set(time + 1000);
+            else
+                return false;
+
+            if (time > timeoutTime)
+                throw Jvm.rethrow(new TimeoutException("timed out attempting to connect to " + remoteHostPort));
+
+            try {
+                sc = openSocketChannel(address);
+            } catch (Exception e) {
+                e.printStackTrace();
+                closeSocket(sc);
+                return false;
             }
 
-            if (sc != null) {
+            if (sc == null)
+                return false;
 
-                if (LOG.isInfoEnabled())
-                    LOG.info("accepted connection " + sc);
+            if (LOG.isInfoEnabled())
+                LOG.info("accepted connection " + sc);
 
-                onHandshaking.accept(sc);
+            try {
                 sc.configureBlocking(false);
-
-                nc.socketChannel(sc);
-                nc.isServerSocket(false);
-
-                final TcpEventHandler eventHandler = tcpHandlerSupplier.apply(nc);
-
-                eventLoop.addHandler(eventHandler);
-                closeables.add(eventHandler);
+            } catch (IOException e) {
+                closeSocket(sc);
+                return false;
             }
 
-        } catch (Exception e) {
-            if (!closed) {
-                LOG.error("", e);
-                closeSocket();
-            }
-        }
+            nc.socketChannel(sc);
+            nc.isAcceptor(false);
+
+            final TcpEventHandler eventHandler = tcpHandlerSupplier.apply(nc);
+            eventLoop.addHandler(eventHandler);
+            closeables.add(eventHandler);
+
+
+            throw new InvalidEventHandlerException();
+        });
+
     }
 
-    private void closeSocket() {
-        SocketChannel socketChannel = sc;
+
+    private static void closeSocket(SocketChannel socketChannel) {
         if (socketChannel == null)
             return;
         try {
-            final Socket socket = sc.socket();
+            final Socket socket = socketChannel.socket();
             if (socket != null)
                 socket.close();
         } catch (IOException ignored) {
         }
 
         try {
-            sc.close();
+            socketChannel.close();
         } catch (IOException ignored) {
         }
     }
@@ -135,7 +140,7 @@ public class RemoteConnector implements Closeable {
             return;
 
         closed = true;
-        closeSocket();
+        closeSocket(sc);
         closeables.forEach(Closeable::closeQuietly);
     }
 

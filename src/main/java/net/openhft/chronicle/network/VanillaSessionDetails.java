@@ -111,7 +111,7 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
     }
 
     @Override
-    public void wireType(@NotNull WireType wireType) {
+    public void wireType(@Nullable WireType wireType) {
         this.wireType = wireType;
     }
 

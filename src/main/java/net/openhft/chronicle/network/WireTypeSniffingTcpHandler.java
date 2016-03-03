@@ -1,10 +1,11 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.core.annotation.NotNull;
 import net.openhft.chronicle.network.api.TcpHandler;
+import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.Wires;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;
 
@@ -34,6 +35,13 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements Tcp
     @Override
     public void process(@NotNull Bytes in, @NotNull Bytes out) {
 
+        final WireOutPublisher publisher = nc.wireOutPublisher();
+
+        if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
+            publisher.applyAction(out);
+
+
+
         // read the wire type of the messages from the header - the header its self must be
         // of type TEXT or BINARY
         if (in.readRemaining() < 5)
@@ -52,7 +60,13 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements Tcp
         // the type of the header
 
         nc.wireType(wireType);
-        handlerManager.tcpHandler(delegateHandlerFactory.apply(nc));
+
+        final TcpHandler handler = delegateHandlerFactory.apply(nc);
+
+        if (handler instanceof NetworkContextManager)
+            ((NetworkContextManager) handler).nc(nc);
+
+        handlerManager.tcpHandler(handler);
     }
 
 

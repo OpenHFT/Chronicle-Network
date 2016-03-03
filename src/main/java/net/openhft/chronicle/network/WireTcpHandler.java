@@ -17,6 +17,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.annotation.Nullable;
 import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
@@ -26,41 +27,66 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.BufferOverflowException;
-import java.util.function.Supplier;
+import static net.openhft.chronicle.network.connection.CoreFields.reply;
+import static net.openhft.chronicle.wire.WriteMarshallable.EMPTY;
 
-public abstract class WireTcpHandler implements TcpHandler, Supplier<WireOutPublisher> {
+public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHandler,
+        NetworkContextManager<T> {
 
     private static final int SIZE_OF_SIZE = 4;
     private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
     // this is the point at which it is worth doing more work to get more data.
 
-    protected WireOutPublisher publisher;
     protected Wire outWire;
     private Wire inWire;
     private boolean recreateWire;
+    @Nullable
     private WireType wireType;
+    private WireOutPublisher publisher;
+    private T nc;
 
-    public WireTcpHandler(@NotNull final NetworkContext nc) {
-        this.wireType = nc.wireType();
-        this.publisher = nc.wireOutPublisher();
+    public boolean isAcceptor() {
+        return this.isAcceptor;
     }
 
-    public WireOutPublisher get() {
+    private boolean isAcceptor;
+
+    public void wireType(WireType wireType) {
+        this.wireType = wireType;
+    }
+
+    public WireOutPublisher publisher() {
         return publisher;
     }
 
+    public void publisher(WireOutPublisher publisher) {
+        this.publisher = publisher;
+    }
+
+    public void isAcceptor(boolean isAcceptor) {
+        this.isAcceptor = isAcceptor;
+    }
 
     @Override
     public void process(@NotNull Bytes in, @NotNull Bytes out) {
 
-        checkWires(in, out, wireType());
+        final WireType wireType = wireType();
+        checkWires(in, out, wireType == null ? WireType.TEXT : wireType);
 
-        publisher.applyAction(outWire, () -> {
-            if (in.readRemaining() >= SIZE_OF_SIZE && out.writePosition() < TcpEventHandler.TCP_BUFFER)
-                read(in, out);
-        });
+        if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
+            publisher.applyAction(out);
+
+        // publisher.applyAction(outWire, () -> {
+        if (in.readRemaining() >= SIZE_OF_SIZE && out.writePosition() < TcpEventHandler.TCP_BUFFER)
+            read(in, out);
+        // });
     }
+
+    @Override
+    public T nc() {
+        return (T) nc;
+    }
+
 
     @Override
     public void sendHeartBeat(Bytes out, SessionDetailsProvider sessionDetails) {
@@ -112,12 +138,18 @@ public abstract class WireTcpHandler implements TcpHandler, Supplier<WireOutPubl
             in.readLimit(end);
 
             final long position = inWire.bytes().readPosition();
+
+            assert inWire.bytes().readRemaining() >= length;
+
+            final long wireLimit = inWire.bytes().readLimit();
+
             try {
                 process(inWire, outWire);
             } finally {
                 try {
+                    inWire.bytes().readLimit(wireLimit);
                     inWire.bytes().readPosition(position + length);
-                } catch (BufferOverflowException e) {
+                } catch (Exception e) {
                     //noinspection ThrowFromFinallyBlock
                     throw new IllegalStateException("Unexpected error position: " + position + ", length: " + length + " limit(): " + inWire.bytes().readLimit(), e);
                 }
@@ -182,4 +214,81 @@ public abstract class WireTcpHandler implements TcpHandler, Supplier<WireOutPubl
     protected abstract void process(@NotNull WireIn in,
                                     @NotNull WireOut out);
 
+
+    /**
+     * write and exceptions and rolls back if no data was written
+     */
+    protected void writeData(@NotNull Bytes inBytes, @NotNull WriteMarshallable c) {
+        outWire.writeDocument(false, out -> {
+            final long readPosition = inBytes.readPosition();
+            final long position = outWire.bytes().writePosition();
+            try {
+                c.writeMarshallable(outWire);
+            } catch (Throwable t) {
+                inBytes.readPosition(readPosition);
+                if (LOG.isInfoEnabled())
+                    LOG.info("While reading " + inBytes.toDebugString(),
+                            " processing wire " + c, t);
+                outWire.bytes().writePosition(position);
+                outWire.writeEventName(() -> "exception").throwable(t);
+            }
+
+            // write 'reply : {} ' if no data was sent
+            if (position == outWire.bytes().writePosition()) {
+                outWire.writeEventName(reply).marshallable(EMPTY);
+            }
+        });
+
+        logYaml();
+    }
+
+    /**
+     * write and exceptions and rolls back if no data was written
+     */
+    protected void writeData(boolean isNotReady, @NotNull Bytes inBytes, @NotNull WriteMarshallable c) {
+
+        final WriteMarshallable marshallable = out -> {
+            final long readPosition = inBytes.readPosition();
+            final long position = outWire.bytes().writePosition();
+            try {
+                c.writeMarshallable(outWire);
+            } catch (Throwable t) {
+                inBytes.readPosition(readPosition);
+                if (LOG.isInfoEnabled())
+                    LOG.info("While reading " + inBytes.toDebugString(),
+                            " processing wire " + c, t);
+                outWire.bytes().writePosition(position);
+                outWire.writeEventName(() -> "exception").throwable(t);
+            }
+
+            // write 'reply : {} ' if no data was sent
+            if (position == outWire.bytes().writePosition()) {
+                outWire.writeEventName(reply).marshallable(EMPTY);
+            }
+        };
+
+        if (isNotReady)
+            outWire.writeNotReadyDocument(false, marshallable);
+        else
+            outWire.writeDocument(false, marshallable);
+
+        logYaml();
+    }
+
+    void logYaml() {
+        if (YamlLogging.showServerWrites)
+            try {
+                LOG.info("\nServer Sends:\n" +
+                        Wires.fromSizePrefixedBlobs(outWire.bytes()));
+            } catch (Exception e) {
+                LOG.info("\nServer Sends ( corrupted ) :\n" +
+                        outWire.bytes().toDebugString());
+            }
+    }
+
+    public void nc(T nc) {
+        this.nc = nc;
+        if (wireType == null)
+            wireType(nc.wireType());
+    }
 }

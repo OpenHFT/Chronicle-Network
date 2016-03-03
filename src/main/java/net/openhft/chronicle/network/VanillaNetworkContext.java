@@ -3,6 +3,7 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.channels.SocketChannel;
 
@@ -11,14 +12,14 @@ import java.nio.channels.SocketChannel;
  */
 public class VanillaNetworkContext<T extends VanillaNetworkContext> implements NetworkContext<T> {
 
-
     private SocketChannel socketChannel;
-    private boolean isServerSocket = true;
+    private boolean isAcceptor = true;
     private boolean isUnchecked;
-    private WireOutPublisher wireOutPublisher;
+
     private long heartBeatTimeoutTicks = 40_000;
     private long heartbeatIntervalTicks = 20_000;
     private SessionDetailsProvider sessionDetails;
+    private boolean connectionClosed;
 
     @Override
     public SocketChannel socketChannel() {
@@ -31,15 +32,22 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         return (T) this;
     }
 
+    /**
+     * @param isAcceptor {@code} true if its a server socket, {@code} false if its a client
+     * @return
+     */
     @Override
-    public T isServerSocket(boolean b) {
-        this.isServerSocket = b;
+    public T isAcceptor(boolean isAcceptor) {
+        this.isAcceptor = isAcceptor;
         return (T) this;
     }
 
+    /**
+     * @return {@code} true if its a server socket, {@code} false if its a client
+     */
     @Override
-    public boolean isServerSocket() {
-        return isServerSocket;
+    public boolean isAcceptor() {
+        return isAcceptor;
     }
 
     @Override
@@ -75,8 +83,11 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         return heartBeatTimeoutTicks;
     }
 
+    WireOutPublisher wireOutPublisher;
+
+    @Nullable
     @Override
-    public WireOutPublisher wireOutPublisher() {
+    public synchronized WireOutPublisher wireOutPublisher() {
         return wireOutPublisher;
     }
 
@@ -108,4 +119,11 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         return (T) this;
     }
 
+    public boolean connectionClosed() {
+        return this.connectionClosed;
+    }
+
+    public void connectionClosed(boolean connectionClosed) {
+        this.connectionClosed = connectionClosed;
+    }
 }

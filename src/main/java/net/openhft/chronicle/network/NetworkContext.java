@@ -8,9 +8,9 @@ import java.nio.channels.SocketChannel;
 
 public interface NetworkContext<T extends NetworkContext> {
 
-    T isServerSocket(boolean serverSocket);
+    T isAcceptor(boolean serverSocket);
 
-    boolean isServerSocket();
+    boolean isAcceptor();
 
     T isUnchecked(boolean isUnchecked);
 
@@ -39,4 +39,6 @@ public interface NetworkContext<T extends NetworkContext> {
     SessionDetailsProvider sessionDetails();
 
     T sessionDetails(SessionDetailsProvider sessionDetails);
+
+
 }

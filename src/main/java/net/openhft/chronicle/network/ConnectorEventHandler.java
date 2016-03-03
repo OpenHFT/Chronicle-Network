@@ -6,6 +6,7 @@ import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
+import net.openhft.chronicle.network.connection.VanillaWireOutPublisher;
 import net.openhft.chronicle.threads.LongPauser;
 import net.openhft.chronicle.threads.Pauser;
 import org.jetbrains.annotations.NotNull;
@@ -20,6 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import static net.openhft.chronicle.wire.WireType.TEXT;
 
 /**
  * Created by daniel on 09/02/2016. This class handles the creation, running and monitoring of
@@ -65,6 +68,7 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
 
                     sessionDetails.clientAddress((InetSocketAddress) socketChannel.getRemoteAddress());
                     NetworkContext nc = new VanillaNetworkContext();
+                    nc.wireOutPublisher(new VanillaWireOutPublisher(TEXT));
                     nc.socketChannel(socketChannel);
                     final TcpEventHandler evntHandler = new TcpEventHandler(nc);
                     evntHandler.tcpHandler(tcpHandlerSupplier.apply(v));

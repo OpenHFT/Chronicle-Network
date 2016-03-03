@@ -17,11 +17,10 @@
 package net.openhft.chronicle.network.api;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.core.annotation.NotNull;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.ClientClosedProvider;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
-import net.openhft.chronicle.wire.WireType;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Created by peter.lawrey on 22/01/15.
@@ -53,6 +52,4 @@ public interface TcpHandler extends ClientClosedProvider, Closeable {
     default void onWriteTime(long writeTimeNS) {
     }
 
-    default void wireType(WireType wireType) {
-    }
 }

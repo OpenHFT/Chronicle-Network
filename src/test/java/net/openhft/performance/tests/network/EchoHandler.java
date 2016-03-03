@@ -19,7 +19,6 @@ package net.openhft.performance.tests.network;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.AcceptorEventHandler;
-import net.openhft.chronicle.network.LegacyHanderFactory;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.api.TcpHandler;

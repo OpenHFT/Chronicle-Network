@@ -15,7 +15,7 @@ public class WireEchoRequestHandler extends WireTcpHandler {
 
 
     public WireEchoRequestHandler(NetworkContext networkContext) {
-        super(networkContext);
+
     }
 
     /**
@@ -38,4 +38,6 @@ public class WireEchoRequestHandler extends WireTcpHandler {
                     .text(inWire.read(() -> "payload").text()));
         });
     }
+
+
 }

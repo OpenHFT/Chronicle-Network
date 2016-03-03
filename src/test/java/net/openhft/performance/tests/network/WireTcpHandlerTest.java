@@ -47,11 +47,11 @@ public class WireTcpHandlerTest {
     public static final int SIZE_OF_SIZE = 4;
 
     private final String desc;
-    private final Function<Bytes, Wire> wireWrapper;
+    private final WireType wireType;
 
-    public WireTcpHandlerTest(String desc, Function<Bytes, Wire> wireWrapper) {
+    public WireTcpHandlerTest(String desc, WireType wireWrapper) {
         this.desc = desc;
-        this.wireWrapper = wireWrapper;
+        this.wireType = wireWrapper;
     }
 
     @Parameterized.Parameters
@@ -131,7 +131,7 @@ public class WireTcpHandlerTest {
         eg.start();
         TCPRegistry.createServerSocketChannelFor(desc);
         AcceptorEventHandler eah = new AcceptorEventHandler(desc,
-                LegacyHanderFactory.simpleTcpEventHandlerFactory(EchoRequestHandler::new),
+                LegacyHanderFactory.simpleTcpEventHandlerFactory(EchoRequestHandler::new, wireType),
                 VanillaNetworkContext::new);
         eg.addHandler(eah);
 
@@ -139,7 +139,7 @@ public class WireTcpHandlerTest {
         sc.configureBlocking(false);
 
         //       testThroughput(sc);
-        testLatency(desc, wireWrapper, sc);
+        testLatency(desc, wireType, sc);
 
         eg.stop();
         TcpChannelHub.closeAllHubs();
@@ -147,10 +147,11 @@ public class WireTcpHandlerTest {
     }
 
     static class EchoRequestHandler extends WireTcpHandler {
+
         private final TestData td = new TestData();
 
         public EchoRequestHandler(NetworkContext networkContext) {
-            super(networkContext);
+
         }
 
         @Override
@@ -159,5 +160,7 @@ public class WireTcpHandlerTest {
             td.read(inWire);
             td.write(outWire);
         }
+
+
     }
 }
