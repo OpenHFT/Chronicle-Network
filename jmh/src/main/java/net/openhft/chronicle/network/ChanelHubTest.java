@@ -76,7 +76,6 @@ public class ChanelHubTest {
             main.tearDown();
         } else {
             int time = Boolean.getBoolean("longTest") ? 30 : 2;
-            System.out.println("measurementTime: " + time + " secs");
             Options opt = new OptionsBuilder()
                     .include(ChanelHubTest.class.getSimpleName())
                     .warmupIterations(5)

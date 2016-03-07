@@ -10,6 +10,8 @@ import net.openhft.chronicle.network.connection.VanillaWireOutPublisher;
 import net.openhft.chronicle.threads.LongPauser;
 import net.openhft.chronicle.threads.Pauser;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -29,6 +31,7 @@ import static net.openhft.chronicle.wire.WireType.TEXT;
  * client connections
  */
 public class ConnectorEventHandler implements EventHandler, Closeable {
+    private static final Logger LOG = LoggerFactory.getLogger(ConnectorEventHandler.class);
 
     @NotNull
     private final Function<ConnectionDetails, TcpHandler> tcpHandlerSupplier;
@@ -88,10 +91,10 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
                 }
             } catch (ConnectException e) {
                 //Not a problem try again next time round
-                System.out.println(k + e.getMessage());
+                LOG.error(k + e.getMessage());
             } catch (IOException e) {
-                System.out.println(k + e.getMessage());
-                e.printStackTrace();
+                LOG.error(k + e.getMessage());
+
             }
         });
 

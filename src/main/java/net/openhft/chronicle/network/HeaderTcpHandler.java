@@ -52,10 +52,17 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
 
             final TcpHandler handler;
 
+            final long readPosition = inWire.bytes().readPosition();
             final ValueIn read = inWire.read(() -> HANDLER);
 
-            final Object o = read.isTyped()
-                    ? read.<TcpHandler>typedMarshallable() : toSessionDetails(inWire);
+            final Object o;
+
+            if (read.isTyped())
+                o = read.typedMarshallable();
+            else {
+                inWire.bytes().readPosition(readPosition);
+                o = toSessionDetails(inWire);
+            }
 
             handler = handlerFunction.apply(o);
 
@@ -84,11 +91,12 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
     public SessionDetails toSessionDetails(Wire inWire) {
         VanillaSessionDetails sd = new VanillaSessionDetails();
         sd.readMarshallable(inWire);
-        final WireType wireType = sd.wireType();
-        if (wireType != null)
-            nc.wireType(wireType);
         return sd;
     }
 
+    @Override
+    public void close() {
+        this.nc.closeTask().close();
+    }
 
 }

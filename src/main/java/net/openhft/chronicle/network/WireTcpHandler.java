@@ -18,6 +18,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.annotation.Nullable;
+import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
@@ -290,5 +291,12 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         this.nc = nc;
         if (wireType == null)
             wireType(nc.wireType());
+    }
+
+    @Override
+    public void close() {
+        ;
+        nc.connectionClosed(true);
+        Closeable.closeQuietly(this.nc.closeTask());
     }
 }

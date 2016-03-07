@@ -1,5 +1,6 @@
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
@@ -20,6 +21,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     private long heartbeatIntervalTicks = 20_000;
     private SessionDetailsProvider sessionDetails;
     private boolean connectionClosed;
+    private Closeable closeTask;
 
     @Override
     public SocketChannel socketChannel() {
@@ -119,10 +121,21 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         return (T) this;
     }
 
+    @Override
+    public void closeTask(Closeable closeTask) {
+        this.closeTask = closeTask;
+    }
+
+    @Override
+    public Closeable closeTask() {
+        return closeTask;
+    }
+
     public boolean connectionClosed() {
         return this.connectionClosed;
     }
 
+    @Override
     public void connectionClosed(boolean connectionClosed) {
         this.connectionClosed = connectionClosed;
     }

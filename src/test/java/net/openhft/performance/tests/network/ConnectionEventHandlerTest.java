@@ -40,9 +40,7 @@ public class ConnectionEventHandlerTest {
     public void testConnection() throws IOException {
         List<String> messages = new ArrayList<>();
 
-
         TCPRegistry.createServerSocketChannelFor("host.port1");
-
 
         Map<String, ConnectionDetails> nameToConnectionDetails = new ConcurrentHashMap<>();
         ConnectionDetails test1 = new ConnectionDetails("Test1", "host.port1");

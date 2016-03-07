@@ -18,6 +18,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import org.jetbrains.annotations.NotNull;
@@ -58,61 +59,16 @@ public class RemoteConnector implements Closeable {
         this.tcpHandlerSupplier = tcpHandlerSupplier;
     }
 
-
     public void connect(final String remoteHostPort,
                         final EventLoop eventLoop,
                         NetworkContext nc,
-                        final long timeOutMs) throws InvalidEventHandlerException {
+                        final long timeOutMs) {
 
         this.address = TCPRegistry.lookup(remoteHostPort);
 
         long timeoutTime = System.currentTimeMillis() + timeOutMs;
-
-
         final AtomicLong nextPeriod = new AtomicLong();
-
-        eventLoop.addHandler(() -> {
-
-            final long time = System.currentTimeMillis();
-            if (time > nextPeriod.get())
-                nextPeriod.set(time + 1000);
-            else
-                return false;
-
-            if (time > timeoutTime)
-                throw Jvm.rethrow(new TimeoutException("timed out attempting to connect to " + remoteHostPort));
-
-            try {
-                sc = openSocketChannel(address);
-            } catch (Exception e) {
-                e.printStackTrace();
-                closeSocket(sc);
-                return false;
-            }
-
-            if (sc == null)
-                return false;
-
-            if (LOG.isInfoEnabled())
-                LOG.info("accepted connection " + sc);
-
-            try {
-                sc.configureBlocking(false);
-            } catch (IOException e) {
-                closeSocket(sc);
-                return false;
-            }
-
-            nc.socketChannel(sc);
-            nc.isAcceptor(false);
-
-            final TcpEventHandler eventHandler = tcpHandlerSupplier.apply(nc);
-            eventLoop.addHandler(eventHandler);
-            closeables.add(eventHandler);
-
-
-            throw new InvalidEventHandlerException();
-        });
+        eventLoop.addHandler(new RCEventHandler(nextPeriod, timeoutTime, remoteHostPort, nc, eventLoop));
 
     }
 
@@ -141,7 +97,15 @@ public class RemoteConnector implements Closeable {
 
         closed = true;
         closeSocket(sc);
-        closeables.forEach(Closeable::closeQuietly);
+        final List<Closeable> closeables = this.closeables;
+        this.closeables = null;
+        closeables.forEach(c -> {
+            try {
+                c.close();
+            } catch (NullPointerException npe) {
+                npe.printStackTrace();
+            }
+        });
     }
 
 
@@ -159,4 +123,84 @@ public class RemoteConnector implements Closeable {
         return result;
     }
 
+    class RCEventHandler implements EventHandler, Closeable {
+        private volatile boolean closed;
+        private final AtomicLong nextPeriod;
+        private final long timeoutTime;
+        private final String remoteHostPort;
+        private final NetworkContext nc;
+        private final EventLoop eventLoop;
+
+        public RCEventHandler(AtomicLong nextPeriod, long timeoutTime, String remoteHostPort, NetworkContext nc, EventLoop eventLoop) {
+            this.nextPeriod = nextPeriod;
+            this.timeoutTime = timeoutTime;
+            this.remoteHostPort = remoteHostPort;
+            this.nc = nc;
+            this.eventLoop = eventLoop;
+        }
+
+        @Override
+        public boolean action() throws InvalidEventHandlerException, InterruptedException {
+            if (closed)
+                throw new InvalidEventHandlerException();
+            final long time = System.currentTimeMillis();
+            if (time > nextPeriod.get())
+                nextPeriod.set(time + 1000);
+            else
+                return false;
+
+            if (time > timeoutTime)
+                throw Jvm.rethrow(new TimeoutException("timed out attempting to connect to " + remoteHostPort));
+
+            try {
+                sc = RemoteConnector.this.openSocketChannel(address);
+            } catch (Exception e) {
+                closeSocket(sc);
+                return false;
+            }
+
+            if (sc == null)
+                return false;
+
+            if (LOG.isInfoEnabled())
+                LOG.info("accepted connection " + sc);
+
+            try {
+                sc.configureBlocking(false);
+            } catch (IOException e) {
+                closeSocket(sc);
+                return false;
+            }
+
+            nc.socketChannel(sc);
+            nc.isAcceptor(false);
+
+            final TcpEventHandler eventHandler = tcpHandlerSupplier.apply(nc);
+            eventLoop.addHandler(eventHandler);
+            final List<Closeable> closeables = RemoteConnector.this.closeables;
+            if (closeables == null) {
+                // we have died.
+                Closeable.closeQuietly(eventHandler);
+            } else {
+                closeables.add(eventHandler);
+            }
+            throw new InvalidEventHandlerException();
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{"
+                    + "remoteHostPort=" + remoteHostPort + "}";
+        }
+
+        @Override
+        public void close() {
+            closed = true;
+        }
+
+        @Override
+        public void notifyClosing() {
+            closed = true;
+        }
+    }
 }

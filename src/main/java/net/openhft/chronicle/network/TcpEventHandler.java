@@ -77,6 +77,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private final Bytes outBBB;
 
     private long lastTickReadTime = Time.tickTime(), lastHeartBeatTick = lastTickReadTime + 1000;
+    private volatile boolean closed;
 
     public TcpEventHandler(@NotNull NetworkContext nc) throws IOException {
         final boolean unchecked = nc.isUnchecked();
@@ -137,6 +138,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
             // clear these to free up memory.
             throw new InvalidEventHandlerException();
+        } else if (closed) {
+            throw new InvalidEventHandlerException();
         }
 
         if (oneInTen++ == 10) {
@@ -189,7 +192,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 sendHeartBeat();
             }
         } catch (ClosedChannelException e) {
-
             closeSC();
         } catch (IOException e) {
             handleIOE(e, tcpHandler.hasClientClosed());
@@ -282,11 +284,13 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     @Override
     public void close() {
+        closed = true;
         closeSC();
         clean();
     }
 
     private void closeSC() {
+
         try {
             tcpHandler.close();
         } catch (Exception ignored) {
@@ -296,6 +300,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             sc.close();
         } catch (IOException ignored) {
         }
+
     }
 
     boolean tryWrite() throws IOException {

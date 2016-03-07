@@ -78,7 +78,6 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
                 final NetworkContext nc = ncFactory.get();
                 nc.socketChannel(sc);
                 nc.isAcceptor(true);
-
                 eventLoop.addHandler(handlerFactory.apply(nc));
             }
 

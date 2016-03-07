@@ -76,14 +76,14 @@ public class VerySimpleClient {
                             m.invoke(main);
 
                         }
-                        System.out.println("");
+
                     }
                 }
             }
             main.tearDown();
         } else {
             int time = Boolean.getBoolean("longTest") ? 30 : 2;
-            System.out.println("measurementTime: " + time + " secs");
+
             Options opt = new OptionsBuilder()
                     .include(VerySimpleClient.class.getSimpleName())
                     .warmupIterations(5)
@@ -118,7 +118,7 @@ public class VerySimpleClient {
         TCPRegistry.reset();
         client.close();
         client.socket().close();
-        System.out.println("closed");
+
     }
 
     @Benchmark
@@ -190,7 +190,6 @@ public class VerySimpleClient {
                 socket.setReceiveBufferSize(tcpBufferSize);
                 socket.setSendBufferSize(tcpBufferSize);
                 result.configureBlocking(false);
-                System.out.println("successfully connected");
                 return result;
 
             } catch (IOException e0) {

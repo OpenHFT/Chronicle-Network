@@ -1,6 +1,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
@@ -40,8 +41,6 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements Tcp
         if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
             publisher.applyAction(out);
 
-
-
         // read the wire type of the messages from the header - the header its self must be
         // of type TEXT or BINARY
         if (in.readRemaining() < 5)
@@ -58,7 +57,6 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements Tcp
         final WireType wireType = (b & 0x80) == 0 ? TEXT : BINARY;
 
         // the type of the header
-
         nc.wireType(wireType);
 
         final TcpHandler handler = delegateHandlerFactory.apply(nc);
@@ -69,5 +67,9 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements Tcp
         handlerManager.tcpHandler(handler);
     }
 
+    @Override
+    public void close() {
+        Closeable.closeQuietly(this.nc.closeTask());
+    }
 
 }

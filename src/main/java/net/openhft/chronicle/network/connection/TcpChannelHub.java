@@ -691,7 +691,6 @@ public class TcpChannelHub implements Closeable {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
             closeSocket();
             throw e;
         }
@@ -1551,7 +1550,7 @@ public class TcpChannelHub implements Closeable {
                 @Override
                 public void onSubscribe(@NotNull WireOut wireOut) {
                     if (Jvm.isDebug())
-                        System.out.println("sending heartbeat");
+                        LOG.info("sending heartbeat");
                     wireOut.writeEventName(EventId.heartbeat).int64(Time
                             .currentTimeMillis());
                 }

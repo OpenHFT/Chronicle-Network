@@ -35,9 +35,9 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     @Override
     public void applyAction(@NotNull Bytes out) {
 
-        synchronized (bytes) {
+        synchronized (lock()) {
 
-            for (; bytes.readRemaining() > 0; ) {
+            while (bytes.readRemaining() > 0) {
 
                 final long readPosition = bytes.readPosition();
                 try (final ReadDocumentContext dc = (ReadDocumentContext) wrapperWire.readingDocument()) {
@@ -48,22 +48,30 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
                         return;
                     }
 
-                    while (bytes.readRemaining() > 0) {
-                        out.writeSome(bytes);
-                    }
+
+                    if (YamlLogging.showServerWrites)
+                        LOG.info("Server sends:" + Wires.fromSizePrefixedBlobs(bytes));
+
+                    out.write(bytes);
+
                 }
             }
 
-            if (bytes.readRemaining() == 0)
-                bytes.clear();
+            bytes.compact();
 
         }
     }
 
     @Override
     public void put(final Object key, WriteMarshallable event) {
+
+        if (closed) {
+            LOG.debug("message ignored as closed");
+            return;
+        }
+
         // writes the data and its size
-        synchronized (bytes) {
+        synchronized (lock()) {
             wrapperWire.writeDocument(false, d -> event.writeMarshallable(wire));
         }
     }
@@ -73,10 +81,15 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         return closed;
     }
 
+
+    private Object lock() {
+        return bytes;
+    }
+
     @Override
     public synchronized void close() {
         closed = true;
-        synchronized (bytes) {
+        synchronized (lock()) {
             wrapperWire.clear();
         }
     }
@@ -93,7 +106,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
     @Override
     public void wireType(WireType wireType) {
-        synchronized (bytes) {
+        synchronized (lock()) {
             wire = wireType.apply(bytes);
         }
     }
