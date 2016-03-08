@@ -14,8 +14,8 @@ import java.util.function.Function;
  * @author Rob Austin.
  */
 public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(HeaderTcpHandler.class);
     public static final String HANDLER = "handler";
+    private static final Logger LOG = LoggerFactory.getLogger(HeaderTcpHandler.class);
     private final TcpEventHandler handlerManager;
     private final Function<Object, TcpHandler> handlerFunction;
     private final NetworkContext nc;
@@ -27,6 +27,14 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
         this.handlerManager = handlerManager;
         this.handlerFunction = handlerFunction;
         this.nc = nc;
+    }
+
+    public static WriteMarshallable toHeader(final WriteMarshallable m) {
+        return wire -> {
+            try (final DocumentContext dc = wire.writingDocument(false)) {
+                wire.write(() -> HANDLER).typedMarshallable(m);
+            }
+        };
     }
 
     @Override
@@ -48,7 +56,7 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
                 throw new IllegalStateException("expecting a header of type data.");
 
             if (YamlLogging.showServerReads)
-                LOG.info("read:\n" + Wires.fromSizePrefixedBlobs(in, start));
+                LOG.info("read:\n" + Wires.fromSizePrefixedBlobs(in, start, in.readLimit() - start));
 
             final TcpHandler handler;
 
@@ -77,15 +85,6 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
 
 
     }
-
-    public static WriteMarshallable toHeader(final WriteMarshallable m) {
-        return wire -> {
-            try (final DocumentContext dc = wire.writingDocument(false)) {
-                wire.write(() -> HANDLER).typedMarshallable(m);
-            }
-        };
-    }
-
 
     @NotNull
     public SessionDetails toSessionDetails(Wire inWire) {
