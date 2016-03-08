@@ -14,7 +14,7 @@ import java.util.function.Function;
  * @author Rob Austin.
  */
 public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(HeaderTcpHandler.class);
+
     public static final String HANDLER = "handler";
     private static final Logger LOG = LoggerFactory.getLogger(HeaderTcpHandler.class);
     private final TcpEventHandler handlerManager;
