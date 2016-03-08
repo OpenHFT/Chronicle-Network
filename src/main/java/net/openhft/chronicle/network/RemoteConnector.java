@@ -49,7 +49,7 @@ public class RemoteConnector implements Closeable {
 
 
     private volatile boolean closed;
-    private InetSocketAddress address;
+
     private SocketChannel sc;
     private List<Closeable> closeables = new ArrayList<>();
 
@@ -64,11 +64,12 @@ public class RemoteConnector implements Closeable {
                         NetworkContext nc,
                         final long timeOutMs) {
 
-        this.address = TCPRegistry.lookup(remoteHostPort);
+        InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
 
         long timeoutTime = System.currentTimeMillis() + timeOutMs;
         final AtomicLong nextPeriod = new AtomicLong();
-        eventLoop.addHandler(new RCEventHandler(nextPeriod, timeoutTime, remoteHostPort, nc, eventLoop));
+        eventLoop.addHandler(new RCEventHandler(nextPeriod, timeoutTime, remoteHostPort, nc,
+                eventLoop, address));
 
     }
 
@@ -124,6 +125,8 @@ public class RemoteConnector implements Closeable {
     }
 
     class RCEventHandler implements EventHandler, Closeable {
+
+        private final InetSocketAddress address;
         private volatile boolean closed;
         private final AtomicLong nextPeriod;
         private final long timeoutTime;
@@ -131,12 +134,14 @@ public class RemoteConnector implements Closeable {
         private final NetworkContext nc;
         private final EventLoop eventLoop;
 
-        public RCEventHandler(AtomicLong nextPeriod, long timeoutTime, String remoteHostPort, NetworkContext nc, EventLoop eventLoop) {
+        public RCEventHandler(AtomicLong nextPeriod, long timeoutTime, String remoteHostPort,
+                              NetworkContext nc, EventLoop eventLoop, InetSocketAddress address) {
             this.nextPeriod = nextPeriod;
             this.timeoutTime = timeoutTime;
             this.remoteHostPort = remoteHostPort;
             this.nc = nc;
             this.eventLoop = eventLoop;
+            this.address = address;
         }
 
         @Override
@@ -150,7 +155,8 @@ public class RemoteConnector implements Closeable {
                 return false;
 
             if (time > timeoutTime)
-                throw Jvm.rethrow(new TimeoutException("timed out attempting to connect to " + remoteHostPort));
+                throw Jvm.rethrow(new TimeoutException("timed out attempting to connect to " +
+                        remoteHostPort + " as " + address));
 
             try {
                 sc = RemoteConnector.this.openSocketChannel(address);
@@ -165,12 +171,6 @@ public class RemoteConnector implements Closeable {
             if (LOG.isInfoEnabled())
                 LOG.info("accepted connection " + sc);
 
-            try {
-                sc.configureBlocking(false);
-            } catch (IOException e) {
-                closeSocket(sc);
-                return false;
-            }
 
             nc.socketChannel(sc);
             nc.isAcceptor(false);
@@ -184,6 +184,8 @@ public class RemoteConnector implements Closeable {
             } else {
                 closeables.add(eventHandler);
             }
+
+
             throw new InvalidEventHandlerException();
         }
 

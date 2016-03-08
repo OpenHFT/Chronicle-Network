@@ -44,11 +44,11 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
             if (!dc.isPresent())
                 return;
 
-            if (!dc.isData())
-                throw new IllegalStateException("expecting a header of type data.");
-
             if (YamlLogging.showServerReads)
                 LOG.info("read:\n" + Wires.fromSizePrefixedBlobs(in, start));
+
+            if (!dc.isData())
+                throw new IllegalStateException("expecting a header of type data.");
 
             final TcpHandler handler;
 
@@ -74,14 +74,14 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
         } catch (Exception e) {
             LOG.error("wirein=" + Wires.fromSizePrefixedBlobs(in), e);
         }
-
-
     }
 
-    public static WriteMarshallable toHeader(final WriteMarshallable m) {
+    public static WriteMarshallable toHeader(final WriteMarshallable m, byte localIdentifier, byte remoteIdentifier) {
         return wire -> {
             try (final DocumentContext dc = wire.writingDocument(false)) {
                 wire.write(() -> HANDLER).typedMarshallable(m);
+                wire.writeComment("client:localIdentifier=" + localIdentifier + ", " +
+                        "remoteIdentifier=" + remoteIdentifier);
             }
         };
     }

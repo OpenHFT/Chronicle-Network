@@ -77,10 +77,8 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
             publisher.applyAction(out);
 
-        // publisher.applyAction(outWire, () -> {
         if (in.readRemaining() >= SIZE_OF_SIZE && out.writePosition() < TcpEventHandler.TCP_BUFFER)
             read(in, out);
-        // });
     }
 
     @Override
@@ -276,7 +274,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         logYaml();
     }
 
-    void logYaml() {
+    protected void logYaml() {
         if (YamlLogging.showServerWrites)
             try {
                 LOG.info("\nServer Sends:\n" +

@@ -42,12 +42,10 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
                 final long readPosition = bytes.readPosition();
                 try (final ReadDocumentContext dc = (ReadDocumentContext) wrapperWire.readingDocument()) {
 
-                    if (!dc.isPresent() ||
-                            out.writeRemaining() < bytes.readRemaining()) {
+                    if (!dc.isPresent() || out.writeRemaining() < bytes.readRemaining()) {
                         dc.closeReadPosition(readPosition);
                         return;
                     }
-
 
                     if (YamlLogging.showServerWrites)
                         LOG.info("Server sends:" + Wires.fromSizePrefixedBlobs(bytes));
@@ -72,7 +70,16 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
         // writes the data and its size
         synchronized (lock()) {
-            wrapperWire.writeDocument(false, d -> event.writeMarshallable(wire));
+            wrapperWire.writeDocument(false, d -> {
+
+                final long start = wire.bytes().writePosition();
+                event.writeMarshallable(wire);
+                if (YamlLogging.showServerWrites)
+                    LOG.info("Server is about to send:" + Wires.fromSizePrefixedBlobs(wire.bytes(),
+                            start, wire
+                                    .bytes().writePosition() - start));
+
+            });
         }
     }
 
