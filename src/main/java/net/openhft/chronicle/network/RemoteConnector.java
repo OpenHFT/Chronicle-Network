@@ -46,12 +46,9 @@ public class RemoteConnector implements Closeable {
     // private final BiFunction<Boolean, SocketChannel, TcpEventHandler>  sessionDetailsSupplier;
 
     private final Integer tcpBufferSize;
-
-
     private volatile boolean closed;
 
-    private SocketChannel sc;
-    private List<Closeable> closeables = new ArrayList<>();
+    private volatile List<Closeable> closeables = new ArrayList<>();
 
     public RemoteConnector(@NotNull final Function<NetworkContext, TcpEventHandler>
                                    tcpHandlerSupplier) {
@@ -97,16 +94,10 @@ public class RemoteConnector implements Closeable {
             return;
 
         closed = true;
-        closeSocket(sc);
+
         final List<Closeable> closeables = this.closeables;
         this.closeables = null;
-        closeables.forEach(c -> {
-            try {
-                c.close();
-            } catch (NullPointerException npe) {
-                npe.printStackTrace();
-            }
-        });
+        closeables.forEach(Closeable::closeQuietly);
     }
 
 
@@ -158,10 +149,12 @@ public class RemoteConnector implements Closeable {
                 throw Jvm.rethrow(new TimeoutException("timed out attempting to connect to " +
                         remoteHostPort + " as " + address));
 
+            SocketChannel sc;
+
             try {
                 sc = RemoteConnector.this.openSocketChannel(address);
-            } catch (Exception e) {
-                closeSocket(sc);
+            } catch (IOException e) {
+                //    LOG.error("", e);
                 return false;
             }
 
@@ -171,20 +164,17 @@ public class RemoteConnector implements Closeable {
             if (LOG.isInfoEnabled())
                 LOG.info("accepted connection " + sc);
 
-
             nc.socketChannel(sc);
             nc.isAcceptor(false);
 
             final TcpEventHandler eventHandler = tcpHandlerSupplier.apply(nc);
             eventLoop.addHandler(eventHandler);
             final List<Closeable> closeables = RemoteConnector.this.closeables;
-            if (closeables == null) {
+            if (closeables == null)
                 // we have died.
                 Closeable.closeQuietly(eventHandler);
-            } else {
+            else
                 closeables.add(eventHandler);
-            }
-
 
             throw new InvalidEventHandlerException();
         }
