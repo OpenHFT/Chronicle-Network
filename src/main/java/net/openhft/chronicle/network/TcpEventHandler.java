@@ -54,28 +54,23 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     @NotNull
     private final SocketChannel sc;
     private final NetworkContext nc;
-    @Nullable
-    private volatile TcpHandler tcpHandler;
     private final SessionDetailsProvider sessionDetails;
-
     @NotNull
     private final WriteEventHandler writeEventHandler;
     @NotNull
     private final NetworkLog readLog, writeLog;
-    int oneInTen;
-
     @NotNull
     private final ByteBuffer inBB = allocateDirect(CAPACITY);
-
     @NotNull
     private final Bytes inBBB;
-
     @NotNull
     private final ByteBuffer outBB = allocateDirect(CAPACITY);
-
     @NotNull
     private final Bytes outBBB;
-
+    int oneInTen;
+    volatile boolean isCleaned;
+    @Nullable
+    private volatile TcpHandler tcpHandler;
     private long lastTickReadTime = Time.tickTime(), lastHeartBeatTick = lastTickReadTime + 1000;
     private volatile boolean closed;
 
@@ -200,8 +195,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         return false;
     }
 
-    volatile boolean isCleaned;
-
     public synchronized void clean() {
 
         if (isCleaned)
@@ -233,7 +226,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         }
     }
 
-    private boolean invokeHandler() throws IOException {
+    boolean invokeHandler() throws IOException {
 
         boolean busy = false;
 
@@ -310,6 +303,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         int start = outBB.position();
         long writeTickTime = Time.tickTime();
         long writeTime = System.nanoTime();
+        assert !sc.isBlocking();
         int wrote = sc.write(outBB);
         tcpHandler.onWriteTime(writeTime);
 

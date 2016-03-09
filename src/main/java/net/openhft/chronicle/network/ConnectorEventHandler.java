@@ -65,6 +65,10 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
                         return;
                     }
                     socketChannel = TCPRegistry.createSocketChannel(v.getHostNameDescription());
+                    socketChannel.socket().setTcpNoDelay(true);
+                    socketChannel.socket().setSendBufferSize(1 << 20);
+                    socketChannel.socket().setReceiveBufferSize(1 << 20);
+                    socketChannel.configureBlocking(false);
                     descriptionToChannel.put(k, socketChannel);
                     v.setConnected(true);
                     final SessionDetailsProvider sessionDetails = sessionDetailsSupplier.get();
