@@ -238,7 +238,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
             }
         });
 
-        logYaml();
+        logYaml(outWire);
     }
 
     /**
@@ -271,10 +271,10 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         else
             outWire.writeDocument(false, marshallable);
 
-        logYaml();
+        logYaml(outWire);
     }
 
-    protected void logYaml() {
+    public static void logYaml(final WireOut outWire) {
         if (YamlLogging.showServerWrites)
             try {
                 LOG.info("\nServer Sends:\n" +
@@ -287,8 +287,6 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
     public void nc(T nc) {
         this.nc = nc;
-        if (wireType == null)
-            wireType(nc.wireType());
     }
 
     @Override

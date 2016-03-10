@@ -31,7 +31,8 @@ public enum CoreFields implements WireKey {
     cid,
     reply,
     exception,
-    lastUpdateTime;
+    lastUpdateTime,
+    handler;
 
     @NotNull
     static final ThreadLocal<StringBuilder> cpsBuilder = ThreadLocal.withInitial(StringBuilder::new);
