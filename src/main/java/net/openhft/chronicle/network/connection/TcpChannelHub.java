@@ -83,7 +83,7 @@ public class TcpChannelHub implements Closeable {
 
     public static final int SIZE_OF_SIZE = 4;
     public static final Set<TcpChannelHub> hubs = new CopyOnWriteArraySet<>();
-    public static final int BUFFER_SIZE = 8 << 20;
+    public static final int BUFFER_SIZE = 2 << 20;
     private static final Logger LOG = LoggerFactory.getLogger(TcpChannelHub.class);
     public final long timeoutMs;
     @NotNull
