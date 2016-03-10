@@ -55,42 +55,40 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
 
     @Override
     public boolean action() throws InvalidEventHandlerException, InterruptedException {
-        nameToConnectionDetails.forEach((k, v) -> {
+        nameToConnectionDetails.forEach((k, connectionDetails) -> {
             try {
                 SocketChannel socketChannel = descriptionToChannel.get(k);
 
                 if (socketChannel == null) {
-                    if (v.isDisable()) {
+                    if (connectionDetails.isDisable()) {
                         //we shouldn't create anything
                         return;
                     }
-                    socketChannel = TCPRegistry.createSocketChannel(v.getHostNameDescription());
+                    socketChannel = TCPRegistry.createSocketChannel(connectionDetails.getHostNameDescription());
                     socketChannel.socket().setTcpNoDelay(true);
                     socketChannel.socket().setSendBufferSize(1 << 20);
                     socketChannel.socket().setReceiveBufferSize(1 << 20);
                     socketChannel.configureBlocking(false);
                     descriptionToChannel.put(k, socketChannel);
-                    v.setConnected(true);
+                    connectionDetails.setConnected(true);
                     final SessionDetailsProvider sessionDetails = sessionDetailsSupplier.get();
 
                     sessionDetails.clientAddress((InetSocketAddress) socketChannel.getRemoteAddress());
-                    NetworkContext nc = new VanillaNetworkContext();
-                    nc.wireOutPublisher(new VanillaWireOutPublisher(TEXT));
-                    nc.socketChannel(socketChannel);
-                    final TcpEventHandler evntHandler = new TcpEventHandler(nc);
-                    evntHandler.tcpHandler(tcpHandlerSupplier.apply(v));
+                    connectionDetails.socketChannel(socketChannel);
+                    final TcpEventHandler evntHandler = new TcpEventHandler(connectionDetails);
+                    evntHandler.tcpHandler(tcpHandlerSupplier.apply(connectionDetails));
                     eventLoop.addHandler(evntHandler);
                 } else if (socketChannel.isOpen()) {
                     //the socketChannel is doing fine
                     //check whether it should be disabled
-                    if (v.isDisable()) {
+                    if (connectionDetails.isDisable()) {
                         socketChannel.close();
-                        v.setConnected(false);
+                        connectionDetails.setConnected(false);
                         descriptionToChannel.remove(k);
                     }
                 } else {
                     //the socketChannel has disconnected
-                    v.setConnected(false);
+                    connectionDetails.setConnected(false);
                     descriptionToChannel.remove(k);
                 }
             } catch (ConnectException e) {
