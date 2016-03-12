@@ -105,17 +105,23 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         return wrapperWire.bytes().writePosition() < TcpChannelHub.BUFFER_SIZE;
     }
 
-    @Override
-    public String toString() {
-        return Wires.fromSizePrefixedBlobs(bytes);
-    }
-
 
     @Override
-    public void wireType(WireType wireType) {
+    public void wireType(@NotNull WireType wireType) {
+        if (WireType.valueOf(wire) == wireType)
+            return;
+
         synchronized (lock()) {
             wire = wireType.apply(bytes);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "VanillaWireOutPublisher{" +
+                ", closed=" + closed +
+                ", " + wire.getClass().getSimpleName() + "=" + wire +
+                '}';
     }
 }
 

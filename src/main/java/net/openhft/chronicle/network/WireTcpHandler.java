@@ -52,8 +52,10 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
     private boolean isAcceptor;
 
-    public void wireType(WireType wireType) {
+    public void wireType(@NotNull WireType wireType) {
         this.wireType = wireType;
+        if (publisher != null)
+            publisher.wireType(wireType);
     }
 
     public WireOutPublisher publisher() {
@@ -62,6 +64,8 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
     public void publisher(WireOutPublisher publisher) {
         this.publisher = publisher;
+        if (wireType() != null)
+            publisher.wireType(wireType());
     }
 
     public void isAcceptor(boolean isAcceptor) {
@@ -79,6 +83,9 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
         if (in.readRemaining() >= SIZE_OF_SIZE && out.writePosition() < TcpEventHandler.TCP_BUFFER)
             read(in, out);
+
+        if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
+            publisher.applyAction(out);
     }
 
     @Override

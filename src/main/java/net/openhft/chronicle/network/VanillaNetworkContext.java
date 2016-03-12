@@ -4,7 +4,6 @@ import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
-import org.jetbrains.annotations.NotNull;
 
 import java.nio.channels.SocketChannel;
 
@@ -87,7 +86,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
 
     WireOutPublisher wireOutPublisher;
 
-    @NotNull
     @Override
     public synchronized WireOutPublisher wireOutPublisher() {
         return wireOutPublisher;
