@@ -84,8 +84,8 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         if (in.readRemaining() >= SIZE_OF_SIZE && out.writePosition() < TcpEventHandler.TCP_BUFFER)
             read(in, out);
 
-        if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
-            publisher.applyAction(out);
+        /*if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
+            publisher.applyAction(out);*/
     }
 
     @Override

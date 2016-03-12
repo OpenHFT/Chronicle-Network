@@ -35,6 +35,9 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     @Override
     public void applyAction(@NotNull Bytes out) {
 
+        if (bytes.readRemaining() == 0)
+            return;
+
         synchronized (lock()) {
 
             while (bytes.readRemaining() > 0) {

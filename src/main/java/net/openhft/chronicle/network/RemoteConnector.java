@@ -61,13 +61,11 @@ public class RemoteConnector implements Closeable {
                         NetworkContext nc,
                         final long timeOutMs) {
 
-        InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
-
+        final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
         long timeoutTime = System.currentTimeMillis() + timeOutMs;
         final AtomicLong nextPeriod = new AtomicLong();
         eventLoop.addHandler(new RCEventHandler(nextPeriod, timeoutTime, remoteHostPort, nc,
                 eventLoop, address));
-
     }
 
 
@@ -174,7 +172,7 @@ public class RemoteConnector implements Closeable {
                 // we have died.
                 Closeable.closeQuietly(eventHandler);
             else
-                closeables.add(eventHandler);
+                closeables.add(() -> closeSocket(sc));
 
             throw new InvalidEventHandlerException();
         }
