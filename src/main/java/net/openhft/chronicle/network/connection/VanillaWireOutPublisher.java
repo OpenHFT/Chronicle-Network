@@ -121,9 +121,11 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
     @Override
     public String toString() {
+
+
         return "VanillaWireOutPublisher{" +
                 ", closed=" + closed +
-                ", " + wire.getClass().getSimpleName() + "=" + wire +
+                ", " + wire.getClass().getSimpleName() + "=" + bytes +
                 '}';
     }
 }

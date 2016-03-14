@@ -45,6 +45,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     private WireType wireType;
     private WireOutPublisher publisher;
     private T nc;
+    private volatile boolean closed;
 
     public boolean isAcceptor() {
         return this.isAcceptor;
@@ -74,6 +75,9 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
     @Override
     public void process(@NotNull Bytes in, @NotNull Bytes out) {
+
+        if (closed)
+            return;
 
         final WireType wireType = wireType();
         checkWires(in, out, wireType == null ? WireType.TEXT : wireType);
@@ -145,11 +149,8 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         try {
 
             in.readLimit(end);
-
             final long position = inWire.bytes().readPosition();
-
             assert inWire.bytes().readRemaining() >= length;
-
             final long wireLimit = inWire.bytes().readLimit();
 
             try {
@@ -301,7 +302,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
     @Override
     public void close() {
-        ;
+        closed = true;
         nc.connectionClosed(true);
         Closeable.closeQuietly(this.nc.closeTask());
     }
