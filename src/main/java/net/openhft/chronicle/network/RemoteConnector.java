@@ -62,6 +62,7 @@ public class RemoteConnector implements Closeable {
                         final long timeOutMs) {
 
         final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
+
         long timeoutTime = System.currentTimeMillis() + timeOutMs;
         final AtomicLong nextPeriod = new AtomicLong();
         eventLoop.addHandler(new RCEventHandler(nextPeriod, timeoutTime, remoteHostPort, nc,
@@ -142,6 +143,7 @@ public class RemoteConnector implements Closeable {
                 nextPeriod.set(time + 1000);
             else
                 return false;
+
 
             if (time > timeoutTime)
                 throw Jvm.rethrow(new TimeoutException("timed out attempting to connect to " +

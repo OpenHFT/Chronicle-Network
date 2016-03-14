@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
@@ -80,10 +81,13 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         this.sc = nc.socketChannel();
         this.nc = nc;
         sc.configureBlocking(false);
-        sc.socket().setTcpNoDelay(true);
-        sc.socket().setReceiveBufferSize(TCP_BUFFER);
-        sc.socket().setSendBufferSize(TCP_BUFFER);
-
+        try {
+            sc.socket().setTcpNoDelay(true);
+            sc.socket().setReceiveBufferSize(TCP_BUFFER);
+            sc.socket().setSendBufferSize(TCP_BUFFER);
+        } catch (SocketException e) {
+            LOG.info("", e);
+        }
         // there is nothing which needs to be written by default.
         this.sessionDetails = new VanillaSessionDetails();
         sessionDetails.clientAddress((InetSocketAddress) sc.getRemoteAddress());

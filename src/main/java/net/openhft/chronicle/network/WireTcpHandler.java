@@ -96,7 +96,10 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
     @Override
     public void sendHeartBeat(Bytes out, SessionDetailsProvider sessionDetails) {
-        if (out.writePosition() == 0) {
+
+        final WireType wireType = this.wireType;
+        if (out.writePosition() == 0 && wireType != null) {
+
             final WireOut outWire = wireType.apply(out);
             outWire.writeDocument(true, w -> w.write(() -> "tid").int64(0));
             outWire.writeDocument(false, w -> w.writeEventName(() -> "heartbeat").int64(Time.currentTimeMillis()));
