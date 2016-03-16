@@ -21,6 +21,7 @@ import net.openhft.chronicle.network.SessionMode;
 import net.openhft.chronicle.network.connection.EventId;
 import net.openhft.chronicle.wire.Marshallable;
 import net.openhft.chronicle.wire.WireIn;
+import net.openhft.chronicle.wire.WireOut;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -62,5 +63,10 @@ public interface SessionDetailsProvider extends SessionDetails, Marshallable {
             clientId(UUID.fromString(uid));
         wireType(wire.read(EventId.wireType).object(WireType.class));
         hostId(wire.read(EventId.hostId).int8());
+    }
+
+    @Override
+    default void writeMarshallable(@NotNull WireOut w) {
+        SessionDetails.super.writeMarshallable(w);
     }
 }
