@@ -74,8 +74,4 @@ public interface SessionDetails extends WriteMarshallable {
                 .writeEventName(EventId.hostId).int8(hostId())
                 .writeEventName(EventId.wireType).asEnum(wireType());
     }
-
-
-
-
 }
