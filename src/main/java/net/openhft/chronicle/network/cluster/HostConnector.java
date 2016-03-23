@@ -8,8 +8,8 @@ import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.WriteMarshallable;
 import org.jetbrains.annotations.NotNull;
-import sun.awt.util.IdentityLinkedList;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
 
@@ -19,7 +19,7 @@ public class HostConnector implements Closeable {
 
     //  private final WriteMarshallable header;
     private final Function<WireType, WireOutPublisher> wireOutPublisherFactory;
-    private final List<WriteMarshallable> bootstraps = new IdentityLinkedList<WriteMarshallable>();
+    private final List<WriteMarshallable> bootstraps = new LinkedList<>();
 
     private final RemoteConnector remoteConnector;
     private final String connectUri;
