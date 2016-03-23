@@ -40,12 +40,17 @@ public interface SubHandler<T extends NetworkContext> extends NetworkContextMana
 
     void processData(@NotNull WireIn inWire, @NotNull WireOut outWire);
 
-    void remoteIdentifier(byte remoteIdentifier);
+    Closeable closable();
+
+    void remoteIdentifier(int remoteIdentifier);
 
     /**
      * called after all the construction and configuration has completed
      *
      * @param outWire allow data to be written
      */
-    void onBootstrap(WireOut outWire);
+    void onInitialize(WireOut outWire);
+
+    void closeable(Closeable closeable);
+
 }

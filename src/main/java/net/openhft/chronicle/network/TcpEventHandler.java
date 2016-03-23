@@ -28,6 +28,7 @@ import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
+import net.openhft.chronicle.wire.WireIn;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -48,7 +49,28 @@ import static net.openhft.chronicle.network.ServerThreadingStrategy.serverThread
  * Created by peter.lawrey on 22/01/15.
  */
 public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandlerManager {
-    public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", TcpChannelHub.BUFFER_SIZE);
+
+    public static class Factory implements MarshallableFunction<NetworkContext, TcpEventHandler> {
+        private Factory(WireIn wireIn) {
+            System.out.println(wireIn);
+        }
+
+        public Factory() {
+        }
+
+        @Override
+        public TcpEventHandler apply(NetworkContext nc) {
+            try {
+                return new TcpEventHandler(nc);
+            } catch (IOException e) {
+                throw Jvm.rethrow(e);
+
+            }
+        }
+    }
+
+
+    static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", TcpChannelHub.BUFFER_SIZE);
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
     private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", TCP_BUFFER);
 
@@ -176,7 +198,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
             readLog.idle();
 
-            if (nc.heartbeatIntervalTicks() == 0)
+         /*   if (nc.heartbeatIntervalTicks() == 0)
                 return false;
 
             long tickTime = Time.tickTime();
@@ -189,7 +211,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             if (tickTime > lastHeartBeatTick + nc.heartbeatIntervalTicks()) {
                 lastHeartBeatTick = tickTime;
                 sendHeartBeat();
-            }
+            }*/
         } catch (ClosedChannelException e) {
             closeSC();
         } catch (IOException e) {
@@ -213,22 +235,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     }
 
-    private void sendHeartBeat() throws IOException {
-        if (LOG.isDebugEnabled())
-            LOG.debug("sendHeartbeat - " + sc.getRemoteAddress());
-        assert outBB != null;
-        assert outBBB != null;
-        outBBB.writePosition(outBB.limit());
-        tcpHandler.sendHeartBeat(outBBB, sessionDetails);
 
-        // did it write something?
-        if (outBBB.writePosition() > outBB.limit() || outBBB.writePosition() >= 4) {
-            outBB.limit(Maths.toInt32(outBBB.writePosition()));
-            tryWrite();
-        } else {
-            writeLog.idle();
-        }
-    }
 
     boolean invokeHandler() throws IOException {
 

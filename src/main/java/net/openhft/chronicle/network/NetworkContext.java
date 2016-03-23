@@ -20,6 +20,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
+import net.openhft.chronicle.network.cluster.TerminationEventHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
 
@@ -31,17 +32,7 @@ public interface NetworkContext<T extends NetworkContext> {
 
     boolean isAcceptor();
 
-    T isUnchecked(boolean isUnchecked);
-
     boolean isUnchecked();
-
-    T heartbeatIntervalTicks(long heartBeatIntervalTicks);
-
-    long heartbeatIntervalTicks();
-
-    T heartBeatTimeoutTicks(long heartBeatTimeoutTicks);
-
-    long heartBeatTimeoutTicks();
 
     T socketChannel(SocketChannel sc);
 
@@ -68,4 +59,10 @@ public interface NetworkContext<T extends NetworkContext> {
     Closeable closeTask();
 
     void connectionClosed(boolean isClosed);
+
+    TerminationEventHandler terminationEventHandler();
+
+    void terminationEventHandler(TerminationEventHandler terminationEventHandler);
+
+
 }

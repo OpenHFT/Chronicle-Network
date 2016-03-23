@@ -1,21 +1,3 @@
-/*
- *
- *  *     Copyright (C) 2016  higherfrequencytrading.com
- *  *
- *  *     This program is free software: you can redistribute it and/or modify
- *  *     it under the terms of the GNU Lesser General Public License as published by
- *  *     the Free Software Foundation, either version 3 of the License.
- *  *
- *  *     This program is distributed in the hope that it will be useful,
- *  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  *     GNU Lesser General Public License for more details.
- *  *
- *  *     You should have received a copy of the GNU Lesser General Public License
- *  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
@@ -48,23 +30,7 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
         this.nc = nc;
     }
 
-    public static WriteMarshallable toHeader(final WriteMarshallable m) {
-        return wire -> {
-            try (final DocumentContext dc = wire.writingDocument(false)) {
-                wire.write(() -> HANDLER).typedMarshallable(m);
-            }
-        };
-    }
 
-    public static WriteMarshallable toHeader(final WriteMarshallable m, byte localIdentifier, byte remoteIdentifier) {
-        return wire -> {
-            try (final DocumentContext dc = wire.writingDocument(false)) {
-                wire.write(() -> HANDLER).typedMarshallable(m);
-                wire.writeComment("client:localIdentifier=" + localIdentifier + ", " +
-                        "remoteIdentifier=" + remoteIdentifier);
-            }
-        };
-    }
 
     @Override
     public void process(@NotNull Bytes in, @NotNull Bytes out) {
@@ -82,23 +48,18 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
                 return;
 
             if (YamlLogging.showServerReads)
-                LOG.info("read:\n" + Wires.fromSizePrefixedBlobs(in, start, in.readLimit() - start));
-
-            if (!dc.isData())
-                throw new IllegalStateException("expecting a header of type data.");
-
-
-            if (!dc.isData())
-                throw new IllegalStateException("expecting a header of type data.");
+                LOG.info("nc.isAcceptor=" + nc.isAcceptor() + ", read:\n" + Wires
+                        .fromSizePrefixedBlobs(in, start,
+                                in.readLimit
+                                        () - start));
 
             final TcpHandler handler;
-
             final long readPosition = inWire.bytes().readPosition();
             final ValueIn read = inWire.read(() -> HANDLER);
 
             final Object o;
 
-            if (read.isTyped())
+            if (dc.isMetaData() && read.isTyped())
                 o = read.typedMarshallable();
             else {
                 inWire.bytes().readPosition(readPosition);
@@ -116,6 +77,7 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
             LOG.error("wirein=" + Wires.fromSizePrefixedBlobs(in), e);
         }
     }
+
 
     @NotNull
     public SessionDetails toSessionDetails(Wire inWire) {

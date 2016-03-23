@@ -25,8 +25,6 @@ import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.Wires;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
 
@@ -39,7 +37,7 @@ import static net.openhft.chronicle.wire.WireType.TEXT;
  * @author Rob Austin.
  */
 public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements TcpHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(WireTypeSniffingTcpHandler.class);
+
     private final TcpEventHandler handlerManager;
 
     private final T nc;

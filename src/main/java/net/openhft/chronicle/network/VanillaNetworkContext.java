@@ -20,26 +20,30 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
+import net.openhft.chronicle.network.cluster.TerminationEventHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Rob Austin.
  */
 public class VanillaNetworkContext<T extends VanillaNetworkContext> implements NetworkContext<T> {
 
-    WireOutPublisher wireOutPublisher;
-    WireType wireType = WireType.TEXT;
     private SocketChannel socketChannel;
     private boolean isAcceptor = true;
     private boolean isUnchecked;
-    private long heartBeatTimeoutTicks = 40_000;
-    private long heartbeatIntervalTicks = 20_000;
+
+
     private SessionDetailsProvider sessionDetails;
     private boolean connectionClosed;
     private Closeable closeTask;
+
+    @Nullable
+    private TerminationEventHandler terminationEventHandler;
 
     @Override
     public SocketChannel socketChannel() {
@@ -70,38 +74,14 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         return isAcceptor;
     }
 
-    @Override
-    public T isUnchecked(boolean isUnchecked) {
-        this.isUnchecked = isUnchecked;
-        return (T) this;
-    }
 
     @Override
     public boolean isUnchecked() {
         return isUnchecked;
     }
 
-    @Override
-    public T heartbeatIntervalTicks(long heartbeatIntervalTicks) {
-        this.heartbeatIntervalTicks = heartbeatIntervalTicks;
-        return (T) this;
-    }
+    WireOutPublisher wireOutPublisher;
 
-    @Override
-    public long heartbeatIntervalTicks() {
-        return heartbeatIntervalTicks;
-    }
-
-    @Override
-    public T heartBeatTimeoutTicks(long heartBeatTimeoutTicks) {
-        this.heartBeatTimeoutTicks = heartBeatTimeoutTicks;
-        return (T) this;
-    }
-
-    @Override
-    public long heartBeatTimeoutTicks() {
-        return heartBeatTimeoutTicks;
-    }
 
     @Override
     public synchronized WireOutPublisher wireOutPublisher() {
@@ -112,6 +92,9 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     public void wireOutPublisher(WireOutPublisher wireOutPublisher) {
         this.wireOutPublisher = wireOutPublisher;
     }
+
+
+    WireType wireType = WireType.TEXT;
 
     @Override
     public WireType wireType() {
@@ -151,5 +134,41 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     @Override
     public void connectionClosed(boolean connectionClosed) {
         this.connectionClosed = connectionClosed;
+    }
+
+
+    @Override
+    public TerminationEventHandler terminationEventHandler() {
+        return terminationEventHandler;
+    }
+
+    @Override
+    public void terminationEventHandler(@Nullable TerminationEventHandler terminationEventHandler) {
+        this.terminationEventHandler = terminationEventHandler;
+    }
+
+    AtomicLong uniqueCspid = new AtomicLong();
+
+
+    public long createUniqueCid() {
+        // todo maybe also add the host id factor to this to ensure better uniqueness
+        long time = System.currentTimeMillis();
+
+        for (; ; ) {
+
+            final long current = this.uniqueCspid.get();
+
+            if (time == this.uniqueCspid.get()) {
+                time++;
+                continue;
+            }
+
+            final boolean success = this.uniqueCspid.compareAndSet(current, time);
+
+            if (!success)
+                continue;
+
+            return time;
+        }
     }
 }

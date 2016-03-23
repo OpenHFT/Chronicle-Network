@@ -1,19 +1,17 @@
 /*
+ *     Copyright (C) 2015  higherfrequencytrading.com
  *
- *  *     Copyright (C) 2016  higherfrequencytrading.com
- *  *
- *  *     This program is free software: you can redistribute it and/or modify
- *  *     it under the terms of the GNU Lesser General Public License as published by
- *  *     the Free Software Foundation, either version 3 of the License.
- *  *
- *  *     This program is distributed in the hope that it will be useful,
- *  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  *     GNU Lesser General Public License for more details.
- *  *
- *  *     You should have received a copy of the GNU Lesser General Public License
- *  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU Lesser General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License.
  *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU Lesser General Public License for more details.
+ *
+ *     You should have received a copy of the GNU Lesser General Public License
+ *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package net.openhft.chronicle.network;
@@ -21,9 +19,7 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.annotation.Nullable;
 import net.openhft.chronicle.core.io.Closeable;
-import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.api.TcpHandler;
-import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
@@ -40,7 +36,9 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
     // this is the point at which it is worth doing more work to get more data.
 
+    @NotNull
     protected Wire outWire;
+    @NotNull
     private Wire inWire;
     private boolean recreateWire;
     @Nullable
@@ -48,22 +46,12 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     private WireOutPublisher publisher;
     private T nc;
     private volatile boolean closed;
-    private boolean isAcceptor;
-
-    public static void logYaml(final WireOut outWire) {
-        if (YamlLogging.showServerWrites)
-            try {
-                LOG.info("\nServer Sends:\n" +
-                        Wires.fromSizePrefixedBlobs(outWire.bytes()));
-            } catch (Exception e) {
-                LOG.info("\nServer Sends ( corrupted ) :\n" +
-                        outWire.bytes().toDebugString());
-            }
-    }
 
     public boolean isAcceptor() {
         return this.isAcceptor;
     }
+
+    private boolean isAcceptor;
 
     public void wireType(@NotNull WireType wireType) {
         this.wireType = wireType;
@@ -100,26 +88,9 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         if (in.readRemaining() >= SIZE_OF_SIZE && out.writePosition() < TcpEventHandler.TCP_BUFFER)
             read(in, out);
 
-        /*if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
-            publisher.applyAction(out);*/
+
     }
 
-    @Override
-    public T nc() {
-        return nc;
-    }
-
-    @Override
-    public void sendHeartBeat(Bytes out, SessionDetailsProvider sessionDetails) {
-
-        final WireType wireType = this.wireType;
-        if (out.writePosition() == 0 && wireType != null) {
-
-            final WireOut outWire = wireType.apply(out);
-            outWire.writeDocument(true, w -> w.write(() -> "tid").int64(0));
-            outWire.writeDocument(false, w -> w.writeEventName(() -> "heartbeat").int64(Time.currentTimeMillis()));
-        }
-    }
 
     @Override
     public void onEndOfConnection(boolean heartbeatTimeOut) {
@@ -220,6 +191,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         }
     }
 
+
     /**
      * Process an incoming request
      */
@@ -233,6 +205,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
      */
     protected abstract void process(@NotNull WireIn in,
                                     @NotNull WireOut out);
+
 
     /**
      * write and exceptions and rolls back if no data was written
@@ -294,9 +267,27 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         logYaml(outWire);
     }
 
-    public void nc(T nc) {
-        this.nc = nc;
+    public static void logYaml(final WireOut outWire) {
+        if (YamlLogging.showServerWrites)
+            try {
+                LOG.info("\nServer Sends:\n" +
+                        Wires.fromSizePrefixedBlobs(outWire.bytes()));
+            } catch (Exception e) {
+                LOG.info("\nServer Sends ( corrupted ) :\n" +
+                        outWire.bytes().toDebugString());
+            }
     }
+
+    public final void nc(T nc) {
+        this.nc = nc;
+        bootstrap();
+    }
+
+    public T nc() {
+        return nc;
+    }
+
+    protected abstract void bootstrap();
 
     @Override
     public void close() {
@@ -304,4 +295,10 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         nc.connectionClosed(true);
         Closeable.closeQuietly(this.nc.closeTask());
     }
+
+
+    protected void publish(WriteMarshallable w) {
+        publisher.put("", w);
+    }
+
 }
