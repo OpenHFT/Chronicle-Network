@@ -1,3 +1,21 @@
+/*
+ *
+ *  *     Copyright (C) ${YEAR}  higherfrequencytrading.com
+ *  *
+ *  *     This program is free software: you can redistribute it and/or modify
+ *  *     it under the terms of the GNU Lesser General Public License as published by
+ *  *     the Free Software Foundation, either version 3 of the License.
+ *  *
+ *  *     This program is distributed in the hope that it will be useful,
+ *  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  *     GNU Lesser General Public License for more details.
+ *  *
+ *  *     You should have received a copy of the GNU Lesser General Public License
+ *  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
@@ -34,6 +52,16 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
         return wire -> {
             try (final DocumentContext dc = wire.writingDocument(false)) {
                 wire.write(() -> HANDLER).typedMarshallable(m);
+            }
+        };
+    }
+
+    public static WriteMarshallable toHeader(final WriteMarshallable m, byte localIdentifier, byte remoteIdentifier) {
+        return wire -> {
+            try (final DocumentContext dc = wire.writingDocument(false)) {
+                wire.write(() -> HANDLER).typedMarshallable(m);
+                wire.writeComment("client:localIdentifier=" + localIdentifier + ", " +
+                        "remoteIdentifier=" + remoteIdentifier);
             }
         };
     }
@@ -88,17 +116,6 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
             LOG.error("wirein=" + Wires.fromSizePrefixedBlobs(in), e);
         }
     }
-
-    public static WriteMarshallable toHeader(final WriteMarshallable m, byte localIdentifier, byte remoteIdentifier) {
-        return wire -> {
-            try (final DocumentContext dc = wire.writingDocument(false)) {
-                wire.write(() -> HANDLER).typedMarshallable(m);
-                wire.writeComment("client:localIdentifier=" + localIdentifier + ", " +
-                        "remoteIdentifier=" + remoteIdentifier);
-            }
-        };
-    }
-
 
     @NotNull
     public SessionDetails toSessionDetails(Wire inWire) {
