@@ -1,17 +1,19 @@
 /*
- *     Copyright (C) 2015  higherfrequencytrading.com
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU Lesser General Public License as published by
- *     the Free Software Foundation, either version 3 of the License.
+ *  *     Copyright (C) ${YEAR}  higherfrequencytrading.com
+ *  *
+ *  *     This program is free software: you can redistribute it and/or modify
+ *  *     it under the terms of the GNU Lesser General Public License as published by
+ *  *     the Free Software Foundation, either version 3 of the License.
+ *  *
+ *  *     This program is distributed in the hope that it will be useful,
+ *  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  *     GNU Lesser General Public License for more details.
+ *  *
+ *  *     You should have received a copy of the GNU Lesser General Public License
+ *  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU Lesser General Public License for more details.
- *
- *     You should have received a copy of the GNU Lesser General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package net.openhft.chronicle.network;
@@ -46,12 +48,22 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     private WireOutPublisher publisher;
     private T nc;
     private volatile boolean closed;
+    private boolean isAcceptor;
+
+    public static void logYaml(final WireOut outWire) {
+        if (YamlLogging.showServerWrites)
+            try {
+                LOG.info("\nServer Sends:\n" +
+                        Wires.fromSizePrefixedBlobs(outWire.bytes()));
+            } catch (Exception e) {
+                LOG.info("\nServer Sends ( corrupted ) :\n" +
+                        outWire.bytes().toDebugString());
+            }
+    }
 
     public boolean isAcceptor() {
         return this.isAcceptor;
     }
-
-    private boolean isAcceptor;
 
     public void wireType(@NotNull WireType wireType) {
         this.wireType = wireType;
@@ -94,9 +106,8 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
     @Override
     public T nc() {
-        return (T) nc;
+        return nc;
     }
-
 
     @Override
     public void sendHeartBeat(Bytes out, SessionDetailsProvider sessionDetails) {
@@ -209,7 +220,6 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         }
     }
 
-
     /**
      * Process an incoming request
      */
@@ -223,7 +233,6 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
      */
     protected abstract void process(@NotNull WireIn in,
                                     @NotNull WireOut out);
-
 
     /**
      * write and exceptions and rolls back if no data was written
@@ -283,17 +292,6 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
             outWire.writeDocument(false, marshallable);
 
         logYaml(outWire);
-    }
-
-    public static void logYaml(final WireOut outWire) {
-        if (YamlLogging.showServerWrites)
-            try {
-                LOG.info("\nServer Sends:\n" +
-                        Wires.fromSizePrefixedBlobs(outWire.bytes()));
-            } catch (Exception e) {
-                LOG.info("\nServer Sends ( corrupted ) :\n" +
-                        outWire.bytes().toDebugString());
-            }
     }
 
     public void nc(T nc) {
