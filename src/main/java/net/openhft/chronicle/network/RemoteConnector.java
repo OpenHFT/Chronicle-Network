@@ -42,18 +42,15 @@ public class RemoteConnector implements Closeable {
     @NotNull
     private final Function<NetworkContext, TcpEventHandler> tcpHandlerSupplier;
 
-    @NotNull
-    // private final BiFunction<Boolean, SocketChannel, TcpEventHandler>  sessionDetailsSupplier;
 
     private final Integer tcpBufferSize;
     private volatile boolean closed;
 
     private volatile List<Closeable> closeables = new ArrayList<>();
 
-    public RemoteConnector(@NotNull final Function<NetworkContext, TcpEventHandler>
-                                   tcpHandlerSupplier) {
+    public RemoteConnector(@NotNull final Function<NetworkContext, TcpEventHandler> tcpEventHandlerFactory) {
         this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", BUFFER_SIZE);
-        this.tcpHandlerSupplier = tcpHandlerSupplier;
+        this.tcpHandlerSupplier = tcpEventHandlerFactory;
     }
 
     public void connect(final String remoteHostPort,
@@ -62,13 +59,15 @@ public class RemoteConnector implements Closeable {
                         final long timeOutMs) {
 
         final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
+        final long timeoutTime = System.currentTimeMillis() + timeOutMs;
+        final RCEventHandler handler = new RCEventHandler(timeoutTime,
+                remoteHostPort,
+                nc,
+                eventLoop,
+                address);
 
-        long timeoutTime = System.currentTimeMillis() + timeOutMs;
-        final AtomicLong nextPeriod = new AtomicLong();
-        eventLoop.addHandler(new RCEventHandler(nextPeriod, timeoutTime, remoteHostPort, nc,
-                eventLoop, address));
+        eventLoop.addHandler(handler);
     }
-
 
     private static void closeSocket(SocketChannel socketChannel) {
         if (socketChannel == null)
@@ -109,8 +108,6 @@ public class RemoteConnector implements Closeable {
         socket.setSendBufferSize(tcpBufferSize);
         socket.setSoTimeout(0);
         socket.setSoLinger(false, 0);
-
-
         return result;
     }
 
@@ -118,15 +115,17 @@ public class RemoteConnector implements Closeable {
 
         private final InetSocketAddress address;
         private volatile boolean closed;
-        private final AtomicLong nextPeriod;
+        private final AtomicLong nextPeriod = new AtomicLong();
         private final long timeoutTime;
         private final String remoteHostPort;
         private final NetworkContext nc;
         private final EventLoop eventLoop;
 
-        public RCEventHandler(AtomicLong nextPeriod, long timeoutTime, String remoteHostPort,
-                              NetworkContext nc, EventLoop eventLoop, InetSocketAddress address) {
-            this.nextPeriod = nextPeriod;
+        RCEventHandler(long timeoutTime,
+                       String remoteHostPort,
+                       NetworkContext nc,
+                       EventLoop eventLoop,
+                       InetSocketAddress address) {
             this.timeoutTime = timeoutTime;
             this.remoteHostPort = remoteHostPort;
             this.nc = nc;

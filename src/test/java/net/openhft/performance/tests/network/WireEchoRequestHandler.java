@@ -57,5 +57,10 @@ public class WireEchoRequestHandler extends WireTcpHandler {
         });
     }
 
+    @Override
+    protected void bootstrap() {
+
+    }
+
 
 }

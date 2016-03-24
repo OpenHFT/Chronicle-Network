@@ -52,9 +52,6 @@ public class LegacyHanderFactory {
 
                 final Function<Object, TcpHandler> consumer = o -> {
                     if (o instanceof SessionDetailsProvider) {
-
-                        networkContext.heartbeatIntervalTicks(heartbeatIntervalTicks);
-                        networkContext.heartBeatTimeoutTicks(heartbeatIntervalTimeout);
                         networkContext.sessionDetails((SessionDetailsProvider) o);
                         return defaultHandedFactory.apply(networkContext);
                     } else if (o instanceof TcpHandler)

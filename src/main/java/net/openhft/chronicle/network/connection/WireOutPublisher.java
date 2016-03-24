@@ -33,6 +33,7 @@ import java.lang.reflect.Constructor;
 /**
  * @author Rob Austin.
  */
+@FunctionalInterface
 public interface WireOutPublisher extends Closeable {
     Logger LOG = LoggerFactory.getLogger(WireOutPublisher.class);
 
@@ -55,7 +56,9 @@ public interface WireOutPublisher extends Closeable {
         }
     }
 
-    void applyAction(@NotNull Bytes out);
+    default void applyAction(@NotNull Bytes out) {
+        throw new UnsupportedOperationException();
+    }
 
 
     /**
@@ -66,18 +69,28 @@ public interface WireOutPublisher extends Closeable {
     void put(@Nullable final Object key, WriteMarshallable event);
 
     default boolean isClosed() {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     default boolean canTakeMoreData() {
-        return true;
+        throw new UnsupportedOperationException();
     }
+
+    default boolean isEmpty() {
+        throw new UnsupportedOperationException();
+    }
+
 
     @Override
     default void close() {
-
+        throw new UnsupportedOperationException();
     }
 
-    void wireType(WireType wireType);
+    default void wireType(WireType wireType) {
+        throw new UnsupportedOperationException();
+    }
 
+    default void clear() {
+        throw new UnsupportedOperationException();
+    }
 }

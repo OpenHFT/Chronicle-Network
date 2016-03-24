@@ -163,6 +163,11 @@ public class WireTcpHandlerTest {
             td.write(outWire);
         }
 
+        @Override
+        protected void bootstrap() {
+            throw new UnsupportedOperationException("todo");
+        }
+
 
     }
 }

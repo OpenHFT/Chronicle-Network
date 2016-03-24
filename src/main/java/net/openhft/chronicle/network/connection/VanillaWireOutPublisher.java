@@ -137,6 +137,20 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     }
 
     @Override
+    public void clear() {
+        synchronized (lock()) {
+            wrapperWire.clear();
+        }
+    }
+
+    @Override
+    public boolean isEmpty() {
+        synchronized (lock()) {
+            return bytes.isEmpty();
+        }
+    }
+
+    @Override
     public String toString() {
 
 
