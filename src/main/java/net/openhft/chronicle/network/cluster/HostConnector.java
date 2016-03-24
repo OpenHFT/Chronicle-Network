@@ -83,10 +83,10 @@ public class HostConnector implements Closeable {
         nc.closeTask(this);
 
         wireOutPublisher.wireType(wireType);
-        //  wireOutPublisher.put("", header);
+
 
         for (WriteMarshallable bootstrap : bootstraps) {
-            wireOutPublisher.put("", bootstrap);
+            wireOutPublisher.publish(bootstrap);
         }
 
         remoteConnector.connect(connectUri, eventLoop, nc, timeoutMs);

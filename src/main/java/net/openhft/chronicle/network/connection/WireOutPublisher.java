@@ -93,4 +93,14 @@ public interface WireOutPublisher extends Closeable {
     default void clear() {
         throw new UnsupportedOperationException();
     }
+
+
+    /**
+     * publishes an event without a throttle key
+     *
+     * @param event the event to publish
+     */
+    default void publish(WriteMarshallable event) {
+        put("", event);
+    }
 }

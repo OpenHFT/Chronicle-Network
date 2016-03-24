@@ -72,7 +72,7 @@ public abstract class AbstractSubHandler<T extends NetworkContext> implements Su
     }
 
     public void publish(WriteMarshallable event) {
-        nc().wireOutPublisher().put("", event);
+        nc().wireOutPublisher().publish(event);
     }
 
 
