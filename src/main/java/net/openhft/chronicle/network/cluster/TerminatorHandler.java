@@ -40,11 +40,13 @@ public class TerminatorHandler extends AbstractSubHandler<NetworkContext> implem
         Closeable.closeQuietly(closable());
     }
 
-    public static WriteMarshallable terminationHandler() {
+    public static WriteMarshallable terminationHandler(int localIdentifier, int remoteIdentifier) {
         return w -> w.writeDocument(true,
                 d -> d.writeEventName(CoreFields.csp).text("/")
-                        .writeEventName(CoreFields.cid).int64(TerminatorHandler.class.hashCode())
-                        .writeEventName(CoreFields.handler).typedMarshallable(new TerminatorHandler()));
+                        .writeEventName(CoreFields.cid).int64("TerminatorHandler".hashCode())
+                        .writeEventName(CoreFields.handler).typedMarshallable(new TerminatorHandler())
+                        .writeComment("localIdentifier=" + localIdentifier +
+                                ",remoteIdentifier=" + remoteIdentifier));
     }
 
 

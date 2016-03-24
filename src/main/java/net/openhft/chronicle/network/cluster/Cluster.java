@@ -88,7 +88,7 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
     }
 
 
-    public ConnectionManager findConnectionEventHandler(int remoteIdentifier) {
+    public ConnectionManager findConnectionManager(int remoteIdentifier) {
         HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.connectionEventManagerHandler();
@@ -101,12 +101,14 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
         return hostDetails.terminationEventHandler();
 
     }
+/*
 
     public HostConnector findHostConnector(int remoteIdentifier) {
         HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.hostConnector();
     }
+*/
 
 
     abstract protected E newHostDetails();

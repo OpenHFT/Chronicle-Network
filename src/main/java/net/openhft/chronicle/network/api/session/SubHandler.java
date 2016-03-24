@@ -44,6 +44,8 @@ public interface SubHandler<T extends NetworkContext> extends NetworkContextMana
 
     void remoteIdentifier(int remoteIdentifier);
 
+    void localIdentifier(int localIdentifier);
+
     /**
      * called after all the construction and configuration has completed
      *
