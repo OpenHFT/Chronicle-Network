@@ -164,7 +164,7 @@ public class WireTcpHandlerTest {
         }
 
         @Override
-        protected void bootstrap() {
+        protected void onInitialize() {
             throw new UnsupportedOperationException("todo");
         }
 
