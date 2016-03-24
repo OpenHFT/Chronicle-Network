@@ -30,6 +30,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
     public static class Factory implements Function<ClusterContext, WriteMarshallable>,
             Demarshallable {
 
+        @UsedViaReflection
         private Factory(WireIn w) {
         }
 
