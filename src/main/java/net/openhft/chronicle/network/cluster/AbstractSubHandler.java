@@ -33,7 +33,8 @@ public abstract class AbstractSubHandler<T extends NetworkContext> implements Su
     private long cid;
     private String csp;
     private int remoteIdentifier;
-
+    private int localIdentifier;
+    private boolean isClosed;
 
     @Override
     public void cid(long cid) {
@@ -88,8 +89,24 @@ public abstract class AbstractSubHandler<T extends NetworkContext> implements Su
     }
 
     public void publish(WriteMarshallable event) {
-        nc().wireOutPublisher().put("", event);
+        nc().wireOutPublisher().publish(event);
     }
 
+    @Override
+    public void localIdentifier(int localIdentifier) {
+        this.localIdentifier = localIdentifier;
+    }
 
+    public int localIdentifier() {
+        return localIdentifier;
+    }
+
+    @Override
+    public void close() {
+        isClosed = true;
+    }
+
+    public boolean isClosed() {
+        return isClosed;
+    }
 }

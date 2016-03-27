@@ -141,6 +141,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         }
     }
 
+
     @Override
     public boolean isEmpty() {
         synchronized (lock()) {

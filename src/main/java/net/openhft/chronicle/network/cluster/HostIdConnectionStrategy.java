@@ -20,6 +20,7 @@ package net.openhft.chronicle.network.cluster;
  * @author Rob Austin.
  */
 
+import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.network.WireTcpHandler;
 import net.openhft.chronicle.wire.Demarshallable;
 import net.openhft.chronicle.wire.WireIn;
@@ -35,6 +36,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class HostIdConnectionStrategy implements ConnectionStrategy, Demarshallable, WriteMarshallable {
 
+    @UsedViaReflection
     private HostIdConnectionStrategy(WireIn w) {
     }
 

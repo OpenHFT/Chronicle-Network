@@ -16,6 +16,7 @@
 
 package net.openhft.chronicle.network.cluster;
 
+import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.RemoteConnector;
@@ -48,6 +49,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
     private EventLoop eventLoop;
     private Function<ClusterContext, WriteMarshallable> heartbeatFactory;
 
+    @UsedViaReflection
     protected ClusterContext(@NotNull WireIn wire) {
         while (wire.bytes().readRemaining() > 0)
             wireParser().parseOne(wire, null);

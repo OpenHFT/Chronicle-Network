@@ -46,6 +46,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
     public static class Factory implements Function<ClusterContext, WriteMarshallable>,
             Demarshallable {
 
+        @UsedViaReflection
         private Factory(WireIn w) {
         }
 
@@ -98,7 +99,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
             // we will only publish a heartbeat if the wire out publisher is empty
             if (nc().wireOutPublisher().isEmpty())
                 return;
-            nc().wireOutPublisher().put("", heartbeatMessage);
+            nc().wireOutPublisher().publish(heartbeatMessage);
         };
 
         HEARTBEAT_EXECUTOR.schedule(task, this.heartbeatIntervalTicks, MILLISECONDS);

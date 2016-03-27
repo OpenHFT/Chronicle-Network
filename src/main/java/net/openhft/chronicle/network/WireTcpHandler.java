@@ -280,14 +280,14 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
     public final void nc(T nc) {
         this.nc = nc;
-        bootstrap();
+        onInitialize();
     }
 
     public T nc() {
         return nc;
     }
 
-    protected abstract void bootstrap();
+    protected abstract void onInitialize();
 
     @Override
     public void close() {
