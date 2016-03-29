@@ -54,7 +54,8 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
         public WriteMarshallable apply(ClusterContext clusterContext) {
             long heartbeatTimeoutMs = clusterContext.heartbeatTimeoutMs();
             long heartbeatIntervalTicks = clusterContext.heartbeatIntervalTicks();
-            return heartbeatHandler(heartbeatTimeoutMs, heartbeatIntervalTicks, 0);
+            return heartbeatHandler(heartbeatTimeoutMs, heartbeatIntervalTicks,
+                    heartbeatTimeoutMs);
         }
     }
 
@@ -72,6 +73,10 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
     protected HeartbeatHandler(@NotNull WireIn w) {
         heartbeatTimeoutMs = w.read(() -> "heartbeatTimeoutMs").int64();
         heartbeatIntervalTicks = w.read(() -> "heartbeatIntervalTicks").int64();
+        assert heartbeatTimeoutMs > 1000 :
+                "heartbeatTimeoutMs=" + heartbeatTimeoutMs + ", this is too small";
+        assert heartbeatIntervalTicks > 500 :
+                "heartbeatIntervalTicks=" + heartbeatIntervalTicks + ", this is too small";
         startHeartbeatCheck();
     }
 
@@ -81,6 +86,12 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
         assert heartbeatTimeoutMs > heartbeatIntervalTicks :
                 "heartbeatIntervalTicks=" + heartbeatIntervalTicks + ", " +
                         "heartbeatTimeoutMs=" + heartbeatTimeoutMs;
+
+        assert heartbeatTimeoutMs > 1000 :
+                "heartbeatTimeoutMs=" + heartbeatTimeoutMs + ", this is too small";
+        assert heartbeatIntervalTicks > 500 :
+                "heartbeatIntervalTicks=" + heartbeatIntervalTicks + ", this is too small";
+
     }
 
     @Override
@@ -148,7 +159,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
 
         lastTimeMessageReceived = System.currentTimeMillis();
         HEARTBEAT_EXECUTOR.schedule(() -> {
-            if (!hasReceivedHeartbeat() || closed.get()) {
+            if (!hasReceivedHeartbeat() && !closed.get()) {
                 close();
             } else {
                 HEARTBEAT_EXECUTOR.schedule((Runnable) this, heartbeatTimeoutMs, MILLISECONDS);

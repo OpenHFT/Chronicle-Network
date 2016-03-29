@@ -107,7 +107,7 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
     public ConnectionManager findConnectionManager(int remoteIdentifier) {
         HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
-        return hostDetails.connectionEventManagerHandler();
+        return hostDetails.connectionManager();
     }
 
 

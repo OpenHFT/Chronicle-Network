@@ -16,7 +16,6 @@
 
 package net.openhft.chronicle.network;
 
-import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
@@ -31,7 +30,6 @@ import java.net.Socket;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
@@ -145,8 +143,8 @@ public class RemoteConnector implements Closeable {
 
 
             if (time > timeoutTime)
-                throw Jvm.rethrow(new TimeoutException("timed out attempting to connect to " +
-                        remoteHostPort + " as " + address));
+                throw new InvalidEventHandlerException("timed out attempting to connect to " +
+                        remoteHostPort + " as " + address);
 
             SocketChannel sc;
 

@@ -256,16 +256,16 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         final ConnectionStrategy connectionStrategy = this.connectionStrategy();
         hd.connectionStrategy(connectionStrategy);
 
-        final ConnectionManager eventManagerHandler = this
+        final ConnectionManager connectionManager = this
                 .connectionEventHandler().get();
-        hd.connectionEventManagerHandler(eventManagerHandler);
+        hd.connectionManager(connectionManager);
 
         final HostConnector hostConnector = new HostConnector(this, new
                 RemoteConnector(this.tcpEventHandlerFactory()), hd);
 
         hd.hostConnector(hostConnector);
 
-        ClusterNotifier clusterHandler = new ClusterNotifier(eventManagerHandler,
+        ClusterNotifier clusterHandler = new ClusterNotifier(connectionManager,
                 hostConnector, bootstraps(hd));
 
         hd.clusterHandler(clusterHandler);

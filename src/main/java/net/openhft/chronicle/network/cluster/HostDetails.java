@@ -34,7 +34,7 @@ public class HostDetails implements Marshallable {
     }
 
     private ConnectionStrategy connectionStrategy;
-    private ConnectionManager connectionEventManagerHandler;
+    private ConnectionManager connectionManager;
     private TerminationEventHandler terminationEventHandler;
     private HostConnector hostConnector;
 
@@ -81,7 +81,7 @@ public class HostDetails implements Marshallable {
         return this;
     }
 
-    public HostDetails connectUri(String connectUri) {
+    public HostDetails connectUri(@NotNull String connectUri) {
         this.connectUri = connectUri;
         return this;
     }
@@ -96,23 +96,23 @@ public class HostDetails implements Marshallable {
         return connectionStrategy;
     }
 
-    public ConnectionManager connectionEventManagerHandler() {
-        return connectionEventManagerHandler;
+    public ConnectionManager connectionManager() {
+        return connectionManager;
     }
 
     public TerminationEventHandler terminationEventHandler() {
         return terminationEventHandler;
     }
 
-    public void connectionStrategy(ConnectionStrategy connectionStrategy) {
+    public void connectionStrategy(@NotNull ConnectionStrategy connectionStrategy) {
         this.connectionStrategy = connectionStrategy;
     }
 
-    public void connectionEventManagerHandler(ConnectionManager connectionEventManagerHandler) {
-        this.connectionEventManagerHandler = connectionEventManagerHandler;
+    public void connectionManager(@NotNull ConnectionManager connectionEventManagerHandler) {
+        this.connectionManager = connectionEventManagerHandler;
     }
 
-    public void terminationEventHandler(TerminationEventHandler terminationEventHandler) {
+    public void terminationEventHandler(@NotNull TerminationEventHandler terminationEventHandler) {
         this.terminationEventHandler = terminationEventHandler;
     }
 
