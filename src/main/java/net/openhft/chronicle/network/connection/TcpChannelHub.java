@@ -1571,7 +1571,7 @@ public class TcpChannelHub implements Closeable {
          * called when we are completed finished with using the TcpChannelHub, after this method is
          * called you will no longer be able to use this instance to received or send data
          */
-        private void stop() {
+         void stop() {
 
             if (isShutdown)
                 return;
