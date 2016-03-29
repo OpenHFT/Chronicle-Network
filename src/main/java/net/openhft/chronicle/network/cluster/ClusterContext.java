@@ -65,8 +65,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
                           EventLoop eventLoop,
                           Function<ClusterContext, WriteMarshallable> heartbeatFactory,
                           ConnectionStrategy connectionStrategy,
-                          byte localIdentifier,
-                          long connectionTimeoutMs) {
+                          byte localIdentifier) {
 
         this.wireType = wireType;
         this.handlerFactory = handlerFactory;
@@ -80,7 +79,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         this.heartbeatFactory = heartbeatFactory;
         this.connectionStrategy = connectionStrategy;
         this.localIdentifier = localIdentifier;
-        this.connectionTimeoutMs = connectionTimeoutMs;
+
     }
 
 
@@ -98,8 +97,6 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         parser.register(() -> "heartbeatIntervalTicks", (s, v, $) -> this.heartbeatIntervalTicks(v.int64()));
         parser.register(() -> "wireOutPublisherFactory", (s, v, $) -> this.wireOutPublisherFactory(v.typedMarshallable()));
         parser.register(() -> "networkContextFactory", (s, v, $) -> this.networkContextFactory(v.typedMarshallable()));
-        parser.register(() -> "connectionTimeoutMs", (s, v, $) -> this.connectionTimeoutMs(v.int64
-                ()));
         parser.register(() -> "connectionStrategy", (s, v, $) -> this.connectionStrategy(v.typedMarshallable
                 ()));
         parser.register(() -> "connectionEventHandler", (s, v, $) -> this.connectionEventHandler(v.typedMarshallable
@@ -207,18 +204,8 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         return localIdentifier;
     }
 
-
-    public ClusterContext connectionTimeoutMs(long connectionTimeoutMs) {
-        this.connectionTimeoutMs = connectionTimeoutMs;
-        return this;
-    }
-
     public Function<ClusterContext, NetworkContext> networkContextFactory() {
         return networkContextFactory;
-    }
-
-    public long connectionTimeoutMs() {
-        return this.connectionTimeoutMs;
     }
 
     public ClusterContext connectionStrategy(ConnectionStrategy connectionStrategy) {

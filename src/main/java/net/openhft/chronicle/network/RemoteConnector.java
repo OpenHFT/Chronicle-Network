@@ -54,15 +54,15 @@ public class RemoteConnector implements Closeable {
     public void connect(final String remoteHostPort,
                         final EventLoop eventLoop,
                         NetworkContext nc,
-                        final long timeOutMs) {
+                        final long retryInterval) {
 
         final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
-        final long timeoutTime = System.currentTimeMillis() + timeOutMs;
-        final RCEventHandler handler = new RCEventHandler(timeoutTime,
+
+        final RCEventHandler handler = new RCEventHandler(
                 remoteHostPort,
                 nc,
                 eventLoop,
-                address);
+                address, retryInterval);
 
         eventLoop.addHandler(handler);
     }
@@ -114,21 +114,22 @@ public class RemoteConnector implements Closeable {
         private final InetSocketAddress address;
         private volatile boolean closed;
         private final AtomicLong nextPeriod = new AtomicLong();
-        private final long timeoutTime;
+
         private final String remoteHostPort;
         private final NetworkContext nc;
         private final EventLoop eventLoop;
+        private final long retryInterval;
 
-        RCEventHandler(long timeoutTime,
-                       String remoteHostPort,
+        RCEventHandler(String remoteHostPort,
                        NetworkContext nc,
                        EventLoop eventLoop,
-                       InetSocketAddress address) {
-            this.timeoutTime = timeoutTime;
+                       InetSocketAddress address, long retryInterval) {
             this.remoteHostPort = remoteHostPort;
             this.nc = nc;
             this.eventLoop = eventLoop;
             this.address = address;
+            this.retryInterval = retryInterval;
+
         }
 
         @Override
@@ -136,22 +137,18 @@ public class RemoteConnector implements Closeable {
             if (closed)
                 throw new InvalidEventHandlerException();
             final long time = System.currentTimeMillis();
+
             if (time > nextPeriod.get())
-                nextPeriod.set(time + 1000);
+                nextPeriod.set(time + retryInterval);
             else
                 return false;
-
-
-            if (time > timeoutTime)
-                throw new InvalidEventHandlerException("timed out attempting to connect to " +
-                        remoteHostPort + " as " + address);
 
             SocketChannel sc;
 
             try {
                 sc = RemoteConnector.this.openSocketChannel(address);
             } catch (IOException e) {
-                //    LOG.error("", e);
+                nextPeriod.set(System.currentTimeMillis() + retryInterval);
                 return false;
             }
 

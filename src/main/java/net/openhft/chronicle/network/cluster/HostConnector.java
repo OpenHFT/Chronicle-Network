@@ -42,7 +42,7 @@ public class HostConnector implements Closeable {
 
     private WireOutPublisher wireOutPublisher;
     private NetworkContext nc;
-    private long timeoutMs;
+
     private final Function<ClusterContext, NetworkContext> networkContextFactory;
     private final ClusterContext clusterContext;
     private volatile boolean isConnected;
@@ -62,7 +62,7 @@ public class HostConnector implements Closeable {
         this.wireType = clusterContext.wireType();
         //  this.header = header;
         this.wireOutPublisherFactory = clusterContext.wireOutPublisherFactory();
-        this.timeoutMs = clusterContext.connectionTimeoutMs();
+
         this.eventLoop = clusterContext.eventLoop();
         this.wireOutPublisher = wireOutPublisherFactory.apply(WireType.TEXT);
     }
@@ -105,6 +105,6 @@ public class HostConnector implements Closeable {
             wireOutPublisher.publish(bootstrap);
         }
 
-        remoteConnector.connect(connectUri, eventLoop, nc, timeoutMs);
+        remoteConnector.connect(connectUri, eventLoop, nc, 1_000L);
     }
 }
