@@ -36,7 +36,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * will periodically send a heatbeat message, the period of this message is defined by {@link
- * HeartbeatHandler#heartbeatIntervalTicks} once the heart beat is
+ * HeartbeatHandler#heartbeatIntervalMs} once the heart beat is
  *
  * @author Rob Austin.
  */
@@ -63,7 +63,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
             newSingleThreadScheduledExecutor(new
                     NamedThreadFactory("RemoteConnector"));
 
-    private final long heartbeatIntervalTicks;
+    private final long heartbeatIntervalMs;
     private long lastTimeMessageReceived;
     private final long heartbeatTimeoutMs;
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -72,25 +72,25 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
     @UsedViaReflection
     protected HeartbeatHandler(@NotNull WireIn w) {
         heartbeatTimeoutMs = w.read(() -> "heartbeatTimeoutMs").int64();
-        heartbeatIntervalTicks = w.read(() -> "heartbeatIntervalTicks").int64();
+        heartbeatIntervalMs = w.read(() -> "heartbeatIntervalMs").int64();
         assert heartbeatTimeoutMs > 1000 :
                 "heartbeatTimeoutMs=" + heartbeatTimeoutMs + ", this is too small";
-        assert heartbeatIntervalTicks > 500 :
-                "heartbeatIntervalTicks=" + heartbeatIntervalTicks + ", this is too small";
+        assert heartbeatIntervalMs > 500 :
+                "heartbeatIntervalMs=" + heartbeatIntervalMs + ", this is too small";
         startHeartbeatCheck();
     }
 
-    private HeartbeatHandler(long heartbeatTimeoutMs, long heartbeatIntervalTicks) {
+    private HeartbeatHandler(long heartbeatTimeoutMs, long heartbeatIntervalMs) {
         this.heartbeatTimeoutMs = heartbeatTimeoutMs;
-        this.heartbeatIntervalTicks = heartbeatIntervalTicks;
-        assert heartbeatTimeoutMs > heartbeatIntervalTicks :
-                "heartbeatIntervalTicks=" + heartbeatIntervalTicks + ", " +
+        this.heartbeatIntervalMs = heartbeatIntervalMs;
+        assert heartbeatTimeoutMs > heartbeatIntervalMs :
+                "heartbeatIntervalMs=" + heartbeatIntervalMs + ", " +
                         "heartbeatTimeoutMs=" + heartbeatTimeoutMs;
 
         assert heartbeatTimeoutMs > 1000 :
                 "heartbeatTimeoutMs=" + heartbeatTimeoutMs + ", this is too small";
-        assert heartbeatIntervalTicks > 500 :
-                "heartbeatIntervalTicks=" + heartbeatIntervalTicks + ", this is too small";
+        assert heartbeatIntervalMs > 500 :
+                "heartbeatIntervalMs=" + heartbeatIntervalMs + ", this is too small";
 
     }
 
@@ -98,7 +98,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
     public void onInitialize(WireOut outWire) {
 
         if (nc().isAcceptor())
-            heartbeatHandler(heartbeatTimeoutMs, heartbeatIntervalTicks, cid()).writeMarshallable
+            heartbeatHandler(heartbeatTimeoutMs, heartbeatIntervalMs, cid()).writeMarshallable
                     (outWire);
 
         final WriteMarshallable heartbeatMessage = w -> {
@@ -113,7 +113,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
             nc().wireOutPublisher().publish(heartbeatMessage);
         };
 
-        HEARTBEAT_EXECUTOR.schedule(task, this.heartbeatIntervalTicks, MILLISECONDS);
+        HEARTBEAT_EXECUTOR.schedule(task, this.heartbeatIntervalMs, MILLISECONDS);
     }
 
     private static WriteMarshallable heartbeatHandler(final long heartbeatTimeoutMs,
@@ -129,7 +129,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
     @Override
     public void writeMarshallable(@NotNull WireOut w) {
         w.write(() -> "heartbeatTimeoutMs").int64(heartbeatTimeoutMs);
-        w.write(() -> "heartbeatIntervalMs").int64(heartbeatIntervalTicks);
+        w.write(() -> "heartbeatIntervalMs").int64(heartbeatIntervalMs);
     }
 
     @Override
