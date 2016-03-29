@@ -129,6 +129,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
     @Override
     public void writeMarshallable(@NotNull WireOut w) {
         w.write(() -> "heartbeatTimeoutMs").int64(heartbeatTimeoutMs);
+        assert heartbeatIntervalMs > 0;
         w.write(() -> "heartbeatIntervalMs").int64(heartbeatIntervalMs);
     }
 
