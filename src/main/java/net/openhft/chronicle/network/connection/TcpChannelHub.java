@@ -182,7 +182,7 @@ public class TcpChannelHub implements Closeable {
     static void logToStandardOutMessageReceived(@NotNull Wire wire) {
         final Bytes<?> bytes = wire.bytes();
 
-        if (!YamlLogging.clientReads)
+        if (!YamlLogging.showClientReads())
             return;
 
         final long position = bytes.writePosition();
@@ -195,7 +195,7 @@ public class TcpChannelHub implements Closeable {
                         Wires.fromSizePrefixedBlobs(bytes) +
                         "```\n");
                 YamlLogging.title = "";
-                YamlLogging.writeMessage = "";
+                YamlLogging.writeMessage("");
             } catch (Exception e) {
 
                 LOG.error(Bytes.toString(bytes), e);
@@ -219,7 +219,7 @@ public class TcpChannelHub implements Closeable {
                         Wires.fromSizePrefixedBlobs(bytes) +
                         "```\n");
                 YamlLogging.title = "";
-                YamlLogging.writeMessage = "";
+                YamlLogging.writeMessage("");
             } catch (Exception e) {
 
                 String x = Bytes.toString(bytes);
@@ -701,7 +701,7 @@ public class TcpChannelHub implements Closeable {
     }
 
     private void logToStandardOutMessageSent(@NotNull WireOut wire, @NotNull ByteBuffer outBuffer) {
-        if (!YamlLogging.clientWrites)
+        if (!YamlLogging.showClientWrites())
             return;
 
         Bytes<?> bytes = wire.bytes();
@@ -711,14 +711,14 @@ public class TcpChannelHub implements Closeable {
             if (bytes.readRemaining() > 0)
                 LOG.info(((!YamlLogging.title.isEmpty()) ? "### " + YamlLogging
                         .title + "\n" : "") + "" +
-                        YamlLogging.writeMessage + (YamlLogging.writeMessage.isEmpty() ?
+                        YamlLogging.writeMessage() + (YamlLogging.writeMessage().isEmpty() ?
                         "" : "\n\n") +
                         "sends:\n\n" +
                         "```yaml\n" +
                         Wires.fromSizePrefixedBlobs(bytes) +
                         "```");
             YamlLogging.title = "";
-            YamlLogging.writeMessage = "";
+            YamlLogging.writeMessage("");
         } catch (Exception e) {
             LOG.error(Bytes.toString(bytes), e);
         }
@@ -1420,7 +1420,7 @@ public class TcpChannelHub implements Closeable {
 
             final StringBuilder eventName = Wires.acquireStringBuilder();
             final Wire inWire = wire.apply(bytes);
-            if (YamlLogging.showHeartBeats)
+            if (YamlLogging.showHeartBeats())
                 logToStandardOutMessageReceived(inWire);
             inWire.readDocument(null, d -> {
                         final ValueIn valueIn = d.readEventName(eventName);
@@ -1571,7 +1571,7 @@ public class TcpChannelHub implements Closeable {
          * called when we are completed finished with using the TcpChannelHub, after this method is
          * called you will no longer be able to use this instance to received or send data
          */
-         void stop() {
+        void stop() {
 
             if (isShutdown)
                 return;

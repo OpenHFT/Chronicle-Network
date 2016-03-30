@@ -268,7 +268,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     }
 
     public static void logYaml(final WireOut outWire) {
-        if (YamlLogging.showServerWrites)
+        if (YamlLogging.showServerWrites())
             try {
                 LOG.info("\nServer Sends:\n" +
                         Wires.fromSizePrefixedBlobs(outWire.bytes()));

@@ -63,7 +63,7 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
             if (!dc.isPresent())
                 return;
 
-            if (YamlLogging.showServerReads)
+            if (YamlLogging.showServerReads())
                 LOG.info("nc.isAcceptor=" + nc.isAcceptor() + ", read:\n" + Wires
                         .fromSizePrefixedBlobs(in, start,
                                 in.readLimit

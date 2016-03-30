@@ -65,7 +65,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
                         return;
                     }
 
-                    if (YamlLogging.showServerWrites)
+                    if (YamlLogging.showServerWrites())
                         LOG.info("Server sends:" + Wires.fromSizePrefixedBlobs(bytes));
 
                     out.write(bytes);
@@ -92,7 +92,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
                 final long start = wire.bytes().writePosition();
                 event.writeMarshallable(wire);
-                if (YamlLogging.showServerWrites)
+                if (YamlLogging.showServerWrites())
                     LOG.info("Server is about to send:" + Wires.fromSizePrefixedBlobs(wire.bytes(),
                             start, wire
                                     .bytes().writePosition() - start));
