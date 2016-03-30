@@ -50,7 +50,10 @@ public class HostIdConnectionStrategy implements ConnectionStrategy, Demarshalla
                                                 int localIdentifier,
                                                 int remoteIdentifier) {
 
-        return !(handler.nc().isAcceptor() && localIdentifier < remoteIdentifier);
+        if (!handler.nc().isAcceptor())
+            return true;
+
+        return localIdentifier > remoteIdentifier;
     }
 
     @Override
