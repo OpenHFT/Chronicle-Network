@@ -97,7 +97,7 @@ public class HostConnector implements Closeable {
         nc.wireOutPublisher(wireOutPublisher);
         nc.wireType(wireType);
         nc.closeTask(this);
-        nc.heartbeatTimeoutMs(clusterContext.heartbeatTimeoutMs());
+        nc.heartbeatTimeoutMs(clusterContext.heartbeatTimeoutMs() * 2);
         nc.heartbeatListener(() -> {
             synchronized (HostConnector.this) {
                 if (nc.socketChannel() != null)

@@ -53,9 +53,9 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
         @Override
         public WriteMarshallable apply(ClusterContext clusterContext) {
             long heartbeatTimeoutMs = clusterContext.heartbeatTimeoutMs();
-            long heartbeatIntervalTicks = clusterContext.heartbeatIntervalTicks();
-            return heartbeatHandler(heartbeatTimeoutMs, heartbeatIntervalTicks,
-                    heartbeatTimeoutMs);
+            long heartbeatIntervalMs = clusterContext.heartbeatIntervalMs();
+            return heartbeatHandler(heartbeatTimeoutMs, heartbeatIntervalMs,
+                    HeartbeatHandler.class.hashCode());
         }
     }
 
@@ -73,9 +73,9 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
     protected HeartbeatHandler(@NotNull WireIn w) {
         heartbeatTimeoutMs = w.read(() -> "heartbeatTimeoutMs").int64();
         heartbeatIntervalMs = w.read(() -> "heartbeatIntervalMs").int64();
-        assert heartbeatTimeoutMs > 1000 :
+        assert heartbeatTimeoutMs >= 1000 :
                 "heartbeatTimeoutMs=" + heartbeatTimeoutMs + ", this is too small";
-        assert heartbeatIntervalMs > 500 :
+        assert heartbeatIntervalMs >= 500 :
                 "heartbeatIntervalMs=" + heartbeatIntervalMs + ", this is too small";
         startHeartbeatCheck();
     }
@@ -87,9 +87,9 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
                 "heartbeatIntervalMs=" + heartbeatIntervalMs + ", " +
                         "heartbeatTimeoutMs=" + heartbeatTimeoutMs;
 
-        assert heartbeatTimeoutMs > 1000 :
+        assert heartbeatTimeoutMs >= 1000 :
                 "heartbeatTimeoutMs=" + heartbeatTimeoutMs + ", this is too small";
-        assert heartbeatIntervalMs > 500 :
+        assert heartbeatIntervalMs >= 500 :
                 "heartbeatIntervalMs=" + heartbeatIntervalMs + ", this is too small";
 
     }
@@ -117,13 +117,13 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
     }
 
     private static WriteMarshallable heartbeatHandler(final long heartbeatTimeoutMs,
-                                                      final long heartbeatIntervalTicks,
+                                                      final long heartbeatIntervalMs,
                                                       final long cid) {
         return w -> w.writeDocument(true,
                 d -> d.writeEventName(CoreFields.csp).text("/")
                         .writeEventName(CoreFields.cid).int64(cid)
                         .writeEventName(CoreFields.handler).typedMarshallable(new
-                                HeartbeatHandler(heartbeatTimeoutMs, heartbeatIntervalTicks)));
+                                HeartbeatHandler(heartbeatTimeoutMs, heartbeatIntervalMs)));
     }
 
     @Override

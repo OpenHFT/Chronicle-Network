@@ -44,7 +44,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
     private Function<ClusterContext, NetworkContext> networkContextFactory;
     private Supplier<ConnectionManager> connectionEventHandler;
     private long heartbeatTimeoutMs = 40_000;
-    private long heartbeatIntervalTicks = 20_000;
+    private long heartbeatIntervalMs = 20_000;
     private String clusterName;
     private EventLoop eventLoop;
     private Function<ClusterContext, WriteMarshallable> heartbeatFactory;
@@ -60,7 +60,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
                           Function<WireType, WireOutPublisher> wireOutPublisherFactory,
                           Function<ClusterContext, NetworkContext> networkContextFactory, Supplier<ConnectionManager> connectionEventHandler,
                           long heartbeatTimeoutMs,
-                          long heartbeatIntervalTicks,
+                          long heartbeatIntervalMs,
                           String clusterName,
                           EventLoop eventLoop,
                           Function<ClusterContext, WriteMarshallable> heartbeatFactory,
@@ -73,7 +73,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         this.networkContextFactory = networkContextFactory;
         this.connectionEventHandler = connectionEventHandler;
         this.heartbeatTimeoutMs = heartbeatTimeoutMs;
-        this.heartbeatIntervalTicks = heartbeatIntervalTicks;
+        this.heartbeatIntervalMs = heartbeatIntervalMs;
         this.clusterName = clusterName;
         this.eventLoop = eventLoop;
         this.heartbeatFactory = heartbeatFactory;
@@ -82,6 +82,10 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
 
     }
 
+
+    public long heartbeatIntervalMs() {
+        return heartbeatIntervalMs;
+    }
 
     public Function<NetworkContext, TcpEventHandler> tcpEventHandlerFactory() {
         throw new UnsupportedOperationException("todo");
@@ -94,7 +98,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         parser.register(() -> "wireType", (s, v, $) -> v.text(this, (o, x) -> this.wireType(WireType.valueOf(x))));
         parser.register(() -> "handlerFactory", (s, v, $) -> this.handlerFactory(v.typedMarshallable()));
         parser.register(() -> "heartbeatTimeoutMs", (s, v, $) -> this.heartbeatTimeoutMs(v.int64()));
-        parser.register(() -> "heartbeatIntervalTicks", (s, v, $) -> this.heartbeatIntervalTicks(v.int64()));
+        parser.register(() -> "heartbeatIntervalMs", (s, v, $) -> this.heartbeatIntervalMs(v.int64()));
         parser.register(() -> "wireOutPublisherFactory", (s, v, $) -> this.wireOutPublisherFactory(v.typedMarshallable()));
         parser.register(() -> "networkContextFactory", (s, v, $) -> this.networkContextFactory(v.typedMarshallable()));
         parser.register(() -> "connectionStrategy", (s, v, $) -> this.connectionStrategy(v.typedMarshallable
@@ -158,13 +162,9 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
     }
 
 
-    public ClusterContext heartbeatIntervalTicks(long heartbeatIntervalTicks) {
-        this.heartbeatIntervalTicks = heartbeatIntervalTicks;
+    public ClusterContext heartbeatIntervalMs(long heartbeatIntervalMs) {
+        this.heartbeatIntervalMs = heartbeatIntervalMs;
         return this;
-    }
-
-    public long heartbeatIntervalTicks() {
-        return this.heartbeatIntervalTicks;
     }
 
     public ClusterContext heartbeatTimeoutMs(long heartbeatTimeoutMs) {
@@ -272,5 +272,6 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         result.add(heartbeat.apply(this));
         return result;
     }
+
 
 }
