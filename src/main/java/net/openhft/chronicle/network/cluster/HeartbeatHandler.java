@@ -29,6 +29,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
@@ -60,14 +61,14 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
     }
 
     public static final ScheduledExecutorService HEARTBEAT_EXECUTOR =
-            newSingleThreadScheduledExecutor(new
-                    NamedThreadFactory("Heartbeat"));
+            newSingleThreadScheduledExecutor(new NamedThreadFactory("Heartbeat"));
 
     private final long heartbeatIntervalMs;
-    private long lastTimeMessageReceived;
+    private volatile long lastTimeMessageReceived;
     private final long heartbeatTimeoutMs;
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean hasHeartbeat = new AtomicBoolean();
+    private final AtomicReference<Runnable> self = new AtomicReference<>();
 
     @UsedViaReflection
     protected HeartbeatHandler(@NotNull WireIn w) {
@@ -77,6 +78,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
                 "heartbeatTimeoutMs=" + heartbeatTimeoutMs + ", this is too small";
         assert heartbeatIntervalMs >= 500 :
                 "heartbeatIntervalMs=" + heartbeatIntervalMs + ", this is too small";
+
         startHeartbeatCheck();
     }
 
@@ -91,7 +93,6 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
                 "heartbeatTimeoutMs=" + heartbeatTimeoutMs + ", this is too small";
         assert heartbeatIntervalMs >= 500 :
                 "heartbeatIntervalMs=" + heartbeatIntervalMs + ", this is too small";
-
     }
 
     @Override
@@ -109,11 +110,11 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
         final Runnable task = () -> {
             // we will only publish a heartbeat if the wire out publisher is empty
             if (nc().wireOutPublisher().isEmpty())
-                return;
-            nc().wireOutPublisher().publish(heartbeatMessage);
+                nc().wireOutPublisher().publish(heartbeatMessage);
         };
 
-        HEARTBEAT_EXECUTOR.schedule(task, this.heartbeatIntervalMs, MILLISECONDS);
+        HEARTBEAT_EXECUTOR.scheduleAtFixedRate(task, this.heartbeatIntervalMs, this
+                .heartbeatIntervalMs, MILLISECONDS);
     }
 
     private static WriteMarshallable heartbeatHandler(final long heartbeatTimeoutMs,
@@ -150,22 +151,31 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
         lastTimeMessageReceived = System.currentTimeMillis();
     }
 
+
+    private void initHeartbeatCheck() {
+
+        self.set(() -> {
+            System.out.println("checking heartbeat");
+            if (!hasReceivedHeartbeat() && !closed.get()) {
+                close();
+            } else {
+
+                HEARTBEAT_EXECUTOR.schedule(self.get(), heartbeatTimeoutMs, MILLISECONDS);
+            }
+        });
+    }
+
     /**
      * periodically check that messages have been received, ie heartbeats
      */
     private void startHeartbeatCheck() {
 
+        initHeartbeatCheck();
         if (hasHeartbeat.getAndSet(true))
             return;
 
-        lastTimeMessageReceived = System.currentTimeMillis();
-        HEARTBEAT_EXECUTOR.schedule(() -> {
-            if (!hasReceivedHeartbeat() && !closed.get()) {
-                close();
-            } else {
-                HEARTBEAT_EXECUTOR.schedule((Runnable) this, heartbeatTimeoutMs, MILLISECONDS);
-            }
-        }, heartbeatTimeoutMs, MILLISECONDS);
+        lastTimeMessageReceived = Long.MAX_VALUE;
+        HEARTBEAT_EXECUTOR.schedule(self.get(), heartbeatTimeoutMs, MILLISECONDS);
     }
 
     /**
@@ -174,7 +184,10 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
      * @return {@code true} if we have received a heartbeat recently
      */
     private boolean hasReceivedHeartbeat() {
-        return lastTimeMessageReceived + heartbeatTimeoutMs < System.currentTimeMillis();
+        System.out.println("lastTimeMessageReceived=" + lastTimeMessageReceived + ", System" +
+                ".currentTimeMillis()=" + System.currentTimeMillis() + ",heartbeatTimeoutMs=" + heartbeatTimeoutMs);
+
+        return lastTimeMessageReceived > System.currentTimeMillis() - heartbeatTimeoutMs;
     }
 
 }
