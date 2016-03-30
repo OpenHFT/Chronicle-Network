@@ -203,7 +203,9 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             long tickTime = Time.tickTime();
             if (tickTime > lastTickReadTime + nc.heartbeatTimeoutMs()) {
                 closeSC();
-                nc.heartbeatListener().onMissedHeartbeat();
+                HeartbeatListener heartbeatListener = nc.heartbeatListener();
+                if (heartbeatListener != null)
+                    nc.heartbeatListener().onMissedHeartbeat();
                 return false;
             }
 
