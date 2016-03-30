@@ -62,5 +62,11 @@ public interface NetworkContext<T extends NetworkContext> {
 
     void terminationEventHandler(TerminationEventHandler terminationEventHandler);
 
+    long heartbeatTimeoutMs();
 
+    HeartbeatListener heartbeatListener();
+
+    void heartbeatListener(HeartbeatListener heartbeatListener);
+
+    void heartbeatTimeoutMs(long l);
 }

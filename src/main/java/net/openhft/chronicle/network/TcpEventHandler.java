@@ -94,7 +94,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     volatile boolean isCleaned;
     @Nullable
     private volatile TcpHandler tcpHandler;
-    private long lastTickReadTime = Time.tickTime(), lastHeartBeatTick = lastTickReadTime + 1000;
+    private long lastTickReadTime = Time.tickTime();
     private volatile boolean closed;
 
     public TcpEventHandler(@NotNull NetworkContext nc) throws IOException {
@@ -117,7 +117,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         // todo check that this can be commented out
         // inBBB.clearThreadAssociation();
         //  outBBB.clearThreadAssociation();
-
 
         inBBB = Bytes.wrapForRead(inBB.slice()).unchecked(unchecked);
         outBBB = Bytes.wrapForWrite(outBB.slice()).unchecked(unchecked);
@@ -198,20 +197,17 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
             readLog.idle();
 
-         /*   if (nc.heartbeatIntervalTicks() == 0)
+            if (nc.heartbeatTimeoutMs() == 0)
                 return false;
 
             long tickTime = Time.tickTime();
-            if (tickTime > lastTickReadTime + nc.heartBeatTimeoutTicks()) {
+            if (tickTime > lastTickReadTime + nc.heartbeatTimeoutMs()) {
                 closeSC();
-                throw new InvalidEventHandlerException();
-                // return false;
+                nc.heartbeatListener().onMissedHeartbeat();
+                return false;
             }
 
-            if (tickTime > lastHeartBeatTick + nc.heartbeatIntervalTicks()) {
-                lastHeartBeatTick = tickTime;
-                sendHeartBeat();
-            }*/
+
         } catch (ClosedChannelException e) {
             closeSC();
         } catch (IOException e) {
@@ -234,8 +230,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             LOG.error("nothing cleaned");
 
     }
-
-
 
     boolean invokeHandler() throws IOException {
 

@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 public class RemoteConnector implements Closeable {
-    public static final int BUFFER_SIZE = 8 << 20;
+    private static final int BUFFER_SIZE = 8 << 20;
 
     private static final Logger LOG = LoggerFactory.getLogger(RemoteConnector.class);
     @NotNull
@@ -53,7 +53,7 @@ public class RemoteConnector implements Closeable {
 
     public void connect(final String remoteHostPort,
                         final EventLoop eventLoop,
-                        NetworkContext nc,
+                        @NotNull NetworkContext nc,
                         final long retryInterval) {
 
         final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
@@ -109,7 +109,7 @@ public class RemoteConnector implements Closeable {
         return result;
     }
 
-    class RCEventHandler implements EventHandler, Closeable {
+    private class RCEventHandler implements EventHandler, Closeable {
 
         private final InetSocketAddress address;
         private volatile boolean closed;

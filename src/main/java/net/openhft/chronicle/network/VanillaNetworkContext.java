@@ -21,10 +21,10 @@ import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.cluster.TerminationEventHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Rob Austin.
@@ -34,14 +34,15 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     private SocketChannel socketChannel;
     private boolean isAcceptor = true;
     private boolean isUnchecked;
-
-
+    private HeartbeatListener heartbeatListener;
     private SessionDetailsProvider sessionDetails;
     private boolean connectionClosed;
     private Closeable closeTask;
 
     @Nullable
     private TerminationEventHandler terminationEventHandler;
+    private long heartbeatTimeoutMs;
+
 
     @Override
     public SocketChannel socketChannel() {
@@ -134,7 +135,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         this.connectionClosed = connectionClosed;
     }
 
-
     @Override
     public TerminationEventHandler terminationEventHandler() {
         return terminationEventHandler;
@@ -145,28 +145,22 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         this.terminationEventHandler = terminationEventHandler;
     }
 
-    AtomicLong uniqueCspid = new AtomicLong();
 
-
-    public long createUniqueCid() {
-        // todo maybe also add the host id factor to this to ensure better uniqueness
-        long time = System.currentTimeMillis();
-
-        for (; ; ) {
-
-            final long current = this.uniqueCspid.get();
-
-            if (time == this.uniqueCspid.get()) {
-                time++;
-                continue;
-            }
-
-            final boolean success = this.uniqueCspid.compareAndSet(current, time);
-
-            if (!success)
-                continue;
-
-            return time;
-        }
+    public void heartbeatTimeoutMs(long heartbeatTimeoutMs) {
+        this.heartbeatTimeoutMs = heartbeatTimeoutMs;
     }
+
+    public long heartbeatTimeoutMs() {
+        return heartbeatTimeoutMs;
+    }
+
+    @Override
+    public HeartbeatListener heartbeatListener() {
+        return this.heartbeatListener;
+    }
+
+    public void heartbeatListener(@NotNull HeartbeatListener heartbeatListener) {
+        this.heartbeatListener = heartbeatListener;
+    }
+
 }

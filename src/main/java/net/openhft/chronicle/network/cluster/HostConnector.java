@@ -97,9 +97,20 @@ public class HostConnector implements Closeable {
         nc.wireOutPublisher(wireOutPublisher);
         nc.wireType(wireType);
         nc.closeTask(this);
+        nc.heartbeatTimeoutMs(clusterContext.heartbeatTimeoutMs());
+        nc.heartbeatListener(() -> {
+            synchronized (HostConnector.this) {
+                if (nc.socketChannel() != null)
+                    Closeable.closeQuietly(nc.socketChannel());
+                wireOutPublisher.clear();
+            }
+            // using HEARTBEAT_EXECUTOR to eliminate tail recursion
+            HeartbeatHandler.HEARTBEAT_EXECUTOR.submit((Runnable) () -> {
+                HostConnector.this.connect();
+            });
+        });
 
         wireOutPublisher.wireType(wireType);
-
 
         for (WriteMarshallable bootstrap : bootstraps) {
             wireOutPublisher.publish(bootstrap);
