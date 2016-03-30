@@ -106,7 +106,8 @@ public class HostConnector implements Closeable {
             }
             // using HEARTBEAT_EXECUTOR to eliminate tail recursion
             HeartbeatHandler.HEARTBEAT_EXECUTOR.submit((Runnable) () -> {
-                HostConnector.this.connect();
+                if (!nc.isAcceptor())
+                    HostConnector.this.connect();
             });
         });
 

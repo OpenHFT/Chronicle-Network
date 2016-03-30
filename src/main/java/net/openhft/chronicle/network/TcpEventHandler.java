@@ -150,6 +150,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     @Override
     public synchronized boolean action() throws InvalidEventHandlerException {
 
+        final HeartbeatListener heartbeatListener = nc.heartbeatListener();
+
         if (tcpHandler == null)
             return false;
 
@@ -172,8 +174,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         }
 
         try {
-
-
             int start = inBB.position();
             int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
 
@@ -202,19 +202,26 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
             long tickTime = Time.tickTime();
             if (tickTime > lastTickReadTime + nc.heartbeatTimeoutMs()) {
-                final HeartbeatListener heartbeatListener = nc.heartbeatListener();
+
                 if (heartbeatListener != null)
                     nc.heartbeatListener().onMissedHeartbeat();
                 closeSC();
-                return false;
+                throw new InvalidEventHandlerException();
             }
 
 
         } catch (ClosedChannelException e) {
+
+            if (heartbeatListener != null)
+                heartbeatListener.onMissedHeartbeat();
+
             closeSC();
+            throw new InvalidEventHandlerException();
         } catch (IOException e) {
-            handleIOE(e, tcpHandler.hasClientClosed());
+            handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
+            throw new InvalidEventHandlerException();
         }
+
 
         return false;
     }
@@ -265,7 +272,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         return busy;
     }
 
-    private void handleIOE(@NotNull IOException e, final boolean clientIntentionallyClosed) {
+    private void handleIOE(@NotNull IOException e, final boolean clientIntentionallyClosed,
+                           @Nullable HeartbeatListener heartbeatListener) {
         try {
 
             if (clientIntentionallyClosed)
@@ -276,6 +284,14 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 LOG.warn(e.getMessage());
             else if (!(e instanceof ClosedByInterruptException))
                 LOG.error("", e);
+
+            // The remote server has sent you a RST packet, which indicates an immediate dropping of the connection,
+            // rather than the usual handshake. This bypasses the normal half-closed state transition.
+            // I like this description: "Connection reset by peer" is the TCP/IP equivalent
+            // of slamming the phone back on the hook.
+
+            if (heartbeatListener != null)
+                heartbeatListener.onMissedHeartbeat();
 
         } finally {
             closeSC();
@@ -350,7 +366,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 closeSC();
 
             } catch (IOException e) {
-                handleIOE(e, tcpHandler.hasClientClosed());
+                handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
             }
             return busy;
         }
