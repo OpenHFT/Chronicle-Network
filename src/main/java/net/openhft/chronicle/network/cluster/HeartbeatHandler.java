@@ -156,12 +156,13 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
 
         self.set(() -> {
             System.out.println("checking heartbeat");
-            if (!hasReceivedHeartbeat() && !closed.get()) {
-                close();
-            } else {
+            if (closed.get())
+                return;
 
+            if (!hasReceivedHeartbeat())
+                close();
+            else
                 HEARTBEAT_EXECUTOR.schedule(self.get(), heartbeatTimeoutMs, MILLISECONDS);
-            }
         });
     }
 
