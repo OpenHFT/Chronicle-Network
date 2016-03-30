@@ -124,13 +124,13 @@ public class HostDetails implements Marshallable {
         return hostConnector;
     }
 
-    ClusterNotifier clusterHandler;
+    ClusterNotifier clusterNotifier;
 
-    public ClusterNotifier clusterHandler() {
-        return clusterHandler;
+    public ClusterNotifier clusterNotifier() {
+        return clusterNotifier;
     }
 
-    public void clusterHandler(ClusterNotifier clusterHandler) {
-        this.clusterHandler = clusterHandler;
+    public void clusterNotifier(ClusterNotifier clusterHandler) {
+        this.clusterNotifier = clusterHandler;
     }
 }

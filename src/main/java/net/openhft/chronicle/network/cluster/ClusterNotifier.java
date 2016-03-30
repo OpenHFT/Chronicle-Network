@@ -58,14 +58,13 @@ class ClusterNotifier<E extends HostDetails> implements TerminationEventHandler,
     }
 
     private void onClose() {
-        closeQuietly(hostConnector);
 
-        // reconnect if not terminated
-        if (terminated.get())
+        if (terminated.get()) {
+            closeQuietly(hostConnector);
             return;
+        }
 
-        // re-connect
-        connect();
+        hostConnector.reconnect();
     }
 
     @Override

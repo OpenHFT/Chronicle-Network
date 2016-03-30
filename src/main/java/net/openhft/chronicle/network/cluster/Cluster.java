@@ -110,21 +110,18 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
         return hostDetails.connectionManager();
     }
 
-
     public TerminationEventHandler findTerminationEventHandler(int remoteIdentifier) {
         HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.terminationEventHandler();
 
     }
-/*
 
-    public HostConnector findHostConnector(int remoteIdentifier) {
+    public ConnectionChangedNotifier findClusterNotifier(int remoteIdentifier) {
         HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
-        return hostDetails.hostConnector();
+        return hostDetails.clusterNotifier();
     }
-*/
 
 
     abstract protected E newHostDetails();
@@ -150,5 +147,6 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
         if (clusterContext != null && hostDetails != null && hostDetails.values() != null)
             hostDetails.values().forEach(clusterContext::accept);
     }
+
 
 }

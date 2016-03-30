@@ -252,13 +252,13 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
 
         hd.hostConnector(hostConnector);
 
-        ClusterNotifier clusterHandler = new ClusterNotifier(connectionManager,
+        ClusterNotifier clusterNotifier = new ClusterNotifier(connectionManager,
                 hostConnector, bootstraps(hd));
 
-        hd.clusterHandler(clusterHandler);
-        hd.terminationEventHandler(clusterHandler);
+        hd.clusterNotifier(clusterNotifier);
+        hd.terminationEventHandler(clusterNotifier);
 
-        clusterHandler.connect();
+        clusterNotifier.connect();
     }
 
 
