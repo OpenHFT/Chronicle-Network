@@ -256,11 +256,13 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                            @Nullable HeartbeatListener heartbeatListener) {
         try {
 
+
             if (clientIntentionallyClosed)
                 return;
-
-            if (e.getMessage() != null && e.getMessage().startsWith("An existing connection was " +
-                    "forcibly closed"))
+            if (e.getMessage() != null && e.getMessage().startsWith("Connection reset by peer"))
+                LOG.trace("", e.getMessage());
+            else if (e.getMessage() != null && e.getMessage().startsWith("An existing connection " +
+                    "was forcibly closed"))
                 LOG.warn(e.getMessage());
             else if (!(e instanceof ClosedByInterruptException))
                 LOG.error("", e);
