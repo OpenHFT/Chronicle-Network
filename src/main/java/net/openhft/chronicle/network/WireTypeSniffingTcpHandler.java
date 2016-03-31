@@ -17,7 +17,6 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
@@ -83,9 +82,5 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements Tcp
         handlerManager.tcpHandler(handler);
     }
 
-    @Override
-    public void close() {
-        Closeable.closeQuietly(this.nc.closeTask());
-    }
 
 }

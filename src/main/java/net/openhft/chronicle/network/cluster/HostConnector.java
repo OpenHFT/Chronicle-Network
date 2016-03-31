@@ -27,6 +27,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 public class HostConnector implements Closeable {
@@ -40,12 +41,12 @@ public class HostConnector implements Closeable {
     private final RemoteConnector remoteConnector;
     private final String connectUri;
 
-    private WireOutPublisher wireOutPublisher;
+
     private NetworkContext nc;
 
     private final Function<ClusterContext, NetworkContext> networkContextFactory;
     private final ClusterContext clusterContext;
-    private volatile boolean isConnected;
+    private volatile AtomicReference<WireOutPublisher> wireOutPublisher = new AtomicReference<>();
 
     @NotNull
     private EventLoop eventLoop;
@@ -55,48 +56,50 @@ public class HostConnector implements Closeable {
                   final HostDetails hostdetails) {
         this.clusterContext = clusterContext;
         this.remoteConnector = remoteConnector;
-        //final WriteMarshallable header = clusterContext.handlerFactory().apply(clusterContext,
-        //        hostdetails);
+
         this.networkContextFactory = clusterContext.networkContextFactory();
         this.connectUri = hostdetails.connectUri();
         this.wireType = clusterContext.wireType();
-        //  this.header = header;
         this.wireOutPublisherFactory = clusterContext.wireOutPublisherFactory();
-
         this.eventLoop = clusterContext.eventLoop();
-
     }
 
 
     @Override
     public synchronized void close() {
-        isConnected = false;
-        Closeable.closeQuietly(wireOutPublisher);
+        WireOutPublisher wp = wireOutPublisher.getAndSet(null);
+
         if (nc.socketChannel() != null)
             Closeable.closeQuietly(nc.socketChannel());
-        wireOutPublisher.clear();
+
+        wp.close();
     }
+
 
     public synchronized void bootstrap(WriteMarshallable subscription) {
         bootstraps.add(subscription);
-
-        if (isConnected && wireOutPublisher != null)
-            wireOutPublisher.put("", subscription);
-
+        WireOutPublisher wp = wireOutPublisher.get();
+        if (wp != null)
+            wp.put("", subscription);
     }
 
 
     public synchronized void connect() {
 
-        isConnected = true;
-        this.wireOutPublisher = wireOutPublisherFactory.apply(WireType.TEXT);
+        WireOutPublisher wireOutPublisher = wireOutPublisherFactory.apply(WireType.TEXT);
+
+        if (!this.wireOutPublisher.compareAndSet(null, wireOutPublisher)) {
+            wireOutPublisher.close();
+            return;
+        }
+
         // we will send the initial header as text wire, then the rest will be sent in
         // what ever wire is configured
         nc = networkContextFactory.apply(clusterContext);
         nc.wireOutPublisher(wireOutPublisher);
-        nc.wireType(wireType);
+
         nc.isAcceptor(false);
-        nc.closeTask(this);
+
         nc.heartbeatTimeoutMs(clusterContext.heartbeatTimeoutMs() * 2);
         nc.heartbeatListener(() -> {
             if (nc.socketChannel() != null)
@@ -105,24 +108,25 @@ public class HostConnector implements Closeable {
             reconnect();
         });
 
-        wireOutPublisher.wireType(wireType);
 
+        boolean firstTime = true;
         for (WriteMarshallable bootstrap : bootstraps) {
             wireOutPublisher.publish(bootstrap);
+
+            // its only the uberhandler that we want to publish using TEXT_WIRE
+            if (firstTime)
+                wireOutPublisher.wireType(wireType);
         }
+
+        nc.wireType(wireType);
 
         remoteConnector.connect(connectUri, eventLoop, nc, 1_000L);
     }
 
-    public void reconnect() {
-        Closeable.closeQuietly(nc.socketChannel());
-        // using HEARTBEAT_EXECUTOR to eliminate tail recursion
-        // HEARTBEAT_EXECUTOR.submit((Runnable) () -> {
-        synchronized (HostConnector.this) {
+    synchronized void reconnect() {
+        close();
+        if (!nc.isAcceptor())
+            HostConnector.this.connect();
 
-            if (!nc.isAcceptor())
-                HostConnector.this.connect();
-        }
-        // });
     }
 }

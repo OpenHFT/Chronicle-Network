@@ -102,9 +102,5 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
         return sd;
     }
 
-    @Override
-    public void close() {
-        this.nc.closeTask().close();
-    }
 
 }

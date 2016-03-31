@@ -113,10 +113,9 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
     @Override
     public synchronized void close() {
+
         closed = true;
-        synchronized (lock()) {
-            wrapperWire.clear();
-        }
+        clear();
     }
 
     public boolean canTakeMoreData() {

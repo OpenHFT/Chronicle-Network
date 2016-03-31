@@ -16,7 +16,6 @@
 
 package net.openhft.chronicle.network;
 
-import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.cluster.TerminationEventHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
@@ -47,14 +46,6 @@ public interface NetworkContext<T extends NetworkContext> {
     SessionDetailsProvider sessionDetails();
 
     T sessionDetails(SessionDetailsProvider sessionDetails);
-
-
-    /**
-     * called when ever a connection is closed
-     */
-    void closeTask(Closeable r);
-
-    Closeable closeTask();
 
     void connectionClosed(boolean isClosed);
 

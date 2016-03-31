@@ -155,7 +155,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
     private void initHeartbeatCheck() {
 
         self.set(() -> {
-            System.out.println("checking heartbeat");
+
             if (closable().isClosed())
                 return;
 
@@ -185,9 +185,6 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
      * @return {@code true} if we have received a heartbeat recently
      */
     private boolean hasReceivedHeartbeat() {
-        System.out.println("lastTimeMessageReceived=" + lastTimeMessageReceived + ", System" +
-                ".currentTimeMillis()=" + System.currentTimeMillis() + ",heartbeatTimeoutMs=" + heartbeatTimeoutMs);
-
         return lastTimeMessageReceived > System.currentTimeMillis() - heartbeatTimeoutMs;
     }
 

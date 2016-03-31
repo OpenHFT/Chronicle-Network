@@ -18,7 +18,6 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.annotation.Nullable;
-import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.*;
@@ -293,7 +292,6 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     public void close() {
         closed = true;
         nc.connectionClosed(true);
-        Closeable.closeQuietly(this.nc.closeTask());
     }
 
 

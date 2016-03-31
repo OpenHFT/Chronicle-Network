@@ -116,16 +116,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         return (T) this;
     }
 
-    @Override
-    public void closeTask(Closeable closeTask) {
-        this.closeTask = closeTask;
-    }
-
-    @Override
-    public Closeable closeTask() {
-        return closeTask;
-    }
-
     public boolean connectionClosed() {
         return this.connectionClosed;
     }
