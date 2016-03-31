@@ -93,7 +93,7 @@ public enum TCPRegistry {
                 int port = Integer.parseInt(split[1]);
                 address = createInetSocketAddress(host, port);
             } else {
-                address = new InetSocketAddress(0);
+                address = new InetSocketAddress("localhost", 0);
             }
             createSSC(description, address);
         }

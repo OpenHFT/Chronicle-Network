@@ -50,30 +50,9 @@ import static net.openhft.chronicle.network.ServerThreadingStrategy.serverThread
  */
 public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandlerManager {
 
-    public static class Factory implements MarshallableFunction<NetworkContext, TcpEventHandler> {
-        private Factory(WireIn wireIn) {
-            System.out.println(wireIn);
-        }
-
-        public Factory() {
-        }
-
-        @Override
-        public TcpEventHandler apply(NetworkContext nc) {
-            try {
-                return new TcpEventHandler(nc);
-            } catch (IOException e) {
-                throw Jvm.rethrow(e);
-
-            }
-        }
-    }
-
-
     static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", TcpChannelHub.BUFFER_SIZE);
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
     private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", TCP_BUFFER);
-
     @NotNull
     private final SocketChannel sc;
     private final NetworkContext nc;
@@ -96,7 +75,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private volatile TcpHandler tcpHandler;
     private long lastTickReadTime = Time.tickTime();
     private volatile boolean closed;
-
     public TcpEventHandler(@NotNull NetworkContext nc) throws IOException {
         final boolean unchecked = nc.isUnchecked();
         this.writeEventHandler = new WriteEventHandler();
@@ -242,7 +220,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     }
 
-    private boolean invokeHandler() throws IOException {
+     boolean invokeHandler() throws IOException {
 
         boolean busy = false;
 
@@ -344,6 +322,25 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             return true;
         }
         return false;
+    }
+
+    public static class Factory implements MarshallableFunction<NetworkContext, TcpEventHandler> {
+        private Factory(WireIn wireIn) {
+            System.out.println(wireIn);
+        }
+
+        public Factory() {
+        }
+
+        @Override
+        public TcpEventHandler apply(NetworkContext nc) {
+            try {
+                return new TcpEventHandler(nc);
+            } catch (IOException e) {
+                throw Jvm.rethrow(e);
+
+            }
+        }
     }
 
     private class WriteEventHandler implements EventHandler {
