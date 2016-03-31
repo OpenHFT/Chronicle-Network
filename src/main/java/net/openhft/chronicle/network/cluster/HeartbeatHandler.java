@@ -66,7 +66,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
     private final long heartbeatIntervalMs;
     private volatile long lastTimeMessageReceived;
     private final long heartbeatTimeoutMs;
-    private final AtomicBoolean closed = new AtomicBoolean();
+
     private final AtomicBoolean hasHeartbeat = new AtomicBoolean();
     private final AtomicReference<Runnable> self = new AtomicReference<>();
 
@@ -141,7 +141,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
 
     @Override
     public void close() {
-        if (closed.getAndSet(true))
+        if (closable().isClosed())
             return;
         lastTimeMessageReceived = Long.MAX_VALUE;
         Closeable.closeQuietly(closable());
@@ -156,7 +156,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
 
         self.set(() -> {
             System.out.println("checking heartbeat");
-            if (closed.get())
+            if (closable().isClosed())
                 return;
 
             if (!hasReceivedHeartbeat())

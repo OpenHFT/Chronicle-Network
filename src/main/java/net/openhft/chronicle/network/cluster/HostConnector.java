@@ -29,8 +29,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
 
-import static net.openhft.chronicle.network.cluster.HeartbeatHandler.HEARTBEAT_EXECUTOR;
-
 public class HostConnector implements Closeable {
 
     private final WireType wireType;
@@ -66,7 +64,7 @@ public class HostConnector implements Closeable {
         this.wireOutPublisherFactory = clusterContext.wireOutPublisherFactory();
 
         this.eventLoop = clusterContext.eventLoop();
-        this.wireOutPublisher = wireOutPublisherFactory.apply(WireType.TEXT);
+
     }
 
 
@@ -91,12 +89,13 @@ public class HostConnector implements Closeable {
     public synchronized void connect() {
 
         isConnected = true;
-
+        this.wireOutPublisher = wireOutPublisherFactory.apply(WireType.TEXT);
         // we will send the initial header as text wire, then the rest will be sent in
         // what ever wire is configured
         nc = networkContextFactory.apply(clusterContext);
         nc.wireOutPublisher(wireOutPublisher);
         nc.wireType(wireType);
+        nc.isAcceptor(false);
         nc.closeTask(this);
         nc.heartbeatTimeoutMs(clusterContext.heartbeatTimeoutMs() * 2);
         nc.heartbeatListener(() -> {
@@ -116,12 +115,14 @@ public class HostConnector implements Closeable {
     }
 
     public void reconnect() {
+        Closeable.closeQuietly(nc.socketChannel());
         // using HEARTBEAT_EXECUTOR to eliminate tail recursion
-        HEARTBEAT_EXECUTOR.submit((Runnable) () -> {
-            synchronized (HostConnector.this) {
-                if (!nc.isAcceptor())
-                    HostConnector.this.connect();
-            }
-        });
+        // HEARTBEAT_EXECUTOR.submit((Runnable) () -> {
+        synchronized (HostConnector.this) {
+
+            if (!nc.isAcceptor())
+                HostConnector.this.connect();
+        }
+        // });
     }
 }

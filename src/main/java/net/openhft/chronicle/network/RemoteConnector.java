@@ -155,9 +155,6 @@ public class RemoteConnector implements Closeable {
             if (sc == null)
                 return false;
 
-            if (LOG.isInfoEnabled())
-                LOG.info("accepted connection " + sc);
-
             nc.socketChannel(sc);
             nc.isAcceptor(false);
 

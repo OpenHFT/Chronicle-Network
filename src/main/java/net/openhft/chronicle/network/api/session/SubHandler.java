@@ -26,7 +26,8 @@ import org.jetbrains.annotations.NotNull;
 /**
  * @author Rob Austin.
  */
-public interface SubHandler<T extends NetworkContext> extends NetworkContextManager<T>, Closeable {
+public interface SubHandler<T extends NetworkContext> extends NetworkContextManager<T>,
+        Closeable {
 
     void cid(long cid);
 
