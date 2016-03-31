@@ -79,7 +79,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         return isUnchecked;
     }
 
-    WireOutPublisher wireOutPublisher;
+    private WireOutPublisher wireOutPublisher;
 
 
     @Override
@@ -93,7 +93,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     }
 
 
-    WireType wireType = WireType.TEXT;
+    private WireType wireType = WireType.TEXT;
 
     @Override
     public WireType wireType() {

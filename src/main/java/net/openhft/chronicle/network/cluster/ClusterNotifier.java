@@ -31,13 +31,13 @@ class ClusterNotifier<E extends HostDetails> implements TerminationEventHandler,
 
     private final List<WriteMarshallable> bootstaps;
     private final AtomicBoolean terminated = new AtomicBoolean();
-    private final ConnectionChangedNotifier connectionEventManager;
+    private final ConnectionChangedNotifier connectionManager;
     private final HostConnector hostConnector;
 
-    <E extends HostDetails> ClusterNotifier(ConnectionChangedNotifier connectionEventManager,
+    <E extends HostDetails> ClusterNotifier(ConnectionChangedNotifier connectionManager,
                                             HostConnector hostConnector,
                                             List<WriteMarshallable> bootstaps) {
-        this.connectionEventManager = connectionEventManager;
+        this.connectionManager = connectionManager;
         this.hostConnector = hostConnector;
         this.bootstaps = bootstaps;
     }
@@ -53,7 +53,7 @@ class ClusterNotifier<E extends HostDetails> implements TerminationEventHandler,
         if (!isConnected)
             onClose();
 
-        connectionEventManager.onConnectionChanged(isConnected, nc);
+        connectionManager.onConnectionChanged(isConnected, nc);
 
     }
 

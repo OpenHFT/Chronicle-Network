@@ -96,7 +96,7 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
 
 
     @NotNull
-    public SessionDetails toSessionDetails(Wire inWire) {
+    private SessionDetails toSessionDetails(Wire inWire) {
         VanillaSessionDetails sd = new VanillaSessionDetails();
         sd.readMarshallable(inWire);
         return sd;

@@ -21,6 +21,6 @@ package net.openhft.chronicle.network.connection;
  *
  * @author Rob Austin.
  */
-public interface AsyncTemporarySubscription extends AsyncSubscription {
+interface AsyncTemporarySubscription extends AsyncSubscription {
 
 }

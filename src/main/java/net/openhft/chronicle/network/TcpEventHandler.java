@@ -90,8 +90,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private final ByteBuffer outBB = allocateDirect(CAPACITY);
     @NotNull
     private final Bytes outBBB;
-    int oneInTen;
-    volatile boolean isCleaned;
+    private int oneInTen;
+    private volatile boolean isCleaned;
     @Nullable
     private volatile TcpHandler tcpHandler;
     private long lastTickReadTime = Time.tickTime();
@@ -226,7 +226,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         return false;
     }
 
-    public synchronized void clean() {
+    private synchronized void clean() {
 
         if (isCleaned)
             return;
@@ -240,7 +240,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     }
 
-    boolean invokeHandler() throws IOException {
+    private boolean invokeHandler() throws IOException {
 
         boolean busy = false;
 
@@ -319,7 +319,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     }
 
-    boolean tryWrite() throws IOException {
+    private boolean tryWrite() throws IOException {
 
         if (outBB.remaining() <= 0)
             return false;

@@ -58,17 +58,12 @@ public class HostDetails implements Marshallable {
     public void writeMarshallable(@NotNull WireOut wire) {
         wire.write(() -> "hostId").int32(hostId)
                 .write(() -> "tcpBufferSize").int32(tcpBufferSize)
-                .write(() -> "connectUri").text(connectUri)
-                .write(() -> "timeoutMs").int32(timeoutMs);
+                .write(() -> "connectUri").text(connectUri);
     }
 
 
     public String connectUri() {
         return connectUri;
-    }
-
-    public long timeoutMs() {
-        return timeoutMs();
     }
 
     public int hostId() {

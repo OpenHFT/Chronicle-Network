@@ -92,7 +92,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
     }
 
     @NotNull
-    public WireParser<Void> wireParser() {
+    private WireParser<Void> wireParser() {
         WireParser<Void> parser = new VanillaWireParser<>((s, v, $) -> {
         });
         parser.register(() -> "wireType", (s, v, $) -> v.text(this, (o, x) -> this.wireType(WireType.valueOf(x))));
@@ -112,7 +112,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
     }
 
 
-    public BiFunction<ClusterContext, HostDetails, WriteMarshallable> handlerFactory() {
+    private BiFunction<ClusterContext, HostDetails, WriteMarshallable> handlerFactory() {
         return handlerFactory;
     }
 
@@ -134,7 +134,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         return this;
     }
 
-    byte localIdentifier;
+    private byte localIdentifier;
     long connectionTimeoutMs = 1_000;
 
     public ClusterContext() {
@@ -156,13 +156,13 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
     }
 
 
-    public ClusterContext heartbeatFactory(Function<ClusterContext, WriteMarshallable> heartbeatFactor) {
+    private ClusterContext heartbeatFactory(Function<ClusterContext, WriteMarshallable> heartbeatFactor) {
         this.heartbeatFactory = heartbeatFactor;
         return this;
     }
 
 
-    public ClusterContext heartbeatIntervalMs(long heartbeatIntervalMs) {
+    private ClusterContext heartbeatIntervalMs(long heartbeatIntervalMs) {
         this.heartbeatIntervalMs = heartbeatIntervalMs;
         return this;
     }
@@ -208,25 +208,25 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         return networkContextFactory;
     }
 
-    public ClusterContext connectionStrategy(ConnectionStrategy connectionStrategy) {
+    private ClusterContext connectionStrategy(ConnectionStrategy connectionStrategy) {
         this.connectionStrategy = connectionStrategy;
         return this;
     }
 
-    public ConnectionStrategy connectionStrategy() {
+    private ConnectionStrategy connectionStrategy() {
         return this.connectionStrategy;
     }
 
-    public Supplier<ConnectionManager> connectionEventHandler() {
+    private Supplier<ConnectionManager> connectionEventHandler() {
         return connectionEventHandler;
     }
 
-    public ClusterContext connectionEventHandler(Supplier<ConnectionManager> connectionEventHandler) {
+    private ClusterContext connectionEventHandler(Supplier<ConnectionManager> connectionEventHandler) {
         this.connectionEventHandler = connectionEventHandler;
         return this;
     }
 
-    public Function<ClusterContext, WriteMarshallable> heartbeatFactory() {
+    private Function<ClusterContext, WriteMarshallable> heartbeatFactory() {
         return heartbeatFactory;
     }
 

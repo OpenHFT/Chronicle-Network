@@ -21,6 +21,6 @@ import net.openhft.chronicle.network.api.TcpHandler;
 /**
  * @author Rob Austin.
  */
-public interface TcpEventHandlerManager {
+interface TcpEventHandlerManager {
     void tcpHandler(TcpHandler tcpHandler);
 }

@@ -19,7 +19,7 @@ package net.openhft.chronicle.network.connection;
 import net.openhft.chronicle.wire.WireIn;
 import org.jetbrains.annotations.NotNull;
 
-public interface AsyncSubscription {
+interface AsyncSubscription {
 
     /**
      * returns the unique tid that will be used in the subscription, this tid must be unique per

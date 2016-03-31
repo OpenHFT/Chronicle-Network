@@ -71,10 +71,6 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
             SocketChannel sc = ssc.accept();
 
             if (sc != null) {
-
-                if (LOG.isInfoEnabled())
-                    LOG.info("accepted connection " + sc);
-
                 final NetworkContext nc = ncFactory.get();
                 nc.socketChannel(sc);
                 nc.isAcceptor(true);

@@ -85,7 +85,7 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
     }
 
     @Nullable
-    HostDetails findHostDetails(int remoteIdentifier) {
+    private HostDetails findHostDetails(int remoteIdentifier) {
 
         for (HostDetails hd : hostDetails.values()) {
             if (hd.hostId() == remoteIdentifier)

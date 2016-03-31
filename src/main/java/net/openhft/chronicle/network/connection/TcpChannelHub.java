@@ -74,23 +74,23 @@ import static net.openhft.chronicle.core.Jvm.rethrow;
  */
 public class TcpChannelHub implements Closeable {
 
-    public static final int HEATBEAT_PING_PERIOD =
+    private static final int HEATBEAT_PING_PERIOD =
             getInteger("heartbeat.ping.period",
                     Jvm.isDebug() ? 30_000 : 5_000);
-    public static final int HEATBEAT_TIMEOUT_PERIOD =
+    private static final int HEATBEAT_TIMEOUT_PERIOD =
             getInteger("heartbeat.timeout",
                     Jvm.isDebug() ? 120_000 : 15_000);
 
-    public static final int SIZE_OF_SIZE = 4;
-    public static final Set<TcpChannelHub> hubs = new CopyOnWriteArraySet<>();
+    private static final int SIZE_OF_SIZE = 4;
+    private static final Set<TcpChannelHub> hubs = new CopyOnWriteArraySet<>();
     public static final int BUFFER_SIZE = 2 << 20;
     private static final Logger LOG = LoggerFactory.getLogger(TcpChannelHub.class);
     public final long timeoutMs;
     @NotNull
-    protected final String name;
-    protected final int tcpBufferSize;
-    final Wire outWire;
-    final Wire inWire;
+    private final String name;
+    private final int tcpBufferSize;
+    private final Wire outWire;
+    private final Wire inWire;
     @NotNull
     private final SocketAddressSupplier socketAddressSupplier;
     private final Set<Long> preventSubscribeUponReconnect = new ConcurrentSkipListSet<>();
@@ -110,7 +110,7 @@ public class TcpChannelHub implements Closeable {
     private final ClientConnectionMonitor clientConnectionMonitor;
     @NotNull
     private final WireType wireType;
-    Pauser pauser = new LongPauser(1, 25, 50, 20_000, TimeUnit.MICROSECONDS);
+    private Pauser pauser = new LongPauser(1, 25, 50, 20_000, TimeUnit.MICROSECONDS);
     // private final String description;
     private long largestChunkSoFar = 0;
     @Nullable
@@ -179,7 +179,7 @@ public class TcpChannelHub implements Closeable {
         hubs.clear();
     }
 
-    static void logToStandardOutMessageReceived(@NotNull Wire wire) {
+    private static void logToStandardOutMessageReceived(@NotNull Wire wire) {
         final Bytes<?> bytes = wire.bytes();
 
         if (!YamlLogging.showClientReads())
@@ -206,7 +206,7 @@ public class TcpChannelHub implements Closeable {
         }
     }
 
-    static void logToStandardOutMessageReceivedInERROR(@NotNull Wire wire) {
+    private static void logToStandardOutMessageReceivedInERROR(@NotNull Wire wire) {
         final Bytes<?> bytes = wire.bytes();
 
         final long position = bytes.writePosition();
@@ -237,7 +237,7 @@ public class TcpChannelHub implements Closeable {
     }
 
     @Nullable
-    SocketChannel openSocketChannel(InetSocketAddress socketAddress) throws IOException {
+    private SocketChannel openSocketChannel(InetSocketAddress socketAddress) throws IOException {
         final SocketChannel result = SocketChannel.open(socketAddress);
         result.configureBlocking(false);
         Socket socket = result.socket();
@@ -305,7 +305,7 @@ public class TcpChannelHub implements Closeable {
         subscribe(asyncSubscription, false);
     }
 
-    public void subscribe(@NotNull final AsyncSubscription asyncSubscription, boolean tryLock) {
+    private void subscribe(@NotNull final AsyncSubscription asyncSubscription, boolean tryLock) {
         tcpSocketConsumer.subscribe(asyncSubscription, tryLock);
     }
 
@@ -324,7 +324,7 @@ public class TcpChannelHub implements Closeable {
         return outBytesLock;
     }
 
-    void doHandShaking(@NotNull SocketChannel socketChannel) throws IOException {
+    private void doHandShaking(@NotNull SocketChannel socketChannel) throws IOException {
 
         assert outBytesLock.isHeldByCurrentThread();
         final SessionDetails sessionDetails = sessionDetails();
@@ -369,7 +369,7 @@ public class TcpChannelHub implements Closeable {
     /**
      * closes the existing connections
      */
-    protected synchronized void closeSocket() {
+    private synchronized void closeSocket() {
 
         SocketChannel clientChannel = this.clientChannel;
 
@@ -475,7 +475,7 @@ public class TcpChannelHub implements Closeable {
      * used to signal to the server that the client is going to drop the connection, and waits up to
      * one second for the server to acknowledge the receipt of this message
      */
-    void sendCloseMessage() {
+    private void sendCloseMessage() {
 
         this.lock(() -> {
 
@@ -746,7 +746,7 @@ public class TcpChannelHub implements Closeable {
         return outBytesLock.isLocked();
     }
 
-    void reflectServerHeartbeatMessage(@NotNull ValueIn valueIn) {
+    private void reflectServerHeartbeatMessage(@NotNull ValueIn valueIn) {
 
         if (!outBytesLock().tryLock()) {
             if (Jvm.isDebug() && LOG.isDebugEnabled())
@@ -813,7 +813,7 @@ public class TcpChannelHub implements Closeable {
         return lock(r, false);
     }
 
-    public boolean lock(@NotNull Task r, boolean tryLock) {
+    private boolean lock(@NotNull Task r, boolean tryLock) {
         return lock2(r, false, tryLock);
     }
 

@@ -99,7 +99,7 @@ public enum TCPRegistry {
         }
     }
 
-    public static void createSSC(String description, InetSocketAddress address) throws IOException {
+    private static void createSSC(String description, InetSocketAddress address) throws IOException {
         ServerSocketChannel ssc = ServerSocketChannel.open();
         ssc.socket().setReuseAddress(true);
         ssc.bind(address);

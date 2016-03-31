@@ -30,7 +30,7 @@ public enum ServerThreadingStrategy {
             "This is ideal when you have a small number of client connections on a server with a large number of free cores");
 
     private static final Logger LOG = LoggerFactory.getLogger(ServerThreadingStrategy.class);
-    public static ServerThreadingStrategy value = ServerThreadingStrategy.SINGLE_THREADED;
+    private static ServerThreadingStrategy value = ServerThreadingStrategy.SINGLE_THREADED;
 
     static {
         final String serverThreadingStrategy = System.getProperty("ServerThreadingStrategy");

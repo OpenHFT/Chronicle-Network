@@ -30,7 +30,7 @@ import java.nio.channels.SocketChannel;
 /**
  * Created by peter.lawrey on 15/07/2015.
  */
-public class NetworkLog {
+class NetworkLog {
     private static final Logger LOG =
             LoggerFactory.getLogger(NetworkLog.class.getName());
     @NotNull
@@ -59,7 +59,7 @@ public class NetworkLog {
         log0(bytes, start, end);
     }
 
-    public void log0(@NotNull ByteBuffer bytes, int start, int end) {
+    private void log0(@NotNull ByteBuffer bytes, int start, int end) {
         final StringBuilder sb = new StringBuilder(desc);
         sb.append(" len: ").append(end - start).append(" - ");
         if (end - start > 128) {

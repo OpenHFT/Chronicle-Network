@@ -327,7 +327,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         }
     }
 
-    void quietSendBytesAsyncWithoutLock(final Bytes bytes) {
+    private void quietSendBytesAsyncWithoutLock(final Bytes bytes) {
         try {
             sendBytesAsyncWithoutLock(bytes);
         } catch (ConnectionDroppedException e) {
@@ -341,14 +341,14 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         }
     }
 
-    protected void sendBytesAsyncWithoutLock(@NotNull final Bytes bytes) {
+    private void sendBytesAsyncWithoutLock(@NotNull final Bytes bytes) {
         writeAsyncMetaData();
         hub.outWire().bytes().write(bytes);
         hub.writeSocket(hub.outWire(), true);
     }
 
-    protected void sendEventAsyncWithoutLock(@NotNull final WireKey eventId,
-                                             @Nullable final WriteValue consumer) {
+    private void sendEventAsyncWithoutLock(@NotNull final WireKey eventId,
+                                           @Nullable final WriteValue consumer) {
 
         writeAsyncMetaData();
         hub.outWire().writeDocument(false, wireOut -> {
@@ -408,7 +408,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
     }
 
-    protected long readLong(long tid, long startTime) throws ConnectionDroppedException {
+    private long readLong(long tid, long startTime) throws ConnectionDroppedException {
         assert !hub.outBytesLock().isHeldByCurrentThread();
 
         long timeoutTime = startTime + hub.timeoutMs;
