@@ -51,22 +51,6 @@ public class RemoteConnector implements Closeable {
         this.tcpHandlerSupplier = tcpEventHandlerFactory;
     }
 
-    public void connect(final String remoteHostPort,
-                        final EventLoop eventLoop,
-                        @NotNull NetworkContext nc,
-                        final long retryInterval) {
-
-        final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
-
-        final RCEventHandler handler = new RCEventHandler(
-                remoteHostPort,
-                nc,
-                eventLoop,
-                address, retryInterval);
-
-        eventLoop.addHandler(handler);
-    }
-
     private static void closeSocket(SocketChannel socketChannel) {
         if (socketChannel == null)
             return;
@@ -83,6 +67,21 @@ public class RemoteConnector implements Closeable {
         }
     }
 
+    public void connect(final String remoteHostPort,
+                        final EventLoop eventLoop,
+                        @NotNull NetworkContext nc,
+                        final long retryInterval) {
+
+        final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
+
+        final RCEventHandler handler = new RCEventHandler(
+                remoteHostPort,
+                nc,
+                eventLoop,
+                address, retryInterval);
+
+        eventLoop.addHandler(handler);
+    }
 
     @Override
     public void close() {
@@ -112,13 +111,12 @@ public class RemoteConnector implements Closeable {
     private class RCEventHandler implements EventHandler, Closeable {
 
         private final InetSocketAddress address;
-        private volatile boolean closed;
         private final AtomicLong nextPeriod = new AtomicLong();
-
         private final String remoteHostPort;
         private final NetworkContext nc;
         private final EventLoop eventLoop;
         private final long retryInterval;
+        private volatile boolean closed;
 
         RCEventHandler(String remoteHostPort,
                        NetworkContext nc,
@@ -173,7 +171,9 @@ public class RemoteConnector implements Closeable {
         @Override
         public String toString() {
             return getClass().getSimpleName() + "{"
-                    + "remoteHostPort=" + remoteHostPort + "}";
+                    + "remoteHostPort=" + remoteHostPort
+                    + ", closed=" + closed +
+                    "}";
         }
 
         @Override
