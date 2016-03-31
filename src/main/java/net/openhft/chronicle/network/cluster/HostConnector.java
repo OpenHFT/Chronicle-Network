@@ -71,8 +71,8 @@ public class HostConnector implements Closeable {
 
         if (nc.socketChannel() != null)
             Closeable.closeQuietly(nc.socketChannel());
-
-        wp.close();
+        if (wp != null)
+            wp.close();
     }
 
 
