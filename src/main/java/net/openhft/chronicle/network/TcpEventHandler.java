@@ -103,6 +103,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         this.sc = nc.socketChannel();
         this.nc = nc;
         sc.configureBlocking(false);
+
+
         try {
             sc.socket().setTcpNoDelay(true);
             sc.socket().setReceiveBufferSize(TCP_BUFFER);

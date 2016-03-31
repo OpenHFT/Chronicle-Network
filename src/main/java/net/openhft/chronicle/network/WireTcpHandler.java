@@ -266,7 +266,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         logYaml(outWire);
     }
 
-    private static void logYaml(final WireOut outWire) {
+    public static void logYaml(final WireOut outWire) {
         if (YamlLogging.showServerWrites())
             try {
                 LOG.info("\nServer Sends:\n" +
