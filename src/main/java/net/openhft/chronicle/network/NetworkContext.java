@@ -62,4 +62,6 @@ public interface NetworkContext<T extends NetworkContext> {
     default boolean isUnchecked() {
         return false;
     }
+
+    long newCid();
 }

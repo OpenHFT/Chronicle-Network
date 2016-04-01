@@ -24,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Rob Austin.
@@ -145,4 +146,23 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         this.heartbeatListener = heartbeatListener;
     }
 
+
+    private final AtomicLong cid = new AtomicLong();
+
+    public long newCid() {
+
+        long time = System.currentTimeMillis();
+
+        for (; ; ) {
+            long value = cid.get();
+            if (time <= value) {
+                time++;
+                continue;
+            }
+
+            if (cid.compareAndSet(value, time)) {
+                return time;
+            }
+        }
+    }
 }
