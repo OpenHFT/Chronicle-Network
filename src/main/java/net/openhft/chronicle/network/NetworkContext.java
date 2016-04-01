@@ -29,8 +29,6 @@ public interface NetworkContext<T extends NetworkContext> {
 
     boolean isAcceptor();
 
-    boolean isUnchecked();
-
     T socketChannel(SocketChannel sc);
 
     SocketChannel socketChannel();
@@ -60,4 +58,8 @@ public interface NetworkContext<T extends NetworkContext> {
     void heartbeatListener(HeartbeatListener heartbeatListener);
 
     void heartbeatTimeoutMs(long l);
+
+    default boolean isUnchecked() {
+        return false;
+    }
 }

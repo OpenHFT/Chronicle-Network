@@ -16,7 +16,6 @@
 
 package net.openhft.chronicle.network;
 
-import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.cluster.TerminationEventHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
@@ -33,11 +32,9 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
 
     private SocketChannel socketChannel;
     private boolean isAcceptor = true;
-    private boolean isUnchecked;
     private HeartbeatListener heartbeatListener;
     private SessionDetailsProvider sessionDetails;
     private boolean connectionClosed;
-    private Closeable closeTask;
 
     @Nullable
     private TerminationEventHandler terminationEventHandler;
@@ -73,11 +70,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         return isAcceptor;
     }
 
-
-    @Override
-    public boolean isUnchecked() {
-        return isUnchecked;
-    }
 
     private WireOutPublisher wireOutPublisher;
 

@@ -69,7 +69,6 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
                         LOG.info("Server sends:" + Wires.fromSizePrefixedBlobs(bytes));
 
                     out.write(bytes);
-
                 }
             }
 

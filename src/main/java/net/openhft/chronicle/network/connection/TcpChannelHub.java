@@ -1046,7 +1046,7 @@ public class TcpChannelHub implements Closeable {
             outBytesLock().isHeldByCurrentThread();
             //    if (bytes instanceof AbstractAsyncSubscription && !(bytes instanceof
             //          AsyncTemporarySubscription))
-            //         System.out.println("");
+
             final Object prev = map.put(tid, bytes);
             assert prev == null;
         }

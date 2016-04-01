@@ -20,6 +20,7 @@ import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.connection.CoreFields;
+import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.threads.NamedThreadFactory;
 import net.openhft.chronicle.wire.Demarshallable;
 import net.openhft.chronicle.wire.WireIn;
@@ -109,8 +110,9 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
 
         final Runnable task = () -> {
             // we will only publish a heartbeat if the wire out publisher is empty
-            if (nc().wireOutPublisher().isEmpty())
-                nc().wireOutPublisher().publish(heartbeatMessage);
+            WireOutPublisher wireOutPublisher = nc().wireOutPublisher();
+            if (wireOutPublisher.isEmpty())
+                wireOutPublisher.publish(heartbeatMessage);
         };
 
         HEARTBEAT_EXECUTOR.scheduleAtFixedRate(task, this.heartbeatIntervalMs, this
@@ -136,6 +138,8 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
 
     @Override
     public void processData(@NotNull WireIn inWire, @NotNull WireOut outWire) {
+        if (!inWire.hasMore())
+            return;
         inWire.read(() -> "heartbeat").text();
     }
 
@@ -145,7 +149,10 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
             return;
         lastTimeMessageReceived = Long.MAX_VALUE;
         Closeable.closeQuietly(closable());
+
+
     }
+
 
     public void onMessageReceived() {
         lastTimeMessageReceived = System.currentTimeMillis();

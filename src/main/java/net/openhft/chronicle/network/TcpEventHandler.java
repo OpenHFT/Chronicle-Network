@@ -191,10 +191,10 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
 
         } catch (ClosedChannelException e) {
-
+/*
             if (heartbeatListener != null)
                 heartbeatListener.onMissedHeartbeat();
-
+*/
             closeSC();
             throw new InvalidEventHandlerException();
         } catch (IOException e) {
