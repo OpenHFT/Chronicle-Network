@@ -52,7 +52,7 @@ public class TcpServerEventGroupTest {
         new TcpServerEventGroupTest().testStart();
     }
 
-    private static void testThroughput(@NotNull SocketChannel... sockets) throws IOException, InterruptedException {
+    private static void testThroughput(@NotNull SocketChannel... sockets) throws IOException {
         System.out.println("Starting throughput test");
         int bufferSize = 32 * 1024;
         ByteBuffer bb = ByteBuffer.allocateDirect(bufferSize);

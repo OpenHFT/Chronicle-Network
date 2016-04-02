@@ -74,16 +74,15 @@ import static net.openhft.chronicle.core.Jvm.rethrow;
  */
 public class TcpChannelHub implements Closeable {
 
+    public static final int BUFFER_SIZE = 2 << 20;
     private static final int HEATBEAT_PING_PERIOD =
             getInteger("heartbeat.ping.period",
                     Jvm.isDebug() ? 30_000 : 5_000);
     private static final int HEATBEAT_TIMEOUT_PERIOD =
             getInteger("heartbeat.timeout",
                     Jvm.isDebug() ? 120_000 : 15_000);
-
     private static final int SIZE_OF_SIZE = 4;
     private static final Set<TcpChannelHub> hubs = new CopyOnWriteArraySet<>();
-    public static final int BUFFER_SIZE = 2 << 20;
     private static final Logger LOG = LoggerFactory.getLogger(TcpChannelHub.class);
     public final long timeoutMs;
     @NotNull
@@ -1623,7 +1622,7 @@ public class TcpChannelHub implements Closeable {
             attemptConnect();
         }
 
-        private void attemptConnect() throws IOException {
+        private void attemptConnect() {
 
             keepSubscriptionsAndClearEverythingElse();
             long start = System.currentTimeMillis();

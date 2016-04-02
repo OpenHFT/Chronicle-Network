@@ -71,8 +71,8 @@ public class GrizzlyClientThroughPutTest {
         final AtomicLong bytesReceived = new AtomicLong();
 
         filterChainBuilder.add(new BaseFilter() {
-            int i;
             final Buffer buffer2 = GRIZZLY_MM.allocate(bufferSize);
+            int i;
 
             /**
              * Handle just read operation, when some message has come and ready to be
@@ -83,7 +83,7 @@ public class GrizzlyClientThroughPutTest {
              * @throws java.io.IOException
              */
             @Override
-            public NextAction handleRead(@NotNull final FilterChainContext ctx) throws IOException {
+            public NextAction handleRead(@NotNull final FilterChainContext ctx) {
 
                 bytesReceived.addAndGet((ctx.<Buffer>getMessage()).remaining());
 

@@ -153,7 +153,7 @@ public class EchoClientMain {
             socket.close();
     }
 
-    private static void testThroughput(@NotNull SocketChannel... sockets) throws IOException, InterruptedException {
+    private static void testThroughput(@NotNull SocketChannel... sockets) throws IOException {
         System.out.println("Starting throughput test, clients=" + CLIENTS);
         int bufferSize = 32 * 1024;
         ByteBuffer bb = ByteBuffer.allocateDirect(bufferSize);

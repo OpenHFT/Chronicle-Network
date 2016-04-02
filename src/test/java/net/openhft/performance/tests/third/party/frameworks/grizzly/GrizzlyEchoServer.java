@@ -32,9 +32,8 @@ import static org.glassfish.grizzly.nio.transport.TCPNIOTransportBuilder.newInst
  */
 public class GrizzlyEchoServer {
 
-    private static final Logger LOG = Logger.getLogger(GrizzlyEchoServer.class.getName());
     static final int PORT = Integer.parseInt(System.getProperty("port", "9124"));
-
+    private static final Logger LOG = Logger.getLogger(GrizzlyEchoServer.class.getName());
     @NotNull
     private static CountDownLatch countDownLatch = new CountDownLatch(1);
 
@@ -49,7 +48,7 @@ public class GrizzlyEchoServer {
         // EchoFilter is responsible for echoing received messages
         filterChainBuilder.add(new BaseFilter() {
             @Override
-            public NextAction handleRead(@NotNull FilterChainContext ctx) throws IOException {
+            public NextAction handleRead(@NotNull FilterChainContext ctx) {
                 // Peer address is used for non-connected UDP Connection :)
                 final Object peerAddress = ctx.getAddress();
                 final Object message = ctx.getMessage();

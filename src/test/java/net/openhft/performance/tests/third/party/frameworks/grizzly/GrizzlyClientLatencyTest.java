@@ -63,10 +63,9 @@ public class GrizzlyClientLatencyTest {
 
         filterChainBuilder.add(new BaseFilter() {
             final long[] times = new long[500_000];
-            int count = -50_000; // for warn up - we will skip the first 50_000
-
-            int i;
             final Buffer buffer2 = MemoryManager.DEFAULT_MEMORY_MANAGER.allocate(8);
+            int count = -50_000; // for warn up - we will skip the first 50_000
+            int i;
 
             /**
              * Handle just read operation, when some message has come and ready to be
@@ -77,7 +76,7 @@ public class GrizzlyClientLatencyTest {
              * @throws java.io.IOException
              */
             @Override
-            public NextAction handleRead(@NotNull final FilterChainContext ctx) throws IOException {
+            public NextAction handleRead(@NotNull final FilterChainContext ctx) {
 
                 if (i++ % 100_000 == 0)
                     System.out.print(".");

@@ -60,7 +60,7 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
     public ConnectorEventHandler(@NotNull Map<String, ConnectionDetails> nameToConnectionDetails,
                                  @NotNull final Function<ConnectionDetails, TcpHandler> tcpHandlerSupplier,
                                  @NotNull final Supplier<SessionDetailsProvider>
-                                         sessionDetailsSupplier) throws IOException {
+                                         sessionDetailsSupplier) {
         this.nameToConnectionDetails = nameToConnectionDetails;
         this.tcpHandlerSupplier = tcpHandlerSupplier;
         this.sessionDetailsSupplier = sessionDetailsSupplier;
