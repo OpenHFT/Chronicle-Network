@@ -144,10 +144,11 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             throw new InvalidEventHandlerException();
         }
 
-        if (oneInTen++ == 10) {
+        boolean busy = false;
+        if (oneInTen++ >= 8) {
             oneInTen = 0;
             try {
-                writeEventHandler.action();
+                busy |= writeEventHandler.action();
             } catch (Exception e) {
                 LOG.error("", e);
             }
@@ -166,7 +167,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 //       .position());
                 readLog.log(inBB, start, inBB.position());
                 // inBB.position() where the data has been read() up to.
-                return invokeHandler();
+                busy |= invokeHandler();
+                return busy;
             }
 
             if (read < 0) {
@@ -178,7 +180,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             readLog.idle();
 
             if (nc.heartbeatTimeoutMs() == 0)
-                return false;
+                return busy;
 
             long tickTime = Time.tickTime();
             if (tickTime > lastTickReadTime + nc.heartbeatTimeoutMs()) {
@@ -203,7 +205,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         }
 
 
-        return false;
+        return busy;
     }
 
     private synchronized void clean() {
@@ -223,6 +225,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
      boolean invokeHandler() throws IOException {
 
         boolean busy = false;
+//         long start = System.nanoTime();
 
         inBBB.readLimit(inBB.position());
 
@@ -249,6 +252,9 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
             busy = true;
         }
+//         long time = System.nanoTime() - start;
+//         if (Thread.currentThread().getName().startsWith("tree-1"))
+//         System.out.println(LocalTime.now()+" "+busy+" "+time/1000/1e3);
         return busy;
     }
 
