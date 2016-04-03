@@ -62,7 +62,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
     }
 
     public static final ScheduledExecutorService HEARTBEAT_EXECUTOR =
-            newSingleThreadScheduledExecutor(new NamedThreadFactory("Heartbeat"));
+            newSingleThreadScheduledExecutor(new NamedThreadFactory("Heartbeat", true));
 
     private final long heartbeatIntervalMs;
     private volatile long lastTimeMessageReceived;
