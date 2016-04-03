@@ -359,7 +359,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 if (busy)
                     tryWrite();
                 if (outBB.remaining() == remaining) {
-                    invokeHandler();
+                    busy |= invokeHandler();
                     if (!busy)
                         busy = tryWrite();
                 }

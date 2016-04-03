@@ -45,12 +45,22 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     private WireOutPublisher publisher;
     private T nc;
     private volatile boolean closed;
+    private boolean isAcceptor;
+
+    public static void logYaml(final WireOut outWire) {
+        if (YamlLogging.showServerWrites())
+            try {
+                LOG.info("\nServer Sends:\n" +
+                        Wires.fromSizePrefixedBlobs(outWire.bytes()));
+            } catch (Exception e) {
+                LOG.info("\nServer Sends ( corrupted ) :\n" +
+                        outWire.bytes().toDebugString());
+            }
+    }
 
     public boolean isAcceptor() {
         return this.isAcceptor;
     }
-
-    private boolean isAcceptor;
 
     public void wireType(@NotNull WireType wireType) {
         this.wireType = wireType;
@@ -91,7 +101,6 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
             read(in, out);
     }
 
-
     @Override
     public void onEndOfConnection(boolean heartbeatTimeOut) {
         publisher.close();
@@ -104,7 +113,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
      * @param out the destination bytes
      * @return true if we can read attempt the next
      */
-    private boolean read(@NotNull Bytes in, @NotNull Bytes out) {
+    private void read(@NotNull Bytes in, @NotNull Bytes out) {
         final long header = in.readInt(in.readPosition());
         long length = Wires.lengthOf(header);
         assert length >= 0 && length < 1 << 23 : "length=" + length + ",in=" + in + ", hex=" + in.toHexString();
@@ -112,7 +121,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         // we don't return on meta data of zero bytes as this is a system message
         if (length == 0 && Wires.isData(header)) {
             in.readSkip(SIZE_OF_SIZE);
-            return false;
+            return;
         }
 
         if (in.readRemaining() < length + SIZE_OF_SIZE) {
@@ -121,7 +130,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
                 LOG.debug(String.format("required length=%d but only got %d bytes, " +
                                 "this is short by %d bytes", length, in.readRemaining(),
                         length - in.readRemaining()));
-            return false;
+            return;
         }
 
         long limit = in.readLimit();
@@ -147,10 +156,6 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
                 }
             }
 
-            long written = out.writePosition() - outPos;
-
-            if (written > 0)
-                return false;
         } catch (Throwable e) {
             LOG.error("", e);
         } finally {
@@ -163,8 +168,6 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
             }
         }
-
-        return true;
     }
 
     protected void checkWires(Bytes in, Bytes out, @NotNull WireType wireType) {
@@ -191,7 +194,6 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         }
     }
 
-
     /**
      * Process an incoming request
      */
@@ -205,7 +207,6 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
      */
     protected abstract void process(@NotNull WireIn in,
                                     @NotNull WireOut out);
-
 
     /**
      * write and exceptions and rolls back if no data was written
@@ -265,17 +266,6 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
             outWire.writeDocument(false, marshallable);
 
         logYaml(outWire);
-    }
-
-    public static void logYaml(final WireOut outWire) {
-        if (YamlLogging.showServerWrites())
-            try {
-                LOG.info("\nServer Sends:\n" +
-                        Wires.fromSizePrefixedBlobs(outWire.bytes()));
-            } catch (Exception e) {
-                LOG.info("\nServer Sends ( corrupted ) :\n" +
-                        outWire.bytes().toDebugString());
-            }
     }
 
     public final void nc(T nc) {
