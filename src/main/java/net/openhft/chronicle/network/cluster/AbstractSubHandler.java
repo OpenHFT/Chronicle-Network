@@ -57,7 +57,7 @@ public abstract class AbstractSubHandler<T extends NetworkContext> implements Su
     }
 
     @Override
-    public abstract void processData(@NotNull WireIn inWire, @NotNull WireOut outWire);
+    public abstract void onWireIn(@NotNull WireIn inWire, @NotNull WireOut outWire);
 
     @Override
     public T nc() {

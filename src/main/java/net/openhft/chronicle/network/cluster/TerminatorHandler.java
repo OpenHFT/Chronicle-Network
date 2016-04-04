@@ -71,7 +71,7 @@ public class TerminatorHandler extends AbstractSubHandler<NetworkContext> implem
     }
 
     @Override
-    public void processData(@NotNull WireIn inWire, @NotNull WireOut outWire) {
+    public void onWireIn(@NotNull WireIn inWire, @NotNull WireOut outWire) {
 
     }
 

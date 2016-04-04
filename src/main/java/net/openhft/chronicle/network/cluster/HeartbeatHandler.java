@@ -137,7 +137,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
     }
 
     @Override
-    public void processData(@NotNull WireIn inWire, @NotNull WireOut outWire) {
+    public void onWireIn(@NotNull WireIn inWire, @NotNull WireOut outWire) {
         if (!inWire.hasMore())
             return;
         inWire.read(() -> "heartbeat").text();
