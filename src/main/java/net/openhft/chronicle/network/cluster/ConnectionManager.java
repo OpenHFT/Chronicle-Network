@@ -33,5 +33,4 @@ public interface ConnectionManager extends ConnectionChangedNotifier {
         void onConnectionChange(NetworkContext nc, boolean isConnected);
     }
 
-
 }
