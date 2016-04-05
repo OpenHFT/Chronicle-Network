@@ -41,8 +41,8 @@ public class WireEchoRequestHandler extends WireTcpHandler {
      * @param outWire the wire to be sent back to the server
      */
     @Override
-    protected void process(@NotNull WireIn inWire,
-                           @NotNull WireOut outWire) {
+    protected void onRead(@NotNull WireIn inWire,
+                          @NotNull WireOut outWire) {
 
         System.out.println(Wires.fromSizePrefixedBlobs(inWire.bytes()));
 

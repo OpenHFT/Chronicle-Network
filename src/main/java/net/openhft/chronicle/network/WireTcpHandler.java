@@ -94,16 +94,22 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
             publisher.applyAction(out);
 
-        if (out.writePosition() < TcpEventHandler.TCP_BUFFER)
-            process(Wires.EMPTY, outWire);
-
         if (in.readRemaining() >= SIZE_OF_SIZE)
-            read(in, out);
+            onRead(in, out);
+
+        if (out.writePosition() < TcpEventHandler.TCP_BUFFER)
+            onWrite(outWire);
+
+
     }
 
     @Override
     public void onEndOfConnection(boolean heartbeatTimeOut) {
         publisher.close();
+    }
+
+    protected void onWrite(@NotNull WireOut out) {
+
     }
 
     /**
@@ -113,7 +119,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
      * @param out the destination bytes
      * @return true if we can read attempt the next
      */
-    private void read(@NotNull Bytes in, @NotNull Bytes out) {
+    private void onRead(@NotNull Bytes in, @NotNull Bytes out) {
         final long header = in.readInt(in.readPosition());
         long length = Wires.lengthOf(header);
         assert length >= 0 && length < 1 << 23 : "length=" + length + ",in=" + in + ", hex=" + in.toHexString();
@@ -136,7 +142,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         long limit = in.readLimit();
         long end = in.readPosition() + length + SIZE_OF_SIZE;
         assert end <= limit;
-        long outPos = out.writePosition();
+
         try {
 
             in.readLimit(end);
@@ -145,7 +151,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
             final long wireLimit = inWire.bytes().readLimit();
 
             try {
-                process(inWire, outWire);
+                onRead(inWire, outWire);
             } finally {
                 try {
                     inWire.bytes().readLimit(wireLimit);
@@ -205,8 +211,8 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
      * @param in  the wire to be processed
      * @param out the result of processing the {@code in}
      */
-    protected abstract void process(@NotNull WireIn in,
-                                    @NotNull WireOut out);
+    protected abstract void onRead(@NotNull WireIn in,
+                                   @NotNull WireOut out);
 
     /**
      * write and exceptions and rolls back if no data was written

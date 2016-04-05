@@ -5,7 +5,7 @@ import net.openhft.chronicle.wire.WriteMarshallable;
 /**
  * @author Rob Austin.
  */
-public interface WireOutPayload {
+public interface WritableSubHandler {
 
-    WriteMarshallable payload();
+    WriteMarshallable writer();
 }

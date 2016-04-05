@@ -37,7 +37,7 @@ public interface SubHandler<T extends NetworkContext> extends NetworkContextMana
 
     String csp();
 
-    void onWireIn(@NotNull WireIn inWire, @NotNull WireOut outWire);
+    void onRead(@NotNull WireIn inWire, @NotNull WireOut outWire);
 
     Closeable closable();
 

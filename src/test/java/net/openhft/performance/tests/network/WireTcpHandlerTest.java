@@ -157,8 +157,8 @@ public class WireTcpHandlerTest {
         }
 
         @Override
-        protected void process(@NotNull WireIn inWire,
-                               @NotNull WireOut outWire) {
+        protected void onRead(@NotNull WireIn inWire,
+                              @NotNull WireOut outWire) {
             td.read(inWire);
             td.write(outWire);
         }
