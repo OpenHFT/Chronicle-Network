@@ -109,7 +109,7 @@ public class TcpChannelHub implements Closeable {
     private final ClientConnectionMonitor clientConnectionMonitor;
     @NotNull
     private final WireType wireType;
-    private Pauser pauser = new LongPauser(1, 25, 50, 20_000, TimeUnit.MICROSECONDS);
+    private Pauser pauser = new LongPauser(100, 100, 500, 20_000, TimeUnit.MICROSECONDS);
     // private final String description;
     private long largestChunkSoFar = 0;
     @Nullable
