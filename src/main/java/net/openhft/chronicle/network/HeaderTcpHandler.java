@@ -47,7 +47,6 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
     }
 
 
-
     @Override
     public void process(@NotNull Bytes in, @NotNull Bytes out) {
 
@@ -64,11 +63,8 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
                 return;
 
             if (YamlLogging.showServerReads())
-                LOG.info("nc.isAcceptor=" + nc.isAcceptor() + ", read:\n" + Wires
-                        .fromSizePrefixedBlobs(in, start,
-                                in.readLimit
-                                        () - start));
-
+                LOG.info("nc.isAcceptor=" + nc.isAcceptor() +
+                        ", read:\n" + Wires.fromSizePrefixedBlobs(in, start, in.readLimit() - start));
             final TcpHandler handler;
             final long readPosition = inWire.bytes().readPosition();
             final ValueIn read = inWire.read(() -> HANDLER);

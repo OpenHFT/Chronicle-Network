@@ -95,11 +95,10 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
             publisher.applyAction(out);
 
         if (in.readRemaining() >= SIZE_OF_SIZE)
-            onRead(in, out);
+            onRead0();
 
         if (out.writePosition() < TcpEventHandler.TCP_BUFFER)
             onWrite(outWire);
-
 
     }
 
@@ -114,65 +113,34 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
     /**
      * process all messages in this batch, provided there is plenty of output space.
-     *
-     * @param in  the source bytes
-     * @param out the destination bytes
-     * @return true if we can read attempt the next
      */
-    private void onRead(@NotNull Bytes in, @NotNull Bytes out) {
-        final long header = in.readInt(in.readPosition());
-        long length = Wires.lengthOf(header);
-        assert length >= 0 && length < 1 << 23 : "length=" + length + ",in=" + in + ", hex=" + in.toHexString();
+    private void onRead0() {
 
-        // we don't return on meta data of zero bytes as this is a system message
-        if (length == 0 && Wires.isData(header)) {
-            in.readSkip(SIZE_OF_SIZE);
-            return;
-        }
+        while (!inWire.bytes().isEmpty()) {
+            long start = inWire.bytes().readPosition();
+            try (DocumentContext dc = inWire.readingDocument()) {
+                if (!dc.isPresent())
+                    return;
+                long len = inWire.bytes().readRemaining();
+                LOG.error("inWire=" + inWire.getClass() + ","
 
-        if (in.readRemaining() < length + SIZE_OF_SIZE) {
-            // we have to first read more data before this can be processed
-            if (LOG.isDebugEnabled())
-                LOG.debug(String.format("required length=%d but only got %d bytes, " +
-                                "this is short by %d bytes", length, in.readRemaining(),
-                        length - in.readRemaining()));
-            return;
-        }
+                        + Wires.fromSizePrefixedBlobs(inWire.bytes(), start).substring(0,
+                        (len > 300) ? 300 : (int) len));
+                logYaml(start);
+                onRead(dc, outWire);
 
-        long limit = in.readLimit();
-        long end = in.readPosition() + length + SIZE_OF_SIZE;
-        assert end <= limit;
-
-        try {
-
-            in.readLimit(end);
-            final long position = inWire.bytes().readPosition();
-            assert inWire.bytes().readRemaining() >= length;
-            final long wireLimit = inWire.bytes().readLimit();
-
-            try {
-                onRead(inWire, outWire);
-            } finally {
-                try {
-                    inWire.bytes().readLimit(wireLimit);
-                    inWire.bytes().readPosition(position + length);
-                } catch (Exception e) {
-                    //noinspection ThrowFromFinallyBlock
-                    throw new IllegalStateException("Unexpected error position: " + position + ", length: " + length + " limit(): " + inWire.bytes().readLimit(), e);
-                }
-            }
-
-        } catch (Throwable e) {
-            LOG.error("", e);
-        } finally {
-            in.readLimit(limit);
-            try {
-                in.readPosition(end);
             } catch (Exception e) {
-                throw new IllegalStateException("position: " + end
-                        + ", limit:" + limit + ", readLimit: " + in.readLimit() + " " + in.toDebugString(), e);
-
+                LOG.error("inWire=" + inWire.getClass() + ","
+                        + Wires.fromSizePrefixedBlobs(inWire.bytes(), start), e);
             }
+        }
+    }
+
+    private void logYaml(long start) {
+        if (YamlLogging.showServerReads() && inWire.hasMore()) {
+            String s = Wires.fromSizePrefixedBlobs(inWire.bytes(), start, inWire.bytes()
+                    .readLimit());
+            LOG.info("subhandler read:\n" + s);
         }
     }
 
@@ -211,7 +179,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
      * @param in  the wire to be processed
      * @param out the result of processing the {@code in}
      */
-    protected abstract void onRead(@NotNull WireIn in,
+    protected abstract void onRead(@NotNull DocumentContext in,
                                    @NotNull WireOut out);
 
     /**

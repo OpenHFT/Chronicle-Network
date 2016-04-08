@@ -191,17 +191,16 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 throw new InvalidEventHandlerException();
             }
 
-
         } catch (ClosedChannelException e) {
-/*
-            if (heartbeatListener != null)
-                heartbeatListener.onMissedHeartbeat();
-*/
             closeSC();
             throw new InvalidEventHandlerException();
         } catch (IOException e) {
             handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
             throw new InvalidEventHandlerException();
+        } catch (InvalidEventHandlerException e) {
+            throw e;
+        } catch (Exception e) {
+            LOG.error("", e);
         }
 
 
@@ -222,7 +221,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     }
 
-     boolean invokeHandler() throws IOException {
+    boolean invokeHandler() throws IOException {
 
         boolean busy = false;
 //         long start = System.nanoTime();

@@ -18,9 +18,8 @@ package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.WireTcpHandler;
-import net.openhft.chronicle.wire.WireIn;
+import net.openhft.chronicle.wire.DocumentContext;
 import net.openhft.chronicle.wire.WireOut;
-import net.openhft.chronicle.wire.Wires;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -37,22 +36,20 @@ public class WireEchoRequestHandler extends WireTcpHandler {
     /**
      * simply reads the csp,tid and payload and sends back the tid and payload
      *
-     * @param inWire  the wire from the client
+     * @param in  the DocumentContext from the client
      * @param outWire the wire to be sent back to the server
      */
     @Override
-    protected void onRead(@NotNull WireIn inWire,
+    protected void onRead(@NotNull DocumentContext in,
                           @NotNull WireOut outWire) {
 
-        System.out.println(Wires.fromSizePrefixedBlobs(inWire.bytes()));
-
-        inWire.readDocument(m -> {
+        if (in.isMetaData())
             outWire.writeDocument(true, meta -> meta.write(() -> "tid")
-                    .int64(inWire.read(() -> "tid").int64()));
-        }, d -> {
+                    .int64(in.wire().read(() -> "tid").int64()));
+        else
             outWire.writeDocument(false, data -> data.write(() -> "payloadResponse")
-                    .text(inWire.read(() -> "payload").text()));
-        });
+                    .text(in.wire().read(() -> "payload").text()));
+
     }
 
     @Override

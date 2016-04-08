@@ -157,9 +157,8 @@ public class WireTcpHandlerTest {
         }
 
         @Override
-        protected void onRead(@NotNull WireIn inWire,
-                              @NotNull WireOut outWire) {
-            td.read(inWire);
+        protected void onRead(@NotNull DocumentContext in, @NotNull WireOut out) {
+            td.read(in.wire());
             td.write(outWire);
         }
 
