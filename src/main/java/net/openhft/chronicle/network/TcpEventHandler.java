@@ -50,9 +50,9 @@ import static net.openhft.chronicle.network.ServerThreadingStrategy.serverThread
  */
 public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandlerManager {
 
-    static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", TcpChannelHub.BUFFER_SIZE);
+    private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", TcpChannelHub.BUFFER_SIZE);
+    static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", Math.max(64 << 10, CAPACITY / 8));
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
-    private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", TCP_BUFFER);
     @NotNull
     private final SocketChannel sc;
     private final NetworkContext nc;
@@ -75,6 +75,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private volatile TcpHandler tcpHandler;
     private long lastTickReadTime = Time.tickTime();
     private volatile boolean closed;
+
     public TcpEventHandler(@NotNull NetworkContext nc) throws IOException {
         final boolean unchecked = nc.isUnchecked();
         this.writeEventHandler = new WriteEventHandler();
@@ -224,7 +225,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     boolean invokeHandler() throws IOException {
 
         boolean busy = false;
-//         long start = System.nanoTime();
 
         inBBB.readLimit(inBB.position());
 
@@ -251,9 +251,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
             busy = true;
         }
-//         long time = System.nanoTime() - start;
-//         if (Thread.currentThread().getName().startsWith("tree-1"))
-//         System.out.println(LocalTime.now()+" "+busy+" "+time/1000/1e3);
+
         return busy;
     }
 
