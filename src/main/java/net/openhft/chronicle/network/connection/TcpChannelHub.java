@@ -231,9 +231,11 @@ public class TcpChannelHub implements Closeable {
 
     void clear(@NotNull final Wire wire) {
         assert wire.startUse();
-        wire.clear();
-        ((ByteBuffer) wire.bytes().underlyingObject()).clear();
-        assert wire.endUse();
+        try {
+            wire.clear();
+        } finally {
+            assert wire.endUse();
+        }
     }
 
     @Nullable
@@ -359,7 +361,7 @@ public class TcpChannelHub implements Closeable {
     /**
      * closes the existing connections
      */
-    private synchronized void closeSocket() {
+    synchronized void closeSocket() {
 
         SocketChannel clientChannel = this.clientChannel;
 
