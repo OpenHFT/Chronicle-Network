@@ -56,7 +56,6 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
     private EventLoop eventLoop;
     private Map<String, ConnectionDetails> nameToConnectionDetails;
 
-
     public ConnectorEventHandler(@NotNull Map<String, ConnectionDetails> nameToConnectionDetails,
                                  @NotNull final Function<ConnectionDetails, TcpHandler> tcpHandlerSupplier,
                                  @NotNull final Supplier<SessionDetailsProvider>
@@ -132,7 +131,6 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
         pauser.unpause();
     }
 
-
     @Override
     public void eventLoop(EventLoop eventLoop) {
         this.eventLoop = eventLoop;
@@ -148,5 +146,4 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
     public void close() throws IOException {
 
     }
-
 }

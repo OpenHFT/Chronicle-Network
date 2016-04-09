@@ -72,6 +72,4 @@ class ClusterNotifier<E extends HostDetails> implements TerminationEventHandler,
         terminated.set(true);
         hostConnector.close();
     }
-
-
 }

@@ -40,7 +40,6 @@ public class RemoteConnector implements Closeable {
     @NotNull
     private final Function<NetworkContext, TcpEventHandler> tcpHandlerSupplier;
 
-
     private final Integer tcpBufferSize;
     private volatile boolean closed;
 
@@ -94,7 +93,6 @@ public class RemoteConnector implements Closeable {
         this.closeables = null;
         closeables.forEach(Closeable::closeQuietly);
     }
-
 
     private SocketChannel openSocketChannel(InetSocketAddress socketAddress) throws IOException {
         final SocketChannel result = SocketChannel.open(socketAddress);

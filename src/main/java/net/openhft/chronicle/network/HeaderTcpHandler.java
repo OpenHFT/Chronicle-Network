@@ -37,7 +37,6 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
     private final Function<Object, TcpHandler> handlerFunction;
     private final NetworkContext nc;
 
-
     public HeaderTcpHandler(@NotNull final TcpEventHandler handlerManager,
                             @NotNull final Function<Object, TcpHandler> handlerFunction,
                             @NotNull final T nc) {
@@ -45,7 +44,6 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
         this.handlerFunction = handlerFunction;
         this.nc = nc;
     }
-
 
     @Override
     public void process(@NotNull Bytes in, @NotNull Bytes out) {
@@ -90,13 +88,10 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
         }
     }
 
-
     @NotNull
     private SessionDetails toSessionDetails(Wire inWire) {
         VanillaSessionDetails sd = new VanillaSessionDetails();
         sd.readMarshallable(inWire);
         return sd;
     }
-
-
 }

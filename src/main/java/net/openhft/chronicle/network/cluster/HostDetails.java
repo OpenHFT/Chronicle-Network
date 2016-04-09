@@ -23,22 +23,21 @@ import org.jetbrains.annotations.NotNull;
 
 public class HostDetails implements Marshallable {
 
-
+    ClusterNotifier clusterNotifier;
     private int hostId;
     private int tcpBufferSize;
     private String connectUri;
     private int timeoutMs;
-
-    public int tcpBufferSize() {
-        return tcpBufferSize;
-    }
-
     private ConnectionStrategy connectionStrategy;
     private ConnectionManager connectionManager;
     private TerminationEventHandler terminationEventHandler;
     private HostConnector hostConnector;
 
     public HostDetails() {
+    }
+
+    public int tcpBufferSize() {
+        return tcpBufferSize;
     }
 
     public HostDetails hostId(int hostId) {
@@ -61,7 +60,6 @@ public class HostDetails implements Marshallable {
                 .write(() -> "connectUri").text(connectUri);
     }
 
-
     public String connectUri() {
         return connectUri;
     }
@@ -69,7 +67,6 @@ public class HostDetails implements Marshallable {
     public int hostId() {
         return hostId;
     }
-
 
     public HostDetails tcpBufferSize(int tcpBufferSize) {
         this.tcpBufferSize = tcpBufferSize;
@@ -85,7 +82,6 @@ public class HostDetails implements Marshallable {
         this.timeoutMs = timeoutMs;
         return this;
     }
-
 
     public ConnectionStrategy connectionStrategy() {
         return connectionStrategy;
@@ -118,8 +114,6 @@ public class HostDetails implements Marshallable {
     public HostConnector hostConnector() {
         return hostConnector;
     }
-
-    ClusterNotifier clusterNotifier;
 
     public ClusterNotifier clusterNotifier() {
         return clusterNotifier;

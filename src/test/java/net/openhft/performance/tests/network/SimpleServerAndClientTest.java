@@ -103,10 +103,8 @@ public class SimpleServerAndClientTest {
                 LegacyHanderFactory.simpleTcpEventHandlerFactory(WireEchoRequestHandler::new, WireType.TEXT),
                 VanillaNetworkContext::new);
 
-
         eg.addHandler(eah);
         SocketChannel sc = TCPRegistry.createSocketChannel(desc);
         sc.configureBlocking(false);
     }
-
 }

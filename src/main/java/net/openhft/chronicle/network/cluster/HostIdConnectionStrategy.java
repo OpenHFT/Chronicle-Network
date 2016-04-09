@@ -60,7 +60,5 @@ public class HostIdConnectionStrategy implements ConnectionStrategy, Demarshalla
     public void writeMarshallable(@NotNull WireOut wire) {
 
     }
-
-
 }
 

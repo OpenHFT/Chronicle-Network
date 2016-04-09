@@ -83,7 +83,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         this.nc = nc;
         sc.configureBlocking(false);
 
-
         try {
             sc.socket().setTcpNoDelay(true);
             sc.socket().setReceiveBufferSize(TCP_BUFFER);
@@ -204,7 +203,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             LOG.error("", e);
         }
 
-
         return busy;
     }
 
@@ -258,7 +256,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private void handleIOE(@NotNull IOException e, final boolean clientIntentionallyClosed,
                            @Nullable HeartbeatListener heartbeatListener) {
         try {
-
 
             if (clientIntentionallyClosed)
                 return;

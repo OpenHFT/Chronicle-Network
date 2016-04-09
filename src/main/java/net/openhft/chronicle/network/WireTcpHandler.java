@@ -270,9 +270,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         nc.connectionClosed(true);
     }
 
-
     protected void publish(WriteMarshallable w) {
         publisher.put("", w);
     }
-
 }

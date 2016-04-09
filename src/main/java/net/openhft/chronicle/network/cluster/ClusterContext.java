@@ -37,6 +37,7 @@ import java.util.function.Supplier;
  */
 public class ClusterContext implements Demarshallable, WriteMarshallable, Consumer<HostDetails> {
 
+    long connectionTimeoutMs = 1_000;
     private ConnectionStrategy connectionStrategy;
     private WireType wireType;
     private BiFunction<ClusterContext, HostDetails, WriteMarshallable> handlerFactory;
@@ -48,6 +49,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
     private String clusterName;
     private EventLoop eventLoop;
     private Function<ClusterContext, WriteMarshallable> heartbeatFactory;
+    private byte localIdentifier;
 
     @UsedViaReflection
     protected ClusterContext(@NotNull WireIn wire) {
@@ -82,6 +84,9 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
 
     }
 
+    public ClusterContext() {
+        defaults();
+    }
 
     public long heartbeatIntervalMs() {
         return heartbeatIntervalMs;
@@ -111,7 +116,6 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         return parser;
     }
 
-
     private BiFunction<ClusterContext, HostDetails, WriteMarshallable> handlerFactory() {
         return handlerFactory;
     }
@@ -128,17 +132,9 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         return eventLoop;
     }
 
-
     public ClusterContext eventLoop(EventLoop eventLoop) {
         this.eventLoop = eventLoop;
         return this;
-    }
-
-    private byte localIdentifier;
-    long connectionTimeoutMs = 1_000;
-
-    public ClusterContext() {
-        defaults();
     }
 
     public void defaults() {
@@ -149,18 +145,15 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         return this;
     }
 
-
     public ClusterContext wireType(WireType wireType) {
         this.wireType = wireType;
         return this;
     }
 
-
     private ClusterContext heartbeatFactory(Function<ClusterContext, WriteMarshallable> heartbeatFactor) {
         this.heartbeatFactory = heartbeatFactor;
         return this;
     }
-
 
     private ClusterContext heartbeatIntervalMs(long heartbeatIntervalMs) {
         this.heartbeatIntervalMs = heartbeatIntervalMs;
@@ -182,11 +175,9 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         return this;
     }
 
-
     public WireType wireType() {
         return wireType;
     }
-
 
     public Function<WireType, WireOutPublisher> wireOutPublisherFactory() {
         return wireOutPublisherFactory;
@@ -261,7 +252,6 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         clusterNotifier.connect();
     }
 
-
     private List<WriteMarshallable> bootstraps(HostDetails hd) {
         final BiFunction<ClusterContext, HostDetails, WriteMarshallable> handler = this
                 .handlerFactory();
@@ -272,6 +262,4 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         result.add(heartbeat.apply(this));
         return result;
     }
-
-
 }

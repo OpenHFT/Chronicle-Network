@@ -167,6 +167,5 @@ public class WireTcpHandlerTest {
             throw new UnsupportedOperationException("todo");
         }
 
-
     }
 }

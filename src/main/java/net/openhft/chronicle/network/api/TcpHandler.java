@@ -51,5 +51,4 @@ public interface TcpHandler extends ClientClosedProvider, Closeable {
 
     default void onWriteTime(long writeTimeNS) {
     }
-
 }

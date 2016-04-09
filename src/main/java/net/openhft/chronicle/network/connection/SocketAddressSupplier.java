@@ -152,5 +152,4 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
             return description;
         }
     }
-
 }

@@ -44,7 +44,6 @@ class TimedEchoHandler implements TcpHandler {
                 LegacyHanderFactory.legacyTcpEventHandlerFactory(TimedEchoHandler::new),
                 VanillaNetworkContext::new);
 
-
         eg.addHandler(eah);
     }
 

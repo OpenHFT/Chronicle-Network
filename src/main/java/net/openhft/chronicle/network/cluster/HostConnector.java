@@ -40,12 +40,9 @@ public class HostConnector implements Closeable {
 
     private final RemoteConnector remoteConnector;
     private final String connectUri;
-
-
-    private NetworkContext nc;
-
     private final Function<ClusterContext, NetworkContext> networkContextFactory;
     private final ClusterContext clusterContext;
+    private NetworkContext nc;
     private volatile AtomicReference<WireOutPublisher> wireOutPublisher = new AtomicReference<>();
 
     @NotNull
@@ -64,7 +61,6 @@ public class HostConnector implements Closeable {
         this.eventLoop = clusterContext.eventLoop();
     }
 
-
     @Override
     public synchronized void close() {
         WireOutPublisher wp = wireOutPublisher.getAndSet(null);
@@ -75,14 +71,12 @@ public class HostConnector implements Closeable {
             wp.close();
     }
 
-
     public synchronized void bootstrap(WriteMarshallable subscription) {
         bootstraps.add(subscription);
         WireOutPublisher wp = wireOutPublisher.get();
         if (wp != null)
             wp.put("", subscription);
     }
-
 
     public synchronized void connect() {
 
@@ -107,7 +101,6 @@ public class HostConnector implements Closeable {
             wireOutPublisher.clear();
             reconnect();
         });
-
 
         boolean firstTime = true;
         for (WriteMarshallable bootstrap : bootstraps) {

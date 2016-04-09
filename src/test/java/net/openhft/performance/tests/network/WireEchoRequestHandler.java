@@ -28,7 +28,6 @@ import org.jetbrains.annotations.NotNull;
  */
 public class WireEchoRequestHandler extends WireTcpHandler {
 
-
     public WireEchoRequestHandler(NetworkContext networkContext) {
 
     }
@@ -56,6 +55,4 @@ public class WireEchoRequestHandler extends WireTcpHandler {
     protected void onInitialize() {
 
     }
-
-
 }

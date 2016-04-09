@@ -88,6 +88,4 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements Tcp
 
         handlerManager.tcpHandler(handler);
     }
-
-
 }

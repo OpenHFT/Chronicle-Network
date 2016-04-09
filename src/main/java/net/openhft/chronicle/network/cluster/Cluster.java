@@ -57,7 +57,6 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
         if (!wire.hasMore())
             return;
 
-
         ValueIn valueIn = wire.readEventName(hostDescription);
 
         if ("context".contentEquals(hostDescription)) {
@@ -94,7 +93,6 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
         return null;
     }
 
-
     public <H extends HostDetails, C extends ClusterContext> ConnectionStrategy
     findConnectionStrategy(int remoteIdentifier) {
 
@@ -102,7 +100,6 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
         if (hostDetails == null) return null;
         return hostDetails.connectionStrategy();
     }
-
 
     public ConnectionManager findConnectionManager(int remoteIdentifier) {
         HostDetails hostDetails = findHostDetails(remoteIdentifier);
@@ -122,7 +119,6 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
         if (hostDetails == null) return null;
         return hostDetails.clusterNotifier();
     }
-
 
     abstract protected E newHostDetails();
 
@@ -147,6 +143,4 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
         if (clusterContext != null && hostDetails != null && hostDetails.values() != null)
             hostDetails.values().forEach(clusterContext::accept);
     }
-
-
 }

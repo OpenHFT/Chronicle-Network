@@ -58,7 +58,6 @@ public interface WireOutPublisher extends Closeable {
         throw new UnsupportedOperationException();
     }
 
-
     /**
      * @param key   the key to the event, only used when throttling, otherwise NULL if the
      *              throttling is not required
@@ -78,7 +77,6 @@ public interface WireOutPublisher extends Closeable {
         throw new UnsupportedOperationException();
     }
 
-
     @Override
     default void close() {
         throw new UnsupportedOperationException();
@@ -91,7 +89,6 @@ public interface WireOutPublisher extends Closeable {
     default void clear() {
         throw new UnsupportedOperationException();
     }
-
 
     /**
      * publishes an event without a throttle key

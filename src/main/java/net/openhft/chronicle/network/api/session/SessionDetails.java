@@ -64,7 +64,6 @@ public interface SessionDetails extends WriteMarshallable {
 
     byte hostId();
 
-
     default void writeMarshallable(@NotNull WireOut w) {
                 w.writeEventName(EventId.userId).text(userId())
                 .writeEventName(EventId.domain).text(domain())

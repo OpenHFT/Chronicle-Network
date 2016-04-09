@@ -109,7 +109,6 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         return closed;
     }
 
-
     private Object lock() {
         return bytes;
     }
@@ -132,7 +131,6 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         }
     }
 
-
     @Override
     public void wireType(@NotNull WireType wireType) {
         if (WireType.valueOf(wire) == wireType)
@@ -150,7 +148,6 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         }
     }
 
-
     @Override
     public boolean isEmpty() {
         synchronized (lock()) {
@@ -160,7 +157,6 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
     @Override
     public String toString() {
-
 
         return "VanillaWireOutPublisher{" +
                 ", closed=" + closed +

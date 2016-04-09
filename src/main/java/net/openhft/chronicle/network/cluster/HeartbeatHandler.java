@@ -45,32 +45,13 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandler<T> implements
         Demarshallable, WriteMarshallable, HeartbeatEventHandler {
 
-    public static class Factory implements Function<ClusterContext, WriteMarshallable>,
-            Demarshallable {
-
-        @UsedViaReflection
-        private Factory(WireIn w) {
-        }
-
-        @Override
-        public WriteMarshallable apply(ClusterContext clusterContext) {
-            long heartbeatTimeoutMs = clusterContext.heartbeatTimeoutMs();
-            long heartbeatIntervalMs = clusterContext.heartbeatIntervalMs();
-            return heartbeatHandler(heartbeatTimeoutMs, heartbeatIntervalMs,
-                    HeartbeatHandler.class.hashCode());
-        }
-    }
-
     public static final ScheduledExecutorService HEARTBEAT_EXECUTOR =
             newSingleThreadScheduledExecutor(new NamedThreadFactory("Heartbeat", true));
-
     private final long heartbeatIntervalMs;
-    private volatile long lastTimeMessageReceived;
     private final long heartbeatTimeoutMs;
-
     private final AtomicBoolean hasHeartbeat = new AtomicBoolean();
     private final AtomicReference<Runnable> self = new AtomicReference<>();
-
+    private volatile long lastTimeMessageReceived;
     @UsedViaReflection
     protected HeartbeatHandler(@NotNull WireIn w) {
         heartbeatTimeoutMs = w.read(() -> "heartbeatTimeoutMs").int64();
@@ -96,6 +77,16 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
                 "heartbeatIntervalMs=" + heartbeatIntervalMs + ", this is too small";
     }
 
+    private static WriteMarshallable heartbeatHandler(final long heartbeatTimeoutMs,
+                                                      final long heartbeatIntervalMs,
+                                                      final long cid) {
+        return w -> w.writeDocument(true,
+                d -> d.writeEventName(CoreFields.csp).text("/")
+                        .writeEventName(CoreFields.cid).int64(cid)
+                        .writeEventName(CoreFields.handler).typedMarshallable(new
+                                HeartbeatHandler(heartbeatTimeoutMs, heartbeatIntervalMs)));
+    }
+
     @Override
     public void onInitialize(WireOut outWire) {
 
@@ -119,16 +110,6 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
                 .heartbeatIntervalMs, MILLISECONDS);
     }
 
-    private static WriteMarshallable heartbeatHandler(final long heartbeatTimeoutMs,
-                                                      final long heartbeatIntervalMs,
-                                                      final long cid) {
-        return w -> w.writeDocument(true,
-                d -> d.writeEventName(CoreFields.csp).text("/")
-                        .writeEventName(CoreFields.cid).int64(cid)
-                        .writeEventName(CoreFields.handler).typedMarshallable(new
-                                HeartbeatHandler(heartbeatTimeoutMs, heartbeatIntervalMs)));
-    }
-
     @Override
     public void writeMarshallable(@NotNull WireOut w) {
         w.write(() -> "heartbeatTimeoutMs").int64(heartbeatTimeoutMs);
@@ -150,14 +131,11 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
         lastTimeMessageReceived = Long.MAX_VALUE;
         Closeable.closeQuietly(closable());
 
-
     }
-
 
     public void onMessageReceived() {
         lastTimeMessageReceived = System.currentTimeMillis();
     }
-
 
     private void initHeartbeatCheck() {
 
@@ -195,4 +173,19 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
         return lastTimeMessageReceived > System.currentTimeMillis() - heartbeatTimeoutMs;
     }
 
+    public static class Factory implements Function<ClusterContext, WriteMarshallable>,
+            Demarshallable {
+
+        @UsedViaReflection
+        private Factory(WireIn w) {
+        }
+
+        @Override
+        public WriteMarshallable apply(ClusterContext clusterContext) {
+            long heartbeatTimeoutMs = clusterContext.heartbeatTimeoutMs();
+            long heartbeatIntervalMs = clusterContext.heartbeatIntervalMs();
+            return heartbeatHandler(heartbeatTimeoutMs, heartbeatIntervalMs,
+                    HeartbeatHandler.class.hashCode());
+        }
+    }
 }

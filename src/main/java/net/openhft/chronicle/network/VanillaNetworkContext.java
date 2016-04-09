@@ -31,16 +31,17 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class VanillaNetworkContext<T extends VanillaNetworkContext> implements NetworkContext<T> {
 
+    private final AtomicLong cid = new AtomicLong();
     private SocketChannel socketChannel;
     private boolean isAcceptor = true;
     private HeartbeatListener heartbeatListener;
     private SessionDetailsProvider sessionDetails;
     private boolean connectionClosed;
-
     @Nullable
     private TerminationEventHandler terminationEventHandler;
     private long heartbeatTimeoutMs;
-
+    private WireOutPublisher wireOutPublisher;
+    private WireType wireType = WireType.TEXT;
 
     @Override
     public SocketChannel socketChannel() {
@@ -71,10 +72,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         return isAcceptor;
     }
 
-
-    private WireOutPublisher wireOutPublisher;
-
-
     @Override
     public synchronized WireOutPublisher wireOutPublisher() {
         return wireOutPublisher;
@@ -84,9 +81,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     public void wireOutPublisher(WireOutPublisher wireOutPublisher) {
         this.wireOutPublisher = wireOutPublisher;
     }
-
-
-    private WireType wireType = WireType.TEXT;
 
     @Override
     public WireType wireType() {
@@ -128,7 +122,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         this.terminationEventHandler = terminationEventHandler;
     }
 
-
     public void heartbeatTimeoutMs(long heartbeatTimeoutMs) {
         this.heartbeatTimeoutMs = heartbeatTimeoutMs;
     }
@@ -145,9 +138,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     public void heartbeatListener(@NotNull HeartbeatListener heartbeatListener) {
         this.heartbeatListener = heartbeatListener;
     }
-
-
-    private final AtomicLong cid = new AtomicLong();
 
     public long newCid() {
 

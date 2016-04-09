@@ -145,10 +145,8 @@ public class VerySimpleClientTest {
                         WireEchoRequestHandler::new, WIRE_TYPE),
                 VanillaNetworkContext::new);
 
-
         eg.addHandler(eah);
         SocketChannel sc = TCPRegistry.createSocketChannel(desc);
         sc.configureBlocking(false);
     }
-
 }

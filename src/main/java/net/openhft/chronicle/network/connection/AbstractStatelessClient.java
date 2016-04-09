@@ -444,7 +444,6 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         ), startTime));
     }
 
-
     @SuppressWarnings("SameParameterValue")
     protected long proxyReturnLongWithArgs(
             @NotNull final E eventId,
@@ -496,5 +495,4 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
     public void close() {
         hub.close();
     }
-
 }

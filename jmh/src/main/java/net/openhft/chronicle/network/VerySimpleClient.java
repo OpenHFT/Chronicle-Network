@@ -208,5 +208,4 @@ public class VerySimpleClient {
         SocketChannel sc = TCPRegistry.createSocketChannel(desc);
         sc.configureBlocking(false);
     }
-
 }

@@ -48,14 +48,6 @@ public class TerminatorHandler extends AbstractSubHandler<NetworkContext> implem
 
     }
 
-    @Override
-    public void onInitialize(@NotNull WireOut outWire) {
-        if (isClosed.getAndSet(true))
-            return;
-        nc().terminationEventHandler().onTerminate();
-        Closeable.closeQuietly(closable());
-    }
-
     public static WriteMarshallable terminationHandler(int localIdentifier, int remoteIdentifier, final long cid) {
         return w -> w.writeDocument(true,
                 d -> d.writeEventName(CoreFields.csp).text("/")
@@ -65,6 +57,13 @@ public class TerminatorHandler extends AbstractSubHandler<NetworkContext> implem
                                 ",remoteIdentifier=" + remoteIdentifier));
     }
 
+    @Override
+    public void onInitialize(@NotNull WireOut outWire) {
+        if (isClosed.getAndSet(true))
+            return;
+        nc().terminationEventHandler().onTerminate();
+        Closeable.closeQuietly(closable());
+    }
 
     @Override
     public void writeMarshallable(@NotNull WireOut wire) {

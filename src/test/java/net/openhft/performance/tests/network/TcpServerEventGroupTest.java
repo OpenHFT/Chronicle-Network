@@ -131,7 +131,6 @@ public class TcpServerEventGroupTest {
                 LegacyHanderFactory.legacyTcpEventHandlerFactory(EchoHandler::new),
                 VanillaNetworkContext::new);
 
-
         eg.addHandler(eah);
 
         SocketChannel sc = TCPRegistry.createSocketChannel("TcpServerEventGroupTest");

@@ -66,7 +66,6 @@ public class LegacyHanderFactory {
                         networkContext
                 );
 
-
                 final WireTypeSniffingTcpHandler wireTypeSniffingTcpHandler = new
                         WireTypeSniffingTcpHandler(handler, networkContext, (nc) -> headerTcpHandler);
 
@@ -83,7 +82,6 @@ public class LegacyHanderFactory {
             @NotNull final Function<T, TcpHandler> defaultHandedFactory) {
         return legacyTcpEventHandlerFactory(defaultHandedFactory, 20_000, 40_000);
     }
-
 
     public static <T extends NetworkContext> Function<T, TcpEventHandler>
     simpleTcpEventHandlerFactory(@NotNull final Function<T, TcpHandler> defaultHandedFactory, final WireType text) {
