@@ -45,6 +45,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandler<T> implements
         Demarshallable, WriteMarshallable, HeartbeatEventHandler {
 
+    // TODO Shouldn't be a singleton as it makes unit testing harder.
     public static final ScheduledExecutorService HEARTBEAT_EXECUTOR =
             newSingleThreadScheduledExecutor(new NamedThreadFactory("Heartbeat", true));
     private final long heartbeatIntervalMs;

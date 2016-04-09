@@ -57,8 +57,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import static java.lang.Integer.getInteger;
 import static java.lang.ThreadLocal.withInitial;
 import static java.util.concurrent.Executors.newCachedThreadPool;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.*;
 import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
 import static net.openhft.chronicle.core.Jvm.pause;
 import static net.openhft.chronicle.core.Jvm.rethrow;
@@ -165,14 +164,13 @@ public class TcpChannelHub implements Closeable {
     }
 
     public static void closeAllHubs() {
-        final TcpChannelHub[] tcpChannelHub = hubs.toArray(new TcpChannelHub[hubs.size()]);
-        for (int i = tcpChannelHub.length - 1; i >= 0; i--) {
+        final TcpChannelHub[] hubsArr = hubs.toArray(new TcpChannelHub[hubs.size()]);
+        for (TcpChannelHub hub : hubsArr) {
+            if (hub.isClosed())
+                continue;
 
-            final TcpChannelHub tcpChannelHub1 = tcpChannelHub[i];
-            if (!tcpChannelHub1.isClosed()) {
-                LOG.warn("Closing " + tcpChannelHub1);
-                tcpChannelHub1.close();
-            }
+            LOG.warn("Closing " + hub);
+            hub.close();
         }
         hubs.clear();
     }
@@ -427,7 +425,7 @@ public class TcpChannelHub implements Closeable {
     public void close() {
         if (closed)
             return;
-
+        closed = true;
         tcpSocketConsumer.prepareToShutdown();
 
         if (shouldSendCloseMessage)
@@ -922,20 +920,18 @@ public class TcpChannelHub implements Closeable {
      */
     class TcpSocketConsumer implements EventHandler {
         @NotNull
-        private final ExecutorService executorService;
-
-        @NotNull
         private final Map<Long, Object> map = new ConcurrentHashMap<>();
         private final Map<Long, Object> omap = new ConcurrentHashMap<>();
-        long lastheartbeatSentTime = 0;
-        volatile long start = Long.MAX_VALUE;
-        private long tid;
+        private final ExecutorService service;
         @NotNull
-        private ThreadLocal<Wire> syncInWireThreadLocal = withInitial(() -> {
+        private final ThreadLocal<Wire> syncInWireThreadLocal = withInitial(() -> {
             Wire wire = wireType.apply(elasticByteBuffer());
             assert wire.startUse();
             return wire;
         });
+        long lastheartbeatSentTime = 0;
+        volatile long start = Long.MAX_VALUE;
+        private long tid;
         private Bytes serverHeartBeatHandler = Bytes.elasticByteBuffer();
         private volatile long lastTimeMessageReceivedOrSent = Time.currentTimeMillis();
         private volatile boolean isShutdown;
@@ -949,7 +945,9 @@ public class TcpChannelHub implements Closeable {
             if (LOG.isDebugEnabled())
                 LOG.debug("constructor remoteAddress=" + socketAddressSupplier);
 
-            executorService = start();
+            service = newCachedThreadPool(
+                    new NamedThreadFactory("TcpChannelHub-Reads-" + socketAddressSupplier, true));
+            start();
         }
 
         /**
@@ -1112,15 +1110,12 @@ public class TcpChannelHub implements Closeable {
          * tid}
          */
         @NotNull
-        private ExecutorService start() {
+        private void start() {
             checkNotShutdown();
-
-            final ExecutorService executorService = newCachedThreadPool(
-                    new NamedThreadFactory("TcpChannelHub-Reads-" + socketAddressSupplier, true));
 
             assert shutdownHere == null;
             assert !isShutdown;
-            executorService.submit(() -> {
+            service.submit(() -> {
                 readThread = Thread.currentThread();
                 try {
                     running();
@@ -1135,7 +1130,7 @@ public class TcpChannelHub implements Closeable {
                 }
             });
 
-            executorService.submit(() -> {
+            service.submit(() -> {
                 int count = 0;
                 String lastMsg = null;
                 while (!isShuttingdown()) {
@@ -1162,8 +1157,6 @@ public class TcpChannelHub implements Closeable {
                     }
                 }
             });
-
-            return executorService;
         }
 
         public void checkNotShutdown() {
@@ -1582,12 +1575,12 @@ public class TcpChannelHub implements Closeable {
                 shutdownHere = new Throwable(Thread.currentThread() + " Shutdown here");
 
             isShutdown = true;
-            executorService.shutdown();
+            service.shutdown();
             try {
-                if (!executorService.awaitTermination(100, TimeUnit.MILLISECONDS))
-                    executorService.shutdownNow();
+                if (!service.awaitTermination(100, TimeUnit.MILLISECONDS))
+                    service.shutdownNow();
             } catch (InterruptedException e) {
-                executorService.shutdownNow();
+                service.shutdownNow();
             }
         }
 
@@ -1765,19 +1758,23 @@ public class TcpChannelHub implements Closeable {
             tid = 0;
             omap.clear();
 
-            final HashSet keys = new HashSet(map.keySet());
+            final Set<Long> keys = new HashSet<>(map.keySet());
 
             keys.forEach(k -> {
-
                 final Object o = map.get(k);
                 if (o instanceof Bytes || o instanceof AsyncTemporarySubscription)
                     map.remove(k);
-
             });
         }
 
         public void prepareToShutdown() {
             this.prepareToShutdown = true;
+            try {
+                service.awaitTermination(100, MILLISECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            service.shutdown();
         }
     }
 }

@@ -104,6 +104,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
     @Override
     public void onEndOfConnection(boolean heartbeatTimeOut) {
+        if (publisher != null)
         publisher.close();
     }
 

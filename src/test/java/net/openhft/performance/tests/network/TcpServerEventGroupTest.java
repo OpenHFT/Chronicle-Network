@@ -17,12 +17,15 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.core.threads.EventLoop;
+import net.openhft.chronicle.core.threads.ThreadDump;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
 import org.jetbrains.annotations.NotNull;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -47,6 +50,7 @@ Loop back echo latency was 4.8/5.2 5.6/7.4 9.6us for 50/90 99/99.9 99.99%tile
  */
 
 public class TcpServerEventGroupTest {
+    private ThreadDump threadDump;
 
     public static void main(String[] args) throws IOException, InterruptedException {
         new TcpServerEventGroupTest().testStart();
@@ -119,6 +123,16 @@ public class TcpServerEventGroupTest {
                 times[times.length - times.length / 10000] / 1000,
                 times[times.length - 1] / 1000
         );
+    }
+
+    @Before
+    public void threadDump() {
+        threadDump = new ThreadDump();
+    }
+
+    @After
+    public void checkThreadDump() {
+        threadDump.assertNoNewThreads();
     }
 
     @Ignore("fix JIRA https://higherfrequencytrading.atlassian.net/browse/NET-13")

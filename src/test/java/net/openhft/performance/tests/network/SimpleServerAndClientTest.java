@@ -19,6 +19,7 @@ package net.openhft.performance.tests.network;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
+import net.openhft.chronicle.core.threads.ThreadDump;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaNetworkContext;
@@ -28,7 +29,9 @@ import net.openhft.chronicle.wire.TextWire;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -41,6 +44,20 @@ import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri
  * Created by rob on 26/08/2015.
  */
 public class SimpleServerAndClientTest {
+    private ThreadDump threadDump;
+
+    @Before
+    public void threadDump() {
+        threadDump = new ThreadDump();
+    }
+
+    @After
+    public void checkThreadDump() {
+        TcpChannelHub.closeAllHubs();
+        TCPRegistry.reset();
+
+        threadDump.assertNoNewThreads();
+    }
 
     @Test
     public void test() throws IOException {
@@ -85,11 +102,8 @@ public class SimpleServerAndClientTest {
                 Assert.assertEquals(expectedMessage, text);
             });
 
-            eg.stop();
-            TcpChannelHub.closeAllHubs();
-            TCPRegistry.reset();
-            tcpChannelHub.close();
         }
+        eg.close();
     }
 
     @NotNull

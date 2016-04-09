@@ -18,11 +18,14 @@ package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.threads.EventLoop;
+import net.openhft.chronicle.core.threads.ThreadDump;
 import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -49,6 +52,7 @@ public class WireTcpHandlerTest {
 
     private final String desc;
     private final WireType wireType;
+    private ThreadDump threadDump;
 
     public WireTcpHandlerTest(String desc, WireType wireWrapper) {
         this.desc = desc;
@@ -124,6 +128,16 @@ public class WireTcpHandlerTest {
                 times[times.length - times.length / 10000] / 1000,
                 times[times.length - 1] / 1000
         );
+    }
+
+    @Before
+    public void threadDump() {
+        threadDump = new ThreadDump();
+    }
+
+    @After
+    public void checkThreadDump() {
+        threadDump.assertNoNewThreads();
     }
 
     @Ignore("todo fix")

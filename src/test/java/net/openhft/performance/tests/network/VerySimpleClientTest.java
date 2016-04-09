@@ -33,6 +33,7 @@ package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.threads.EventLoop;
+import net.openhft.chronicle.core.threads.ThreadDump;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaNetworkContext;
@@ -62,6 +63,18 @@ public class VerySimpleClientTest {
     /*
      * And, check the benchmark went fine afterwards:
      */
+    private ThreadDump threadDump;
+
+    @Before
+    public void threadDump() {
+        threadDump = new ThreadDump();
+    }
+
+    @After
+    public void checkThreadDump() {
+        threadDump.assertNoNewThreads();
+    }
+
     @Before
     public void setUp() throws IOException {
         String desc = "host.port";

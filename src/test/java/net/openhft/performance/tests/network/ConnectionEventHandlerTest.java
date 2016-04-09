@@ -20,13 +20,13 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.NotNull;
 import net.openhft.chronicle.core.threads.EventLoop;
+import net.openhft.chronicle.core.threads.ThreadDump;
 import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.threads.BusyPauser;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.WireType;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,7 +40,20 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Created by daniel on 09/02/2016.
  */
 public class ConnectionEventHandlerTest {
+    private ThreadDump threadDump;
+
+    @Before
+    public void threadDump() {
+        threadDump = new ThreadDump();
+    }
+
+    @After
+    public void checkThreadDump() {
+        threadDump.assertNoNewThreads();
+    }
+
     @Test
+    @Ignore("TODO FIX Doesn't appear to be using Text or Binary wire")
     // This test verifies that we can create a ConnectionEventHandler and that we can disable and
     // re-enable the client at will. Tests that a client can be connected before the server is ready.
     //
