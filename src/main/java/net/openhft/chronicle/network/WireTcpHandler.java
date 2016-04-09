@@ -17,7 +17,6 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.Nullable;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
@@ -116,29 +115,22 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
      * process all messages in this batch, provided there is plenty of output space.
      */
     private void onRead0() {
-        try {
-            while (!inWire.bytes().isEmpty()) {
-                long start = inWire.bytes().readPosition();
-                try (DocumentContext dc = inWire.readingDocument()) {
-                    if (!dc.isPresent()) {
-                        return;
-                    }
-//                    String s = Wires.fromSizePrefixedBlobs(inWire.bytes(), start);
-                    try {
-//                        String s2 = s.length() > 300 ? s.substring(0, 300) + "..." : s;
-//                        LOG.error("inWire=" + inWire.getClass() + "," + s2);
-                        logYaml(start);
 
-                        onRead(dc, outWire);
+        while (!inWire.bytes().isEmpty()) {
+            long start = inWire.bytes().readPosition();
+            try (DocumentContext dc = inWire.readingDocument()) {
+                if (!dc.isPresent()) {
+                    return;
+                }
 
-                    } catch (Exception e) {
-                        LOG.error("inWire=" + inWire.getClass(), e);
-                    }
+                try {
+                    logYaml(start);
+                    onRead(dc, outWire);
+
+                } catch (Exception e) {
+                    LOG.error("inWire=" + inWire.getClass(), e);
                 }
             }
-        } catch (Throwable t) {
-            t.printStackTrace();
-            throw Jvm.rethrow(t);
         }
     }
 
