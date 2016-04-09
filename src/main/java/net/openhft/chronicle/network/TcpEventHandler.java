@@ -370,7 +370,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 closeSC();
 
             } catch (IOException e) {
-                handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
+                if (!closed)
+                    handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
             }
             return busy;
         }

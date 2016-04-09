@@ -88,13 +88,17 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         // writes the data and its size
         synchronized (lock()) {
             wrapperWire.writeDocument(false, d -> {
-
-                final long start = wire.bytes().writePosition();
-                event.writeMarshallable(wire);
-                if (YamlLogging.showServerWrites())
-                    LOG.info("Server is about to send:" + Wires.fromSizePrefixedBlobs(wire.bytes(),
-                            start, wire
-                                    .bytes().writePosition() - start));
+                assert wire.startUse();
+                try {
+                    final long start = wire.bytes().writePosition();
+                    event.writeMarshallable(wire);
+                    if (YamlLogging.showServerWrites())
+                        LOG.info("Server is about to send:" + Wires.fromSizePrefixedBlobs(wire.bytes(),
+                                start, wire
+                                        .bytes().writePosition() - start));
+                } finally {
+                    assert wire.endUse();
+                }
 
             });
         }
@@ -118,7 +122,14 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     }
 
     public boolean canTakeMoreData() {
-        return wrapperWire.bytes().writePosition() < TcpChannelHub.BUFFER_SIZE;
+        synchronized (lock()) {
+            assert wrapperWire.startUse();
+            try {
+                return wrapperWire.bytes().writePosition() < TcpChannelHub.BUFFER_SIZE / 2; // don't attempt to fill the buffer completely.
+            } finally {
+                assert wrapperWire.endUse();
+            }
+        }
     }
 
 

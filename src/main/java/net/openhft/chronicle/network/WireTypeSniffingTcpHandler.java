@@ -69,7 +69,14 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements Tcp
             return;
 
         final byte b = in.readByte(4);
-        final WireType wireType = (b & 0x80) == 0 ? TEXT : BINARY;
+//        System.out.println("Sample byte = "+ Integer.toHexString(b & 0xFF));
+        final WireType wireType;
+        if (b < 0)
+            wireType = BINARY;
+        else if (b > ' ')
+            wireType = TEXT;
+        else
+            throw new IllegalStateException("Unable to identify the wire type from " + Integer.toHexString(b & 0xFF));
 
         // the type of the header
         nc.wireType(wireType);

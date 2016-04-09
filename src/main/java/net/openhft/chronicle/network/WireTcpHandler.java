@@ -115,22 +115,27 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
      * process all messages in this batch, provided there is plenty of output space.
      */
     private void onRead0() {
+        assert inWire.startUse();
 
-        while (!inWire.bytes().isEmpty()) {
-            long start = inWire.bytes().readPosition();
-            try (DocumentContext dc = inWire.readingDocument()) {
-                if (!dc.isPresent()) {
-                    return;
-                }
+        try {
+            while (!inWire.bytes().isEmpty()) {
+                long start = inWire.bytes().readPosition();
+                try (DocumentContext dc = inWire.readingDocument()) {
+                    if (!dc.isPresent()) {
+                        return;
+                    }
 
-                try {
-                    logYaml(start);
-                    onRead(dc, outWire);
+                    try {
+                        logYaml(start);
+                        onRead(dc, outWire);
 
-                } catch (Exception e) {
-                    LOG.error("inWire=" + inWire.getClass(), e);
+                    } catch (Exception e) {
+                        LOG.error("inWire=" + inWire.getClass(), e);
+                    }
                 }
             }
+        } finally {
+            assert inWire.endUse();
         }
     }
 
@@ -155,12 +160,20 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
             recreateWire = false;
         }
 
+        assert inWire.startUse();
         if (inWire.bytes() != in) {
             inWire = wireType.apply(in);
             recreateWire = false;
         }
+        assert inWire.endUse();
 
-        if ((outWire == null || outWire.bytes() != out)) {
+        boolean replace = outWire == null;
+        if (!replace) {
+            assert outWire.startUse();
+            replace = outWire.bytes() != out;
+            assert outWire.endUse();
+        }
+        if (replace) {
             outWire = wireType.apply(out);
             recreateWire = false;
         }
