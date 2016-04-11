@@ -16,7 +16,6 @@
 
 package net.openhft.performance.tests.network;
 
-import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.network.HeaderTcpHandler;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.TcpEventHandler;
@@ -28,7 +27,6 @@ import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
 import java.util.function.Function;
 
 import static net.openhft.chronicle.wire.WireType.TEXT;
@@ -43,38 +41,30 @@ public class LegacyHanderFactory {
                                  final long heartbeatIntervalTicks,
                                  final long heartbeatIntervalTimeout) {
         return (networkContext) -> {
+            final TcpEventHandler handler = new TcpEventHandler(networkContext);
 
-            try {
+            final Function<Object, TcpHandler> consumer = o -> {
+                if (o instanceof SessionDetailsProvider) {
+                    networkContext.sessionDetails((SessionDetailsProvider) o);
+                    return defaultHandedFactory.apply(networkContext);
+                } else if (o instanceof TcpHandler)
+                    return (TcpHandler) o;
 
-                final TcpEventHandler handler = new TcpEventHandler(networkContext);
+                throw new UnsupportedOperationException("");
+            };
 
-                final Function<Object, TcpHandler> consumer = o -> {
-                    if (o instanceof SessionDetailsProvider) {
-                        networkContext.sessionDetails((SessionDetailsProvider) o);
-                        return defaultHandedFactory.apply(networkContext);
-                    } else if (o instanceof TcpHandler)
-                        return (TcpHandler) o;
+            final Function<WireType, WireOutPublisher> f = VanillaWireOutPublisher::new;
 
-                    throw new UnsupportedOperationException("");
-                };
+            final HeaderTcpHandler<T> headerTcpHandler = new HeaderTcpHandler<>(handler,
+                    consumer,
+                    networkContext
+            );
 
-                final Function<WireType, WireOutPublisher> f = wireType -> new
-                        VanillaWireOutPublisher(wireType);
+            final WireTypeSniffingTcpHandler<T> wireTypeSniffingTcpHandler =
+                    new WireTypeSniffingTcpHandler<>(handler, networkContext, (nc) -> headerTcpHandler);
 
-                final HeaderTcpHandler headerTcpHandler = new HeaderTcpHandler(handler,
-                        consumer,
-                        networkContext
-                );
-
-                final WireTypeSniffingTcpHandler wireTypeSniffingTcpHandler = new
-                        WireTypeSniffingTcpHandler(handler, networkContext, (nc) -> headerTcpHandler);
-
-                handler.tcpHandler(wireTypeSniffingTcpHandler);
-                return handler;
-
-            } catch (IOException e) {
-                throw Jvm.rethrow(e);
-            }
+            handler.tcpHandler(wireTypeSniffingTcpHandler);
+            return handler;
         };
     }
 
@@ -88,15 +78,11 @@ public class LegacyHanderFactory {
         return (networkContext) -> {
 
             networkContext.wireOutPublisher(new VanillaWireOutPublisher(TEXT));
-            try {
-                final TcpEventHandler handler = new TcpEventHandler(networkContext);
-                handler.tcpHandler(new WireTypeSniffingTcpHandler(handler, networkContext,
-                        defaultHandedFactory));
-                return handler;
+            final TcpEventHandler handler = new TcpEventHandler(networkContext);
+            handler.tcpHandler(new WireTypeSniffingTcpHandler<>(handler, networkContext,
+                    defaultHandedFactory));
+            return handler;
 
-            } catch (IOException e) {
-                throw Jvm.rethrow(e);
-            }
         };
     }
 }

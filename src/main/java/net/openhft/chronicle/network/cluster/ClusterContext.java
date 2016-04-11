@@ -18,6 +18,7 @@ package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.core.threads.EventLoop;
+import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.RemoteConnector;
 import net.openhft.chronicle.network.TcpEventHandler;
@@ -25,6 +26,7 @@ import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -92,8 +94,8 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         return heartbeatIntervalMs;
     }
 
-    public Function<NetworkContext, TcpEventHandler> tcpEventHandlerFactory() {
-        throw new UnsupportedOperationException("todo");
+    public ThrowingFunction<NetworkContext, IOException, TcpEventHandler> tcpEventHandlerFactory() {
+        throw new UnsupportedOperationException();
     }
 
     @NotNull

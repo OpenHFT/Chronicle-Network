@@ -18,6 +18,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.RandomDataInput;
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.io.IORuntimeException;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,10 +38,14 @@ class NetworkLog {
     private final String desc;
     private long lastOut = System.currentTimeMillis();
 
-    public NetworkLog(@NotNull SocketChannel channel, String op) throws IOException {
-        this.desc = op
-                + " " + ((InetSocketAddress) channel.getLocalAddress()).getPort()
-                + " " + ((InetSocketAddress) channel.getRemoteAddress()).getPort();
+    public NetworkLog(@NotNull SocketChannel channel, String op) {
+        try {
+            this.desc = op
+                    + " " + ((InetSocketAddress) channel.getLocalAddress()).getPort()
+                    + " " + ((InetSocketAddress) channel.getRemoteAddress()).getPort();
+        } catch (IOException e) {
+            throw new IORuntimeException(e);
+        }
     }
 
     public void idle() {

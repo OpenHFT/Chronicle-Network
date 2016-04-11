@@ -857,9 +857,11 @@ public class TcpChannelHub implements Closeable {
             } catch (ConnectionDroppedException e) {
                 e.printStackTrace();
                 throw Jvm.rethrow(e);
+
             } catch (Exception e) {
                 LOG.error("", e);
                 throw Jvm.rethrow(e);
+
             } finally {
                 lock.unlock();
             }

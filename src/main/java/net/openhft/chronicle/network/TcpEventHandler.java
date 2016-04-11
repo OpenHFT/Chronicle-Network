@@ -20,6 +20,7 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.io.IOTools;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -36,7 +37,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
@@ -76,23 +76,27 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private long lastTickReadTime = Time.tickTime();
     private volatile boolean closed;
 
-    public TcpEventHandler(@NotNull NetworkContext nc) throws IOException {
+    public TcpEventHandler(@NotNull NetworkContext nc) {
         final boolean unchecked = nc.isUnchecked();
         this.writeEventHandler = new WriteEventHandler();
         this.sc = nc.socketChannel();
         this.nc = nc;
-        sc.configureBlocking(false);
 
         try {
+            sc.configureBlocking(false);
             sc.socket().setTcpNoDelay(true);
             sc.socket().setReceiveBufferSize(TCP_BUFFER);
             sc.socket().setSendBufferSize(TCP_BUFFER);
-        } catch (SocketException e) {
+        } catch (IOException e) {
             LOG.info("", e);
         }
         // there is nothing which needs to be written by default.
         this.sessionDetails = new VanillaSessionDetails();
-        sessionDetails.clientAddress((InetSocketAddress) sc.getRemoteAddress());
+        try {
+            sessionDetails.clientAddress((InetSocketAddress) sc.getRemoteAddress());
+        } catch (IOException e) {
+            throw new IORuntimeException(e);
+        }
         // allow these to be used by another thread.
         // todo check that this can be commented out
         // inBBB.clearThreadAssociation();
@@ -336,12 +340,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
         @Override
         public TcpEventHandler apply(NetworkContext nc) {
-            try {
                 return new TcpEventHandler(nc);
-            } catch (IOException e) {
-                throw Jvm.rethrow(e);
-
-            }
         }
     }
 

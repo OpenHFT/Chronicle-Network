@@ -20,6 +20,7 @@ import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
+import net.openhft.chronicle.core.util.ThrowingFunction;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,21 +32,20 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 
 public class RemoteConnector implements Closeable {
     private static final int BUFFER_SIZE = 8 << 20;
 
     private static final Logger LOG = LoggerFactory.getLogger(RemoteConnector.class);
     @NotNull
-    private final Function<NetworkContext, TcpEventHandler> tcpHandlerSupplier;
+    private final ThrowingFunction<NetworkContext, IOException, TcpEventHandler> tcpHandlerSupplier;
 
     private final Integer tcpBufferSize;
     private volatile boolean closed;
 
     private volatile List<Closeable> closeables = new ArrayList<>();
 
-    public RemoteConnector(@NotNull final Function<NetworkContext, TcpEventHandler> tcpEventHandlerFactory) {
+    public RemoteConnector(@NotNull final ThrowingFunction<NetworkContext, IOException, TcpEventHandler> tcpEventHandlerFactory) {
         this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", BUFFER_SIZE);
         this.tcpHandlerSupplier = tcpEventHandlerFactory;
     }
@@ -139,22 +139,24 @@ public class RemoteConnector implements Closeable {
             else
                 return false;
 
-            SocketChannel sc;
+            final SocketChannel sc;
+            final TcpEventHandler eventHandler;
 
             try {
                 sc = RemoteConnector.this.openSocketChannel(address);
+
+                if (sc == null)
+                    return false;
+
+                nc.socketChannel(sc);
+                nc.isAcceptor(false);
+
+                eventHandler = tcpHandlerSupplier.apply(nc);
+
             } catch (IOException e) {
                 nextPeriod.set(System.currentTimeMillis() + retryInterval);
                 return false;
             }
-
-            if (sc == null)
-                return false;
-
-            nc.socketChannel(sc);
-            nc.isAcceptor(false);
-
-            final TcpEventHandler eventHandler = tcpHandlerSupplier.apply(nc);
             eventLoop.addHandler(eventHandler);
             final List<Closeable> closeables = RemoteConnector.this.closeables;
             if (closeables == null)
