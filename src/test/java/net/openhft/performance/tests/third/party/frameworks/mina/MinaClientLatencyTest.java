@@ -123,7 +123,7 @@ public class MinaClientLatencyTest {
                     break;
                 } catch (RuntimeIoException e) {
                     e.printStackTrace();
-                    pause(5000);
+                    pause(500);
                 }
             }
 

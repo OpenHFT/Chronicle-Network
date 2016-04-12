@@ -48,9 +48,9 @@ public class MinaClientThroughPutTest {
         connector.setConnectTimeoutMillis(CONNECT_TIMEOUT);
 
         connector.setHandler(new IoHandlerAdapter() {
+            final int bufferSize = 64;
             int bytesReceived = 0;
             long startTime;
-            final int bufferSize = 64;
             @NotNull
             byte[] payload = new byte[bufferSize];
             int i;
@@ -113,7 +113,7 @@ public class MinaClientThroughPutTest {
                 break;
             } catch (RuntimeIoException e) {
                 e.printStackTrace();
-                pause(5000);
+                pause(500);
             }
         }
 

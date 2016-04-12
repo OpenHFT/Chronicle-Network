@@ -94,7 +94,7 @@ public class ConnectionEventHandlerTest {
         Jvm.pause(200);
         ceh.forceRescan();
 
-        Jvm.pause(2000);
+        Jvm.pause(500);
         //should receive 2 or 3 depends on timing messages
         Assert.assertTrue(messages.size() == 2 || messages.size() == 3);
         messages.clear();
@@ -105,7 +105,7 @@ public class ConnectionEventHandlerTest {
 
         //should receive no messages
 
-        Jvm.pause(2000);
+        Jvm.pause(500);
         Assert.assertEquals(0, messages.size());
         messages.clear();
 
@@ -114,7 +114,7 @@ public class ConnectionEventHandlerTest {
         ceh.forceRescan();
 
         //should receive 3 messages
-        Jvm.pause(2000);
+        Jvm.pause(500);
         Assert.assertEquals(2, messages.size());
     }
 
@@ -146,7 +146,7 @@ public class ConnectionEventHandlerTest {
 
             Executors.newSingleThreadExecutor().submit(() -> {
                 while (true) {
-                    Jvm.pause(1000);
+                    Jvm.pause(500);
                     i.set(2);
                 }
             });
