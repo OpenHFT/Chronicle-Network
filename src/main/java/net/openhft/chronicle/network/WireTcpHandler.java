@@ -105,7 +105,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     @Override
     public void onEndOfConnection(boolean heartbeatTimeOut) {
         if (publisher != null)
-        publisher.close();
+            publisher.close();
     }
 
     protected void onWrite(@NotNull WireOut out) {
@@ -141,10 +141,10 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     }
 
     private void logYaml(long start) {
-        if (YamlLogging.showServerReads() && inWire.hasMore()) {
+        if (YamlLogging.showServerReads() && !inWire.bytes().isEmpty()) {
             String s = Wires.fromSizePrefixedBlobs(inWire.bytes(), start, inWire.bytes()
                     .readLimit());
-            LOG.info("subhandler read:\n" + s);
+            LOG.info("handler=" + this.getClass().getSimpleName() + ", read:\n" + s);
         }
     }
 
