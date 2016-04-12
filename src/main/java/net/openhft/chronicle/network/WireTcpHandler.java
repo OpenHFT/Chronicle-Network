@@ -224,7 +224,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     /**
      * write and exceptions and rolls back if no data was written
      */
-    protected void writeData(boolean isNotReady, @NotNull Bytes inBytes, @NotNull WriteMarshallable c) {
+    protected void writeData(boolean isNotComplete, @NotNull Bytes inBytes, @NotNull WriteMarshallable c) {
 
         final WriteMarshallable marshallable = out -> {
             final long readPosition = inBytes.readPosition();
@@ -246,8 +246,8 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
             }
         };
 
-        if (isNotReady)
-            outWire.writeNotReadyDocument(false, marshallable);
+        if (isNotComplete)
+            outWire.writeNotCompleteDocument(false, marshallable);
         else
             outWire.writeDocument(false, marshallable);
 
