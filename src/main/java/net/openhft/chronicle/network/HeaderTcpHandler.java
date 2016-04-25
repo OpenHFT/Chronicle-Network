@@ -18,7 +18,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network.api.TcpHandler;
-import net.openhft.chronicle.network.api.session.SessionDetails;
+import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -89,7 +89,7 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
     }
 
     @NotNull
-    private SessionDetails toSessionDetails(Wire inWire) {
+    private SessionDetailsProvider toSessionDetails(Wire inWire) {
         VanillaSessionDetails sd = new VanillaSessionDetails();
         sd.readMarshallable(inWire);
         return sd;
