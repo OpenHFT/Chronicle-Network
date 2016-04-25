@@ -64,7 +64,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     @NotNull
     private final ByteBuffer inBB = allocateDirect(CAPACITY);
     @NotNull
-    private final Bytes inBBB;
+    private final Bytes<ByteBuffer> inBBB;
     @NotNull
     private final ByteBuffer outBB = allocateDirect(CAPACITY);
     @NotNull
@@ -256,6 +256,17 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
         return busy;
     }
+/*
+
+    private void ensureReadCapactity() {
+        // ensure that we always have 1024bytes head room
+        if (inBBB.writePosition() + 1024 > inBBB.realCapacity()) {
+            inBBB.ensureCapacity(inBBB.realCapacity() * 2);
+            inBB = inBBB.underlyingObject();
+            System.out.println("inBBB.realCapacity()=" + inBBB.realCapacity());
+        }
+    }
+*/
 
     private void handleIOE(@NotNull IOException e, final boolean clientIntentionallyClosed,
                            @Nullable HeartbeatListener heartbeatListener) {
@@ -340,7 +351,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
         @Override
         public TcpEventHandler apply(NetworkContext nc) {
-                return new TcpEventHandler(nc);
+            return new TcpEventHandler(nc);
         }
     }
 

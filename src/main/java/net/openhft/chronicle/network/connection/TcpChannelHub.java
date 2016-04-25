@@ -72,7 +72,7 @@ import static net.openhft.chronicle.core.Jvm.rethrow;
  */
 public class TcpChannelHub implements Closeable {
 
-    public static final int BUFFER_SIZE = 2 << 20;
+    public static final int BUFFER_SIZE = 4 << 20;
     private static final int HEATBEAT_PING_PERIOD =
             getInteger("heartbeat.ping.period",
                     Jvm.isDebug() ? 30_000 : 5_000);
@@ -390,16 +390,12 @@ public class TcpChannelHub implements Closeable {
             if (LOG.isDebugEnabled())
                 LOG.debug("closing", new Throwable("only added for logging - please ignore !"));
 
-            clear(inWire);
-
             final TcpSocketConsumer tcpSocketConsumer = this.tcpSocketConsumer;
 
             tcpSocketConsumer.tid = 0;
             tcpSocketConsumer.omap.clear();
 
             onDisconnected();
-
-            clear(outWire);
 
         }
     }
@@ -474,7 +470,7 @@ public class TcpChannelHub implements Closeable {
             TcpChannelHub.this.outWire.writeDocument(false, w ->
                     w.writeEventName(EventId.onClientClosing).text(""));
 
-        }, false);
+        }, TryLock.LOCK);
 
         // wait up to 1 seconds to receive an close request acknowledgment from the server
         try {
@@ -808,34 +804,38 @@ public class TcpChannelHub implements Closeable {
     }
 
     public boolean lock(@NotNull Task r) {
-        return lock(r, false);
+        return lock(r, TryLock.LOCK);
     }
 
-    private boolean lock(@NotNull Task r, boolean tryLock) {
+    private boolean lock(@NotNull Task r, TryLock tryLock) {
         return lock2(r, false, tryLock);
     }
 
-    public boolean lock2(@NotNull Task r, boolean reconnectOnFailure, boolean tryLock) {
+    public boolean lock2(@NotNull Task r, boolean reconnectOnFailure, TryLock tryLock) {
         assert !outBytesLock.isHeldByCurrentThread();
         try {
             if (clientChannel == null && !reconnectOnFailure)
-                return tryLock;
+                return TryLock.LOCK != tryLock;
 
             final ReentrantLock lock = outBytesLock();
-            if (tryLock) {
+            if (TryLock.LOCK == tryLock) {
+                try {
+                    //   if (lock.isLocked())
+                    //     LOG.info("Lock for thread=" + Thread.currentThread() + " was held by " +
+                    // lock);
+                    lock.lock();
+
+                } catch (Throwable e) {
+                    lock.unlock();
+                    throw e;
+                }
+            } else {
                 if (!lock.tryLock()) {
-                    LOG.warn("FAILED TO OBTAIN LOCK thread=" + Thread.currentThread() + " on " + lock);
+                    if (tryLock.equals(TryLock.TRY_LOCK_WARN))
+                        LOG.warn("FAILED TO OBTAIN LOCK thread=" + Thread.currentThread() + " on " +
+                                lock, new IllegalStateException());
                     return false;
                 }
-            } else try {
-                //   if (lock.isLocked())
-                //     LOG.info("Lock for thread=" + Thread.currentThread() + " was held by " +
-                // lock);
-                lock.lock();
-
-            } catch (Throwable e) {
-                lock.unlock();
-                throw e;
             }
 
             try {
@@ -1531,6 +1531,10 @@ public class TcpChannelHub implements Closeable {
          * sends a heartbeat from the client to the server and logs the round trip time
          */
         private void sendHeartbeat() {
+            TcpChannelHub.this.lock(this::sendHeartbeat0, TryLock.TRY_LOCK_IGNORE);
+        }
+
+        private void sendHeartbeat0() {
             assert outWire.startUse();
             try {
                 if (outWire.bytes().writePosition() > 100)

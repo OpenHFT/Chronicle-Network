@@ -281,7 +281,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         }
 
         attempt(() -> {
-            hub.lock2(() -> quietSendEventAsyncWithoutLock(eventId, consumer), true, false);
+            hub.lock2(() -> quietSendEventAsyncWithoutLock(eventId, consumer), true, TryLock.LOCK);
             return true;
         });
 
