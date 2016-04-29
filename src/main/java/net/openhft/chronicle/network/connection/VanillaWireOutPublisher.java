@@ -17,23 +17,35 @@
 package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import static net.openhft.chronicle.core.Jvm.rethrow;
 
 /**
  * Created by peter.lawrey on 09/07/2015.
  */
 public class VanillaWireOutPublisher implements WireOutPublisher {
 
+    @FunctionalInterface
+    public interface WireOutConsumer {
+        void accept(WireOut wireOut) throws InvalidEventHandlerException, InterruptedException;
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(VanillaWireOutPublisher.class);
     private final Bytes<ByteBuffer> bytes;
     private Wire wrapperWire;
     private volatile boolean closed;
     private Wire wire;
+    private List<WireOutConsumer> consumers = new CopyOnWriteArrayList<>();
+    private int consumerIndex;
 
     public VanillaWireOutPublisher(WireType wireType) {
         this.closed = false;
@@ -73,9 +85,52 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
             }
 
             bytes.compact();
-
         }
+
+        for (int i = 0; i < consumers.size(); i++) {
+
+            if (bytes.readRemaining() == 0)
+                return;
+
+            if (isClosed())
+                return;
+
+            WireOutConsumer c = next();
+
+            try {
+                c.accept(wire);
+            } catch (InvalidEventHandlerException e) {
+                consumers.remove(c);
+            } catch (InterruptedException e) {
+                throw rethrow(e);
+            }
+        }
+
     }
+
+    @Override
+    public void addBytesConsumer(WireOutConsumer wireOutConsumer) {
+        consumers.add(wireOutConsumer);
+    }
+
+    @Override
+    public boolean removeBytesConsumer(WireOutConsumer wireOutConsumer) {
+        return consumers.remove(wireOutConsumer);
+    }
+
+
+    /**
+     * round robbins - the consumers, we should only write when the buffer is empty, as // we can't
+     * guarantee that we will have enough space to add more data to the out wire.
+     *
+     * @return the  Marshallable that you are writing to
+     */
+    private WireOutConsumer next() {
+        if (consumerIndex >= consumers.size())
+            consumerIndex = 0;
+        return consumers.get(consumerIndex++);
+    }
+
 
     @Override
     public void put(final Object key, WriteMarshallable event) {

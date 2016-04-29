@@ -58,6 +58,14 @@ public interface WireOutPublisher extends Closeable {
         throw new UnsupportedOperationException();
     }
 
+    default void addBytesConsumer(VanillaWireOutPublisher.WireOutConsumer wireOutConsumer) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean removeBytesConsumer(VanillaWireOutPublisher.WireOutConsumer wireOutConsumer) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * @param key   the key to the event, only used when throttling, otherwise NULL if the
      *              throttling is not required

@@ -47,7 +47,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     private volatile boolean closed;
     private boolean isAcceptor;
 
-    public static void logYaml(final WireOut outWire) {
+    private static void logYaml(final WireOut outWire) {
         if (YamlLogging.showServerWrites())
             try {
                 LOG.info("\nServer Sends:\n" +
