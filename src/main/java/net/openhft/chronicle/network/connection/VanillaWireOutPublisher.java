@@ -39,6 +39,10 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         void accept(WireOut wireOut) throws InvalidEventHandlerException, InterruptedException;
     }
 
+    public interface EventSupplier {
+        WriteMarshallable supply() throws InvalidEventHandlerException, InterruptedException;
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(VanillaWireOutPublisher.class);
     private final Bytes<ByteBuffer> bytes;
     private Wire wrapperWire;
@@ -54,42 +58,57 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         wire = wireType.apply(bytes);
     }
 
+
     /**
      * Apply waiting messages and return false if there was none.
      *
-     * @param out buffer to write to.
+     * @param bytes buffer to write to.
      */
     @Override
-    public void applyAction(@NotNull Bytes out) {
+    public void applyAction(@NotNull Bytes bytes) {
 
-        if (bytes.readRemaining() > 0) {
+
+        if (this.bytes.readRemaining() > 0) {
 
             synchronized (lock()) {
 
-                while (bytes.readRemaining() > 0) {
+                while (this.bytes.readRemaining() > 0) {
 
-                    final long readPosition = bytes.readPosition();
+                    final long readPosition = this.bytes.readPosition();
                     try (final ReadDocumentContext dc = (ReadDocumentContext) wrapperWire.readingDocument()) {
 
-                        if (!dc.isPresent() || out.writeRemaining() < bytes.readRemaining()) {
+                        if (!dc.isPresent() || bytes.writeRemaining() < this.bytes.readRemaining()) {
                             dc.closeReadPosition(readPosition);
                             return;
                         }
 
                         if (YamlLogging.showServerWrites())
-                            LOG.info("Server sends:" + Wires.fromSizePrefixedBlobs(bytes));
+                            LOG.info("Server sends:" + Wires.fromSizePrefixedBlobs(this.bytes));
 
-                        out.write(bytes);
+                        bytes.write(this.bytes);
                     }
                 }
 
-                bytes.compact();
+                this.bytes.compact();
             }
         }
 
+    }
+
+
+    /**
+     * Apply waiting messages and return false if there was none.
+     *
+     * @param outWire buffer to write to.
+     */
+    @Override
+    public void applyAction(@NotNull WireOut outWire) {
+
+        applyAction(outWire.bytes());
+
         for (int i = 0; i < consumers.size(); i++) {
 
-            if (out.writePosition() > 0)
+            if (bytes.writePosition() > 0)
                 return;
 
             if (isClosed())
@@ -98,7 +117,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
             WireOutConsumer c = next();
 
             try {
-                c.accept(wire);
+                c.accept(outWire);
             } catch (InvalidEventHandlerException e) {
                 consumers.remove(c);
             } catch (Exception e) {

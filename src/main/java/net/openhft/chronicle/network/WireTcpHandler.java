@@ -92,7 +92,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         checkWires(in, out, wireType == null ? WireType.TEXT : wireType);
 
         if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
-            publisher.applyAction(out);
+            publisher.applyAction(outWire);
 
         if (in.readRemaining() >= SIZE_OF_SIZE)
             onRead0();

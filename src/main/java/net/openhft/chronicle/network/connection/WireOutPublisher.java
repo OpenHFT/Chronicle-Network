@@ -19,6 +19,7 @@ package net.openhft.chronicle.network.connection;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.wire.WireOut;
 import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.WriteMarshallable;
 import org.jetbrains.annotations.NotNull;
@@ -56,6 +57,10 @@ public interface WireOutPublisher extends Closeable {
 
     default void applyAction(@NotNull Bytes out) {
         throw new UnsupportedOperationException();
+    }
+
+    default void applyAction(@NotNull WireOut out) {
+        applyAction(out.bytes());
     }
 
     default void addWireConsumer(VanillaWireOutPublisher.WireOutConsumer wireOutConsumer) {
