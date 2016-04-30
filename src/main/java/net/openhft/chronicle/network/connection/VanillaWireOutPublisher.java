@@ -62,34 +62,34 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     @Override
     public void applyAction(@NotNull Bytes out) {
 
-        if (bytes.readRemaining() == 0)
-            return;
+        if (bytes.readRemaining() > 0) {
 
-        synchronized (lock()) {
+            synchronized (lock()) {
 
-            while (bytes.readRemaining() > 0) {
+                while (bytes.readRemaining() > 0) {
 
-                final long readPosition = bytes.readPosition();
-                try (final ReadDocumentContext dc = (ReadDocumentContext) wrapperWire.readingDocument()) {
+                    final long readPosition = bytes.readPosition();
+                    try (final ReadDocumentContext dc = (ReadDocumentContext) wrapperWire.readingDocument()) {
 
-                    if (!dc.isPresent() || out.writeRemaining() < bytes.readRemaining()) {
-                        dc.closeReadPosition(readPosition);
-                        return;
+                        if (!dc.isPresent() || out.writeRemaining() < bytes.readRemaining()) {
+                            dc.closeReadPosition(readPosition);
+                            return;
+                        }
+
+                        if (YamlLogging.showServerWrites())
+                            LOG.info("Server sends:" + Wires.fromSizePrefixedBlobs(bytes));
+
+                        out.write(bytes);
                     }
-
-                    if (YamlLogging.showServerWrites())
-                        LOG.info("Server sends:" + Wires.fromSizePrefixedBlobs(bytes));
-
-                    out.write(bytes);
                 }
-            }
 
-            bytes.compact();
+                bytes.compact();
+            }
         }
 
         for (int i = 0; i < consumers.size(); i++) {
 
-            if (bytes.readRemaining() == 0)
+            if (out.writePosition() > 0)
                 return;
 
             if (isClosed())
@@ -101,7 +101,8 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
                 c.accept(wire);
             } catch (InvalidEventHandlerException e) {
                 consumers.remove(c);
-            } catch (InterruptedException e) {
+            } catch (Exception e) {
+                LOG.error("", e);
                 throw rethrow(e);
             }
         }
@@ -109,7 +110,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     }
 
     @Override
-    public void addBytesConsumer(WireOutConsumer wireOutConsumer) {
+    public void addWireConsumer(WireOutConsumer wireOutConsumer) {
         consumers.add(wireOutConsumer);
     }
 

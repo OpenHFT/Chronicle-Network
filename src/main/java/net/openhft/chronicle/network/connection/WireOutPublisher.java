@@ -58,7 +58,7 @@ public interface WireOutPublisher extends Closeable {
         throw new UnsupportedOperationException();
     }
 
-    default void addBytesConsumer(VanillaWireOutPublisher.WireOutConsumer wireOutConsumer) {
+    default void addWireConsumer(VanillaWireOutPublisher.WireOutConsumer wireOutConsumer) {
         throw new UnsupportedOperationException();
     }
 
