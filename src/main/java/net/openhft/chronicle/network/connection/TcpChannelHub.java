@@ -82,7 +82,7 @@ public class TcpChannelHub implements Closeable {
     private static final int SIZE_OF_SIZE = 4;
     private static final Set<TcpChannelHub> hubs = new CopyOnWriteArraySet<>();
     private static final Logger LOG = LoggerFactory.getLogger(TcpChannelHub.class);
-    public final long timeoutMs;
+    final long timeoutMs;
     @NotNull
     private final String name;
     private final int tcpBufferSize;
@@ -966,10 +966,11 @@ public class TcpChannelHub implements Closeable {
                         ((AsyncSubscription) v).applySubscribe();
                 }
             });
+
         }
 
         @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-        public void onConnectionClosed() {
+        void onConnectionClosed() {
             map.values().forEach(v -> {
                 if (v instanceof Bytes)
                     synchronized (v) {
@@ -1773,7 +1774,7 @@ public class TcpChannelHub implements Closeable {
             });
         }
 
-        public void prepareToShutdown() {
+        void prepareToShutdown() {
             this.prepareToShutdown = true;
             try {
                 service.awaitTermination(100, MILLISECONDS);
