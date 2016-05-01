@@ -63,11 +63,11 @@ public interface WireOutPublisher extends Closeable {
         applyAction(out.bytes());
     }
 
-    default void addWireConsumer(VanillaWireOutPublisher.WireOutConsumer wireOutConsumer) {
+    default void addWireConsumer(WireOutConsumer wireOutConsumer) {
         throw new UnsupportedOperationException();
     }
 
-    default boolean removeBytesConsumer(VanillaWireOutPublisher.WireOutConsumer wireOutConsumer) {
+    default boolean removeBytesConsumer(WireOutConsumer wireOutConsumer) {
         throw new UnsupportedOperationException();
     }
 
