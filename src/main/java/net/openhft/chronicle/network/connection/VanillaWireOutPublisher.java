@@ -34,15 +34,6 @@ import static net.openhft.chronicle.core.Jvm.rethrow;
  */
 public class VanillaWireOutPublisher implements WireOutPublisher {
 
-    @FunctionalInterface
-    public interface WireOutConsumer {
-        void accept(WireOut wireOut) throws InvalidEventHandlerException, InterruptedException;
-    }
-
-    public interface EventSupplier {
-        WriteMarshallable supply() throws InvalidEventHandlerException, InterruptedException;
-    }
-
     private static final Logger LOG = LoggerFactory.getLogger(VanillaWireOutPublisher.class);
     private final Bytes<ByteBuffer> bytes;
     private Wire wrapperWire;
