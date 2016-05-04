@@ -58,7 +58,6 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     @Override
     public void applyAction(@NotNull Bytes bytes) {
 
-
         if (this.bytes.readRemaining() > 0) {
 
             synchronized (lock()) {
@@ -97,25 +96,37 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
         applyAction(outWire.bytes());
 
-        for (int i = 0; i < consumers.size(); i++) {
+        for (int y = 1; y < 1000; y++) {
 
-            if (bytes.writePosition() > 0)
-                return;
+            long pos = outWire.bytes().writePosition();
 
-            if (isClosed())
-                return;
+            for (int i = 0; i < consumers.size(); i++) {
 
-            WireOutConsumer c = next();
+                if (outWire.bytes().writePosition() > 3 * 1024)
+                    return;
 
-            try {
-                c.accept(outWire);
-            } catch (InvalidEventHandlerException e) {
-                consumers.remove(c);
-            } catch (Exception e) {
-                LOG.error("", e);
-                throw rethrow(e);
+                if (isClosed())
+                    return;
+
+                WireOutConsumer c = next();
+
+                try {
+                    c.accept(outWire);
+                } catch (InvalidEventHandlerException e) {
+                    consumers.remove(c);
+                } catch (Exception e) {
+                    LOG.error("", e);
+                    throw rethrow(e);
+                }
             }
+
+            if (pos == outWire.bytes().writePosition())
+                return;
+
+
         }
+
+        LOG.error("", new IllegalStateException("loop when too long"));
 
     }
 

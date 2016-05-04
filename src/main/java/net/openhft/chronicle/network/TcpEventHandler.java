@@ -356,6 +356,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     }
 
     private class WriteEventHandler implements EventHandler {
+
         @Override
         public boolean action() throws InvalidEventHandlerException {
             if (!sc.isOpen()) throw new InvalidEventHandlerException();
@@ -382,5 +383,9 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             }
             return busy;
         }
+
+        //  public HandlerPriority priority() {
+        //      return HandlerPriority.CONCURRENT;
+        //  }
     }
 }
