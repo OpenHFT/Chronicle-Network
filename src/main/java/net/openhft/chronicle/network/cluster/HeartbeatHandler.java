@@ -18,6 +18,7 @@ package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.network.ConnectionListener;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.connection.CoreFields;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
@@ -53,6 +54,8 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
     private final AtomicBoolean hasHeartbeat = new AtomicBoolean();
     private final AtomicReference<Runnable> self = new AtomicReference<>();
     private volatile long lastTimeMessageReceived;
+    private ConnectionListener connectionMonitor;
+
     @UsedViaReflection
     protected HeartbeatHandler(@NotNull WireIn w) {
         heartbeatTimeoutMs = w.read(() -> "heartbeatTimeoutMs").int64();
@@ -107,6 +110,8 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
                 wireOutPublisher.publish(heartbeatMessage);
         };
 
+        connectionMonitor = nc().acquireConnectionListener();
+
         HEARTBEAT_EXECUTOR.scheduleAtFixedRate(task, this.heartbeatIntervalMs, this
                 .heartbeatIntervalMs, MILLISECONDS);
     }
@@ -145,9 +150,19 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
             if (closable().isClosed())
                 return;
 
-            if (!hasReceivedHeartbeat())
+            boolean hasHeartbeats = hasReceivedHeartbeat();
+            boolean prev = hasHeartbeat.getAndSet(hasHeartbeats);
+
+            if (hasHeartbeats != prev) {
+                if (hasHeartbeats)
+                    connectionMonitor.onConnected(localIdentifier(), remoteIdentifier());
+                else
+                    connectionMonitor.onDisconnected(localIdentifier(), remoteIdentifier());
+            }
+
+            if (!hasHeartbeats) {
                 close();
-            else
+            } else
                 HEARTBEAT_EXECUTOR.schedule(self.get(), heartbeatTimeoutMs, MILLISECONDS);
         });
     }
@@ -156,11 +171,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
      * periodically check that messages have been received, ie heartbeats
      */
     private void startHeartbeatCheck() {
-
         initHeartbeatCheck();
-        if (hasHeartbeat.getAndSet(true))
-            return;
-
         lastTimeMessageReceived = Long.MAX_VALUE;
         HEARTBEAT_EXECUTOR.schedule(self.get(), heartbeatTimeoutMs, MILLISECONDS);
     }

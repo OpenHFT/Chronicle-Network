@@ -64,4 +64,19 @@ public interface NetworkContext<T extends NetworkContext> {
     }
 
     long newCid();
+
+    default ConnectionListener acquireConnectionListener() {
+        return new ConnectionListener() {
+            @Override
+            public void onConnected(int localIdentifier, int remoteIdentifier) {
+
+            }
+
+            @Override
+            public void onDisconnected(int localIdentifier, int remoteIdentifier) {
+
+            }
+        };
+    }
+
 }
