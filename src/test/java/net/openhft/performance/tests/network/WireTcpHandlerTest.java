@@ -103,7 +103,7 @@ public class WireTcpHandlerTest {
                     int read = socket.read(in);
                     inBytes.readLimit(in.position());
                     if (inBytes.readRemaining() >= SIZE_OF_SIZE) {
-                        long header = inBytes.readInt(0);
+                        int header = inBytes.readInt(0);
 
                         final int len = Wires.lengthOf(header);
                         if (inBytes.readRemaining() >= len) {
