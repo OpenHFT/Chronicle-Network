@@ -16,6 +16,8 @@
 
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.cluster.TerminationEventHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
@@ -29,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author Rob Austin.
  */
-public class VanillaNetworkContext<T extends VanillaNetworkContext> implements NetworkContext<T> {
+public class VanillaNetworkContext<T extends VanillaNetworkContext> implements NetworkContext<T>, Closeable {
 
     private final AtomicLong cid = new AtomicLong();
     private SocketChannel socketChannel;
@@ -52,6 +54,11 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     public T socketChannel(SocketChannel socketChannel) {
         this.socketChannel = socketChannel;
         return (T) this;
+    }
+
+    @Override
+    public void onHandlerChanged(TcpHandler handler) {
+
     }
 
     /**
@@ -154,5 +161,11 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
                 return time;
             }
         }
+    }
+
+
+    @Override
+    public void close() {
+
     }
 }

@@ -39,7 +39,7 @@ import java.util.function.Supplier;
  */
 public class ClusterContext implements Demarshallable, WriteMarshallable, Consumer<HostDetails> {
 
-    long connectionTimeoutMs = 1_000;
+
     private ConnectionStrategy connectionStrategy;
     private WireType wireType;
     private BiFunction<ClusterContext, HostDetails, WriteMarshallable> handlerFactory;
@@ -59,38 +59,11 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
             wireParser().parseOne(wire, null);
     }
 
-    public ClusterContext(WireType wireType,
-                          BiFunction<ClusterContext, HostDetails, WriteMarshallable> handlerFactory,
-                          Function<WireType, WireOutPublisher> wireOutPublisherFactory,
-                          Function<ClusterContext, NetworkContext> networkContextFactory, Supplier<ConnectionManager> connectionEventHandler,
-                          long heartbeatTimeoutMs,
-                          long heartbeatIntervalMs,
-                          String clusterName,
-                          EventLoop eventLoop,
-                          Function<ClusterContext, WriteMarshallable> heartbeatFactory,
-                          ConnectionStrategy connectionStrategy,
-                          byte localIdentifier) {
-
-        this.wireType = wireType;
-        this.handlerFactory = handlerFactory;
-        this.wireOutPublisherFactory = wireOutPublisherFactory;
-        this.networkContextFactory = networkContextFactory;
-        this.connectionEventHandler = connectionEventHandler;
-        this.heartbeatTimeoutMs = heartbeatTimeoutMs;
-        this.heartbeatIntervalMs = heartbeatIntervalMs;
-        this.clusterName = clusterName;
-        this.eventLoop = eventLoop;
-        this.heartbeatFactory = heartbeatFactory;
-        this.connectionStrategy = connectionStrategy;
-        this.localIdentifier = localIdentifier;
-
-    }
-
-    public ClusterContext() {
+    protected ClusterContext() {
         defaults();
     }
 
-    public long heartbeatIntervalMs() {
+    long heartbeatIntervalMs() {
         return heartbeatIntervalMs;
     }
 

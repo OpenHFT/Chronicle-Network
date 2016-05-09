@@ -51,7 +51,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
             newSingleThreadScheduledExecutor(new NamedThreadFactory("Heartbeat", true));
     private final long heartbeatIntervalMs;
     private final long heartbeatTimeoutMs;
-    private final AtomicBoolean hasHeartbeat = new AtomicBoolean();
+    private final AtomicBoolean hasHeartbeats = new AtomicBoolean();
     private final AtomicReference<Runnable> self = new AtomicReference<>();
     private volatile long lastTimeMessageReceived;
     private ConnectionListener connectionMonitor;
@@ -151,7 +151,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
                 return;
 
             boolean hasHeartbeats = hasReceivedHeartbeat();
-            boolean prev = hasHeartbeat.getAndSet(hasHeartbeats);
+            boolean prev = this.hasHeartbeats.getAndSet(hasHeartbeats);
 
             if (hasHeartbeats != prev) {
                 if (hasHeartbeats)

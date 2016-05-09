@@ -16,6 +16,7 @@
 
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.cluster.TerminationEventHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
@@ -24,6 +25,8 @@ import net.openhft.chronicle.wire.WireType;
 import java.nio.channels.SocketChannel;
 
 public interface NetworkContext<T extends NetworkContext> {
+
+    void onHandlerChanged(TcpHandler handler);
 
     T isAcceptor(boolean serverSocket);
 

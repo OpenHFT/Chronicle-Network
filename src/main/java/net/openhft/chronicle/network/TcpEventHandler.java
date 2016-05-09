@@ -128,6 +128,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     @Override
     public void tcpHandler(TcpHandler tcpHandler) {
+        nc.onHandlerChanged(tcpHandler);
         this.tcpHandler = tcpHandler;
     }
 
@@ -141,10 +142,11 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
         if (!sc.isOpen()) {
             tcpHandler.onEndOfConnection(false);
-
+            Closeable.closeQuietly(nc);
             // clear these to free up memory.
             throw new InvalidEventHandlerException();
         } else if (closed) {
+            Closeable.closeQuietly(nc);
             throw new InvalidEventHandlerException();
         }
 
@@ -313,6 +315,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             sc.close();
         } catch (IOException ignored) {
         }
+
+        Closeable.closeQuietly(nc);
 
     }
 
