@@ -384,8 +384,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             return busy;
         }
 
-        //  public HandlerPriority priority() {
-        //      return HandlerPriority.CONCURRENT;
-        //  }
+        public HandlerPriority priority() {
+            return HandlerPriority.CONCURRENT;
+        }
     }
 }
