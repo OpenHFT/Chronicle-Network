@@ -31,6 +31,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -113,7 +114,8 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
 
         connectionMonitor = nc().acquireConnectionListener();
 
-        HEARTBEAT_EXECUTOR.schedule(task, this.heartbeatIntervalMs, MILLISECONDS);
+        HEARTBEAT_EXECUTOR.scheduleAtFixedRate(task, this.heartbeatIntervalMs, this
+                .heartbeatIntervalMs, MILLISECONDS);
     }
 
     @Override
@@ -134,9 +136,10 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
     public void close() {
         if (closable().isClosed())
             return;
+        if (connectionMonitor != null)
+            connectionMonitor.onDisconnected(localIdentifier(), remoteIdentifier());
         lastTimeMessageReceived = Long.MAX_VALUE;
         Closeable.closeQuietly(closable());
-
     }
 
     public void onMessageReceived() {
@@ -181,7 +184,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
      * @return {@code true} if we have received a heartbeat recently
      */
     private boolean hasReceivedHeartbeat() {
-        return lastTimeMessageReceived > System.currentTimeMillis() - heartbeatTimeoutMs;
+        return lastTimeMessageReceived >= (System.currentTimeMillis() - heartbeatTimeoutMs);
     }
 
     public static class Factory implements Function<ClusterContext, WriteMarshallable>,
