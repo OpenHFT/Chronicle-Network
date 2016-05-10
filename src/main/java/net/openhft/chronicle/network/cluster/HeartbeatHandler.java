@@ -47,7 +47,8 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
         Demarshallable, WriteMarshallable, HeartbeatEventHandler {
 
     // TODO Shouldn't be a singleton as it makes unit testing harder.
-    public static final ScheduledExecutorService HEARTBEAT_EXECUTOR =
+    public static
+    final ScheduledExecutorService HEARTBEAT_EXECUTOR =
             newSingleThreadScheduledExecutor(new NamedThreadFactory("Heartbeat", true));
     private final long heartbeatIntervalMs;
     private final long heartbeatTimeoutMs;
@@ -112,8 +113,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
 
         connectionMonitor = nc().acquireConnectionListener();
 
-        HEARTBEAT_EXECUTOR.scheduleAtFixedRate(task, this.heartbeatIntervalMs, this
-                .heartbeatIntervalMs, MILLISECONDS);
+        HEARTBEAT_EXECUTOR.schedule(task, this.heartbeatIntervalMs, MILLISECONDS);
     }
 
     @Override
@@ -154,16 +154,15 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
             boolean prev = this.hasHeartbeats.getAndSet(hasHeartbeats);
 
             if (hasHeartbeats != prev) {
-                if (hasHeartbeats)
-                    connectionMonitor.onConnected(localIdentifier(), remoteIdentifier());
-                else
+                if (!hasHeartbeats) {
                     connectionMonitor.onDisconnected(localIdentifier(), remoteIdentifier());
+                    close();
+                    return;
+                } else
+                    connectionMonitor.onConnected(localIdentifier(), remoteIdentifier());
             }
 
-            if (!hasHeartbeats) {
-                close();
-            } else
-                HEARTBEAT_EXECUTOR.schedule(self.get(), heartbeatTimeoutMs, MILLISECONDS);
+            HEARTBEAT_EXECUTOR.schedule(self.get(), heartbeatTimeoutMs, MILLISECONDS);
         });
     }
 
