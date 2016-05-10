@@ -31,7 +31,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -134,10 +133,10 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
 
     @Override
     public void close() {
+        if (connectionMonitor != null && hasHeartbeats.getAndSet(false))
+            connectionMonitor.onDisconnected(localIdentifier(), remoteIdentifier());
         if (closable().isClosed())
             return;
-        if (connectionMonitor != null)
-            connectionMonitor.onDisconnected(localIdentifier(), remoteIdentifier());
         lastTimeMessageReceived = Long.MAX_VALUE;
         Closeable.closeQuietly(closable());
     }
