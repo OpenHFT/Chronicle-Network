@@ -133,7 +133,7 @@ public class HeartbeatHandler<T extends NetworkContext> extends AbstractSubHandl
 
     @Override
     public void close() {
-        if (connectionMonitor != null && hasHeartbeats.getAndSet(false))
+        if (connectionMonitor != null)
             connectionMonitor.onDisconnected(localIdentifier(), remoteIdentifier());
         if (closable().isClosed())
             return;
