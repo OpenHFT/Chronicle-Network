@@ -63,7 +63,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         defaults();
     }
 
-    long heartbeatIntervalMs() {
+    public long heartbeatIntervalMs() {
         return heartbeatIntervalMs;
     }
 
