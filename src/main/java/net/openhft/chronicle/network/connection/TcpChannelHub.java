@@ -523,7 +523,8 @@ public class TcpChannelHub implements Closeable {
                 assert wire.endUse();
                 condition.await(10, TimeUnit.SECONDS);
                 assert wire.startUse();
-                wire.bytes().clear().write(bytes);
+                wire.clear();
+                wire.bytes().write(bytes);
             }
 
             writeSocket1(wire, this.clientChannel);
