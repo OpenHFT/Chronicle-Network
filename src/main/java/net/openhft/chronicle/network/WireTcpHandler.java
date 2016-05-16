@@ -88,8 +88,10 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         if (closed)
             return;
 
-        final WireType wireType = wireType();
-        checkWires(in, out, wireType == null ? WireType.TEXT : wireType);
+        WireType wireType = wireType();
+        if (wireType == null)
+            wireType = in.readByte(in.readPosition() + 4) < 0 ? WireType.BINARY : WireType.TEXT;
+        checkWires(in, out, wireType);
 
         if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
             publisher.applyAction(outWire);

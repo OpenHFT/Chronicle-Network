@@ -24,6 +24,7 @@ import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
+import net.openhft.chronicle.network.connection.TryLock;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.TextWire;
 import net.openhft.chronicle.wire.Wire;
@@ -61,7 +62,6 @@ public class SimpleServerAndClientTest {
 
     @Test
     public void test() throws IOException {
-
         // this the name of a reference to the host name and port,
         // allocated automatically when to a free port on localhost
         final String desc = "host.port";
@@ -91,7 +91,8 @@ public class SimpleServerAndClientTest {
             wire.writeDocument(false, w -> w.write(() -> "payload").text(expectedMessage));
 
             // write the data to the socket
-            tcpChannelHub.lock(() -> tcpChannelHub.writeSocket(wire, true));
+            tcpChannelHub.lock2(() -> tcpChannelHub.writeSocket(wire, true),
+                    true, TryLock.TRY_LOCK_WARN);
 
             // read the reply from the socket ( timeout after 1 second ), note: we have to pass the tid
             Wire reply = tcpChannelHub.proxyReply(TimeUnit.SECONDS.toMillis(1), tid);

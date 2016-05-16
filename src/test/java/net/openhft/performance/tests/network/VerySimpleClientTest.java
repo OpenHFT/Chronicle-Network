@@ -43,7 +43,10 @@ import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.Wires;
 import org.jetbrains.annotations.NotNull;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -94,7 +97,6 @@ public class VerySimpleClientTest {
         TCPRegistry.reset();
     }
 
-    @Ignore("todo fix")
     @Test
     public void test() throws IOException {
 

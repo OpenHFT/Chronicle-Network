@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -44,7 +43,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
     private final long failoverTimeout = Integer.getInteger("tcp.failover.time", 2_000);
     @Nullable
     private RemoteAddressSupplier current;
-    private Iterator<RemoteAddressSupplier> iterator;
+    private int addressCount = 0;
 
     /**
      * @param connectURIs the socket connections defined in order with the primary first
@@ -57,10 +56,6 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
         }
 
         assert !this.remoteAddresses.isEmpty();
-
-        // for (String descriptions : descriptions) {
-        this.iterator = remoteAddresses.iterator();
-        next();
     }
 
     /**
@@ -86,20 +81,16 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
         if (LOG.isDebugEnabled())
             LOG.debug("failing over to next address");
         next();
-        if (this.current == null)
-            startAtFirstAddress();
+    }
+
+    public void startAddresses() {
+        addressCount = 0;
+        current = remoteAddresses.get(addressCount);
     }
 
     private void next() {
-        if (iterator.hasNext())
-            this.current = iterator.next();
-        else
-            this.current = null;
-    }
-
-    public void startAtFirstAddress() {
-        iterator = remoteAddresses.iterator();
-        next();
+        addressCount = (addressCount + 1) % remoteAddresses.size();
+        current = remoteAddresses.get(addressCount);
     }
 
     public long timeoutMS() {

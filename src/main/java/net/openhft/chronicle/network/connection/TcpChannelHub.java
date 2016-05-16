@@ -45,6 +45,8 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.HashSet;
 import java.util.Map;
@@ -237,8 +239,8 @@ public class TcpChannelHub implements Closeable {
     }
 
     @Nullable
-    private SocketChannel openSocketChannel(InetSocketAddress socketAddress) throws IOException {
-        final SocketChannel result = SocketChannel.open(socketAddress);
+    SocketChannel openSocketChannel(InetSocketAddress socketAddress) throws IOException {
+        final SocketChannel result = SocketChannel.open();
         result.configureBlocking(false);
         Socket socket = result.socket();
         socket.setTcpNoDelay(true);
@@ -246,7 +248,25 @@ public class TcpChannelHub implements Closeable {
         socket.setSendBufferSize(tcpBufferSize);
         socket.setSoTimeout(0);
         socket.setSoLinger(false, 0);
+        result.connect(socketAddress);
 
+        Selector selector = Selector.open();
+        result.register(selector, SelectionKey.OP_CONNECT);
+
+        int select = selector.select(2500);
+        if (select == 0) {
+            LOG.warn("Timed out attempting to connect to " + socketAddress);
+            Closeable.closeQuietly(result);
+            return null;
+        } else {
+            try {
+                if (!result.finishConnect())
+                    return null;
+            } catch (IOException e) {
+                LOG.warn("Failed to connect to " + socketAddress + " " + e);
+                return null;
+            }
+        }
         return result;
     }
 
@@ -507,7 +527,6 @@ public class TcpChannelHub implements Closeable {
      * @param wire the {@code wire} containing the outbound data
      */
     public void writeSocket(@NotNull final WireOut wire, boolean reconnectOnFailure) {
-
         assert outBytesLock().isHeldByCurrentThread();
 
         try {
@@ -1630,14 +1649,17 @@ public class TcpChannelHub implements Closeable {
 
             keepSubscriptionsAndClearEverythingElse();
             long start = System.currentTimeMillis();
-            socketAddressSupplier.startAtFirstAddress();
+            socketAddressSupplier.startAddresses();
 
             OUTER:
-            for (int i = 1; ; i++) {
+            for (int i = 0; ; i++) {
                 checkNotShutdown();
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("attemptConnect remoteAddress=" + socketAddressSupplier);
+                else if (i >= socketAddressSupplier.all().size())
+                    LOG.info("attemptConnect remoteAddress=" + socketAddressSupplier);
+
                 SocketChannel socketChannel = null;
                 try {
 
@@ -1662,7 +1684,7 @@ public class TcpChannelHub implements Closeable {
                                 LOG.warn("failed to establish a socket " +
                                         "connection of any of the following servers=" +
                                         socketAddressSupplier.all() + " so will re-attempt");
-                                socketAddressSupplier.startAtFirstAddress();
+                                socketAddressSupplier.startAddresses();
                             }
 
                             // reset the timer, so that we can try this new address for a while
@@ -1672,16 +1694,10 @@ public class TcpChannelHub implements Closeable {
                         try {
 
                             final InetSocketAddress socketAddress = socketAddressSupplier.get();
-                            if (socketAddress == null) {
-                                socketAddressSupplier.failoverToNextAddress();
-                                continue;
-                            }
 
                             socketChannel = openSocketChannel(socketAddress);
 
                             if (socketChannel == null) {
-                                LOG.error("Unable to open socketChannel to remoteAddress=" +
-                                        socketAddressSupplier);
                                 pause(1_000);
                                 continue;
                             }
@@ -1695,6 +1711,7 @@ public class TcpChannelHub implements Closeable {
                             if (prepareToShutdown) {
                                 throw e;
                             }
+                            e.printStackTrace();
                             socketAddressSupplier.failoverToNextAddress();
 
                             //  logs with progressive back off, to prevent the log files from
