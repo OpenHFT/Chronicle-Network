@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
@@ -153,6 +154,9 @@ public class RemoteConnector implements Closeable {
 
                 eventHandler = tcpHandlerSupplier.apply(nc);
 
+            } catch (AlreadyConnectedException e) {
+                LOG.error("",e);
+                throw new InvalidEventHandlerException();
             } catch (IOException e) {
                 nextPeriod.set(System.currentTimeMillis() + retryInterval);
                 return false;

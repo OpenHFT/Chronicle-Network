@@ -18,6 +18,7 @@ package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
+import net.openhft.chronicle.network.TcpEventHandler;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -62,7 +63,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
             synchronized (lock()) {
 
-                while (this.bytes.readRemaining() > 0) {
+                while (this.bytes.readRemaining() > 0 && bytes.writeRemaining() < TcpEventHandler.TCP_BUFFER) {
 
                     final long readPosition = this.bytes.readPosition();
                     try (final ReadDocumentContext dc = (ReadDocumentContext) wrapperWire.readingDocument()) {
@@ -102,7 +103,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
             for (int i = 0; i < consumers.size(); i++) {
 
-                if (outWire.bytes().writePosition() > 3 * 1024)
+                if (outWire.bytes().writePosition() > TcpEventHandler.TCP_BUFFER)
                     return;
 
                 if (isClosed())

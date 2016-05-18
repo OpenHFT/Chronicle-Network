@@ -51,7 +51,8 @@ import static net.openhft.chronicle.network.ServerThreadingStrategy.serverThread
 public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandlerManager {
 
     private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", TcpChannelHub.BUFFER_SIZE);
-    static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", Math.max(64 << 10, CAPACITY / 8));
+    public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", Math.max
+            (64 << 10, CAPACITY / 8));
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
     @NotNull
     private final SocketChannel sc;
@@ -144,7 +145,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             tcpHandler.onEndOfConnection(false);
             Closeable.closeQuietly(nc);
             // clear these to free up memory.
-            throw new InvalidEventHandlerException();
+            throw new InvalidEventHandlerException("socket is closed");
         } else if (closed) {
             Closeable.closeQuietly(nc);
             throw new InvalidEventHandlerException();
@@ -178,9 +179,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             }
 
             if (read < 0) {
-                closeSC();
-                throw new InvalidEventHandlerException();
-                //return false;
+                close();
+                throw new InvalidEventHandlerException("socket closed " + sc);
             }
 
             readLog.idle();
@@ -194,12 +194,12 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 if (heartbeatListener != null)
                     nc.heartbeatListener().onMissedHeartbeat();
                 closeSC();
-                throw new InvalidEventHandlerException();
+                throw new InvalidEventHandlerException("heatbeat timeout");
             }
 
         } catch (ClosedChannelException e) {
             closeSC();
-            throw new InvalidEventHandlerException();
+            throw new InvalidEventHandlerException(e);
         } catch (IOException e) {
             handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
             throw new InvalidEventHandlerException();
@@ -363,7 +363,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
         @Override
         public boolean action() throws InvalidEventHandlerException {
-            if (!sc.isOpen()) throw new InvalidEventHandlerException();
+            if (!sc.isOpen()) throw new InvalidEventHandlerException("socket is closed");
 
             boolean busy = false;
             try {
@@ -388,8 +388,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             return busy;
         }
 
-        public HandlerPriority priority() {
-            return HandlerPriority.CONCURRENT;
-        }
+        // public HandlerPriority priority() {
+        //   return HandlerPriority.CONCURRENT;
+        //}
     }
 }
