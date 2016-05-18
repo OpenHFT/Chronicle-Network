@@ -90,13 +90,15 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         if (closed)
             return;
 
-        if (out.writeRemaining() < lastOutBytesRemaining)
-            onBytesWritten();
+
 
         WireType wireType = wireType();
         if (wireType == null)
             wireType = in.readByte(in.readPosition() + 4) < 0 ? WireType.BINARY : WireType.TEXT;
         checkWires(in, out, wireType);
+
+        if ( outWire.bytes().writeRemaining() > lastOutBytesRemaining)
+            onBytesWritten();
 
         if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
             publisher.applyAction(outWire);
@@ -107,7 +109,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         if (out.writePosition() < TcpEventHandler.TCP_BUFFER)
             onWrite(outWire);
 
-        lastOutBytesRemaining = out.writeRemaining();
+        lastOutBytesRemaining = outWire.bytes().writeRemaining();
     }
 
     protected void onBytesWritten() {
