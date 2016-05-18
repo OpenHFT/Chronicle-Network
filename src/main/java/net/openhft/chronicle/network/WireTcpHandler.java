@@ -91,13 +91,14 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
             return;
 
 
-
         WireType wireType = wireType();
         if (wireType == null)
             wireType = in.readByte(in.readPosition() + 4) < 0 ? WireType.BINARY : WireType.TEXT;
         checkWires(in, out, wireType);
 
-        if ( outWire.bytes().writeRemaining() > lastOutBytesRemaining)
+        // we assume that if any bytes were in lastOutBytesRemaining the sc.write() would have been
+        // called and this will fail, if the other end has lost its connection
+        if (lastOutBytesRemaining > 0)
             onBytesWritten();
 
         if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
