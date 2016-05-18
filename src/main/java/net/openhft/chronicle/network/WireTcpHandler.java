@@ -82,14 +82,13 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         this.isAcceptor = isAcceptor;
     }
 
-    long lastOutBytesRemaining = 0;
+    long lastOutBytesWritePosition = 0;
 
     @Override
     public void process(@NotNull Bytes in, @NotNull Bytes out) {
 
         if (closed)
             return;
-
 
         WireType wireType = wireType();
         if (wireType == null)
@@ -98,7 +97,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
         // we assume that if any bytes were in lastOutBytesRemaining the sc.write() would have been
         // called and this will fail, if the other end has lost its connection
-        if (lastOutBytesRemaining > 0)
+        if (outWire.bytes().writeRemaining() < lastOutBytesWritePosition)
             onBytesWritten();
 
         if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
@@ -110,7 +109,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         if (out.writePosition() < TcpEventHandler.TCP_BUFFER)
             onWrite(outWire);
 
-        lastOutBytesRemaining = outWire.bytes().writeRemaining();
+        lastOutBytesWritePosition = outWire.bytes().writePosition();
     }
 
     protected void onBytesWritten() {
