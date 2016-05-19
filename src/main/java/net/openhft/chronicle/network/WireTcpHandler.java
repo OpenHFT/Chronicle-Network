@@ -37,6 +37,9 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
     @NotNull
     protected Wire outWire;
+    long lastOutBytesWriteRemaining = 0;
+    int onBytesWrittenCount, noByteWrittenCount;
+    long lastMonitor = System.currentTimeMillis();
     @NotNull
     private Wire inWire;
     private boolean recreateWire;
@@ -82,8 +85,6 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         this.isAcceptor = isAcceptor;
     }
 
-    long lastOutBytesWritePosition = 0;
-
     @Override
     public void process(@NotNull Bytes in, @NotNull Bytes out) {
 
@@ -97,8 +98,18 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
         // we assume that if any bytes were in lastOutBytesRemaining the sc.write() would have been
         // called and this will fail, if the other end has lost its connection
-        if (outWire.bytes().writeRemaining() < lastOutBytesWritePosition)
+        if (outWire.bytes().writeRemaining() != lastOutBytesWriteRemaining) {
             onBytesWritten();
+            onBytesWrittenCount++;
+        } else {
+            noByteWrittenCount++;
+        }
+        long now = System.currentTimeMillis();
+        if (now > lastMonitor + 1000) {
+            lastMonitor = now;
+            System.out.println(this + " onBytes: " + onBytesWrittenCount + " noBytes: " + noByteWrittenCount);
+            onBytesWrittenCount = noByteWrittenCount = 0;
+        }
 
         if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
             publisher.applyAction(outWire);
@@ -109,7 +120,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         if (out.writePosition() < TcpEventHandler.TCP_BUFFER)
             onWrite(outWire);
 
-        lastOutBytesWritePosition = outWire.bytes().writePosition();
+        lastOutBytesWriteRemaining = outWire.bytes().writeRemaining();
     }
 
     protected void onBytesWritten() {
