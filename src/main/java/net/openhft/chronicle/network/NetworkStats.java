@@ -7,32 +7,32 @@ import net.openhft.chronicle.wire.AbstractMarshallable;
  */
 public class NetworkStats extends AbstractMarshallable {
 
-    int bytesWrittenCount, noByteWrittenCount, bytesReadCount;
+    int bytesWrittenPerSecond, socketPollCountPerSecond, bytesReadPerSecond;
 
     public int bytesWrittenCount() {
-        return bytesWrittenCount;
+        return bytesWrittenPerSecond;
     }
 
     public NetworkStats bytesWrittenCount(int bytesWrittenCount) {
-        this.bytesWrittenCount = bytesWrittenCount;
+        this.bytesWrittenPerSecond = bytesWrittenCount;
         return this;
     }
 
-    public int noByteWrittenCount() {
-        return noByteWrittenCount;
+    public int socketPollCount() {
+        return socketPollCountPerSecond;
     }
 
-    public NetworkStats noByteWrittenCount(int noByteWrittenCount) {
-        this.noByteWrittenCount = noByteWrittenCount;
+    public NetworkStats socketPollCount(int socketPollCount) {
+        this.socketPollCountPerSecond = socketPollCount;
         return this;
     }
 
     public int bytesReadCount() {
-        return bytesReadCount;
+        return bytesReadPerSecond;
     }
 
     public NetworkStats bytesReadCount(int bytesReadCount) {
-        this.bytesReadCount = bytesReadCount;
+        this.bytesReadPerSecond = bytesReadCount;
         return this;
     }
 }

@@ -42,7 +42,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     @NotNull
     protected Wire outWire;
     long lastWriteRemaining = 0;
-    int bytesWrittenCount, noByteWrittenCount, bytesReadCount;
+    int bytesWrittenCount, socketPollCount, bytesReadCount;
     long lastMonitor = System.currentTimeMillis();
     @NotNull
     private Wire inWire;
@@ -109,9 +109,9 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         if (outWire.bytes().writeRemaining() != lastWriteRemaining) {
             onBytesWritten();
             bytesWrittenCount++;
-        } else {
-            noByteWrittenCount++;
         }
+
+        socketPollCount++;
 
         bytesReadCount += (in.readRemaining() - lastReadReaming);
 
@@ -120,11 +120,11 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
             lastMonitor = now;
 
             networkStats.bytesWrittenCount(bytesWrittenCount);
-            networkStats.noByteWrittenCount(noByteWrittenCount);
+            networkStats.socketPollCount(socketPollCount);
             networkStats.bytesReadCount(bytesReadCount);
 
             if (statsConsumer != null) statsConsumer.accept(networkStats);
-            bytesWrittenCount = noByteWrittenCount = bytesReadCount = 0;
+            bytesWrittenCount = socketPollCount = bytesReadCount = 0;
         }
 
         if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
