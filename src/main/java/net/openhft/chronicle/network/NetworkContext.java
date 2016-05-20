@@ -82,4 +82,8 @@ public interface NetworkContext<T extends NetworkContext> {
         };
     }
 
+    Runnable socketReconnector();
+
+    T socketReconnector(Runnable socketReconnector);
+
 }

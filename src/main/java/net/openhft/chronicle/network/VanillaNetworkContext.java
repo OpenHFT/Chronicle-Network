@@ -168,4 +168,16 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     public void close() {
 
     }
+
+    private Runnable socketReconnector;
+
+    public Runnable socketReconnector() {
+        return socketReconnector;
+    }
+
+    public T socketReconnector(Runnable socketReconnector) {
+        this.socketReconnector = socketReconnector;
+        return (T) this;
+    }
+
 }

@@ -91,16 +91,9 @@ public class HostConnector implements Closeable {
         // what ever wire is configured
         nc = networkContextFactory.apply(clusterContext);
         nc.wireOutPublisher(wireOutPublisher);
-
         nc.isAcceptor(false);
-
         nc.heartbeatTimeoutMs(clusterContext.heartbeatTimeoutMs() * 2);
-        nc.heartbeatListener(() -> {
-            if (nc.socketChannel() != null)
-                Closeable.closeQuietly(nc.socketChannel());
-            wireOutPublisher.clear();
-            reconnect();
-        });
+        nc.socketReconnector(this::reconnect);
 
         boolean firstTime = true;
         for (WriteMarshallable bootstrap : bootstraps) {
