@@ -25,11 +25,15 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.Consumer;
+
 import static net.openhft.chronicle.network.connection.CoreFields.reply;
 import static net.openhft.chronicle.wire.WriteMarshallable.EMPTY;
 
 public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHandler,
         NetworkContextManager<T> {
+
+    private final NetworkStats networkStats = new NetworkStats();
 
     private static final int SIZE_OF_SIZE = 4;
     private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
@@ -37,8 +41,8 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
     @NotNull
     protected Wire outWire;
-    long lastOutBytesWriteRemaining = 0;
-    int bytesWrittenCount, noByteWrittenCount;
+    long lastWriteRemaining = 0;
+    int bytesWrittenCount, noByteWrittenCount, bytesReadCount;
     long lastMonitor = System.currentTimeMillis();
     @NotNull
     private Wire inWire;
@@ -49,6 +53,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     private T nc;
     private volatile boolean closed;
     private boolean isAcceptor;
+    private Consumer<NetworkStats> statsConsumer;
 
     private static void logYaml(final WireOut outWire) {
         if (YamlLogging.showServerWrites())
@@ -85,6 +90,9 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         this.isAcceptor = isAcceptor;
     }
 
+
+    private long lastReadReaming;
+
     @Override
     public void process(@NotNull Bytes in, @NotNull Bytes out) {
 
@@ -98,17 +106,25 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
         // we assume that if any bytes were in lastOutBytesRemaining the sc.write() would have been
         // called and this will fail, if the other end has lost its connection
-        if (outWire.bytes().writeRemaining() != lastOutBytesWriteRemaining) {
+        if (outWire.bytes().writeRemaining() != lastWriteRemaining) {
             onBytesWritten();
             bytesWrittenCount++;
         } else {
             noByteWrittenCount++;
         }
+
+        bytesReadCount += (in.readRemaining() - lastReadReaming);
+
         long now = System.currentTimeMillis();
         if (now > lastMonitor + 1000) {
             lastMonitor = now;
-            System.out.println(this + " bytesWrittenCount: " + bytesWrittenCount + " noByteWrittenCount: " + noByteWrittenCount);
-            bytesWrittenCount = noByteWrittenCount = 0;
+
+            networkStats.bytesWrittenCount(bytesWrittenCount);
+            networkStats.noByteWrittenCount(noByteWrittenCount);
+            networkStats.bytesReadCount(bytesReadCount);
+
+            if (statsConsumer != null) statsConsumer.accept(networkStats);
+            bytesWrittenCount = noByteWrittenCount = bytesReadCount = 0;
         }
 
         if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
@@ -117,10 +133,12 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         if (in.readRemaining() >= SIZE_OF_SIZE)
             onRead0();
 
+
         if (out.writePosition() < TcpEventHandler.TCP_BUFFER)
             onWrite(outWire);
 
-        lastOutBytesWriteRemaining = outWire.bytes().writeRemaining();
+        lastWriteRemaining = outWire.bytes().writeRemaining();
+        lastReadReaming = inWire.bytes().readRemaining();
     }
 
     protected void onBytesWritten() {
@@ -281,6 +299,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
     public final void nc(T nc) {
         this.nc = nc;
+        statsConsumer = nc().networkStats();
         onInitialize();
     }
 
