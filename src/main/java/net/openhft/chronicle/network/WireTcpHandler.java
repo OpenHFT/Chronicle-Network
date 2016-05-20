@@ -119,9 +119,13 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         if (now > lastMonitor + 1000) {
             lastMonitor = now;
 
-            networkStats.bytesWrittenCount(bytesWrittenCount);
-            networkStats.socketPollCount(socketPollCount);
-            networkStats.bytesReadCount(bytesReadCount);
+            // bytes per seconds
+            networkStats.writeBps(bytesWrittenCount);
+
+            // bytes per seconds
+            networkStats.readBps(bytesReadCount);
+
+            networkStats.socketPollCountPerSecond(socketPollCount);
 
             if (statsConsumer != null) statsConsumer.accept(networkStats);
             bytesWrittenCount = socketPollCount = bytesReadCount = 0;
