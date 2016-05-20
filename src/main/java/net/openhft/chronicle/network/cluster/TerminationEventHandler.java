@@ -21,4 +21,6 @@ package net.openhft.chronicle.network.cluster;
  */
 public interface TerminationEventHandler {
     void onTerminate();
+
+    boolean isTerminated();
 }
