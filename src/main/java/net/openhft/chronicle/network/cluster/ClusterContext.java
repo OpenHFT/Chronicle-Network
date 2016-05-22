@@ -20,6 +20,7 @@ import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.NetworkContext;
+import net.openhft.chronicle.network.NetworkStatsListener;
 import net.openhft.chronicle.network.RemoteConnector;
 import net.openhft.chronicle.network.TcpEventHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
@@ -52,6 +53,17 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
     private EventLoop eventLoop;
     private Function<ClusterContext, WriteMarshallable> heartbeatFactory;
     private byte localIdentifier;
+    private Function<ClusterContext, NetworkStatsListener>
+            networkStatsListenerFactory;
+
+    public Function<ClusterContext, NetworkStatsListener> networkStatsListenerFactory() {
+        return networkStatsListenerFactory;
+    }
+
+    public ClusterContext networkStatsListenerFactory(Function<ClusterContext, NetworkStatsListener> networkStatsListenerFactory) {
+        this.networkStatsListenerFactory = networkStatsListenerFactory;
+        return this;
+    }
 
     @UsedViaReflection
     protected ClusterContext(@NotNull WireIn wire) {
@@ -88,6 +100,10 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
 
         parser.register(() -> "heartbeatFactory", (s, v, $) -> this.heartbeatFactory(v.typedMarshallable
                 ()));
+
+        parser.register(() -> "networkStatsListenerFactory", (s, v, $) -> this.networkStatsListenerFactory(v.typedMarshallable
+                ()));
+
         return parser;
     }
 

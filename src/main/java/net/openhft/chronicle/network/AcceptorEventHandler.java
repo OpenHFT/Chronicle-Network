@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -76,6 +77,17 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
                 final NetworkContext nc = ncFactory.get();
                 nc.socketChannel(sc);
                 nc.isAcceptor(true);
+
+                NetworkStatsListener networkStatsListener = nc.networkStatsListener();
+
+                if (networkStatsListener != null) {
+                    if (sc.socket() != null && sc.socket().getRemoteSocketAddress()
+                            instanceof InetSocketAddress)
+                        networkStatsListener.onHostPort(
+                                ((InetSocketAddress) sc.socket().getRemoteSocketAddress()).getHostName(),
+                                ((InetSocketAddress) sc.socket().getRemoteSocketAddress()).getPort());
+                }
+
                 eventLoop.addHandler(handlerFactory.apply(nc));
             }
 

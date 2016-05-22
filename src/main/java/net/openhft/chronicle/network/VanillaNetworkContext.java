@@ -27,7 +27,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 
 /**
  * @author Rob Austin.
@@ -182,15 +181,15 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     }
 
 
-    private Consumer<NetworkStats> networkStats;
+    private NetworkStatsListener networkStatsListener;
 
     @Override
-    public void networkStats(Consumer<NetworkStats> networkStats) {
-        this.networkStats = networkStats;
+    public void networkStatsListener(NetworkStatsListener networkStatsListener) {
+        this.networkStatsListener = networkStatsListener;
     }
 
     @Override
-    public Consumer<NetworkStats> networkStats() {
-        return this.networkStats;
+    public NetworkStatsListener networkStatsListener() {
+        return this.networkStatsListener;
     }
 }

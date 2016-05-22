@@ -25,15 +25,12 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.function.Consumer;
-
 import static net.openhft.chronicle.network.connection.CoreFields.reply;
 import static net.openhft.chronicle.wire.WriteMarshallable.EMPTY;
 
 public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHandler,
         NetworkContextManager<T> {
 
-    private final NetworkStats networkStats = new NetworkStats();
 
     private static final int SIZE_OF_SIZE = 4;
     private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
@@ -42,7 +39,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     @NotNull
     protected Wire outWire;
     long lastWriteRemaining = 0;
-    int bytesWrittenCount, socketPollCount, bytesReadCount;
+    int writeBps, socketPollCount, bytesReadCount;
     long lastMonitor = System.currentTimeMillis();
     @NotNull
     private Wire inWire;
@@ -53,7 +50,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     private T nc;
     private volatile boolean closed;
     private boolean isAcceptor;
-    private Consumer<NetworkStats> statsConsumer;
+
 
     private static void logYaml(final WireOut outWire) {
         if (YamlLogging.showServerWrites())
@@ -108,7 +105,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         // called and this will fail, if the other end has lost its connection
         if (outWire.bytes().writeRemaining() != lastWriteRemaining) {
             onBytesWritten();
-            bytesWrittenCount++;
+            writeBps++;
         }
 
         socketPollCount++;
@@ -119,16 +116,12 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         if (now > lastMonitor + 1000) {
             lastMonitor = now;
 
-            // bytes per seconds
-            networkStats.writeBps(bytesWrittenCount);
+            final NetworkStatsListener networkStatsListener = nc().networkStatsListener();
+            if (networkStatsListener != null)
+                networkStatsListener.onNetworkStats(writeBps, bytesReadCount,
+                        socketPollCount, nc);
 
-            // bytes per seconds
-            networkStats.readBps(bytesReadCount);
-
-            networkStats.socketPollCountPerSecond(socketPollCount);
-
-            if (statsConsumer != null) statsConsumer.accept(networkStats);
-            bytesWrittenCount = socketPollCount = bytesReadCount = 0;
+            writeBps = socketPollCount = bytesReadCount = 0;
         }
 
         if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
@@ -303,7 +296,6 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
     public final void nc(T nc) {
         this.nc = nc;
-        statsConsumer = nc().networkStats();
         onInitialize();
     }
 

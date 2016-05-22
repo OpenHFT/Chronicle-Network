@@ -1,42 +1,27 @@
 package net.openhft.chronicle.network;
 
-import net.openhft.chronicle.wire.AbstractMarshallable;
-
 /**
  * used to collected stats about the network activity
  */
-public class NetworkStats extends AbstractMarshallable {
+public interface NetworkStats  {
 
-    long writeBps, readBps, socketPollCountPerSecond;
+    long writeBps();
 
-    // bytes per seconds
-    public long writeBps() {
-        return writeBps;
-    }
+    NetworkStats writeBps(long writeBps);
 
-    // bytes per seconds
-    public NetworkStats writeBps(long writeBps) {
-        this.writeBps = writeBps;
-        return this;
-    }
+    long readBps();
 
-    // bytes per seconds
-    public long readBps() {
-        return readBps;
-    }
+    NetworkStats readBps(long readBps);
 
-    // bytes per seconds
-    public NetworkStats readBps(long readBps) {
-        this.readBps = readBps;
-        return this;
-    }
+    long socketPollCountPerSecond();
 
-    public long socketPollCountPerSecond() {
-        return socketPollCountPerSecond;
-    }
+    NetworkStats socketPollCountPerSecond(long socketPollCountPerSecond);
 
-    public NetworkStats socketPollCountPerSecond(long socketPollCountPerSecond) {
-        this.socketPollCountPerSecond = socketPollCountPerSecond;
-        return this;
-    }
+    long timestamp();
+
+    NetworkStats timestamp(long timestamp);
+
+    void host(String hostName);
+
+    void port(int port);
 }

@@ -19,12 +19,15 @@ package net.openhft.chronicle.network.cluster;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.NetworkContext;
+import net.openhft.chronicle.network.NetworkStatsListener;
 import net.openhft.chronicle.network.RemoteConnector;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.WriteMarshallable;
 import org.jetbrains.annotations.NotNull;
 
+import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -47,13 +50,14 @@ public class HostConnector implements Closeable {
 
     @NotNull
     private EventLoop eventLoop;
+    private final Function<ClusterContext, NetworkStatsListener> networkStatsListenerFactory;
 
     HostConnector(@NotNull ClusterContext clusterContext,
                   final RemoteConnector remoteConnector,
                   final HostDetails hostdetails) {
         this.clusterContext = clusterContext;
         this.remoteConnector = remoteConnector;
-
+        this.networkStatsListenerFactory = clusterContext.networkStatsListenerFactory();
         this.networkContextFactory = clusterContext.networkContextFactory();
         this.connectUri = hostdetails.connectUri();
         this.wireType = clusterContext.wireType();
@@ -94,6 +98,22 @@ public class HostConnector implements Closeable {
         nc.isAcceptor(false);
         nc.heartbeatTimeoutMs(clusterContext.heartbeatTimeoutMs() * 2);
         nc.socketReconnector(this::reconnect);
+
+        if (networkStatsListenerFactory != null) {
+            final NetworkStatsListener networkStatsListener = networkStatsListenerFactory.apply(clusterContext);
+            SocketChannel socketChannel = nc.socketChannel();
+            if (socketChannel != null
+                    && socketChannel.socket() != null
+                    && socketChannel.socket().getRemoteSocketAddress()
+                    instanceof
+                    InetSocketAddress) {
+                InetSocketAddress remoteSocketAddress = (InetSocketAddress) socketChannel.socket().getRemoteSocketAddress();
+                networkStatsListener.onHostPort(remoteSocketAddress.getHostName(),
+                        remoteSocketAddress.getPort());
+            }
+
+            nc.networkStatsListener(networkStatsListener);
+        }
 
         boolean firstTime = true;
         for (WriteMarshallable bootstrap : bootstraps) {

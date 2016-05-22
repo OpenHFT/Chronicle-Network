@@ -23,7 +23,6 @@ import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
 
 import java.nio.channels.SocketChannel;
-import java.util.function.Consumer;
 
 public interface NetworkContext<T extends NetworkContext> {
 
@@ -87,7 +86,10 @@ public interface NetworkContext<T extends NetworkContext> {
 
     T socketReconnector(Runnable socketReconnector);
 
-    void networkStats(Consumer<NetworkStats> networkStats);
+    void networkStatsListener(NetworkStatsListener NetworkStatsListener);
 
-    Consumer<NetworkStats> networkStats();
+    NetworkStatsListener networkStatsListener();
+
+
 }
+
