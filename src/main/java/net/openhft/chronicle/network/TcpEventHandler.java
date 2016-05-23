@@ -201,12 +201,16 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             closeSC();
             throw new InvalidEventHandlerException(e);
         } catch (IOException e) {
+            closeSC();
             handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
             throw new InvalidEventHandlerException();
         } catch (InvalidEventHandlerException e) {
+            closeSC();
             throw e;
         } catch (Exception e) {
+            closeSC();
             LOG.error("", e);
+            throw new InvalidEventHandlerException(e);
         }
 
         return busy;
@@ -305,19 +309,9 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     }
 
     private void closeSC() {
-
-        try {
-            tcpHandler.close();
-        } catch (Exception ignored) {
-        }
-
-        try {
-            sc.close();
-        } catch (IOException ignored) {
-        }
-
+        Closeable.closeQuietly(tcpHandler);
+        Closeable.closeQuietly(sc);
         Closeable.closeQuietly(nc);
-
     }
 
     private boolean tryWrite() throws IOException {
