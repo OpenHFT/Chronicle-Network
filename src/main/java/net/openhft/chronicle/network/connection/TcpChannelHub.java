@@ -1707,7 +1707,7 @@ public class TcpChannelHub implements Closeable {
                             break;
 
                         } catch (Throwable e) {
-
+                            Closeable.closeQuietly(socketChannel);
                             if (prepareToShutdown) {
                                 throw e;
                             }
@@ -1723,7 +1723,7 @@ public class TcpChannelHub implements Closeable {
 
                             failedConnectionCount++;
 
-                            Closeable.closeQuietly(socketChannel);
+
                             pause(1_000);
                         }
                     }
