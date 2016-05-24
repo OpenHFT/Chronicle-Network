@@ -69,8 +69,12 @@ public class HostConnector implements Closeable {
     public synchronized void close() {
         WireOutPublisher wp = wireOutPublisher.getAndSet(null);
 
-        if (nc.socketChannel() != null)
-            Closeable.closeQuietly(nc.socketChannel());
+        SocketChannel socketChannel = nc.socketChannel();
+        if (socketChannel != null) {
+            Closeable.closeQuietly(socketChannel);
+            Closeable.closeQuietly(socketChannel.socket());
+        }
+
         if (wp != null)
             wp.close();
     }
