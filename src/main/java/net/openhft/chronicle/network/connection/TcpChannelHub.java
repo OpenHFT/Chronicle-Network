@@ -241,33 +241,42 @@ public class TcpChannelHub implements Closeable {
     @Nullable
     SocketChannel openSocketChannel(InetSocketAddress socketAddress) throws IOException {
         final SocketChannel result = SocketChannel.open();
-        result.configureBlocking(false);
-        Socket socket = result.socket();
-        socket.setTcpNoDelay(true);
-        socket.setReceiveBufferSize(tcpBufferSize);
-        socket.setSendBufferSize(tcpBufferSize);
-        socket.setSoTimeout(0);
-        socket.setSoLinger(false, 0);
-        result.connect(socketAddress);
+        Selector selector = null;
+        boolean failed = true;
+        try {
+            result.configureBlocking(false);
+            Socket socket = result.socket();
+            socket.setTcpNoDelay(true);
+            socket.setReceiveBufferSize(tcpBufferSize);
+            socket.setSendBufferSize(tcpBufferSize);
+            socket.setSoTimeout(0);
+            socket.setSoLinger(false, 0);
+            result.connect(socketAddress);
 
-        Selector selector = Selector.open();
-        result.register(selector, SelectionKey.OP_CONNECT);
+            selector = Selector.open();
+            result.register(selector, SelectionKey.OP_CONNECT);
 
-        int select = selector.select(2500);
-        if (select == 0) {
-            LOG.warn("Timed out attempting to connect to " + socketAddress);
-            Closeable.closeQuietly(result);
-            return null;
-        } else {
-            try {
-                if (!result.finishConnect())
-                    return null;
-            } catch (IOException e) {
-                LOG.warn("Failed to connect to " + socketAddress + " " + e);
+            int select = selector.select(2500);
+            if (select == 0) {
+                LOG.warn("Timed out attempting to connect to " + socketAddress);
                 return null;
+            } else {
+                try {
+                    if (!result.finishConnect())
+                        return null;
+                } catch (IOException e) {
+                    LOG.warn("Failed to connect to " + socketAddress + " " + e);
+                    return null;
+                }
             }
+            failed = false;
+            return result;
+
+        } finally {
+            Closeable.closeQuietly(selector);
+            if (failed)
+                Closeable.closeQuietly(result);
         }
-        return result;
     }
 
     /**
