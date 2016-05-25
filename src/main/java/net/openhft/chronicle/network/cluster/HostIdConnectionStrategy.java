@@ -40,7 +40,7 @@ public class HostIdConnectionStrategy implements ConnectionStrategy, Demarshalla
     private HostIdConnectionStrategy(WireIn w) {
     }
 
-    HostIdConnectionStrategy() {
+    public HostIdConnectionStrategy() {
     }
 
     /**

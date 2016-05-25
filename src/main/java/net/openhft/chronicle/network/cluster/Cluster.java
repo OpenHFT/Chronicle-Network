@@ -18,10 +18,7 @@ package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.core.annotation.Nullable;
 import net.openhft.chronicle.core.io.Closeable;
-import net.openhft.chronicle.wire.Marshallable;
-import net.openhft.chronicle.wire.ValueIn;
-import net.openhft.chronicle.wire.WireIn;
-import net.openhft.chronicle.wire.WireOut;
+import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -52,35 +49,33 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
     public void readMarshallable(@NotNull WireIn wire) throws IllegalStateException {
 
         hostDetails.clear();
-        StringBuilder hostDescription = new StringBuilder();
+
 
         if (!wire.hasMore())
             return;
+        while (wire.hasMore()) {
 
-        ValueIn valueIn = wire.readEventName(hostDescription);
+            StringBuilder sb = Wires.acquireStringBuilder();
 
-        if ("context".contentEquals(hostDescription)) {
-            clusterContext = (C) valueIn.typedMarshallable();
-            clusterContext.clusterName(clusterName);
-            if (!wire.hasMore())
-                return;
+            ValueIn valueIn = wire.readEventName(sb);
 
-            valueIn = wire.readEventName(hostDescription);
-        }
-
-        for (; ; ) {
+            if ("context".contentEquals(sb)) {
+                clusterContext = (C) valueIn.typedMarshallable();
+                clusterContext.clusterName(clusterName);
+                continue;
+            }
 
             valueIn.marshallable(details -> {
                 final E hd = newHostDetails();
                 hd.readMarshallable(details);
-                hostDetails.put(hostDescription.toString(), hd);
+                hostDetails.put(sb.toString(), hd);
             });
 
-            if (!wire.hasMore())
-                break;
-
-            valueIn = wire.readEventName(hostDescription);
         }
+
+        if (clusterContext == null)
+            throw new IllegalStateException("required field 'context' is missing.");
+
     }
 
     @Nullable

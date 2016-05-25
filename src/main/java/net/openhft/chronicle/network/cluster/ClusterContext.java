@@ -67,6 +67,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
 
     @UsedViaReflection
     protected ClusterContext(@NotNull WireIn wire) {
+        defaults();
         while (wire.bytes().readRemaining() > 0)
             wireParser().parseOne(wire, null);
     }
@@ -141,12 +142,13 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         return this;
     }
 
-    private ClusterContext heartbeatFactory(Function<ClusterContext, WriteMarshallable> heartbeatFactor) {
+    public ClusterContext heartbeatFactory(Function<ClusterContext, WriteMarshallable>
+                                               heartbeatFactor) {
         this.heartbeatFactory = heartbeatFactor;
         return this;
     }
 
-    private ClusterContext heartbeatIntervalMs(long heartbeatIntervalMs) {
+    public ClusterContext heartbeatIntervalMs(long heartbeatIntervalMs) {
         this.heartbeatIntervalMs = heartbeatIntervalMs;
         return this;
     }
@@ -190,7 +192,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         return networkContextFactory;
     }
 
-    private ClusterContext connectionStrategy(ConnectionStrategy connectionStrategy) {
+    public ClusterContext connectionStrategy(ConnectionStrategy connectionStrategy) {
         this.connectionStrategy = connectionStrategy;
         return this;
     }
@@ -203,7 +205,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         return connectionEventHandler;
     }
 
-    private ClusterContext connectionEventHandler(Supplier<ConnectionManager> connectionEventHandler) {
+    public ClusterContext connectionEventHandler(Supplier<ConnectionManager> connectionEventHandler) {
         this.connectionEventHandler = connectionEventHandler;
         return this;
     }
@@ -253,4 +255,6 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         result.add(heartbeat.apply(this));
         return result;
     }
+
+
 }
