@@ -26,6 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static net.openhft.chronicle.network.connection.CoreFields.reply;
+import static net.openhft.chronicle.wire.WireType.BINARY;
+import static net.openhft.chronicle.wire.WireType.DELTA_BINARY;
 import static net.openhft.chronicle.wire.WriteMarshallable.EMPTY;
 
 public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHandler,
@@ -68,6 +70,9 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     }
 
     public void wireType(@NotNull WireType wireType) {
+        if (wireType == BINARY) {
+            wireType = DELTA_BINARY.isAvailable() ? DELTA_BINARY : BINARY;
+        }
         this.wireType = wireType;
         if (publisher != null)
             publisher.wireType(wireType);
