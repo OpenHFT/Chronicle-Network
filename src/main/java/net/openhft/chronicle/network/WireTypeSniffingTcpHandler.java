@@ -25,8 +25,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;
 
-import static net.openhft.chronicle.wire.WireType.BINARY;
-import static net.openhft.chronicle.wire.WireType.TEXT;
+import static net.openhft.chronicle.wire.WireType.*;
 
 /**
  * sets the wire-type in the network context by inspecting the byte message
@@ -71,9 +70,9 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements Tcp
         final byte b = in.readByte(4);
 
         final WireType wireType;
-        if (b < 0)
-            wireType = BINARY;
-        else if (b > ' ')
+        if (b < 0) {
+            wireType = DELTA_BINARY.isAvailable() ? DELTA_BINARY : BINARY;
+        } else if (b > ' ')
             wireType = TEXT;
         else
             throw new IllegalStateException("Unable to identify the wire type from " + Integer.toHexString(b & 0xFF));
