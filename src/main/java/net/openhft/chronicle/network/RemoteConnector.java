@@ -39,14 +39,14 @@ public class RemoteConnector implements Closeable {
 
     private static final Logger LOG = LoggerFactory.getLogger(RemoteConnector.class);
     @NotNull
-    private final ThrowingFunction<NetworkContext, IOException, TcpEventHandler> tcpHandlerSupplier;
+    private final ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpHandlerSupplier;
 
     private final Integer tcpBufferSize;
     private volatile boolean closed;
 
     private volatile List<Closeable> closeables = new ArrayList<>();
 
-    public RemoteConnector(@NotNull final ThrowingFunction<NetworkContext, IOException, TcpEventHandler> tcpEventHandlerFactory) {
+    public RemoteConnector(@NotNull final ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpEventHandlerFactory) {
         this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", BUFFER_SIZE);
         this.tcpHandlerSupplier = tcpEventHandlerFactory;
     }

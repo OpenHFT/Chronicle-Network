@@ -884,7 +884,8 @@ public class TcpChannelHub implements Closeable {
                 writeSocket(outWire(), reconnectOnFailure);
 
             } catch (ConnectionDroppedException e) {
-                e.printStackTrace();
+                if (Jvm.isDebug())
+                    e.printStackTrace();
                 throw Jvm.rethrow(e);
 
             } catch (Exception e) {
@@ -1720,7 +1721,9 @@ public class TcpChannelHub implements Closeable {
                             if (prepareToShutdown) {
                                 throw e;
                             }
-                            e.printStackTrace();
+                            if (Jvm.isDebug())
+                                e.printStackTrace();
+
                             socketAddressSupplier.failoverToNextAddress();
 
                             //  logs with progressive back off, to prevent the log files from
@@ -1731,7 +1734,6 @@ public class TcpChannelHub implements Closeable {
                                         "address=" + socketAddressSupplier);
 
                             failedConnectionCount++;
-
 
                             pause(1_000);
                         }

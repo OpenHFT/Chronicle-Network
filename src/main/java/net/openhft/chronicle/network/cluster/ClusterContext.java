@@ -17,6 +17,7 @@
 package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.core.annotation.UsedViaReflection;
+import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.NetworkContext;
@@ -56,17 +57,8 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
     private Function<ClusterContext, NetworkStatsListener>
             networkStatsListenerFactory;
 
-    public Function<ClusterContext, NetworkStatsListener> networkStatsListenerFactory() {
-        return networkStatsListenerFactory;
-    }
-
-    public ClusterContext networkStatsListenerFactory(Function<ClusterContext, NetworkStatsListener> networkStatsListenerFactory) {
-        this.networkStatsListenerFactory = networkStatsListenerFactory;
-        return this;
-    }
-
     @UsedViaReflection
-    protected ClusterContext(@NotNull WireIn wire) {
+    protected ClusterContext(@NotNull WireIn wire) throws IORuntimeException {
         defaults();
         while (wire.bytes().readRemaining() > 0)
             wireParser().parseOne(wire, null);
@@ -76,11 +68,20 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         defaults();
     }
 
+    public Function<ClusterContext, NetworkStatsListener> networkStatsListenerFactory() {
+        return networkStatsListenerFactory;
+    }
+
+    public ClusterContext networkStatsListenerFactory(Function<ClusterContext, NetworkStatsListener> networkStatsListenerFactory) {
+        this.networkStatsListenerFactory = networkStatsListenerFactory;
+        return this;
+    }
+
     public long heartbeatIntervalMs() {
         return heartbeatIntervalMs;
     }
 
-    public ThrowingFunction<NetworkContext, IOException, TcpEventHandler> tcpEventHandlerFactory() {
+    public ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpEventHandlerFactory() {
         throw new UnsupportedOperationException();
     }
 
