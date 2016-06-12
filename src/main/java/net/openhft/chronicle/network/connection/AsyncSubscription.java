@@ -45,5 +45,4 @@ interface AsyncSubscription {
      * called when the socket connection is closed
      */
     void onClose();
-
 }

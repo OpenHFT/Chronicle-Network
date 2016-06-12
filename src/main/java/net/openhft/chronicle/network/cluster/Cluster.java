@@ -50,7 +50,6 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
 
         hostDetails.clear();
 
-
         if (!wire.hasMore())
             return;
         while (wire.hasMore()) {

@@ -53,5 +53,4 @@ public interface SubHandler<T extends NetworkContext> extends NetworkContextMana
     void onInitialize(WireOut outWire);
 
     void closeable(Closeable closeable);
-
 }

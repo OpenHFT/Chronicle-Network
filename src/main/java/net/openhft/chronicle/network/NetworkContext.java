@@ -89,7 +89,5 @@ public interface NetworkContext<T extends NetworkContext> {
     void networkStatsListener(NetworkStatsListener NetworkStatsListener);
 
     NetworkStatsListener networkStatsListener();
-
-
 }
 

@@ -41,7 +41,6 @@ import java.util.function.Supplier;
  */
 public class ClusterContext implements Demarshallable, WriteMarshallable, Consumer<HostDetails> {
 
-
     private ConnectionStrategy connectionStrategy;
     private WireType wireType;
     private BiFunction<ClusterContext, HostDetails, WriteMarshallable> handlerFactory;
@@ -256,6 +255,5 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         result.add(heartbeat.apply(this));
         return result;
     }
-
-
 }
+

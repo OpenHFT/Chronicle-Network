@@ -39,8 +39,8 @@ public enum ServerThreadingStrategy {
             try {
                 value = Enum.valueOf(ServerThreadingStrategy.class, serverThreadingStrategy);
             } catch (Exception e) {
-                LOG.error("unable to apply -DServerThreadingStrategy=" + serverThreadingStrategy +
-                        ", so defaulting to " + value);
+                LOG.warn("unable to apply -DServerThreadingStrategy=" + serverThreadingStrategy +
+                        ", so defaulting to " + value, e);
             }
     }
 

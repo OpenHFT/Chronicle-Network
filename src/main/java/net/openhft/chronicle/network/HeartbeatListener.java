@@ -9,5 +9,4 @@ public interface HeartbeatListener {
      * called when we don't receive a heartbeat ( or in some cases any message )
      */
     void onMissedHeartbeat();
-
 }

@@ -49,8 +49,9 @@ public interface WireOutPublisher extends Closeable {
             final Class<?> aClass = Class.forName("software.chronicle.enterprise.throttle.ThrottledWireOutPublisher");
             final Constructor<WireOutPublisher> constructor = (Constructor) aClass.getConstructors()[0];
             return constructor.newInstance(periodMs, delegate);
+
         } catch (Exception e) {
-            LOG.warn("To use this feature please install Chronicle-Enterprise");
+            LOG.warn("To use this feature please install Chronicle-Engine-Enterprise");
             throw Jvm.rethrow(e);
         }
     }

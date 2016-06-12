@@ -95,7 +95,7 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
             closeSocket();
         } catch (Exception e) {
             if (!closed) {
-                LOG.error("", e);
+                LOG.warn("", e);
                 closeSocket();
             }
         }
@@ -105,12 +105,14 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
     private void closeSocket() {
         try {
             ssc.socket().close();
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            LOG.debug("", e);
         }
 
         try {
             ssc.close();
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            LOG.debug("", e);
         }
     }
 

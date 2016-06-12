@@ -20,6 +20,7 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.bytes.ConnectionDroppedException;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.core.util.ThrowingSupplier;
 import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
@@ -30,8 +31,8 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static net.openhft.chronicle.network.connection.CoreFields.reply;
 
@@ -154,15 +155,18 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
      * @param <T> the type of supply
      * @return the result for s.get()
      */
-    protected <T> T attempt(@NotNull final Supplier<T> s) {
+    protected <T> T attempt(@NotNull final ThrowingSupplier<T, TimeoutException> s) {
 
         ConnectionDroppedException t = null;
+        TimeoutException te = null;
         for (int i = 1; i <= 20; i++) {
 
             try {
                 return s.get();
             } catch (ConnectionDroppedException e) {
                 t = e;
+            } catch (TimeoutException e) {
+                te = e;
             }
 
             // pause then resend the request
@@ -172,7 +176,9 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
             Jvm.pause(i * 25);
         }
 
-        throw t;
+        if (t != null)
+            throw t;
+        throw new ConnectionDroppedException(te);
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -330,14 +336,16 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
     private void quietSendBytesAsyncWithoutLock(final Bytes bytes) {
         try {
             sendBytesAsyncWithoutLock(bytes);
+
         } catch (ConnectionDroppedException e) {
-            if (LOG.isDebugEnabled())
-                LOG.error("", e);
+            if (Jvm.isDebug())
+                LOG.warn("", e);
             else
-                LOG.info(e.toString());
+                LOG.warn(e.toString());
+
         } catch (IORuntimeException e) {
             // this can occur if the socket is not currently connected
-            LOG.trace("socket is not currently connected.", e);
+            LOG.debug("socket is not currently connected.", e);
         }
     }
 
@@ -395,7 +403,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
                     (bytes, 0, bytes.readLimit()));
     }
 
-    protected boolean readBoolean(long tid, long startTime) throws ConnectionDroppedException {
+    protected boolean readBoolean(long tid, long startTime) throws ConnectionDroppedException, TimeoutException {
         assert !hub.outBytesLock().isHeldByCurrentThread();
 
         long timeoutTime = startTime + hub.timeoutMs;
@@ -408,7 +416,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
     }
 
-    private long readLong(long tid, long startTime) throws ConnectionDroppedException {
+    private long readLong(long tid, long startTime) throws ConnectionDroppedException, TimeoutException {
         assert !hub.outBytesLock().isHeldByCurrentThread();
 
         long timeoutTime = startTime + hub.timeoutMs;
@@ -440,8 +448,9 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
             @NotNull final E eventId,
             @NotNull final Object... args) {
         final long startTime = Time.currentTimeMillis();
-        return attempt(() -> readBoolean(sendEvent(startTime, eventId, toParameters(eventId, args)
-        ), startTime));
+        return attempt(() -> readBoolean(
+                sendEvent(startTime, eventId, toParameters(eventId, args)),
+                startTime));
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -449,8 +458,9 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
             @NotNull final E eventId,
             @NotNull final Object... args) {
         final long startTime = Time.currentTimeMillis();
-        return attempt(() -> readLong(sendEvent(startTime, eventId, toParameters(eventId, args)
-        ), startTime));
+        return attempt(() -> readLong(
+                sendEvent(startTime, eventId, toParameters(eventId, args)),
+                startTime));
     }
 
     protected boolean proxyReturnBooleanWithSequence(
@@ -469,7 +479,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
     private <T> T readWire(long tid, long startTime,
                            @NotNull WireKey reply,
-                           @NotNull Function<ValueIn, T> c) throws ConnectionDroppedException {
+                           @NotNull Function<ValueIn, T> c) throws ConnectionDroppedException, TimeoutException {
         assert !hub.outBytesLock().isHeldByCurrentThread();
         final long timeoutTime = startTime + hub.timeoutMs;
 
@@ -480,7 +490,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
     }
 
-    protected int readInt(long tid, long startTime) throws ConnectionDroppedException {
+    protected int readInt(long tid, long startTime) throws ConnectionDroppedException, TimeoutException {
         assert !hub.outBytesLock().isHeldByCurrentThread();
 
         long timeoutTime = startTime + hub.timeoutMs;

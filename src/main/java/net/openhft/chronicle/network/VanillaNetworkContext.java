@@ -44,6 +44,8 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     private long heartbeatTimeoutMs;
     private WireOutPublisher wireOutPublisher;
     private WireType wireType = WireType.TEXT;
+    private Runnable socketReconnector;
+    private NetworkStatsListener networkStatsListener;
 
     @Override
     public SocketChannel socketChannel() {
@@ -163,13 +165,10 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         }
     }
 
-
     @Override
     public void close() {
 
     }
-
-    private Runnable socketReconnector;
 
     public Runnable socketReconnector() {
         return socketReconnector;
@@ -179,9 +178,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         this.socketReconnector = socketReconnector;
         return (T) this;
     }
-
-
-    private NetworkStatsListener networkStatsListener;
 
     @Override
     public void networkStatsListener(NetworkStatsListener networkStatsListener) {

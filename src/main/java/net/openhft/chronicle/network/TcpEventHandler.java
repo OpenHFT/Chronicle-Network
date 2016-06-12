@@ -89,7 +89,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             sc.socket().setReceiveBufferSize(TCP_BUFFER);
             sc.socket().setSendBufferSize(TCP_BUFFER);
         } catch (IOException e) {
-            LOG.info("", e);
+            LOG.warn("", e);
         }
         // there is nothing which needs to be written by default.
         this.sessionDetails = new VanillaSessionDetails();
@@ -157,7 +157,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             try {
                 busy |= writeEventHandler.action();
             } catch (Exception e) {
-                LOG.error("", e);
+                LOG.warn("", e);
             }
         }
 

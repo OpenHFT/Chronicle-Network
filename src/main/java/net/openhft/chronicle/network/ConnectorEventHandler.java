@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.util.Map;
@@ -103,12 +102,8 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
                     connectionDetails.setConnected(false);
                     descriptionToChannel.remove(k);
                 }
-            } catch (ConnectException e) {
-                //Not a problem try again next time round
-                LOG.error(k + e.getMessage());
             } catch (IOException e) {
-                LOG.error(k + e.getMessage());
-
+                LOG.warn(k + e.getMessage());
             }
         });
 

@@ -6,5 +6,4 @@ package net.openhft.chronicle.network.connection;
 public enum TryLock {
 
     LOCK, TRY_LOCK_IGNORE, TRY_LOCK_WARN
-
 }

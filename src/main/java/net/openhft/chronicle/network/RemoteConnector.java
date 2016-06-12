@@ -52,19 +52,7 @@ public class RemoteConnector implements Closeable {
     }
 
     private static void closeSocket(SocketChannel socketChannel) {
-        if (socketChannel == null)
-            return;
-        try {
-            final Socket socket = socketChannel.socket();
-            if (socket != null)
-                socket.close();
-        } catch (IOException ignored) {
-        }
-
-        try {
-            socketChannel.close();
-        } catch (IOException ignored) {
-        }
+        Closeable.closeQuietly(socketChannel);
     }
 
     public void connect(final String remoteHostPort,
@@ -155,7 +143,7 @@ public class RemoteConnector implements Closeable {
                 eventHandler = tcpHandlerSupplier.apply(nc);
 
             } catch (AlreadyConnectedException e) {
-                LOG.error("",e);
+                LOG.warn("", e);
                 throw new InvalidEventHandlerException();
             } catch (IOException e) {
                 nextPeriod.set(System.currentTimeMillis() + retryInterval);

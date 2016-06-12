@@ -33,7 +33,6 @@ import static net.openhft.chronicle.wire.WriteMarshallable.EMPTY;
 public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHandler,
         NetworkContextManager<T> {
 
-
     private static final int SIZE_OF_SIZE = 4;
     private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
     // this is the point at which it is worth doing more work to get more data.
@@ -52,7 +51,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     private T nc;
     private volatile boolean closed;
     private boolean isAcceptor;
-
+    private long lastReadReaming;
 
     private static void logYaml(final WireOut outWire) {
         if (YamlLogging.showServerWrites())
@@ -60,7 +59,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
                 LOG.info("\nServer Sends:\n" +
                         Wires.fromSizePrefixedBlobs(outWire.bytes()));
             } catch (Exception e) {
-                LOG.info("\nServer Sends ( corrupted ) :\n" +
+                LOG.warn("\nServer Sends ( corrupted ) :\n" +
                         outWire.bytes().toDebugString());
             }
     }
@@ -91,9 +90,6 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     public void isAcceptor(boolean isAcceptor) {
         this.isAcceptor = isAcceptor;
     }
-
-
-    private long lastReadReaming;
 
     @Override
     public void process(@NotNull Bytes in, @NotNull Bytes out) {
@@ -135,7 +131,6 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         if (in.readRemaining() >= SIZE_OF_SIZE)
             onRead0();
 
-
         if (out.writePosition() < TcpEventHandler.TCP_BUFFER)
             onWrite(outWire);
 
@@ -176,7 +171,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
                         onRead(dc, outWire);
 
                     } catch (Exception e) {
-                        LOG.error("inWire=" + inWire.getClass(), e);
+                        LOG.warn("inWire=" + inWire.getClass(), e);
                     }
                 }
             }

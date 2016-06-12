@@ -38,6 +38,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri;
 
@@ -61,7 +62,7 @@ public class SimpleServerAndClientTest {
     }
 
     @Test
-    public void test() throws IOException {
+    public void test() throws IOException, TimeoutException {
         // this the name of a reference to the host name and port,
         // allocated automatically when to a free port on localhost
         final String desc = "host.port";

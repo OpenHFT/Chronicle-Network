@@ -50,7 +50,6 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         wire = wireType.apply(bytes);
     }
 
-
     /**
      * Apply waiting messages and return false if there was none.
      *
@@ -86,7 +85,6 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
     }
 
-
     /**
      * Apply waiting messages and return false if there was none.
      *
@@ -113,17 +111,18 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
                 try {
                     c.accept(outWire);
+
                 } catch (InvalidEventHandlerException e) {
                     consumers.remove(c);
+
                 } catch (Exception e) {
-                    LOG.error("", e);
+                    LOG.warn("", e);
                     throw rethrow(e);
                 }
             }
 
             if (pos == outWire.bytes().writePosition())
                 return;
-
 
         }
 
@@ -141,7 +140,6 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         return consumers.remove(wireOutConsumer);
     }
 
-
     /**
      * round robbins - the consumers, we should only write when the buffer is empty, as // we can't
      * guarantee that we will have enough space to add more data to the out wire.
@@ -153,7 +151,6 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
             consumerIndex = 0;
         return consumers.get(consumerIndex++);
     }
-
 
     @Override
     public void put(final Object key, WriteMarshallable event) {
