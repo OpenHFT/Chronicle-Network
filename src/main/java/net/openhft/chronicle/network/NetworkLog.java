@@ -53,7 +53,7 @@ class NetworkLog {
         long now = System.currentTimeMillis();
         if (now - lastOut > 2000) {
             lastOut = now;
-            LOG.debug(desc + " idle");
+            Jvm.debug().on(getClass(), desc + " idle");
         }
     }
 
@@ -78,7 +78,7 @@ class NetworkLog {
                 appendByte(bytes, sb, i);
         }
 
-        LOG.debug(sb.toString());
+        Jvm.debug().on(getClass(), sb.toString());
     }
 
     private void appendByte(@NotNull ByteBuffer bytes, @NotNull StringBuilder sb, int i) {

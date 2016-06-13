@@ -51,7 +51,7 @@ public interface WireOutPublisher extends Closeable {
             return constructor.newInstance(periodMs, delegate);
 
         } catch (Exception e) {
-            LOG.warn("To use this feature please install Chronicle-Engine-Enterprise");
+            Jvm.warn().on(WireOutPublisher.class, "To use this feature please install Chronicle-Engine-Enterprise");
             throw Jvm.rethrow(e);
         }
     }

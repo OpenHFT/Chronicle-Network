@@ -16,6 +16,7 @@
 
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -103,7 +104,7 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
                     descriptionToChannel.remove(k);
                 }
             } catch (IOException e) {
-                LOG.warn(k + e.getMessage());
+                Jvm.warn().on(getClass(), k + e.getMessage());
             }
         });
 

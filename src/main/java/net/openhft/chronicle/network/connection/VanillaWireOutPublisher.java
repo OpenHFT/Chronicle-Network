@@ -17,6 +17,7 @@
 package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.network.TcpEventHandler;
 import net.openhft.chronicle.wire.*;
@@ -116,7 +117,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
                     consumers.remove(c);
 
                 } catch (Exception e) {
-                    LOG.warn("", e);
+                    Jvm.warn().on(getClass(), e);
                     throw rethrow(e);
                 }
             }
@@ -156,7 +157,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     public void put(final Object key, WriteMarshallable event) {
 
         if (closed) {
-            LOG.debug("message ignored as closed");
+            Jvm.debug().on(getClass(), "message ignored as closed");
             return;
         }
 

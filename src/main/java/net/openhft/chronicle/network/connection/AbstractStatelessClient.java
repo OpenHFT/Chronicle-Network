@@ -339,13 +339,13 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
         } catch (ConnectionDroppedException e) {
             if (Jvm.isDebug())
-                LOG.warn("", e);
+                Jvm.warn().on(getClass(), e);
             else
-                LOG.warn(e.toString());
+                Jvm.warn().on(getClass(), e.toString());
 
         } catch (IORuntimeException e) {
             // this can occur if the socket is not currently connected
-            LOG.debug("socket is not currently connected.", e);
+            Jvm.debug().on(getClass(), "socket is not currently connected.", e);
         }
     }
 

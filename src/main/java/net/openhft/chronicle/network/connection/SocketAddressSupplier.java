@@ -16,6 +16,7 @@
 
 package net.openhft.chronicle.network.connection;
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.network.TCPRegistry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -79,7 +80,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
 
     public void failoverToNextAddress() {
         if (LOG.isDebugEnabled())
-            LOG.debug("failing over to next address");
+            Jvm.debug().on(getClass(), "failing over to next address");
         next();
     }
 

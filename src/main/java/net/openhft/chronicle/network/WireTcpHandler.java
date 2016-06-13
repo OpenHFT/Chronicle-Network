@@ -17,6 +17,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.Nullable;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
@@ -59,7 +60,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
                 LOG.info("\nServer Sends:\n" +
                         Wires.fromSizePrefixedBlobs(outWire.bytes()));
             } catch (Exception e) {
-                LOG.warn("\nServer Sends ( corrupted ) :\n" +
+                Jvm.warn().on(WireOutPublisher.class, "\nServer Sends ( corrupted ) :\n" +
                         outWire.bytes().toDebugString());
             }
     }
@@ -171,7 +172,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
                         onRead(dc, outWire);
 
                     } catch (Exception e) {
-                        LOG.warn("inWire=" + inWire.getClass(), e);
+                        Jvm.warn().on(getClass(), "inWire=" + inWire.getClass(), e);
                     }
                 }
             }

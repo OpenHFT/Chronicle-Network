@@ -16,6 +16,7 @@
 
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -95,7 +96,7 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
             closeSocket();
         } catch (Exception e) {
             if (!closed) {
-                LOG.warn("", e);
+                Jvm.warn().on(getClass(), e);
                 closeSocket();
             }
         }
@@ -106,13 +107,13 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
         try {
             ssc.socket().close();
         } catch (IOException e) {
-            LOG.debug("", e);
+            Jvm.debug().on(getClass(), e);
         }
 
         try {
             ssc.close();
         } catch (IOException e) {
-            LOG.debug("", e);
+            Jvm.debug().on(getClass(), e);
         }
     }
 

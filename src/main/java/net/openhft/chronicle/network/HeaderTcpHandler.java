@@ -17,6 +17,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.wire.*;
@@ -84,7 +85,7 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
             handlerManager.tcpHandler(handler);
 
         } catch (Exception e) {
-            LOG.warn("wirein=" + Wires.fromSizePrefixedBlobs(in), e);
+            Jvm.warn().on(getClass(), "wirein=" + Wires.fromSizePrefixedBlobs(in), e);
         }
     }
 

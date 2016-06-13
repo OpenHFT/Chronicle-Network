@@ -16,6 +16,7 @@
 
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
@@ -143,7 +144,7 @@ public class RemoteConnector implements Closeable {
                 eventHandler = tcpHandlerSupplier.apply(nc);
 
             } catch (AlreadyConnectedException e) {
-                LOG.warn("", e);
+                Jvm.warn().on(getClass(), e);
                 throw new InvalidEventHandlerException();
             } catch (IOException e) {
                 nextPeriod.set(System.currentTimeMillis() + retryInterval);

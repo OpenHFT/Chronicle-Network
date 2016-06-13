@@ -16,6 +16,7 @@
 
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.core.Jvm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +40,7 @@ public enum ServerThreadingStrategy {
             try {
                 value = Enum.valueOf(ServerThreadingStrategy.class, serverThreadingStrategy);
             } catch (Exception e) {
-                LOG.warn("unable to apply -DServerThreadingStrategy=" + serverThreadingStrategy +
+                Jvm.warn().on(ServerThreadingStrategy.class, "unable to apply -DServerThreadingStrategy=" + serverThreadingStrategy +
                         ", so defaulting to " + value, e);
             }
     }

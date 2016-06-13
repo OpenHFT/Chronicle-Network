@@ -89,7 +89,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             sc.socket().setReceiveBufferSize(TCP_BUFFER);
             sc.socket().setSendBufferSize(TCP_BUFFER);
         } catch (IOException e) {
-            LOG.warn("", e);
+            Jvm.warn().on(getClass(), e);
         }
         // there is nothing which needs to be written by default.
         this.sessionDetails = new VanillaSessionDetails();
@@ -157,7 +157,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             try {
                 busy |= writeEventHandler.action();
             } catch (Exception e) {
-                LOG.warn("", e);
+                Jvm.warn().on(getClass(), e);
             }
         }
 
@@ -284,7 +284,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 LOG.trace("", e.getMessage());
             else if (e.getMessage() != null && e.getMessage().startsWith("An existing connection " +
                     "was forcibly closed"))
-                LOG.warn(e.getMessage());
+                Jvm.warn().on(getClass(), e.getMessage());
             else if (!(e instanceof ClosedByInterruptException))
                 LOG.error("", e);
 
