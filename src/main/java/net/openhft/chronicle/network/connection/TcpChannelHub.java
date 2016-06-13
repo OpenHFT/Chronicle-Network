@@ -1389,8 +1389,14 @@ public class TcpChannelHub implements Closeable {
                 logToStandardOutMessageReceived(inWire);
                 AsyncSubscription asyncSubscription = (AsyncSubscription) o;
 
-                asyncSubscription.onConsumer(inWire);
+                try {
+                    asyncSubscription.onConsumer(inWire);
 
+                } catch (Exception e) {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Removing " + tid + " " + o, e);
+                    omap.remove(tid);
+                }
             }
 
             // for sync
