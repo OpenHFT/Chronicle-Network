@@ -271,7 +271,7 @@ public class TcpChannelHub implements Closeable {
                         return null;
 
                 } catch (IOException e) {
-                    Jvm.warn().on(getClass(), "Failed to connect to " + socketAddress + " " + e);
+                    Jvm.debug().on(getClass(), "Failed to connect to " + socketAddress + " " + e);
                     return null;
                 }
             }
@@ -402,12 +402,16 @@ public class TcpChannelHub implements Closeable {
 
             try {
                 clientChannel.socket().shutdownInput();
+            } catch (ClosedChannelException ignored) {
+
             } catch (IOException e) {
                 Jvm.debug().on(getClass(), e);
             }
 
             try {
                 clientChannel.socket().shutdownOutput();
+            } catch (ClosedChannelException ignored) {
+
             } catch (IOException e) {
                 Jvm.debug().on(getClass(), e);
             }

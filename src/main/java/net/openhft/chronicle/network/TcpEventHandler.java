@@ -284,7 +284,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 LOG.trace("", e.getMessage());
             else if (e.getMessage() != null && e.getMessage().startsWith("An existing connection " +
                     "was forcibly closed"))
-                Jvm.warn().on(getClass(), e.getMessage());
+                Jvm.debug().on(getClass(), e.getMessage());
+
             else if (!(e instanceof ClosedByInterruptException))
                 LOG.error("", e);
 
