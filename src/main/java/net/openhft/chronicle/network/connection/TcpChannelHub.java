@@ -88,7 +88,7 @@ public class TcpChannelHub implements Closeable {
     private final String name;
     private final int tcpBufferSize;
     private final Wire outWire;
-    private final Wire inWire;
+    //  private final Wire inWire;
     @NotNull
     private final SocketAddressSupplier socketAddressSupplier;
     private final Set<Long> preventSubscribeUponReconnect = new ConcurrentSkipListSet<>();
@@ -133,7 +133,7 @@ public class TcpChannelHub implements Closeable {
         this.eventLoop = eventLoop;
         this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", BUFFER_SIZE);
         this.outWire = wireType.apply(elasticByteBuffer());
-        this.inWire = wireType.apply(elasticByteBuffer());
+        // this.inWire = wireType.apply(elasticByteBuffer());
         this.name = name.trim();
         this.timeoutMs = Integer.getInteger("tcp.client.timeout", 10_000);
         this.wireType = wireType;
@@ -1735,7 +1735,7 @@ public class TcpChannelHub implements Closeable {
                                 throw e;
                             }
                             if (Jvm.isDebug())
-                                e.printStackTrace();
+                                LOG.info("", e);
 
                             socketAddressSupplier.failoverToNextAddress();
 
