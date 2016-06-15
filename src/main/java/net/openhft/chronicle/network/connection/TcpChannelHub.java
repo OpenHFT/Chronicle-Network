@@ -170,7 +170,7 @@ public class TcpChannelHub implements Closeable {
             if (hub.isClosed())
                 continue;
 
-            Jvm.warn().on(TcpChannelHub.class, "Closing " + hub);
+            Jvm.debug().on(TcpChannelHub.class, "Closing " + hub);
             hub.close();
         }
         hubs.clear();
@@ -193,6 +193,7 @@ public class TcpChannelHub implements Closeable {
                         "```\n");
                 YamlLogging.title = "";
                 YamlLogging.writeMessage("");
+
             } catch (Exception e) {
                 Jvm.warn().on(TcpChannelHub.class, Bytes.toString(bytes), e);
             }
@@ -701,7 +702,7 @@ public class TcpChannelHub implements Closeable {
                                 sb.append(thread).append(" ").append(thread.getState());
                                 Jvm.trimStackTrace(sb, entry.getValue());
                                 sb.append("\n");
-                                LOG.error("\n========= THREAD DUMP =========\n", sb);
+                                Jvm.warn().on(getClass(), "\n========= THREAD DUMP =========\n", sb);
                             }
 
                             closeSocket();
@@ -867,7 +868,7 @@ public class TcpChannelHub implements Closeable {
             } else {
                 if (!lock.tryLock()) {
                     if (tryLock.equals(TryLock.TRY_LOCK_WARN))
-                        Jvm.warn().on(getClass(), "FAILED TO OBTAIN LOCK thread=" + Thread.currentThread() + " on " +
+                        Jvm.debug().on(getClass(), "FAILED TO OBTAIN LOCK thread=" + Thread.currentThread() + " on " +
                                 lock, new IllegalStateException());
                     return false;
                 }
@@ -885,7 +886,7 @@ public class TcpChannelHub implements Closeable {
 
             } catch (ConnectionDroppedException e) {
                 if (Jvm.isDebug())
-                    Jvm.warn().on(getClass(), e);
+                    Jvm.debug().on(getClass(), e);
                 throw e;
 
             } catch (Exception e) {
@@ -1120,10 +1121,10 @@ public class TcpChannelHub implements Closeable {
                 }
             }
             try {
-
                 registerSubscribe(asyncSubscription.tid(), asyncSubscription);
 
                 asyncSubscription.applySubscribe();
+
             } catch (Exception e) {
                 Jvm.warn().on(getClass(), e);
 
@@ -1158,7 +1159,7 @@ public class TcpChannelHub implements Closeable {
 
                 } catch (ConnectionDroppedException e) {
                     if (Jvm.isDebug() && !prepareToShutdown)
-                        Jvm.warn().on(getClass(), e);
+                        Jvm.debug().on(getClass(), e);
 
                 } catch (Throwable e) {
                     if (!prepareToShutdown)
@@ -1552,7 +1553,7 @@ public class TcpChannelHub implements Closeable {
                         sb.append(thread).append(" ").append(thread.getState());
                         Jvm.trimStackTrace(sb, entry.getValue());
                         sb.append("\n");
-                        LOG.error("\n========= THREAD DUMP =========\n" + sb);
+                        Jvm.warn().on(getClass(), "\n========= THREAD DUMP =========\n" + sb);
                     }
 
                     throw new ConnectionDroppedException(name + " the client is failing to get the" +
@@ -1791,7 +1792,7 @@ public class TcpChannelHub implements Closeable {
                         closeSocket();
                         throw new IORuntimeException("shutting down");
                     } else {
-                        LOG.error("failed to connect remoteAddress=" + socketAddressSupplier
+                        Jvm.warn().on(getClass(), "failed to connect remoteAddress=" + socketAddressSupplier
                                 + " so will reconnect ", e);
                         closeSocket();
                     }

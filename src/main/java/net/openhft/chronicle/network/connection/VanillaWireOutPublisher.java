@@ -29,8 +29,6 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static net.openhft.chronicle.core.Jvm.rethrow;
-
 /**
  * Created by peter.lawrey on 09/07/2015.
  */
@@ -116,9 +114,10 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
                 } catch (InvalidEventHandlerException e) {
                     consumers.remove(c);
 
-                } catch (Exception e) {
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     Jvm.warn().on(getClass(), e);
-                    throw rethrow(e);
+                    return;
                 }
             }
 
@@ -127,7 +126,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
         }
 
-        LOG.error("", new IllegalStateException("loop when too long"));
+        Jvm.warn().on(getClass(), new IllegalStateException("loop when too long"));
 
     }
 

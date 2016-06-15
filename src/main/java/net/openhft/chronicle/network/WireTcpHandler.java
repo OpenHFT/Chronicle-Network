@@ -59,6 +59,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
             try {
                 LOG.info("\nServer Sends:\n" +
                         Wires.fromSizePrefixedBlobs(outWire.bytes()));
+
             } catch (Exception e) {
                 Jvm.warn().on(WireOutPublisher.class, "\nServer Sends ( corrupted ) :\n" +
                         outWire.bytes().toDebugString());

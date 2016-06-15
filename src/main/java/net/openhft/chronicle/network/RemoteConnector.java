@@ -144,7 +144,7 @@ public class RemoteConnector implements Closeable {
                 eventHandler = tcpHandlerSupplier.apply(nc);
 
             } catch (AlreadyConnectedException e) {
-                Jvm.warn().on(getClass(), e);
+                Jvm.debug().on(getClass(), e);
                 throw new InvalidEventHandlerException();
             } catch (IOException e) {
                 nextPeriod.set(System.currentTimeMillis() + retryInterval);

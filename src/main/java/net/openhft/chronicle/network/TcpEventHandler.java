@@ -209,7 +209,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             throw e;
         } catch (Exception e) {
             closeSC();
-            LOG.error("", e);
+            Jvm.warn().on(getClass(), "", e);
             throw new InvalidEventHandlerException(e);
         }
 
@@ -226,7 +226,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         IOTools.clean(outBB);
 
         if (usedDirectMemory == Jvm.usedDirectMemory())
-            LOG.error("nothing cleaned");
+            Jvm.warn().on(getClass(), "nothing cleaned");
 
     }
 
@@ -287,7 +287,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 Jvm.debug().on(getClass(), e.getMessage());
 
             else if (!(e instanceof ClosedByInterruptException))
-                LOG.error("", e);
+                Jvm.warn().on(getClass(), "", e);
 
             // The remote server has sent you a RST packet, which indicates an immediate dropping of the connection,
             // rather than the usual handshake. This bypasses the normal half-closed state transition.

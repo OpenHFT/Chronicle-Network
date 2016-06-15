@@ -324,7 +324,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
             sendEventAsyncWithoutLock(eventId, consumer);
         } catch (ConnectionDroppedException e) {
             if (LOG.isDebugEnabled())
-                LOG.error("", e);
+                Jvm.warn().on(getClass(), "", e);
             else
                 LOG.info(e.toString());
         } catch (IORuntimeException e) {
@@ -339,9 +339,9 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
         } catch (ConnectionDroppedException e) {
             if (Jvm.isDebug())
-                Jvm.warn().on(getClass(), e);
+                Jvm.debug().on(getClass(), e);
             else
-                Jvm.warn().on(getClass(), e.toString());
+                Jvm.debug().on(getClass(), e.toString());
 
         } catch (IORuntimeException e) {
             // this can occur if the socket is not currently connected

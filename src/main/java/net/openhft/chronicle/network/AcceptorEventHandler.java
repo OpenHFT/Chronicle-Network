@@ -96,7 +96,7 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
             closeSocket();
         } catch (Exception e) {
             if (!closed) {
-                Jvm.warn().on(getClass(), e);
+                Jvm.debug().on(getClass(), e);
                 closeSocket();
             }
         }
