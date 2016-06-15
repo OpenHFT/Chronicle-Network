@@ -699,10 +699,11 @@ public class TcpChannelHub implements Closeable {
                                 if (thread.getThreadGroup().getName().equals("system"))
                                     continue;
                                 StringBuilder sb = new StringBuilder();
+                                sb.append("\n========= THREAD DUMP =========\n");
                                 sb.append(thread).append(" ").append(thread.getState());
                                 Jvm.trimStackTrace(sb, entry.getValue());
                                 sb.append("\n");
-                                Jvm.warn().on(getClass(), "\n========= THREAD DUMP =========\n", sb);
+                                Jvm.warn().on(getClass(), sb.toString());
                             }
 
                             closeSocket();
