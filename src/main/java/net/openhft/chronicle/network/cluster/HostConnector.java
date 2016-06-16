@@ -88,7 +88,7 @@ public class HostConnector implements Closeable {
 
     public synchronized void connect() {
 
-        WireOutPublisher wireOutPublisher = wireOutPublisherFactory.apply(WireType.TEXT);
+        WireOutPublisher wireOutPublisher = wireOutPublisherFactory.apply(clusterContext.wireType());
 
         if (!this.wireOutPublisher.compareAndSet(null, wireOutPublisher)) {
             wireOutPublisher.close();
@@ -98,8 +98,11 @@ public class HostConnector implements Closeable {
         // we will send the initial header as text wire, then the rest will be sent in
         // what ever wire is configured
         nc = networkContextFactory.apply(clusterContext);
+        WireType wireType = nc.wireType();
         nc.wireOutPublisher(wireOutPublisher);
         nc.isAcceptor(false);
+
+
         nc.heartbeatTimeoutMs(clusterContext.heartbeatTimeoutMs() * 2);
         nc.socketReconnector(this::reconnect);
 
@@ -125,10 +128,10 @@ public class HostConnector implements Closeable {
 
             // its only the uberhandler that we want to publish using TEXT_WIRE
             if (firstTime)
-                wireOutPublisher.wireType(wireType);
+                wireOutPublisher.wireType(this.wireType);
         }
 
-        nc.wireType(wireType);
+        nc.wireType(this.wireType);
 
         remoteConnector.connect(connectUri, eventLoop, nc, 1_000L);
     }

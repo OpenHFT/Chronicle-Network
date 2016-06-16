@@ -75,6 +75,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     @Nullable
     private volatile TcpHandler tcpHandler;
     private long lastTickReadTime = Time.tickTime();
+
     private volatile boolean closed;
 
     public TcpEventHandler(@NotNull NetworkContext nc) {
@@ -109,6 +110,11 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         outBB.limit(0);
         readLog = new NetworkLog(this.sc, "read");
         writeLog = new NetworkLog(this.sc, "write");
+    }
+
+    @Override
+    public boolean isClosed() {
+        return closed;
     }
 
     @NotNull
