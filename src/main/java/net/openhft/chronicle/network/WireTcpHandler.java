@@ -54,6 +54,19 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     private boolean isAcceptor;
     private long lastReadReaming;
 
+    private static void logYaml(final DocumentContext dc) {
+        if (true) {// YamlLogging.showServerWrites())
+            try {
+                LOG.info("\nServer Sends:\n" +
+                        Wires.fromSizePrefixedBlobs(dc));
+
+            } catch (Exception e) {
+                Jvm.warn().on(WireOutPublisher.class, "\nServer Sends ( corrupted ) :\n" +
+                        dc.wire().bytes().toDebugString());
+            }
+        }
+    }
+
     private static void logYaml(final WireOut outWire) {
         if (YamlLogging.showServerWrites())
             try {
@@ -66,13 +79,15 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
             }
     }
 
+
     public boolean isAcceptor() {
         return this.isAcceptor;
     }
 
     public void wireType(@NotNull WireType wireType) {
         if (wireType == BINARY) {
-            wireType = DELTA_BINARY.isAvailable() ? DELTA_BINARY : BINARY;
+            wireType = DELTA_BINARY.isAvailable() ? BINARY : BINARY;
+          //  wireType = DELTA_BINARY.isAvailable() ? DELTA_BINARY : BINARY;
         }
         this.wireType = wireType;
         if (publisher != null)
@@ -162,14 +177,13 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
         try {
             while (!inWire.bytes().isEmpty()) {
-                long start = inWire.bytes().readPosition();
                 try (DocumentContext dc = inWire.readingDocument()) {
                     if (!dc.isPresent()) {
                         return;
                     }
 
                     try {
-                        logYaml(start);
+                        logYaml(dc);
                         onRead(dc, outWire);
 
                     } catch (Exception e) {

@@ -71,7 +71,8 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements Tcp
 
         final WireType wireType;
         if (b < 0) {
-            wireType = DELTA_BINARY.isAvailable() ? DELTA_BINARY : BINARY;
+            wireType = DELTA_BINARY.isAvailable() ? BINARY : BINARY;
+            //wireType = DELTA_BINARY.isAvailable() ? DELTA_BINARY : BINARY;
         } else if (b > ' ')
             wireType = TEXT;
         else
