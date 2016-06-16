@@ -70,10 +70,9 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements Tcp
         final byte b = in.readByte(4);
 
         final WireType wireType;
-        if (b < 0) {
-            wireType = DELTA_BINARY.isAvailable() ? BINARY : BINARY;
-            //wireType = DELTA_BINARY.isAvailable() ? DELTA_BINARY : BINARY;
-        } else if (b > ' ')
+        if (b < 0)
+            wireType = DELTA_BINARY.isAvailable() ? DELTA_BINARY : BINARY;
+        else if (b > ' ')
             wireType = TEXT;
         else
             throw new IllegalStateException("Unable to identify the wire type from " + Integer.toHexString(b & 0xFF));
