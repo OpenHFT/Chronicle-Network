@@ -55,7 +55,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     private long lastReadReaming;
 
     private static void logYaml(final DocumentContext dc) {
-        if (true) {// YamlLogging.showServerWrites())
+        if (YamlLogging.showServerWrites())
             try {
                 LOG.info("\nServer Sends:\n" +
                         Wires.fromSizePrefixedBlobs(dc));
@@ -64,8 +64,8 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
                 Jvm.warn().on(WireOutPublisher.class, "\nServer Sends ( corrupted ) :\n" +
                         dc.wire().bytes().toDebugString());
             }
-        }
     }
+
 
     private static void logYaml(final WireOut outWire) {
         if (YamlLogging.showServerWrites())
