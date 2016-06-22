@@ -42,7 +42,6 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 
-import static java.nio.ByteBuffer.allocateDirect;
 import static net.openhft.chronicle.network.ServerThreadingStrategy.serverThreadingStrategy;
 
 /**
@@ -62,14 +61,12 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private final WriteEventHandler writeEventHandler;
     @NotNull
     private final NetworkLog readLog, writeLog;
-    @NotNull
-    private final ByteBuffer inBB = allocateDirect(CAPACITY);
+
     @NotNull
     private final Bytes<ByteBuffer> inBBB;
+
     @NotNull
-    private final ByteBuffer outBB = allocateDirect(CAPACITY);
-    @NotNull
-    private final Bytes outBBB;
+    private final Bytes<ByteBuffer> outBBB;
     private int oneInTen;
     private volatile boolean isCleaned;
     @Nullable
@@ -101,13 +98,15 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         }
         // allow these to be used by another thread.
         // todo check that this can be commented out
-        // inBBB.clearThreadAssociation();
-        //  outBBB.clearThreadAssociation();
 
-        inBBB = Bytes.wrapForRead(inBB.slice()).unchecked(unchecked);
-        outBBB = Bytes.wrapForWrite(outBB.slice()).unchecked(unchecked);
+        inBBB = Bytes.elasticByteBuffer(CAPACITY);
+        //  inBB = inBBB.underlyingObject();
+
+        outBBB = Bytes.elasticByteBuffer(CAPACITY);
+        //  outBB = outBBB.underlyingObject();
+
         // must be set after we take a slice();
-        outBB.limit(0);
+        outBBB.underlyingObject().limit(0);
         readLog = new NetworkLog(this.sc, "read");
         writeLog = new NetworkLog(this.sc, "write");
     }
@@ -168,6 +167,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         }
 
         try {
+            ByteBuffer inBB = inBBB.underlyingObject();
             int start = inBB.position();
             int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
 
@@ -228,8 +228,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             return;
         isCleaned = true;
         final long usedDirectMemory = Jvm.usedDirectMemory();
-        IOTools.clean(inBB);
-        IOTools.clean(outBB);
+        IOTools.clean(inBBB.underlyingObject());
+        IOTools.clean(outBBB.underlyingObject());
 
         if (usedDirectMemory == Jvm.usedDirectMemory())
             Jvm.warn().on(getClass(), "nothing cleaned");
@@ -239,7 +239,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     boolean invokeHandler() throws IOException {
 
         boolean busy = false;
-
+        ByteBuffer inBB = inBBB.underlyingObject();
+        ByteBuffer outBB = outBBB.underlyingObject();
         inBBB.readLimit(inBB.position());
 
         outBBB.writePosition(outBB.limit());
@@ -322,7 +323,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     }
 
     private boolean tryWrite() throws IOException {
-
+        ByteBuffer outBB = outBBB.underlyingObject();
         if (outBB.remaining() <= 0)
             return false;
         int start = outBB.position();
@@ -370,6 +371,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             try {
                 // get more data to write if the buffer was empty
                 // or we can write some of what is there
+                ByteBuffer outBB = outBBB.underlyingObject();
                 int remaining = outBB.remaining();
                 busy = remaining > 0;
                 if (busy)
