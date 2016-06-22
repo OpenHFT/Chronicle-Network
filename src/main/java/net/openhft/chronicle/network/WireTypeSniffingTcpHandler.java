@@ -52,7 +52,7 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements Tcp
 
         final WireOutPublisher publisher = nc.wireOutPublisher();
 
-        if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
+        if (publisher != null)
             publisher.applyAction(out);
 
         // read the wire type of the messages from the header - the header its self must be

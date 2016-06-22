@@ -136,20 +136,18 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
             final NetworkStatsListener networkStatsListener = nc().networkStatsListener();
             if (networkStatsListener != null)
-                networkStatsListener.onNetworkStats(writeBps, bytesReadCount,
-                        socketPollCount, nc);
+                networkStatsListener.onNetworkStats(writeBps, bytesReadCount, socketPollCount, nc);
 
             writeBps = socketPollCount = bytesReadCount = 0;
         }
 
-        if (publisher != null && out.writePosition() < TcpEventHandler.TCP_BUFFER)
+        if (publisher != null)
             publisher.applyAction(outWire);
 
         if (in.readRemaining() >= SIZE_OF_SIZE)
             onRead0();
 
-        if (out.writePosition() < TcpEventHandler.TCP_BUFFER)
-            onWrite(outWire);
+        onWrite(outWire);
 
         lastWriteRemaining = outWire.bytes().writeRemaining();
         lastReadReaming = inWire.bytes().readRemaining();
@@ -177,22 +175,33 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
         try {
             while (!inWire.bytes().isEmpty()) {
+
+                ensureCapacity();
+
                 try (DocumentContext dc = inWire.readingDocument()) {
-                    if (!dc.isPresent()) {
+                    if (!dc.isPresent())
                         return;
-                    }
 
                     try {
                         logYaml(dc);
                         onRead(dc, outWire);
 
                     } catch (Exception e) {
+                        e.printStackTrace();
                         Jvm.warn().on(getClass(), "inWire=" + inWire.getClass(), e);
                     }
                 }
             }
         } finally {
             assert inWire.endUse();
+        }
+    }
+
+    private void ensureCapacity() {
+        if (inWire.bytes().readRemaining() > 4) {
+            int length = inWire.bytes().readInt(inWire.bytes().readPosition());
+            inWire.bytes().ensureCapacity(Wires.lengthOf(length) + inWire.bytes()
+                    .readPosition() + 4);
         }
     }
 

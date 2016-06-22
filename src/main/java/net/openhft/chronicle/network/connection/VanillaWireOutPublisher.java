@@ -61,12 +61,13 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
             synchronized (lock()) {
 
-                while (this.bytes.readRemaining() > 0 && bytes.writeRemaining() > TcpEventHandler.TCP_BUFFER) {
+                while (this.bytes.readRemaining() > 0) {
 
                     final long readPosition = this.bytes.readPosition();
                     try (final ReadDocumentContext dc = (ReadDocumentContext) wrapperWire.readingDocument()) {
 
-                        if (!dc.isPresent() || bytes.writeRemaining() < this.bytes.readRemaining()) {
+
+                         if (!dc.isPresent() || bytes.writeRemaining() < this.bytes.readRemaining ()) {
                             dc.closeReadPosition(readPosition);
                             return;
                         }
