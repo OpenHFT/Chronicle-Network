@@ -42,7 +42,6 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 
-import static java.nio.ByteBuffer.allocateDirect;
 import static net.openhft.chronicle.network.ServerThreadingStrategy.serverThreadingStrategy;
 
 /**
@@ -50,9 +49,10 @@ import static net.openhft.chronicle.network.ServerThreadingStrategy.serverThread
  */
 public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandlerManager {
 
-    private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity", TcpChannelHub.BUFFER_SIZE);
+    private static final int CAPACITY = Integer.getInteger("TcpEventHandler.capacity",
+            512);//TcpChannelHub.BUFFER_SIZE);
     public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", Math.max
-            (64 << 10, CAPACITY / 8));
+            (64 << 10, TcpChannelHub.BUFFER_SIZE / 8));
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
     @NotNull
     private final SocketChannel sc;
@@ -63,11 +63,11 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     @NotNull
     private final NetworkLog readLog, writeLog;
     @NotNull
-    private final ByteBuffer inBB = allocateDirect(CAPACITY);
+    private ByteBuffer inBB;
     @NotNull
     private final Bytes<ByteBuffer> inBBB;
     @NotNull
-    private final ByteBuffer outBB = allocateDirect(CAPACITY);
+    private ByteBuffer outBB;
     @NotNull
     private final Bytes outBBB;
     private int oneInTen;
@@ -104,8 +104,14 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         // inBBB.clearThreadAssociation();
         //  outBBB.clearThreadAssociation();
 
-        inBBB = Bytes.wrapForRead(inBB.slice()).unchecked(unchecked);
-        outBBB = Bytes.wrapForWrite(outBB.slice()).unchecked(unchecked);
+        inBBB = Bytes.elasticByteBuffer();
+        inBB = inBBB.underlyingObject();
+        //Bytes.wrapForRead(inBB.slice()).unchecked(unchecked);
+
+        outBBB = Bytes.elasticByteBuffer();
+        outBB = inBBB.underlyingObject();
+
+        // = Bytes.wrapForWrite(outBB.slice()).unchecked(unchecked);
         // must be set after we take a slice();
         outBB.limit(0);
         readLog = new NetworkLog(this.sc, "read");
@@ -169,6 +175,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
         try {
             int start = inBB.position();
+            ensureReadCapacity();
             int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
 
             if (read > 0) {
@@ -268,17 +275,43 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
         return busy;
     }
-/*
 
-    private void ensureReadCapactity() {
+
+    private void ensureReadCapacity() {
         // ensure that we always have 1024bytes head room
         if (inBBB.writePosition() + 1024 > inBBB.realCapacity()) {
+
+            int position = inBB.position();
+            int limit = inBB.limit();
+
             inBBB.ensureCapacity(inBBB.realCapacity() * 2);
-            inBB = inBBB.underlyingObject();
+
+            if (position > 0)
+                System.out.println("inBB.position() >0");
+
+            //    inBB = inBBB.underlyingObject();
+
+            ByteBuffer newBuffer = inBBB.underlyingObject();
+            newBuffer.clear();
+
+            inBB.clear();
+
+            while (inBB.remaining() > 4) {
+                newBuffer.putLong(inBB.getLong());
+            }
+
+            while (inBB.remaining() > 0) {
+                newBuffer.put(inBB.get());
+            }
+
+            inBB = newBuffer;
+            inBB.position(position);
+      //      inBB.limit(limit);
+
             System.out.println("inBBB.realCapacity()=" + inBBB.realCapacity());
         }
     }
-*/
+
 
     private void handleIOE(@NotNull IOException e, final boolean clientIntentionallyClosed,
                            @Nullable HeartbeatListener heartbeatListener) {
@@ -394,3 +427,4 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         //}
     }
 }
+
