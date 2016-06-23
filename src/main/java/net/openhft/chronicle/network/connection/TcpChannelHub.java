@@ -73,7 +73,9 @@ import static net.openhft.chronicle.core.Jvm.pause;
  */
 public class TcpChannelHub implements Closeable {
 
-    public static final int BUFFER_SIZE = 4 << 20;
+    public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 64 << 10);
+
+
     private static final int HEATBEAT_PING_PERIOD =
             getInteger("heartbeat.ping.period",
                     Jvm.isDebug() ? 30_000 : 5_000);
@@ -88,7 +90,7 @@ public class TcpChannelHub implements Closeable {
     private final String name;
     private final int tcpBufferSize;
     private final Wire outWire;
-    //  private final Wire inWire;
+
     @NotNull
     private final SocketAddressSupplier socketAddressSupplier;
     private final Set<Long> preventSubscribeUponReconnect = new ConcurrentSkipListSet<>();
@@ -131,7 +133,7 @@ public class TcpChannelHub implements Closeable {
         this.priority = monitor;
         this.socketAddressSupplier = socketAddressSupplier;
         this.eventLoop = eventLoop;
-        this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", BUFFER_SIZE);
+        this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
         this.outWire = wireType.apply(elasticByteBuffer());
         // this.inWire = wireType.apply(elasticByteBuffer());
         this.name = name.trim();

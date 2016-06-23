@@ -28,6 +28,7 @@ import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
+import net.openhft.chronicle.network.connection.TcpChannelHub;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -41,15 +42,13 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 
 import static net.openhft.chronicle.network.ServerThreadingStrategy.serverThreadingStrategy;
-import static net.openhft.chronicle.network.connection.TcpChannelHub.BUFFER_SIZE;
 
 /**
  * Created by peter.lawrey on 22/01/15.
  */
 public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandlerManager {
 
-    public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", Math.max
-            (64 << 10, BUFFER_SIZE / 8));
+    public static final int TCP_BUFFER = TcpChannelHub.TCP_BUFFER;
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
     @NotNull
     private final SocketChannel sc;
@@ -97,8 +96,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         // allow these to be used by another thread.
         // todo check that this can be commented out
 
-        inBBB = Bytes.elasticByteBuffer(512);
-        outBBB = Bytes.elasticByteBuffer(512);
+        inBBB = Bytes.elasticByteBuffer(TCP_BUFFER);
+        outBBB = Bytes.elasticByteBuffer(TCP_BUFFER);
 
         // must be set after we take a slice();
         outBBB.underlyingObject().limit(0);
@@ -334,7 +333,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         } else if (wrote > 0) {
             lastTickReadTime = writeTickTime;
             outBBB.underlyingObject().compact().flip();
-            outBBB.writeLimit(outBBB.underlyingObject().capacity());
             outBBB.writePosition(outBBB.underlyingObject().limit());
             return true;
         }

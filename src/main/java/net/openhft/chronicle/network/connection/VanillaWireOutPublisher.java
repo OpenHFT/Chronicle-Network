@@ -44,7 +44,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
     public VanillaWireOutPublisher(WireType wireType) {
         this.closed = false;
-        bytes = Bytes.elasticByteBuffer(TcpChannelHub.BUFFER_SIZE);
+        bytes = Bytes.elasticByteBuffer(TcpChannelHub.TCP_BUFFER);
         wrapperWire = WireType.BINARY.apply(bytes);
         wire = wireType.apply(bytes);
     }
@@ -67,7 +67,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
                     try (final ReadDocumentContext dc = (ReadDocumentContext) wrapperWire.readingDocument()) {
 
 
-                         if (!dc.isPresent() || bytes.writeRemaining() < this.bytes.readRemaining ()) {
+                        if (!dc.isPresent() || bytes.writeRemaining() < this.bytes.readRemaining()) {
                             dc.closeReadPosition(readPosition);
                             return;
                         }
@@ -200,7 +200,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         synchronized (lock()) {
             assert wrapperWire.startUse();
             try {
-                return wrapperWire.bytes().writePosition() < TcpChannelHub.BUFFER_SIZE / 2; // don't attempt to fill the buffer completely.
+                return wrapperWire.bytes().writePosition() < TcpChannelHub.TCP_BUFFER / 2; // don't attempt to fill the buffer completely.
             } finally {
                 assert wrapperWire.endUse();
             }
