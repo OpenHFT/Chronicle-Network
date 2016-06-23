@@ -36,7 +36,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
     private static final Logger LOG = LoggerFactory.getLogger(VanillaWireOutPublisher.class);
     private final Bytes<ByteBuffer> bytes;
-    private Wire wrapperWire;
+
     private volatile boolean closed;
     private Wire wire;
     private List<WireOutConsumer> consumers = new CopyOnWriteArrayList<>();
@@ -45,7 +45,6 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     public VanillaWireOutPublisher(WireType wireType) {
         this.closed = false;
         bytes = Bytes.elasticByteBuffer(TcpChannelHub.TCP_BUFFER);
-        wrapperWire = WireType.BINARY.apply(bytes);
         wire = wireType.apply(bytes);
     }
 
@@ -60,26 +59,8 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         if (this.bytes.readRemaining() > 0) {
 
             synchronized (lock()) {
-
-                while (this.bytes.readRemaining() > 0) {
-
-                    final long readPosition = this.bytes.readPosition();
-                    try (final ReadDocumentContext dc = (ReadDocumentContext) wrapperWire.readingDocument()) {
-
-
-                        if (!dc.isPresent() || bytes.writeRemaining() < this.bytes.readRemaining()) {
-                            dc.closeReadPosition(readPosition);
-                            return;
-                        }
-
-                        if (YamlLogging.showServerWrites())
-                            LOG.info("Server sends:" + Wires.fromSizePrefixedBlobs(this.bytes));
-
-                        bytes.write(this.bytes);
-                    }
-                }
-
-                this.bytes.compact();
+                bytes.write(this.bytes);
+                this.bytes.clear();
             }
         }
 
@@ -163,20 +144,16 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
         // writes the data and its size
         synchronized (lock()) {
-            wrapperWire.writeDocument(false, d -> {
-                assert wire.startUse();
-                try {
-                    final long start = wire.bytes().writePosition();
-                    event.writeMarshallable(wire);
-                    if (YamlLogging.showServerWrites())
-                        LOG.info("Server is about to send:" + Wires.fromSizePrefixedBlobs(wire.bytes(),
-                                start, wire
-                                        .bytes().writePosition() - start));
-                } finally {
-                    assert wire.endUse();
-                }
-
-            });
+            assert wire.startUse();
+            try {
+                final long start = wire.bytes().writePosition();
+                event.writeMarshallable(wire);
+                if (YamlLogging.showServerWrites())
+                    LOG.info("Server is about to send:" + Wires.fromSizePrefixedBlobs(wire.bytes(),
+                            start, wire.bytes().writePosition() - start));
+            } finally {
+                assert wire.endUse();
+            }
         }
     }
 
@@ -198,11 +175,12 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
     public boolean canTakeMoreData() {
         synchronized (lock()) {
-            assert wrapperWire.startUse();
+            assert wire.startUse();
             try {
-                return wrapperWire.bytes().writePosition() < TcpChannelHub.TCP_BUFFER / 2; // don't attempt to fill the buffer completely.
+                return wire.bytes().writePosition() < TcpChannelHub.TCP_BUFFER / 2; // don't attempt
+                // to fill the buffer completely.
             } finally {
-                assert wrapperWire.endUse();
+                assert wire.endUse();
             }
         }
     }
@@ -220,7 +198,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     @Override
     public void clear() {
         synchronized (lock()) {
-            wrapperWire.clear();
+            wire.clear();
         }
     }
 
