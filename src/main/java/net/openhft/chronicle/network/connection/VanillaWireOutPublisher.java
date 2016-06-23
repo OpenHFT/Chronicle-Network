@@ -59,11 +59,30 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         if (this.bytes.readRemaining() > 0) {
 
             synchronized (lock()) {
+
+                if (YamlLogging.showServerWrites())
+                    logBuffer();
+
                 bytes.write(this.bytes);
                 this.bytes.clear();
             }
         }
 
+    }
+
+    private void logBuffer() {
+        long pos = this.bytes.readPosition();
+        try {
+            while (wire.bytes().readRemaining() > 0) {
+                try (DocumentContext dc = wire.readingDocument()) {
+                    if (!dc.isPresent())
+                        return;
+                    LOG.info("Server Sends aync event:\n" + Wires.fromSizePrefixedBlobs(dc));
+                }
+            }
+        } finally {
+            this.bytes.readPosition(pos);
+        }
     }
 
     /**
@@ -149,8 +168,8 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
                 final long start = wire.bytes().writePosition();
                 event.writeMarshallable(wire);
                 if (YamlLogging.showServerWrites())
-                    LOG.info("Server is about to send:" + Wires.fromSizePrefixedBlobs(wire.bytes(),
-                            start, wire.bytes().writePosition() - start));
+                    LOG.info("Server is about to send async event:" + Wires.fromSizePrefixedBlobs(wire
+                            .bytes(), start, wire.bytes().writePosition() - start));
             } finally {
                 assert wire.endUse();
             }
