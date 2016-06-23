@@ -40,7 +40,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
     @NotNull
     protected Wire outWire;
-    long lastWriteRemaining = 0;
+    long lastWritePosition = 0;
     int writeBps, socketPollCount, bytesReadCount;
     long lastMonitor = System.currentTimeMillis();
     @NotNull
@@ -52,7 +52,7 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     private T nc;
     private volatile boolean closed;
     private boolean isAcceptor;
-    private long lastReadReaming;
+    private long lastReadRemaining;
 
     private static void logYaml(final DocumentContext dc) {
         if (YamlLogging.showServerWrites())
@@ -121,14 +121,16 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
         // we assume that if any bytes were in lastOutBytesRemaining the sc.write() would have been
         // called and this will fail, if the other end has lost its connection
-        if (outWire.bytes().writeRemaining() != lastWriteRemaining) {
+        if (outWire.bytes().writePosition() != lastWritePosition) {
             onBytesWritten();
-            writeBps++;
+
+            // NOTE you can not use remaining as the buffer maybe resized
+            writeBps += (lastWritePosition - outWire.bytes().writePosition());
         }
 
         socketPollCount++;
 
-        bytesReadCount += (in.readRemaining() - lastReadReaming);
+        bytesReadCount += (in.readRemaining() - lastReadRemaining);
 
         long now = System.currentTimeMillis();
         if (now > lastMonitor + 1000) {
@@ -149,8 +151,8 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
         onWrite(outWire);
 
-        lastWriteRemaining = outWire.bytes().writeRemaining();
-        lastReadReaming = inWire.bytes().readRemaining();
+        lastWritePosition = outWire.bytes().writePosition();
+        lastReadRemaining = inWire.bytes().readRemaining();
     }
 
     protected void onBytesWritten() {
