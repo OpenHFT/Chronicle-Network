@@ -31,8 +31,8 @@ import static net.openhft.chronicle.wire.WireType.BINARY;
 import static net.openhft.chronicle.wire.WireType.DELTA_BINARY;
 import static net.openhft.chronicle.wire.WriteMarshallable.EMPTY;
 
-public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHandler,
-        NetworkContextManager<T> {
+public abstract class WireTcpHandler<T extends NetworkContext>
+        implements TcpHandler, NetworkContextManager<T> {
 
     private static final int SIZE_OF_SIZE = 4;
     private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
@@ -148,11 +148,11 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
 
         if (in.readRemaining() >= SIZE_OF_SIZE)
             onRead0();
-
         onWrite(outWire);
 
         lastWritePosition = outWire.bytes().writePosition();
         lastReadRemaining = inWire.bytes().readRemaining();
+
     }
 
     protected void onBytesWritten() {
@@ -176,14 +176,24 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
         assert inWire.startUse();
 
         try {
+            boolean first = true;
             while (!inWire.bytes().isEmpty()) {
 
                 ensureCapacity();
 
+                long pos = inWire.bytes().readPosition();
                 try (DocumentContext dc = inWire.readingDocument()) {
-                    if (!dc.isPresent())
+                    if (!dc.isPresent()) {
+                        if (first) {
+                            final Bytes<?> bytes = inWire.bytes();
+                            final int i = inWire.bytes().readInt(bytes.readPosition());
+                            if (i > 256 || i < 0)
+                                System.out.println("Failed to read " + Wires.lengthOf(i) + " pos " + pos);
+                        }
                         return;
+                    }
 
+                    first = false;
                     try {
                         logYaml(dc);
                         onRead(dc, outWire);
@@ -200,10 +210,15 @@ public abstract class WireTcpHandler<T extends NetworkContext> implements TcpHan
     }
 
     private void ensureCapacity() {
-        if (inWire.bytes().readRemaining() > 4) {
-            int length = inWire.bytes().readInt(inWire.bytes().readPosition());
-            inWire.bytes().ensureCapacity(Wires.lengthOf(length) + inWire.bytes()
-                    .readPosition() + 4);
+        final Bytes<?> bytes = inWire.bytes();
+        if (bytes.readRemaining() >= 4) {
+            final long pos = bytes.readPosition();
+            int length = bytes.readInt(pos);
+            final long size = pos + Wires.SPB_HEADER_SIZE * 2 + Wires.lengthOf(length);
+            if (size > bytes.realCapacity()) {
+                Jvm.debug().on(getClass(), Integer.toHexString(System.identityHashCode(bytes)) + " resized to: " + size);
+                bytes.ensureCapacity(size);
+            }
         }
     }
 

@@ -19,6 +19,7 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.Maths;
+import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.io.IOTools;
@@ -81,8 +82,10 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         try {
             sc.configureBlocking(false);
             sc.socket().setTcpNoDelay(true);
-            sc.socket().setReceiveBufferSize(TCP_BUFFER);
-            sc.socket().setSendBufferSize(TCP_BUFFER);
+            if (TCP_BUFFER >= 64 << 10) {
+                sc.socket().setReceiveBufferSize(TCP_BUFFER);
+                sc.socket().setSendBufferSize(TCP_BUFFER);
+            }
         } catch (IOException e) {
             Jvm.warn().on(getClass(), e);
         }
@@ -96,7 +99,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         // allow these to be used by another thread.
         // todo check that this can be commented out
 
-        inBBB = Bytes.elasticByteBuffer(TCP_BUFFER);
+        inBBB = Bytes.elasticByteBuffer(TCP_BUFFER + OS.pageSize());
         outBBB = Bytes.elasticByteBuffer(TCP_BUFFER);
 
         // must be set after we take a slice();
@@ -134,7 +137,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     @Override
     public synchronized boolean action() throws InvalidEventHandlerException {
-
         final HeartbeatListener heartbeatListener = nc.heartbeatListener();
 
         if (tcpHandler == null)
@@ -159,13 +161,13 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 Jvm.warn().on(getClass(), e);
             }
         }
-
         try {
-            ensureReadCapacity();
             ByteBuffer inBB = inBBB.underlyingObject();
             int start = inBB.position();
 
             int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
+//            if (read < Integer.MAX_VALUE && read != 0)
+//                System.out.println("R - " + read);
 
             if (read > 0) {
                 WanSimulator.dataRead(read);
@@ -179,11 +181,11 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 busy |= invokeHandler();
                 return busy;
             }
-
             if (read < 0) {
                 close();
                 throw new InvalidEventHandlerException("socket closed " + sc);
             }
+
 
             readLog.idle();
 
@@ -233,9 +235,9 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     }
 
     boolean invokeHandler() throws IOException {
-
         boolean busy = false;
-        inBBB.readLimit(inBBB.underlyingObject().position());
+        final int position = inBBB.underlyingObject().position();
+        inBBB.readLimit(position);
         outBBB.writePosition(outBBB.underlyingObject().limit());
 
         long lastInBBBReadPosition;
@@ -252,27 +254,30 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         } while (lastInBBBReadPosition != inBBB.readPosition());
 
         // TODO Optimise.
-        // if it read some data compact();
-        if (inBBB.readPosition() > 0) {
+        if (inBBB.readRemaining() == 0) {
+            inBBB.clear();
+            ByteBuffer inBB = inBBB.underlyingObject();
+            inBB.clear();
+
+        } else if (inBBB.readPosition() > 0) {
+            // if it read some data compact();
             ByteBuffer inBB = inBBB.underlyingObject();
             inBB.position((int) inBBB.readPosition());
             inBB.limit((int) inBBB.readLimit());
             inBB.compact();
             inBBB.readPosition(0);
+            inBBB.readLimit(inBB.remaining());
+
+//            System.out.println("Compact " + inBBB.readPosition() + " rem " + inBBB.readRemaining() + " " + Wires.lengthOf(inBBB.readInt(inBBB.readPosition())));
 
             busy = true;
+
+        } else if (inBBB.readPosition() > 0) {
+            System.out.println("pos " + inBBB.readPosition());
         }
 
         return busy;
     }
-
-
-    private void ensureReadCapacity() {
-        // ensure that we always have 1024bytes head room
-        if (inBBB.writePosition() + 1024 > inBBB.realCapacity())
-            inBBB.ensureCapacity(inBBB.realCapacity() * 2);
-    }
-
 
     private void handleIOE(@NotNull IOException e, final boolean clientIntentionallyClosed,
                            @Nullable HeartbeatListener heartbeatListener) {
@@ -323,6 +328,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         long writeTime = System.nanoTime();
         assert !sc.isBlocking();
         int wrote = sc.write(outBBB.underlyingObject());
+//        System.out.println("w "+wrote);
         tcpHandler.onWriteTime(writeTime);
 
         writeLog.log(outBBB.underlyingObject(), start, outBBB.underlyingObject().position());
