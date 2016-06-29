@@ -177,6 +177,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
 
         try {
             boolean first = true;
+            long start = System.nanoTime();
             while (!inWire.bytes().isEmpty()) {
 
                 ensureCapacity();
@@ -204,6 +205,9 @@ public abstract class WireTcpHandler<T extends NetworkContext>
                     }
                 }
             }
+            long time = System.nanoTime() - start;
+            if (time > 1000_000)
+                System.out.println("process " + time / 1000000);
         } finally {
             assert inWire.endUse();
         }

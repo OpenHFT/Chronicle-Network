@@ -167,7 +167,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
             int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
 //            if (read < Integer.MAX_VALUE && read != 0)
-//                System.out.println("R - " + read);
+//                System.out.println("read " + read);
 
             if (read > 0) {
                 WanSimulator.dataRead(read);
@@ -328,6 +328,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         long writeTime = System.nanoTime();
         assert !sc.isBlocking();
         int wrote = sc.write(outBBB.underlyingObject());
+//        if (wrote > 200)
 //        System.out.println("w "+wrote);
         tcpHandler.onWriteTime(writeTime);
 
