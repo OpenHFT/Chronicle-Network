@@ -192,7 +192,7 @@ public class TcpChannelHub implements Closeable {
                 //         LOG.info("Bytes.toString(bytes)=" + Bytes.toString(bytes));
                 LOG.info("\nreceives:\n" +
                         "```yaml\n" +
-                        Wires.fromSizePrefixedBlobs(bytes) +
+                        Wires.fromSizePrefixedBlobs(wire) +
                         "```\n");
                 YamlLogging.title = "";
                 YamlLogging.writeMessage("");
@@ -216,7 +216,7 @@ public class TcpChannelHub implements Closeable {
 
                 LOG.info("\nreceives IN ERROR:\n" +
                         "```yaml\n" +
-                        Wires.fromSizePrefixedBlobs(bytes) +
+                        Wires.fromSizePrefixedBlobs(wire) +
                         "```\n");
                 YamlLogging.title = "";
                 YamlLogging.writeMessage("");
@@ -628,7 +628,7 @@ public class TcpChannelHub implements Closeable {
             IOException {
 
         if (LOG.isDebugEnabled())
-            Jvm.debug().on(getClass(), "sending :" + Wires.fromSizePrefixedBlobs(outWire.bytes()));
+            Jvm.debug().on(getClass(), "sending :" + Wires.fromSizePrefixedBlobs((Wire) outWire));
 
         if (clientChannel == null) {
             LOG.info("Connection Dropped");

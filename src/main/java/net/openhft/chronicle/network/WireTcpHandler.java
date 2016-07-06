@@ -71,7 +71,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
         if (YamlLogging.showServerWrites())
             try {
                 LOG.info("\nServer Sends:\n" +
-                        Wires.fromSizePrefixedBlobs(outWire.bytes()));
+                        Wires.fromSizePrefixedBlobs((Wire) outWire));
 
             } catch (Exception e) {
                 Jvm.warn().on(WireOutPublisher.class, "\nServer Sends ( corrupted ) :\n" +
@@ -86,8 +86,8 @@ public abstract class WireTcpHandler<T extends NetworkContext>
 
     public void wireType(@NotNull WireType wireType) {
         if (wireType == BINARY) {
-            wireType = DELTA_BINARY.isAvailable() ? BINARY : BINARY;
-            //  wireType = DELTA_BINARY.isAvailable() ? DELTA_BINARY : BINARY;
+            // wireType = DELTA_BINARY.isAvailable() ? BINARY : BINARY;
+            wireType = DELTA_BINARY.isAvailable() ? DELTA_BINARY : BINARY;
         }
         this.wireType = wireType;
         if (publisher != null)

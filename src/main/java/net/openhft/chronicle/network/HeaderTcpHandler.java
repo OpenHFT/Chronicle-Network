@@ -85,7 +85,7 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
             handlerManager.tcpHandler(handler);
 
         } catch (Exception e) {
-            Jvm.warn().on(getClass(), "wirein=" + Wires.fromSizePrefixedBlobs(in), e);
+            Jvm.warn().on(getClass(), "wirein=" + Wires.fromSizePrefixedBlobs(inWire), e);
         }
     }
 

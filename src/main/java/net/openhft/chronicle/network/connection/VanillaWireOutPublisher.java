@@ -168,10 +168,18 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
                 final long start = wire.bytes().writePosition();
                 event.writeMarshallable(wire);
                 if (YamlLogging.showServerWrites()) {
-                    String message = Wires.fromSizePrefixedBlobs(wire
-                            .bytes(), start, wire.bytes().writePosition() - start);
 
-                    LOG.info("Server is about to send async event:" + message);
+                    long rp = wire.bytes().readPosition();
+                    long rl = wire.bytes().readLimit();
+                    long wl = wire.bytes().writeLimit();
+                    try {
+                        long len = wire.bytes().writePosition() - start;
+                        wire.bytes().readPositionRemaining(start, len);
+                        String message = Wires.fromSizePrefixedBlobs(wire);
+                        LOG.info("Server is about to send async event:" + message);
+                    } finally {
+                        wire.bytes().writeLimit(wl).readLimit(rl).readPosition(rp);
+                    }
                 }
             } finally {
                 assert wire.endUse();
