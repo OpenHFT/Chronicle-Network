@@ -86,7 +86,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
 
     public void wireType(@NotNull WireType wireType) {
         if (wireType == BINARY) {
-            //wireType = DELTA_BINARY.isAvailable() ? BINARY : BINARY;
+            // wireType = DELTA_BINARY.isAvailable() ? BINARY : BINARY;
             wireType = DELTA_BINARY.isAvailable() ? DELTA_BINARY : BINARY;
         }
         this.wireType = wireType;
