@@ -46,6 +46,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     private WireType wireType = WireType.TEXT;
     private Runnable socketReconnector;
     private NetworkStatsListener networkStatsListener;
+    private ServerThreadingStrategy serverThreadingStrategy = ServerThreadingStrategy.SINGLE_THREADED;
 
     @Override
     public SocketChannel socketChannel() {
@@ -187,5 +188,13 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     @Override
     public NetworkStatsListener networkStatsListener() {
         return this.networkStatsListener;
+    }
+
+    public ServerThreadingStrategy serverThreadingStrategy() {
+        return serverThreadingStrategy;
+    }
+
+    public void serverThreadingStrategy(ServerThreadingStrategy serverThreadingStrategy) {
+        this.serverThreadingStrategy = serverThreadingStrategy;
     }
 }

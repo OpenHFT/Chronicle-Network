@@ -16,10 +16,6 @@
 
 package net.openhft.chronicle.network;
 
-import net.openhft.chronicle.core.Jvm;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Created by rob on 25/08/2015.
  */
@@ -27,32 +23,15 @@ public enum ServerThreadingStrategy {
 
     SINGLE_THREADED("uses a single threaded prioritised event loop," +
             " where the reads take priority over the asynchronous writes"),
+    CONCURRENT("each client connection is partitioned to a limit number of threads, " +
+            "This is ideal when you have a small number of client connections on a server with a large number of free cores"),
     MULTI_THREADED_BUSY_WAITING("each client connection is devoted to its own busy waiting thread, " +
             "This is ideal when you have a small number of client connections on a server with a large number of free cores");
-
-    private static final Logger LOG = LoggerFactory.getLogger(ServerThreadingStrategy.class);
-    private static ServerThreadingStrategy value = ServerThreadingStrategy.SINGLE_THREADED;
-
-    static {
-        final String serverThreadingStrategy = System.getProperty("ServerThreadingStrategy");
-        if (serverThreadingStrategy != null)
-
-            try {
-                value = Enum.valueOf(ServerThreadingStrategy.class, serverThreadingStrategy);
-            } catch (Exception e) {
-                Jvm.warn().on(ServerThreadingStrategy.class, "unable to apply -DServerThreadingStrategy=" + serverThreadingStrategy +
-                        ", so defaulting to " + value, e);
-            }
-    }
 
     private final String description;
 
     ServerThreadingStrategy(String description) {
         this.description = description;
-    }
-
-    static ServerThreadingStrategy serverThreadingStrategy() {
-        return value;
     }
 
     public String getDescription() {

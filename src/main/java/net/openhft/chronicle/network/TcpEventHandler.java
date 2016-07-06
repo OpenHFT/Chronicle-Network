@@ -42,8 +42,6 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 
-import static net.openhft.chronicle.network.ServerThreadingStrategy.serverThreadingStrategy;
-
 /**
  * Created by peter.lawrey on 22/01/15.
  */
@@ -116,10 +114,13 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     @NotNull
     @Override
     public HandlerPriority priority() {
-        switch (serverThreadingStrategy()) {
+        switch (nc.serverThreadingStrategy()) {
 
             case SINGLE_THREADED:
-                return HandlerPriority.HIGH;
+                return HandlerPriority.MEDIUM;
+
+            case CONCURRENT:
+                return HandlerPriority.CONCURRENT;
 
             case MULTI_THREADED_BUSY_WAITING:
                 return HandlerPriority.BLOCKING;
@@ -178,8 +179,9 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 //       .position());
                 readLog.log(inBB, start, inBB.position());
                 // inBB.position() where the data has been read() up to.
-                busy |= invokeHandler();
-                return busy;
+                if (invokeHandler())
+                    oneInTen++;
+                return true;
             }
             if (read < 0) {
                 close();

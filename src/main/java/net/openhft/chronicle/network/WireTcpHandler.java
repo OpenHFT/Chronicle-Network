@@ -133,12 +133,12 @@ public abstract class WireTcpHandler<T extends NetworkContext>
         bytesReadCount += (in.readRemaining() - lastReadRemaining);
 
         long now = System.currentTimeMillis();
-        if (now > lastMonitor + 1000) {
+        if (now > lastMonitor + 10000) {
             lastMonitor = now;
 
             final NetworkStatsListener networkStatsListener = nc().networkStatsListener();
             if (networkStatsListener != null)
-                networkStatsListener.onNetworkStats(writeBps, bytesReadCount, socketPollCount, nc);
+                networkStatsListener.onNetworkStats(writeBps / 10, bytesReadCount / 10, socketPollCount / 10, nc);
 
             writeBps = socketPollCount = bytesReadCount = 0;
         }
@@ -175,12 +175,12 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     private void onRead0() {
         assert inWire.startUse();
 
+        ensureCapacity();
+
         try {
             boolean first = true;
-            long start = System.nanoTime();
-            while (!inWire.bytes().isEmpty()) {
 
-                ensureCapacity();
+            while (!inWire.bytes().isEmpty()) {
 
                 long pos = inWire.bytes().readPosition();
                 try (DocumentContext dc = inWire.readingDocument()) {
@@ -188,8 +188,10 @@ public abstract class WireTcpHandler<T extends NetworkContext>
                         if (first) {
                             final Bytes<?> bytes = inWire.bytes();
                             final int i = inWire.bytes().readInt(bytes.readPosition());
-                            if (i > 256 || i < 0)
-                                System.out.println("Failed to read " + Wires.lengthOf(i) + " pos " + pos);
+                            int length = Wires.lengthOf(i);
+                            if (length > 1 << 20 || i < 0) {
+                                Jvm.warn().on(getClass(), "Failed to read " + length + " pos " + pos);
+                            }
                         }
                         return;
                     }
@@ -218,9 +220,16 @@ public abstract class WireTcpHandler<T extends NetworkContext>
             int length = bytes.readInt(pos);
             final long size = pos + Wires.SPB_HEADER_SIZE * 2 + Wires.lengthOf(length);
             if (size > bytes.realCapacity()) {
-                Jvm.debug().on(getClass(), Integer.toHexString(System.identityHashCode(bytes)) + " resized to: " + size);
-                bytes.ensureCapacity(size);
+                resizeInWire(size);
             }
+        }
+    }
+
+    private void resizeInWire(long size) {
+        final Bytes<?> bytes = inWire.bytes();
+        if (size > bytes.realCapacity()) {
+            Jvm.debug().on(getClass(), Integer.toHexString(System.identityHashCode(bytes)) + " resized to: " + size);
+            bytes.ensureCapacity(size);
         }
     }
 

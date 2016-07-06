@@ -45,12 +45,11 @@ public class HostConnector implements Closeable {
     private final String connectUri;
     private final Function<ClusterContext, NetworkContext> networkContextFactory;
     private final ClusterContext clusterContext;
+    private final Function<ClusterContext, NetworkStatsListener> networkStatsListenerFactory;
     private NetworkContext nc;
     private volatile AtomicReference<WireOutPublisher> wireOutPublisher = new AtomicReference<>();
-
     @NotNull
     private EventLoop eventLoop;
-    private final Function<ClusterContext, NetworkStatsListener> networkStatsListenerFactory;
 
     HostConnector(@NotNull ClusterContext clusterContext,
                   final RemoteConnector remoteConnector,
@@ -105,6 +104,7 @@ public class HostConnector implements Closeable {
 
         nc.heartbeatTimeoutMs(clusterContext.heartbeatTimeoutMs() * 2);
         nc.socketReconnector(this::reconnect);
+        nc.serverThreadingStrategy(clusterContext.serverThreadingStrategy());
 
         if (networkStatsListenerFactory != null) {
             final NetworkStatsListener networkStatsListener = networkStatsListenerFactory.apply(clusterContext);

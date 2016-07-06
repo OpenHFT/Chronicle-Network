@@ -68,6 +68,8 @@ public interface NetworkContext<T extends NetworkContext> {
 
     long newCid();
 
+    ServerThreadingStrategy serverThreadingStrategy();
+
     default ConnectionListener acquireConnectionListener() {
         return new ConnectionListener() {
             @Override
@@ -89,5 +91,7 @@ public interface NetworkContext<T extends NetworkContext> {
     void networkStatsListener(NetworkStatsListener NetworkStatsListener);
 
     NetworkStatsListener networkStatsListener();
+
+    void serverThreadingStrategy(ServerThreadingStrategy singleThreaded);
 }
 

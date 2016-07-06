@@ -20,10 +20,7 @@ import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.util.ThrowingFunction;
-import net.openhft.chronicle.network.NetworkContext;
-import net.openhft.chronicle.network.NetworkStatsListener;
-import net.openhft.chronicle.network.RemoteConnector;
-import net.openhft.chronicle.network.TcpEventHandler;
+import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
@@ -55,6 +52,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
     private byte localIdentifier;
     private Function<ClusterContext, NetworkStatsListener>
             networkStatsListenerFactory;
+    private ServerThreadingStrategy serverThreadingStrategy;
 
     @UsedViaReflection
     protected ClusterContext(@NotNull WireIn wire) throws IORuntimeException {
@@ -92,20 +90,29 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         parser.register(() -> "handlerFactory", (s, v, $) -> this.handlerFactory(v.typedMarshallable()));
         parser.register(() -> "heartbeatTimeoutMs", (s, v, $) -> this.heartbeatTimeoutMs(v.int64()));
         parser.register(() -> "heartbeatIntervalMs", (s, v, $) -> this.heartbeatIntervalMs(v.int64()));
-        parser.register(() -> "wireOutPublisherFactory", (s, v, $) -> this.wireOutPublisherFactory(v.typedMarshallable()));
-        parser.register(() -> "networkContextFactory", (s, v, $) -> this.networkContextFactory(v.typedMarshallable()));
-        parser.register(() -> "connectionStrategy", (s, v, $) -> this.connectionStrategy(v.typedMarshallable
-                ()));
-        parser.register(() -> "connectionEventHandler", (s, v, $) -> this.connectionEventHandler(v.typedMarshallable
-                ()));
-
-        parser.register(() -> "heartbeatFactory", (s, v, $) -> this.heartbeatFactory(v.typedMarshallable
-                ()));
-
-        parser.register(() -> "networkStatsListenerFactory", (s, v, $) -> this.networkStatsListenerFactory(v.typedMarshallable
-                ()));
-
+        parser.register(() -> "wireOutPublisherFactory",
+                (s, v, $) -> this.wireOutPublisherFactory(v.typedMarshallable()));
+        parser.register(() -> "networkContextFactory",
+                (s, v, $) -> this.networkContextFactory(v.typedMarshallable()));
+        parser.register(() -> "connectionStrategy",
+                (s, v, $) -> this.connectionStrategy(v.typedMarshallable()));
+        parser.register(() -> "connectionEventHandler",
+                (s, v, $) -> this.connectionEventHandler(v.typedMarshallable()));
+        parser.register(() -> "heartbeatFactory",
+                (s, v, $) -> this.heartbeatFactory(v.typedMarshallable()));
+        parser.register(() -> "networkStatsListenerFactory",
+                (s, v, $) -> this.networkStatsListenerFactory(v.typedMarshallable()));
+        parser.register(() -> "serverThreadingStrategy",
+                (s, v, $) -> this.serverThreadingStrategy(v.asEnum(ServerThreadingStrategy.class)));
         return parser;
+    }
+
+    public void serverThreadingStrategy(ServerThreadingStrategy serverThreadingStrategy) {
+        this.serverThreadingStrategy = serverThreadingStrategy;
+    }
+
+    public ServerThreadingStrategy serverThreadingStrategy() {
+        return serverThreadingStrategy;
     }
 
     private BiFunction<ClusterContext, HostDetails, WriteMarshallable> handlerFactory() {
@@ -143,7 +150,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
     }
 
     public ClusterContext heartbeatFactory(Function<ClusterContext, WriteMarshallable>
-                                               heartbeatFactor) {
+                                                   heartbeatFactor) {
         this.heartbeatFactory = heartbeatFactor;
         return this;
     }
