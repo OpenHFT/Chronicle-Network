@@ -180,6 +180,5 @@ public class WireTcpHandlerTest {
         protected void onInitialize() {
             throw new UnsupportedOperationException("todo");
         }
-
     }
 }

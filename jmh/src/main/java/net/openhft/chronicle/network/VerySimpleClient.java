@@ -76,8 +76,7 @@ public class VerySimpleClient {
                             m.invoke(main);
 
                         }
-
-                    }
+}
                 }
             }
             main.tearDown();

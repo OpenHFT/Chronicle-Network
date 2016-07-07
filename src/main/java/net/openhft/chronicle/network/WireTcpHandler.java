@@ -66,7 +66,6 @@ public abstract class WireTcpHandler<T extends NetworkContext>
             }
     }
 
-
     private static void logYaml(final WireOut outWire) {
         if (YamlLogging.showServerWrites())
             try {
@@ -78,7 +77,6 @@ public abstract class WireTcpHandler<T extends NetworkContext>
                         outWire.bytes().toDebugString());
             }
     }
-
 
     public boolean isAcceptor() {
         return this.isAcceptor;

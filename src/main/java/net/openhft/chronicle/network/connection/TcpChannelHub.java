@@ -75,7 +75,6 @@ public class TcpChannelHub implements Closeable {
 
     public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 64 << 10);
 
-
     private static final int HEATBEAT_PING_PERIOD =
             getInteger("heartbeat.ping.period",
                     Jvm.isDebug() ? 30_000 : 5_000);
@@ -730,7 +729,6 @@ public class TcpChannelHub implements Closeable {
         } finally {
             assert outWire.endUse();
         }
-
     }
 
     private void logToStandardOutMessageSent(@NotNull WireOut wire, @NotNull ByteBuffer outBuffer) {

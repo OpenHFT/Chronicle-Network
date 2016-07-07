@@ -67,7 +67,6 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
                 this.bytes.clear();
             }
         }
-
     }
 
     private void logBuffer() {

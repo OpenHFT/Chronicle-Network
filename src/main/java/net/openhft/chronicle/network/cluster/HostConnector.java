@@ -101,7 +101,6 @@ public class HostConnector implements Closeable {
         nc.wireOutPublisher(wireOutPublisher);
         nc.isAcceptor(false);
 
-
         nc.heartbeatTimeoutMs(clusterContext.heartbeatTimeoutMs() * 2);
         nc.socketReconnector(this::reconnect);
         nc.serverThreadingStrategy(clusterContext.serverThreadingStrategy());

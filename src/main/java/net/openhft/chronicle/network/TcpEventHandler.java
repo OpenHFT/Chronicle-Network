@@ -188,7 +188,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 throw new InvalidEventHandlerException("socket closed " + sc);
             }
 
-
             readLog.idle();
 
             if (nc.heartbeatTimeoutMs() == 0)
@@ -335,7 +334,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         tcpHandler.onWriteTime(writeTime);
 
         writeLog.log(outBBB.underlyingObject(), start, outBBB.underlyingObject().position());
-
 
         if (wrote < 0) {
             closeSC();
