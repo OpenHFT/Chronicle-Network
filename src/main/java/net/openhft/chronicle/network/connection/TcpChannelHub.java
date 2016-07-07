@@ -1049,7 +1049,10 @@ public class TcpChannelHub implements Closeable {
 
                 try {
                     do {
-                        bytes.wait(timeoutTimeMs);
+                        long delay = start + timeoutTimeMs - System.currentTimeMillis();
+                        if (delay <= 0)
+                            break;
+                        bytes.wait(delay);
 
                         if (clientChannel == null)
                             throw new ConnectionDroppedException("Connection Closed : the connection to the " +
