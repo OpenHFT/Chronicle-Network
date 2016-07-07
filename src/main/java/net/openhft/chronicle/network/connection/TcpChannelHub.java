@@ -1047,9 +1047,10 @@ public class TcpChannelHub implements Closeable {
 
                 registerSubscribe(tid, bytes);
 
+                long end = start + timeoutTimeMs;
                 try {
                     do {
-                        long delay = start + timeoutTimeMs - System.currentTimeMillis();
+                        long delay = end - System.currentTimeMillis();
                         if (delay <= 0)
                             break;
                         bytes.wait(delay);
