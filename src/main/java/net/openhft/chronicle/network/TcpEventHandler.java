@@ -114,7 +114,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     @NotNull
     @Override
     public HandlerPriority priority() {
-        switch (nc.serverThreadingStrategy()) {
+        ServerThreadingStrategy sts = nc.serverThreadingStrategy();
+        switch (sts) {
 
             case SINGLE_THREADED:
                 return HandlerPriority.MEDIUM;
