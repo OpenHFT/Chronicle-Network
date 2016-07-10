@@ -41,7 +41,9 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     @NotNull
     protected Wire outWire;
     long lastWritePosition = 0;
-    int writeBps, socketPollCount, bytesReadCount;
+    long writeBps;
+    long bytesReadCount;
+    int socketPollCount;
     long lastMonitor = System.currentTimeMillis();
     @NotNull
     private Wire inWire;
@@ -138,7 +140,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
             if (networkStatsListener != null)
                 networkStatsListener.onNetworkStats(writeBps / 10, bytesReadCount / 10, socketPollCount / 10, nc);
 
-            writeBps = socketPollCount = bytesReadCount = 0;
+            writeBps = bytesReadCount = socketPollCount = 0;
         }
 
         if (publisher != null)
