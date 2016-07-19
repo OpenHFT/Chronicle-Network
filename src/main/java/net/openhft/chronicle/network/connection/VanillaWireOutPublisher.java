@@ -110,10 +110,8 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
                 try {
                     c.accept(outWire);
-
                 } catch (InvalidEventHandlerException e) {
                     consumers.remove(c);
-
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     Jvm.warn().on(getClass(), e);
@@ -141,7 +139,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     }
 
     /**
-     * round robbins - the consumers, we should only write when the buffer is empty, as // we can't
+     * round robins - the consumers, we should only write when the buffer is empty, as we can't
      * guarantee that we will have enough space to add more data to the out wire.
      *
      * @return the  Marshallable that you are writing to
