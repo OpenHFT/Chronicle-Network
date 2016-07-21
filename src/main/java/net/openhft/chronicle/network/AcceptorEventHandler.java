@@ -70,7 +70,8 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
             throw new InvalidEventHandlerException();
 
         try {
-            System.out.println(Thread.currentThread() + " accepting " + ssc);
+            if (LOG.isDebugEnabled())
+                LOG.debug(Thread.currentThread() + " accepting " + ssc);
 
             SocketChannel sc = ssc.accept();
 
