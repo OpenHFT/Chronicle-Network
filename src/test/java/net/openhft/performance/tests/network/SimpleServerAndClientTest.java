@@ -97,7 +97,7 @@ public class SimpleServerAndClientTest {
                     true, TryLock.TRY_LOCK_WARN);
 
             // read the reply from the socket ( timeout after 1 second ), note: we have to pass the tid
-            Wire reply = tcpChannelHub.proxyReply(TimeUnit.SECONDS.toMillis(1), tid);
+            Wire reply = tcpChannelHub.proxyReply(TimeUnit.SECONDS.toMillis(5), tid);
 
             // read the reply and check the result
             reply.readDocument(null, data -> {
