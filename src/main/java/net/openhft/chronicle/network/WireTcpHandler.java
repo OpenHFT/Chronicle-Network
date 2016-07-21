@@ -176,31 +176,17 @@ public abstract class WireTcpHandler<T extends NetworkContext>
         ensureCapacity();
 
         try {
-            boolean first = true;
 
             while (!inWire.bytes().isEmpty()) {
 
-                long pos = inWire.bytes().readPosition();
                 try (DocumentContext dc = inWire.readingDocument()) {
-                    if (!dc.isPresent()) {
-                        if (first) {
-                            final Bytes<?> bytes = inWire.bytes();
-                            final int i = inWire.bytes().readInt(bytes.readPosition());
-                            int length = Wires.lengthOf(i);
-                            if (length > 1 << 20 || i < 0) {
-                                Jvm.warn().on(getClass(), "Failed to read " + length + " pos " + pos);
-                            }
-                        }
+                    if (!dc.isPresent())
                         return;
-                    }
 
-                    first = false;
                     try {
                         logYaml(dc);
                         onRead(dc, outWire);
-
                     } catch (Exception e) {
-                        e.printStackTrace();
                         Jvm.warn().on(getClass(), "inWire=" + inWire.getClass(), e);
                     }
                 }
