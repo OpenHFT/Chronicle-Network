@@ -126,7 +126,6 @@
             <scope>test</scope>
         </dependency>
 
-
     </dependencies>
 
     <build>
@@ -238,7 +237,6 @@
 
         </plugins>
     </build>
-
 
     <scm>
         <url>scm:git:git@github.com:OpenHFT/Chronicle-Network.git</url>
