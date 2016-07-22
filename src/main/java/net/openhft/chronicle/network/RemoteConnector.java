@@ -22,6 +22,7 @@ import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.core.util.ThrowingFunction;
+import net.openhft.chronicle.network.connection.TcpChannelHub;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,9 +37,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class RemoteConnector implements Closeable {
-    private static final int BUFFER_SIZE = 8 << 20;
 
-    private static final Logger LOG = LoggerFactory.getLogger(RemoteConnector.class);
     @NotNull
     private final ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpHandlerSupplier;
 
@@ -48,7 +47,7 @@ public class RemoteConnector implements Closeable {
     private volatile List<Closeable> closeables = new ArrayList<>();
 
     public RemoteConnector(@NotNull final ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpEventHandlerFactory) {
-        this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", BUFFER_SIZE);
+        this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TcpChannelHub.TCP_BUFFER);
         this.tcpHandlerSupplier = tcpEventHandlerFactory;
     }
 
@@ -115,7 +114,6 @@ public class RemoteConnector implements Closeable {
             this.eventLoop = eventLoop;
             this.address = address;
             this.retryInterval = retryInterval;
-
         }
 
         @Override
