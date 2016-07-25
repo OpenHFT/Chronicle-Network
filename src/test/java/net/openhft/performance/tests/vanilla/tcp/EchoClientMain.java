@@ -135,7 +135,8 @@ public class EchoClientMain {
         testThroughput(sockets);
         closeConnections(sockets);
         openConnections(hostnames, PORT, sockets);
-        for (int i : new int[]{/*100000, 100000, */70000, 50000, 30000, 20000})
+        for (int i : new int[]{100_000, 110_000, 120_000, 130_000, 140_000, 150_000})
+//        for (int i : new int[]{50000,40000, 30000, 20000, 15000,10000, 5000})
             testByteLatency(i, sockets);
         closeConnections(sockets);
     }
@@ -155,9 +156,9 @@ public class EchoClientMain {
 
     private static void testThroughput(@NotNull SocketChannel... sockets) throws IOException {
         System.out.println("Starting throughput test, clients=" + CLIENTS);
-        int bufferSize = 32 * 1024;
+        int bufferSize = 16 * 1024;
         ByteBuffer bb = ByteBuffer.allocateDirect(bufferSize);
-        int count = 0, window = 2;
+        int count = 0, window = 5;
         long start = System.nanoTime();
         while (System.nanoTime() - start < 10e9) {
             for (SocketChannel socket : sockets) {
@@ -191,23 +192,29 @@ public class EchoClientMain {
         long[] times = new long[tests * sockets.length];
         int count = 0;
         long now = System.nanoTime();
-        int interval = (int) (1e9 / targetThroughput);
+        int interval = (int) (1e9 * sockets.length / targetThroughput);
 
-        ByteBuffer bb = ByteBuffer.allocateDirect(4);
+        ByteBuffer bb = ByteBuffer.allocateDirect(40);
         bb.putInt(0, 0x12345678);
         Random rand = new Random();
-        for (int i = -20000; i < tests; i++) {
+        long[] start = new long[sockets.length];
+        for (int i = -20000; i < tests; i += sockets.length) {
 
-            for (SocketChannel socket : sockets) {
+            for (int j = 0; j < sockets.length; j++) {
+                SocketChannel socket = sockets[j];
                 now += rand.nextInt(2 * interval);
                 while (System.nanoTime() < now)
                     ;
+                start[j] = now;
 
                 bb.position(0);
                 while (bb.remaining() > 0)
                     if (socket.write(bb) < 0)
                         throw new EOFException();
+            }
 
+            for (int j = 0; j < sockets.length; j++) {
+                SocketChannel socket = sockets[j];
                 bb.position(0);
                 while (bb.remaining() > 0)
                     if (socket.read(bb) < 0)
@@ -217,7 +224,7 @@ public class EchoClientMain {
                     throw new AssertionError("read error");
 
                 if (i >= 0)
-                    times[count++] = System.nanoTime() - now;
+                    times[count++] = System.nanoTime() - start[j];
             }
         }
         System.out.println("Average time " + (Arrays.stream(times).sum()/times.length)/1000);
@@ -228,8 +235,8 @@ public class EchoClientMain {
                 times[times.length * 9 / 10] / 1e3,
                 times[times.length - times.length / 100] / 1000,
                 times[times.length - times.length / 1000] / 1000,
-                times[times.length - times.length / 10000] / 1000,
-                times[times.length - times.length / 100000] / 1000,
+                times[times.length - times.length / 10000 - 1] / 1000,
+                times[times.length - times.length / 100000 - 1] / 1000,
                 times[times.length - 1] / 1000
         );
     }
