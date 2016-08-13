@@ -333,7 +333,8 @@ public abstract class WireTcpHandler<T extends NetworkContext>
 
     public final void nc(T nc) {
         this.nc = nc;
-        onInitialize();
+        if (!closed)
+            onInitialize();
     }
 
     public T nc() {
