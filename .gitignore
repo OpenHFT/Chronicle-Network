@@ -6,7 +6,8 @@
 *.ear
 
 # IntelliJ
-
+.idea
+.iml
 *.ipr
 *.iws
 
