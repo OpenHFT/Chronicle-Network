@@ -55,8 +55,6 @@ public class SimpleServerAndClientTest {
 
     @After
     public void checkThreadDump() {
-        TcpChannelHub.closeAllHubs();
-        TCPRegistry.reset();
 
         threadDump.assertNoNewThreads();
     }
@@ -119,6 +117,9 @@ public class SimpleServerAndClientTest {
                     break;
                 }
 
+            } finally {
+                TcpChannelHub.closeAllHubs();
+                TCPRegistry.reset();
             }
         }
 
