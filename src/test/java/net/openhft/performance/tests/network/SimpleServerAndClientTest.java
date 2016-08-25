@@ -61,7 +61,6 @@ public class SimpleServerAndClientTest {
         threadDump.assertNoNewThreads();
     }
 
-
     @Test
     public void test() throws IOException, TimeoutException, InterruptedException {
         // this the name of a reference to the host name and port,
