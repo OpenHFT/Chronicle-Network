@@ -64,52 +64,63 @@ public class SimpleServerAndClientTest {
     @Test
     // @Ignore("Fails on Teamcity ")
     public void test() throws IOException, TimeoutException, InterruptedException {
-        // this the name of a reference to the host name and port,
-        // allocated automatically when to a free port on localhost
-        final String desc = "host.port";
-        TCPRegistry.createServerSocketChannelFor(desc);
 
-        // we use an event loop rather than lots of threads
-        try (EventLoop eg = new EventGroup(true)) {
-            eg.start();
 
-            // an example message that we are going to send from the server to the client and back
-            final String expectedMessage = "<my message>";
-            createServer(desc, eg);
+        for (; ; ) {
+            // this the name of a reference to the host name and port,
+            // allocated automatically when to a free port on localhost
+            final String desc = "host.port";
+            TCPRegistry.createServerSocketChannelFor(desc);
 
-            Thread.sleep(100);
+            // we use an event loop rather than lots of threads
+            try (EventLoop eg = new EventGroup(true)) {
+                eg.start();
 
-            try (TcpChannelHub tcpChannelHub = createClient(eg, desc)) {
+                // an example message that we are going to send from the server to the client and back
+                final String expectedMessage = "<my message>";
+                createServer(desc, eg);
 
-                // create the message the client sends to the server
+                try (TcpChannelHub tcpChannelHub = createClient(eg, desc)) {
 
-                // the tid must be unique, its reflected back by the server, it must be at the start
-                // of each message sent from the server to the client. Its use by the client to identify which
-                // thread will handle this message
-                final long tid = tcpChannelHub.nextUniqueTransaction(System.currentTimeMillis());
+                    // create the message the client sends to the server
 
-                // we will use a text wire backed by a elasticByteBuffer
-                final Wire wire = new TextWire(Bytes.elasticByteBuffer());
+                    // the tid must be unique, its reflected back by the server, it must be at the start
+                    // of each message sent from the server to the client. Its use by the client to identify which
+                    // thread will handle this message
+                    final long tid = tcpChannelHub.nextUniqueTransaction(System.currentTimeMillis());
 
-                wire.writeDocument(true, w -> w.write(() -> "tid").int64(tid));
-                wire.writeDocument(false, w -> w.write(() -> "payload").text(expectedMessage));
+                    // we will use a text wire backed by a elasticByteBuffer
+                    final Wire wire = new TextWire(Bytes.elasticByteBuffer());
 
-                // write the data to the socket
-                tcpChannelHub.lock2(() -> tcpChannelHub.writeSocket(wire, true),
-                        true, TryLock.TRY_LOCK_WARN);
+                    wire.writeDocument(true, w -> w.write(() -> "tid").int64(tid));
+                    wire.writeDocument(false, w -> w.write(() -> "payload").text(expectedMessage));
 
-                // read the reply from the socket ( timeout after 5 second ), note: we have to pass
-                // the tid
-                Wire reply = tcpChannelHub.proxyReply(TimeUnit.SECONDS.toMillis(5), tid);
+                    // write the data to the socket
+                    tcpChannelHub.lock2(() -> tcpChannelHub.writeSocket(wire, true),
+                            true, TryLock.TRY_LOCK_WARN);
 
-                // read the reply and check the result
-                reply.readDocument(null, data -> {
-                    final String text = data.read(() -> "payloadResponse").text();
-                    Assert.assertEquals(expectedMessage, text);
-                });
+                    // read the reply from the socket ( timeout after 5 second ), note: we have to pass
+                    // the tid
+                    try {
+                        Wire reply = tcpChannelHub.proxyReply(TimeUnit.SECONDS.toMillis(100), tid);
 
+                        // read the reply and check the result
+                        reply.readDocument(null, data -> {
+                            final String text = data.read(() -> "payloadResponse").text();
+                            Assert.assertEquals(expectedMessage, text);
+                        });
+
+                    } catch (TimeoutException e) {
+                        // retry
+                        continue;
+                    }
+
+                }
+                eg.stop();
+            } finally {
+                TcpChannelHub.closeAllHubs();
+                TCPRegistry.reset();
             }
-            eg.stop();
         }
 
     }
