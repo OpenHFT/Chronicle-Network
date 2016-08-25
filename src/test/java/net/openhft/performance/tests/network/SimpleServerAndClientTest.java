@@ -80,6 +80,8 @@ public class SimpleServerAndClientTest {
                 final String expectedMessage = "<my message>";
                 createServer(desc, eg);
 
+                Thread.sleep(500);
+
                 try (TcpChannelHub tcpChannelHub = createClient(eg, desc)) {
 
                     // create the message the client sends to the server
