@@ -63,7 +63,6 @@ public class SimpleServerAndClientTest {
 
 
     @Test
-    //  @Ignore("Fails on Teamcity ")
     public void test() throws IOException, TimeoutException, InterruptedException {
         // this the name of a reference to the host name and port,
         // allocated automatically when to a free port on localhost
