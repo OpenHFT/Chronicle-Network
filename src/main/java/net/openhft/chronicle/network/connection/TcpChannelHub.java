@@ -1025,7 +1025,6 @@ public class TcpChannelHub implements Closeable {
          *
          * @param timeoutTimeMs the amount of time to wait before a time out exceptions
          * @param tid           the {@code tid} of the message that we are waiting for
-         * @throws InterruptedException
          */
         Wire syncBlockingReadSocket(final long timeoutTimeMs, long tid)
                 throws TimeoutException, ConnectionDroppedException {
