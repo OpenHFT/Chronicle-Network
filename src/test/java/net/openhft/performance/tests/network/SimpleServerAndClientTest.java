@@ -37,7 +37,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri;
@@ -102,7 +101,7 @@ public class SimpleServerAndClientTest {
                     // read the reply from the socket ( timeout after 5 second ), note: we have to pass
                     // the tid
                     try {
-                        Wire reply = tcpChannelHub.proxyReply(TimeUnit.SECONDS.toMillis(100), tid);
+                        Wire reply = tcpChannelHub.proxyReply(500, tid);
 
                         // read the reply and check the result
                         reply.readDocument(null, data -> {
