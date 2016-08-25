@@ -2,7 +2,7 @@
 <project version="4">
   <component name="BuildServerSettings">
     <option name="LOGIN" value="" />
-    <option name="SERVER_URL" value="http://buildserver" />
+    <option name="SERVER_URL" value="http://teamcity.higherfrequencytrading.com:8111" />
     <option name="PASSWORD" />
     <option name="REMEMBER_ME" value="true" />
     <option name="USE_IDEA_PROXY_SETTINGS" value="true" />
