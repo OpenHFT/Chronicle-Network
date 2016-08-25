@@ -61,9 +61,18 @@ public class SimpleServerAndClientTest {
         threadDump.assertNoNewThreads();
     }
 
+    /*   @Test
+       //  @Ignore("Fails on Teamcity ")
+       public void test2() throws IOException, TimeoutException, InterruptedException {
+
+           for (int i = 0; i < 100; i++) {
+               test();
+           }
+       }
+   */
     @Test
     //  @Ignore("Fails on Teamcity ")
-    public void test() throws IOException, TimeoutException {
+    public void test() throws IOException, TimeoutException, InterruptedException {
         // this the name of a reference to the host name and port,
         // allocated automatically when to a free port on localhost
         final String desc = "host.port";
@@ -76,7 +85,7 @@ public class SimpleServerAndClientTest {
             // an example message that we are going to send from the server to the client and back
             final String expectedMessage = "<my message>";
             createServer(desc, eg);
-
+            Thread.sleep(1);
             try (TcpChannelHub tcpChannelHub = createClient(eg, desc)) {
 
                 // create the message the client sends to the server
@@ -106,6 +115,9 @@ public class SimpleServerAndClientTest {
                 });
 
             }
+        } finally {
+            TcpChannelHub.closeAllHubs();
+            TCPRegistry.reset();
         }
     }
 
