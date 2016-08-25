@@ -107,10 +107,9 @@ public class SimpleServerAndClientTest {
                 });
 
             }
-        } finally {
-            TcpChannelHub.closeAllHubs();
-            TCPRegistry.reset();
+            eg.stop();
         }
+
     }
 
     @NotNull
