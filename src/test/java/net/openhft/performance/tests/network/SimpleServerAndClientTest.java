@@ -59,7 +59,6 @@ public class SimpleServerAndClientTest {
     }
 
     @Test
-    // @Ignore("Fails on Teamcity ")
     public void test() throws IOException, TimeoutException, InterruptedException {
 
 
@@ -110,6 +109,11 @@ public class SimpleServerAndClientTest {
                     } catch (TimeoutException e) {
                         // retry, you will get this is the client attempts to send a message to
                         // the server and the server is not running or ready
+                        // note :  that net.openhft.chronicle.network.TCPRegistry
+                        // .createServerSocketChannelFor()
+                        // opens a server socket, that does not mean that there is a server
+                        // running to read this, for example if you commented out "createServer(desc, eg); "
+                        // and this time out exception will be thrown
                         continue;
                     }
                     break;
