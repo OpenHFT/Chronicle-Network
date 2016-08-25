@@ -114,12 +114,9 @@ public class SimpleServerAndClientTest {
                         // retry
                         continue;
                     }
-
+                    break;
                 }
-                eg.stop();
-            } finally {
-                TcpChannelHub.closeAllHubs();
-                TCPRegistry.reset();
+
             }
         }
 
