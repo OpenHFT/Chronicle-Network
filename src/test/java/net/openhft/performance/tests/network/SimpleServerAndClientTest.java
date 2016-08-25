@@ -73,6 +73,7 @@ public class SimpleServerAndClientTest {
         EventLoop eg = new EventGroup(true);
         eg.start();
 
+
         // an example message that we are going to send from the server to the client and back
         final String expectedMessage = "<my message>";
         createServer(desc, eg);
