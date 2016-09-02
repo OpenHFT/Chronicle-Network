@@ -46,7 +46,7 @@
             <dependency>
                 <groupId>net.openhft</groupId>
                 <artifactId>chronicle-bom</artifactId>
-                <version>1.13.4</version>
+                <version>1.13.24-SNAPSHOT</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -70,6 +70,7 @@
         <dependency>
             <groupId>net.openhft</groupId>
             <artifactId>chronicle-threads</artifactId>
+            <version>1.7.3-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -80,6 +81,7 @@
         <dependency>
             <groupId>net.openhft</groupId>
             <artifactId>chronicle-wire</artifactId>
+            <version>1.7.13-SNAPSHOT</version>
         </dependency>
 
         <!-- test dependencies -->
