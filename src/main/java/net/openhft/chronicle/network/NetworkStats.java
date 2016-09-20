@@ -26,14 +26,24 @@ public interface NetworkStats<T extends NetworkStats> {
 
     T userId(String userId);
 
+    /**
+     * @return bytes per second
+     */
     long writeBps();
 
     T writeBps(long writeBps);
 
+    /**
+     * @return bytes per second
+     */
     long readBps();
 
     T readBps(long readBps);
 
+    /**
+     * @return how many times was a socket read attempted within a second, a low number here is an
+     * indication that your system may be struggling to keep up
+     */
     long socketPollCountPerSecond();
 
     T socketPollCountPerSecond(long socketPollCountPerSecond);
@@ -50,10 +60,17 @@ public interface NetworkStats<T extends NetworkStats> {
 
     String userId();
 
+    /**
+     * @return the identifier of this instance of engine
+     */
     long localIdentifier();
 
-    T localIdentifier(long localIdentifer);
+    T localIdentifier(long localIdentifier);
 
+
+    /**
+     * the identifier of the remote instance of engine
+     */
     long remoteIdentifier();
 
     T remoteIdentifier(long remoteIdentifier);
