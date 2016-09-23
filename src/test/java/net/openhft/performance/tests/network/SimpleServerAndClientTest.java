@@ -98,7 +98,7 @@ public class SimpleServerAndClientTest {
                     // read the reply from the socket ( timeout after 5 second ), note: we have to pass
                     // the tid
                     try {
-                        Wire reply = tcpChannelHub.proxyReply(500, tid);
+                        Wire reply = tcpChannelHub.proxyReply(5000, tid);
 
                         // read the reply and check the result
                         reply.readDocument(null, data -> {
