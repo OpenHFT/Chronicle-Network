@@ -24,7 +24,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public interface NetworkStatsListener<N extends NetworkContext> {
     void onNetworkStats(long writeBps, long readBps, long socketPollCountPerSecond,
-                        @NotNull N networkContext);
+                        @NotNull N networkContext, boolean connectionStatus);
 
     void onHostPort(String hostName, int port);
 }

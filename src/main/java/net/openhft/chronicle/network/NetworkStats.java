@@ -82,4 +82,8 @@ public interface NetworkStats<T extends NetworkStats> {
     String hostName();
 
     int port();
+
+    boolean isConnected();
+
+    void isConnected(boolean isConnected);
 }

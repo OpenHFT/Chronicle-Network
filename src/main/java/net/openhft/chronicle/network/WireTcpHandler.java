@@ -44,7 +44,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     long writeBps;
     long bytesReadCount;
     int socketPollCount;
-    long lastMonitor = System.currentTimeMillis();
+    long lastMonitor;
     @NotNull
     private Wire inWire;
     private boolean recreateWire;
@@ -132,13 +132,20 @@ public abstract class WireTcpHandler<T extends NetworkContext>
 
         long now = System.currentTimeMillis();
         if (now > lastMonitor + 10000) {
-            lastMonitor = now;
-
             final NetworkStatsListener networkStatsListener = nc().networkStatsListener();
-            if (networkStatsListener != null)
-                networkStatsListener.onNetworkStats(writeBps / 10, bytesReadCount / 10, socketPollCount / 10, nc);
 
-            writeBps = bytesReadCount = socketPollCount = 0;
+            if (networkStatsListener != null) {
+                if (lastMonitor == 0) {
+                    networkStatsListener.onNetworkStats(0, 0, 0, nc, true);
+                } else {
+                    networkStatsListener.onNetworkStats(writeBps / 10, bytesReadCount / 10,
+                                socketPollCount / 10, nc, true);
+
+                    writeBps = bytesReadCount = socketPollCount = 0;
+                }
+            }
+
+            lastMonitor = now;
         }
 
         if (publisher != null)
@@ -159,6 +166,11 @@ public abstract class WireTcpHandler<T extends NetworkContext>
 
     @Override
     public void onEndOfConnection(boolean heartbeatTimeOut) {
+        final NetworkStatsListener networkStatsListener = nc().networkStatsListener();
+
+        networkStatsListener.onNetworkStats(writeBps / 10, bytesReadCount / 10, socketPollCount /
+                10, nc, false);
+
         if (publisher != null)
             publisher.close();
     }
