@@ -139,12 +139,11 @@ public abstract class WireTcpHandler<T extends NetworkContext>
                     networkStatsListener.onNetworkStats(0, 0, 0, nc, true);
                 } else {
                     networkStatsListener.onNetworkStats(writeBps / 10, bytesReadCount / 10,
-                                socketPollCount / 10, nc, true);
+                            socketPollCount / 10, nc, true);
 
                     writeBps = bytesReadCount = socketPollCount = 0;
                 }
             }
-
             lastMonitor = now;
         }
 
@@ -168,8 +167,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     public void onEndOfConnection(boolean heartbeatTimeOut) {
         final NetworkStatsListener networkStatsListener = nc().networkStatsListener();
 
-        networkStatsListener.onNetworkStats(writeBps / 10, bytesReadCount / 10, socketPollCount /
-                10, nc, false);
+        networkStatsListener.onNetworkStats(-1, -1, -1, nc, false);
 
         if (publisher != null)
             publisher.close();
