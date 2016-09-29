@@ -21,7 +21,7 @@ import net.openhft.chronicle.wire.AbstractMarshallable;
 
 import java.util.UUID;
 
-public class WireNetworkStats extends AbstractMarshallable implements NetworkStats {
+public class WireNetworkStats extends AbstractMarshallable implements NetworkStats<WireNetworkStats> {
     private long writeBps, readBps, socketPollCountPerSecond;
     private long timestamp;
     private long localIdentifier;
@@ -35,6 +35,11 @@ public class WireNetworkStats extends AbstractMarshallable implements NetworkSta
     public WireNetworkStats(int localIdentifier) {
         this.localIdentifier = localIdentifier;
     }
+
+    public WireNetworkStats() {
+
+    }
+
 
     @Override
     public WireNetworkStats hostName(String hostName) {
