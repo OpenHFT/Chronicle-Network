@@ -598,7 +598,6 @@ public class TcpChannelHub implements Closeable {
      * @param timeoutTime the amount of time to wait ( in MS ) before a time out exceptions
      * @param tid         the {@code tid} of the message that we are waiting for
      * @return the wire of the message with the {@code tid}
-     * @throws ConnectionDroppedException
      */
     public Wire proxyReply(long timeoutTime, final long tid) throws ConnectionDroppedException, TimeoutException {
 
@@ -619,9 +618,7 @@ public class TcpChannelHub implements Closeable {
     /**
      * writes the bytes to the socket, onto the clientChannel provided
      *
-     * @param outWire       the data that you wish to write
-     * @param clientChannel
-     * @throws IOException
+     * @param outWire the data that you wish to write
      */
     private void writeSocket1(@NotNull WireOut outWire, @Nullable SocketChannel clientChannel) throws
             IOException {

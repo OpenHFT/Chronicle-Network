@@ -17,12 +17,15 @@
 
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.wire.ReadMarshallable;
+import net.openhft.chronicle.wire.WriteMarshallable;
+
 import java.util.UUID;
 
 /**
  * used to collected stats about the network activity
  */
-public interface NetworkStats<T extends NetworkStats> {
+public interface NetworkStats<T extends NetworkStats> extends ReadMarshallable, WriteMarshallable {
 
     T userId(String userId);
 
@@ -82,4 +85,8 @@ public interface NetworkStats<T extends NetworkStats> {
     String hostName();
 
     int port();
+
+    boolean isConnected();
+
+    void isConnected(boolean isConnected);
 }

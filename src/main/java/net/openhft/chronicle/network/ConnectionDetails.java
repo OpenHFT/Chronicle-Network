@@ -27,6 +27,8 @@ public class ConnectionDetails extends VanillaNetworkContext {
 
     public ConnectionDetails(String id, String hostNameDescription) {
         this.id = id;
+        sessionDetails(new VanillaSessionDetails());
+        sessionDetails().userId(id);
         this.hostNameDescription = hostNameDescription;
     }
 
