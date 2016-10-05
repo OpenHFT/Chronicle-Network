@@ -7,7 +7,7 @@
 
 # IntelliJ
 .idea
-.iml
+*.iml
 *.ipr
 *.iws
 
