@@ -37,9 +37,7 @@ public class WireNetworkStats extends AbstractMarshallable implements NetworkSta
     }
 
     public WireNetworkStats() {
-
     }
-
 
     @Override
     public WireNetworkStats hostName(String hostName) {
@@ -163,4 +161,5 @@ public class WireNetworkStats extends AbstractMarshallable implements NetworkSta
     public void isConnected(boolean isConnected) {
         this.isConnected = isConnected;
     }
+
 }
