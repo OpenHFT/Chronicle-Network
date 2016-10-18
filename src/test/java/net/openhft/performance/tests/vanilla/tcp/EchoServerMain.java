@@ -16,7 +16,6 @@
 
 package net.openhft.performance.tests.vanilla.tcp;
 
-import net.openhft.affinity.Affinity;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -41,7 +40,7 @@ public class EchoServerMain {
         AtomicReference<SocketChannel> nextSocket = new AtomicReference<>();
 
         new Thread(() -> {
-            Affinity.setAffinity(3);
+//            Affinity.setAffinity(3);
 
             ByteBuffer bb = ByteBuffer.allocateDirect(32 * 1024);
             ByteBuffer bb2 = ByteBuffer.allocateDirect(32 * 1024);
