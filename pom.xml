@@ -27,7 +27,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>chronicle-network</artifactId>
-    <version>1.7.2-SNAPSHOT</version>
+    <version>1.7.3-SNAPSHOT</version>
     <name>OpenHFT/Chronicle-Network</name>
     <description>Chronicle-Network</description>
     <packaging>bundle</packaging>
@@ -70,7 +70,6 @@
         <dependency>
             <groupId>net.openhft</groupId>
             <artifactId>chronicle-threads</artifactId>
-            <version>1.7.3-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -81,7 +80,6 @@
         <dependency>
             <groupId>net.openhft</groupId>
             <artifactId>chronicle-wire</artifactId>
-            <version>1.7.13-SNAPSHOT</version>
         </dependency>
 
         <!-- test dependencies -->
