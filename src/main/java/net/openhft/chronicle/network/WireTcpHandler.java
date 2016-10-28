@@ -167,7 +167,8 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     public void onEndOfConnection(boolean heartbeatTimeOut) {
         final NetworkStatsListener networkStatsListener = nc().networkStatsListener();
 
-        networkStatsListener.onNetworkStats(-1, -1, -1, nc, false);
+        if (networkStatsListener != null)
+            networkStatsListener.onNetworkStats(-1, -1, -1, nc, false);
 
         if (publisher != null)
             publisher.close();
