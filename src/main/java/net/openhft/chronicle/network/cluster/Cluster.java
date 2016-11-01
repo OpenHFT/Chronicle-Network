@@ -41,7 +41,7 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
         this.clusterName = clusterName;
     }
 
-    protected C clusterContext() {
+    public C clusterContext() {
         return (C) clusterContext;
     }
 
@@ -78,10 +78,10 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
     }
 
     @Nullable
-    private HostDetails findHostDetails(int remoteIdentifier) {
+    public HostDetails findHostDetails(int id) {
 
         for (HostDetails hd : hostDetails.values()) {
-            if (hd.hostId() == remoteIdentifier)
+            if (hd.hostId() == id)
                 return hd;
         }
         return null;

@@ -97,7 +97,6 @@ public class HostConnector implements Closeable {
         // we will send the initial header as text wire, then the rest will be sent in
         // what ever wire is configured
         nc = networkContextFactory.apply(clusterContext);
-        WireType wireType = nc.wireType();
         nc.wireOutPublisher(wireOutPublisher);
         nc.isAcceptor(false);
 
@@ -125,7 +124,7 @@ public class HostConnector implements Closeable {
         for (WriteMarshallable bootstrap : bootstraps) {
             wireOutPublisher.publish(bootstrap);
 
-            // its only the uberhandler that we want to publish using TEXT_WIRE
+            // its only the uber-handler that we want to publish using TEXT_WIRE
             if (firstTime)
                 wireOutPublisher.wireType(this.wireType);
         }
