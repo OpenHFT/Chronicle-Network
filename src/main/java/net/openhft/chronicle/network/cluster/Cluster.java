@@ -41,6 +41,10 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
         this.clusterName = clusterName;
     }
 
+    public String clusterName() {
+        return clusterName;
+    }
+
     public C clusterContext() {
         return (C) clusterContext;
     }
