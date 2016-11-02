@@ -61,7 +61,7 @@ public class TerminatorHandler extends AbstractSubHandler<NetworkContext> implem
     public void onInitialize(@NotNull WireOut outWire) {
         if (isClosed.getAndSet(true))
             return;
-        nc().terminationEventHandler().onTerminate();
+        nc().terminationEventHandler().onTerminate(nc());
         Closeable.closeQuietly(closable());
     }
 

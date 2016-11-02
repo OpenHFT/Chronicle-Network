@@ -57,9 +57,9 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     private long lastReadRemaining;
 
     private static void logYaml(final DocumentContext dc) {
-        if (YamlLogging.showServerWrites())
+        if (YamlLogging.showServerWrites() || YamlLogging.showServerReads())
             try {
-                LOG.info("\nServer Sends:\n" +
+                LOG.info("\nDocumentContext:\n" +
                         Wires.fromSizePrefixedBlobs(dc));
 
             } catch (Exception e) {
@@ -195,7 +195,8 @@ public abstract class WireTcpHandler<T extends NetworkContext>
                         return;
 
                     try {
-                        logYaml(dc);
+                        if (YamlLogging.showServerReads())
+                            logYaml(dc);
                         onRead(dc, outWire);
                     } catch (Exception e) {
                         Jvm.warn().on(getClass(), "inWire=" + inWire.getClass(), e);

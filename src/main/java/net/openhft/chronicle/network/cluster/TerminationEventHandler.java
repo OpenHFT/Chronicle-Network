@@ -16,11 +16,13 @@
 
 package net.openhft.chronicle.network.cluster;
 
+import net.openhft.chronicle.network.NetworkContext;
+
 /**
  * @author Rob Austin.
  */
 public interface TerminationEventHandler {
-    void onTerminate();
+    void onTerminate(final NetworkContext nc);
 
     boolean isTerminated();
 }

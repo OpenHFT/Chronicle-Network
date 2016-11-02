@@ -27,16 +27,16 @@ import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 /**
  * @author Rob Austin.
  */
-class ClusterNotifier<E extends HostDetails> implements TerminationEventHandler, ConnectionChangedNotifier {
+class ClusterNotifier implements TerminationEventHandler, ConnectionChangedNotifier {
 
     private final List<WriteMarshallable> bootstaps;
     private final AtomicBoolean terminated = new AtomicBoolean();
     private final ConnectionChangedNotifier connectionManager;
     private final HostConnector hostConnector;
 
-    <E extends HostDetails> ClusterNotifier(ConnectionChangedNotifier connectionManager,
-                                            HostConnector hostConnector,
-                                            List<WriteMarshallable> bootstaps) {
+    ClusterNotifier(ConnectionChangedNotifier connectionManager,
+                    HostConnector hostConnector,
+                    List<WriteMarshallable> bootstaps) {
         this.connectionManager = connectionManager;
         this.hostConnector = hostConnector;
         this.bootstaps = bootstaps;
@@ -54,7 +54,6 @@ class ClusterNotifier<E extends HostDetails> implements TerminationEventHandler,
             onClose();
 
         connectionManager.onConnectionChanged(isConnected, nc);
-
     }
 
     private void onClose() {
@@ -68,9 +67,10 @@ class ClusterNotifier<E extends HostDetails> implements TerminationEventHandler,
     }
 
     @Override
-    public void onTerminate() {
+    public void onTerminate(final NetworkContext nc) {
         terminated.set(true);
         hostConnector.close();
+        connectionManager.onConnectionChanged(false, nc);
     }
 
     @Override
