@@ -18,31 +18,37 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.wire.AbstractMarshallable;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
-public class WireNetworkStats extends AbstractMarshallable implements NetworkStats<WireNetworkStats> {
+public class WireNetworkStats extends AbstractMarshallable implements
+        NetworkStats<WireNetworkStats> {
     private long writeBps, readBps, socketPollCountPerSecond;
     private long timestamp;
     private long localIdentifier;
     private long remoteIdentifier;
-    private int port;
-    private UUID clientId;
-    private String hostName;
+    private String remoteHostName;
+    private int remotePort;
     private String userId;
+    private UUID clientId;
     private boolean isConnected;
+    private Enum wireType;
+
+    public Enum wireType() {
+        return wireType;
+    }
+
+    public WireNetworkStats wireType(Enum wireType) {
+        this.wireType = wireType;
+        return this;
+    }
 
     public WireNetworkStats(int localIdentifier) {
         this.localIdentifier = localIdentifier;
     }
 
     public WireNetworkStats() {
-    }
-
-    @Override
-    public WireNetworkStats hostName(String hostName) {
-        this.hostName = hostName;
-        return this;
     }
 
     @Override
@@ -101,13 +107,14 @@ public class WireNetworkStats extends AbstractMarshallable implements NetworkSta
     }
 
     @Override
-    public void host(String hostName) {
-        this.hostName = hostName;
+    public synchronized WireNetworkStats remoteHostName(@NotNull String hostName) {
+        this.remoteHostName = hostName;
+        return this;
     }
 
     @Override
-    public void port(int port) {
-        this.port = port;
+    public synchronized void remotePort(int port) {
+        this.remotePort = port;
     }
 
     @Override
@@ -143,13 +150,13 @@ public class WireNetworkStats extends AbstractMarshallable implements NetworkSta
     }
 
     @Override
-    public String hostName() {
-        return hostName;
+    public synchronized String remoteHostName() {
+        return remoteHostName;
     }
 
     @Override
-    public int port() {
-        return port;
+    public synchronized int remotePort() {
+        return remotePort;
     }
 
     @Override

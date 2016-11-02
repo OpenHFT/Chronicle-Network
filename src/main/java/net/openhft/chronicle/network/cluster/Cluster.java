@@ -54,13 +54,11 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
 
         hostDetails.clear();
 
-        if (!wire.hasMore())
+        if (wire.isEmpty())
             return;
-        while (wire.hasMore()) {
-
-            StringBuilder sb = Wires.acquireStringBuilder();
-
-            ValueIn valueIn = wire.readEventName(sb);
+        while (!wire.isEmpty()) {
+            final StringBuilder sb = Wires.acquireStringBuilder();
+            final ValueIn valueIn = wire.readEventName(sb);
 
             if ("context".contentEquals(sb)) {
                 clusterContext = (C) valueIn.typedMarshallable();

@@ -55,11 +55,9 @@ public interface NetworkStats<T extends NetworkStats> extends ReadMarshallable, 
 
     T timestamp(long timestamp);
 
-    void host(String hostName);
+    void remotePort(int port);
 
-    void port(int port);
-
-    T hostName(String hostName);
+    T remoteHostName(String hostName);
 
     String userId();
 
@@ -82,9 +80,9 @@ public interface NetworkStats<T extends NetworkStats> extends ReadMarshallable, 
 
     UUID clientId();
 
-    String hostName();
+    String remoteHostName();
 
-    int port();
+    int remotePort();
 
     boolean isConnected();
 

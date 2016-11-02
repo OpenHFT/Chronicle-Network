@@ -26,7 +26,6 @@ import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.WriteMarshallable;
 import org.jetbrains.annotations.NotNull;
 
-import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
 import java.util.List;
@@ -76,6 +75,7 @@ public class HostConnector implements Closeable {
 
         if (wp != null)
             wp.close();
+
     }
 
     public synchronized void bootstrap(WriteMarshallable subscription) {
@@ -106,17 +106,6 @@ public class HostConnector implements Closeable {
 
         if (networkStatsListenerFactory != null) {
             final NetworkStatsListener networkStatsListener = networkStatsListenerFactory.apply(clusterContext);
-            SocketChannel socketChannel = nc.socketChannel();
-            if (socketChannel != null
-                    && socketChannel.socket() != null
-                    && socketChannel.socket().getRemoteSocketAddress()
-                    instanceof
-                    InetSocketAddress) {
-                InetSocketAddress remoteSocketAddress = (InetSocketAddress) socketChannel.socket().getRemoteSocketAddress();
-                networkStatsListener.onHostPort(remoteSocketAddress.getHostName(),
-                        remoteSocketAddress.getPort());
-            }
-
             nc.networkStatsListener(networkStatsListener);
         }
 
