@@ -74,8 +74,9 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
 
         }
 
-        if (clusterContext == null)
-            throw new IllegalStateException("required field 'context' is missing.");
+        // commented out as this causes issues with the chronicle-engine gui
+        //  if (clusterContext == null)
+        //       throw new IllegalStateException("required field 'context' is missing.");
 
     }
 
