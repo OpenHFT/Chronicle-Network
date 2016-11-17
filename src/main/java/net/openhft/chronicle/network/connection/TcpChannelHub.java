@@ -1781,12 +1781,14 @@ public class TcpChannelHub implements Closeable {
                             Jvm.debug().on(getClass(), "successfully connected to remoteAddress=" +
                                     socketAddressSupplier);
                         onReconnect();
-                        onConnected();
+
                         condition.signalAll();
                     } finally {
                         outBytesLock().unlock();
                         assert !outBytesLock.isHeldByCurrentThread();
                     }
+
+                    onConnected();
 
                     return;
                 } catch (Exception e) {
