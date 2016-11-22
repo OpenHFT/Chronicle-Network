@@ -1783,12 +1783,12 @@ public class TcpChannelHub implements Closeable {
                         onReconnect();
 
                         condition.signalAll();
+                        onConnected();
                     } finally {
                         outBytesLock().unlock();
                         assert !outBytesLock.isHeldByCurrentThread();
                     }
 
-                    onConnected();
 
                     return;
                 } catch (Exception e) {
