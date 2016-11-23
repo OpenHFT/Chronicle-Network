@@ -62,7 +62,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
             <dependency>
                 <groupId>net.openhft</groupId>
                 <artifactId>chronicle-bom</artifactId>
-                <version>1.13.34</version>
+                <version>1.13.36</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
