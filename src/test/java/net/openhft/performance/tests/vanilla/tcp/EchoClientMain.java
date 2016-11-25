@@ -199,18 +199,19 @@ public class EchoClientMain {
         Random rand = new Random();
         long[] start = new long[sockets.length];
         for (int i = -20000; i < tests; i += sockets.length) {
-
+            now += rand.nextInt(2 * interval);
+            while (System.nanoTime() < now)
+                ;
+            long next = now;
             for (int j = 0; j < sockets.length; j++) {
                 SocketChannel socket = sockets[j];
-                now += rand.nextInt(2 * interval);
-                while (System.nanoTime() < now)
-                    ;
-                start[j] = now;
-
+                start[j] = next;
+                long start0 = System.nanoTime();
                 bb.position(0);
                 while (bb.remaining() > 0)
                     if (socket.write(bb) < 0)
                         throw new EOFException();
+                next = System.nanoTime() - start0;
             }
 
             for (int j = 0; j < sockets.length; j++) {
@@ -227,7 +228,7 @@ public class EchoClientMain {
                     times[count++] = System.nanoTime() - start[j];
             }
         }
-        System.out.println("Average time " + (Arrays.stream(times).sum()/times.length)/1000);
+        System.out.println("Average time " + (Arrays.stream(times).sum() / times.length) / 1000);
         Arrays.sort(times);
         System.out.printf("%d clients: Loop back echo latency was %.1f/%.1f %,d/%,d %,d/%d %,d us for 50/90 99/99.9 99.99/99.999 worst %%tile%n",
                 CLIENTS,
