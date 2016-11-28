@@ -191,6 +191,12 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         return proxyReturnWireConsumer(eventId, ValueIn::int32);
     }
 
+    protected int proxyReturnInt(@NotNull final E eventId, @NotNull Object... args) {
+        return proxyReturnWireConsumerInOut(eventId,
+                CoreFields.reply,
+                toParameters(eventId, args), ValueIn::int32);
+    }
+
     protected byte proxyReturnByte(@NotNull final WireKey eventId) {
         return proxyReturnWireConsumer(eventId, ValueIn::int8);
     }
@@ -220,7 +226,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
     }
 
     @SuppressWarnings("SameParameterValue")
-    private void proxyReturnVoid(@NotNull final WireKey eventId,
+    protected void proxyReturnVoid(@NotNull final WireKey eventId,
                                  @Nullable final WriteValue consumer) {
         final long startTime = Time.currentTimeMillis();
 

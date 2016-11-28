@@ -255,7 +255,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             }
         } while (lastInBBBReadPosition != inBBB.readPosition());
 
-        // TODO Optimise.
         if (inBBB.readRemaining() == 0) {
             inBBB.clear();
             ByteBuffer inBB = inBBB.underlyingObject();

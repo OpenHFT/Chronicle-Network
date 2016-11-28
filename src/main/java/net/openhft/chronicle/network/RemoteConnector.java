@@ -20,12 +20,11 @@ import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
+import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -96,6 +95,11 @@ public class RemoteConnector implements Closeable {
     }
 
     private class RCEventHandler implements EventHandler, Closeable {
+
+        @Override
+        public HandlerPriority priority() {
+            return HandlerPriority.BLOCKING;
+        }
 
         private final InetSocketAddress address;
         private final AtomicLong nextPeriod = new AtomicLong();
