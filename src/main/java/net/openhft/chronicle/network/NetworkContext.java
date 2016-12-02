@@ -16,6 +16,7 @@
 
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.cluster.TerminationEventHandler;
@@ -24,7 +25,7 @@ import net.openhft.chronicle.wire.WireType;
 
 import java.nio.channels.SocketChannel;
 
-public interface NetworkContext<T extends NetworkContext> {
+public interface NetworkContext<T extends NetworkContext> extends Closeable {
 
     void onHandlerChanged(TcpHandler handler);
 
@@ -47,8 +48,6 @@ public interface NetworkContext<T extends NetworkContext> {
     SessionDetailsProvider sessionDetails();
 
     T sessionDetails(SessionDetailsProvider sessionDetails);
-
-    void connectionClosed(boolean isClosed);
 
     TerminationEventHandler terminationEventHandler();
 
@@ -73,12 +72,12 @@ public interface NetworkContext<T extends NetworkContext> {
     default ConnectionListener acquireConnectionListener() {
         return new ConnectionListener() {
             @Override
-            public void onConnected(int localIdentifier, int remoteIdentifier) {
+            public void onConnected(int localIdentifier, int remoteIdentifier, boolean isAcceptor) {
 
             }
 
             @Override
-            public void onDisconnected(int localIdentifier, int remoteIdentifier) {
+            public void onDisconnected(int localIdentifier, int remoteIdentifier, boolean isAcceptor) {
 
             }
         };

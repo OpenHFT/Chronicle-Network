@@ -22,7 +22,7 @@ package net.openhft.chronicle.network;
  */
 public interface ConnectionListener {
 
-    void onConnected(int localIdentifier, int remoteIdentifier);
+    void onConnected(int localIdentifier, int remoteIdentifier, boolean isAcceptor);
 
-    void onDisconnected(int localIdentifier, int remoteIdentifier);
+    void onDisconnected(int localIdentifier, int remoteIdentifier, boolean isAcceptor);
 }

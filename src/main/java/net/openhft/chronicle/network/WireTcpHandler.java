@@ -19,6 +19,7 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.Nullable;
+import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.*;
@@ -136,10 +137,10 @@ public abstract class WireTcpHandler<T extends NetworkContext>
 
             if (networkStatsListener != null) {
                 if (lastMonitor == 0) {
-                    networkStatsListener.onNetworkStats(0, 0, 0, nc, true);
+                    networkStatsListener.onNetworkStats(0, 0, 0);
                 } else {
                     networkStatsListener.onNetworkStats(writeBps / 10, bytesReadCount / 10,
-                            socketPollCount / 10, nc, true);
+                            socketPollCount / 10);
 
                     writeBps = bytesReadCount = socketPollCount = 0;
                 }
@@ -168,7 +169,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
         final NetworkStatsListener networkStatsListener = nc().networkStatsListener();
 
         if (networkStatsListener != null)
-            networkStatsListener.onNetworkStats(-1, -1, -1, nc, false);
+            networkStatsListener.onNetworkStats(-1, -1, -1);
 
         if (publisher != null)
             publisher.close();
@@ -358,7 +359,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     @Override
     public void close() {
         closed = true;
-        nc.connectionClosed(true);
+        Closeable.closeQuietly(nc);
     }
 
     protected void publish(WriteMarshallable w) {

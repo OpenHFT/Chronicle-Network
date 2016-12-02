@@ -35,6 +35,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static net.openhft.chronicle.network.NetworkStatsListener.*;
+
 public class RemoteConnector implements Closeable {
 
     @NotNull
@@ -120,6 +122,7 @@ public class RemoteConnector implements Closeable {
             this.retryInterval = retryInterval;
         }
 
+
         @Override
         public boolean action() throws InvalidEventHandlerException, InterruptedException {
             if (closed)
@@ -142,7 +145,7 @@ public class RemoteConnector implements Closeable {
 
                 nc.socketChannel(sc);
                 nc.isAcceptor(false);
-
+                notifyHostPort(sc, nc.networkStatsListener());
                 eventHandler = tcpHandlerSupplier.apply(nc);
 
             } catch (AlreadyConnectedException e) {

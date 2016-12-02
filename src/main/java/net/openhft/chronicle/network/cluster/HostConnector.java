@@ -107,6 +107,7 @@ public class HostConnector implements Closeable {
         if (networkStatsListenerFactory != null) {
             final NetworkStatsListener networkStatsListener = networkStatsListenerFactory.apply(clusterContext);
             nc.networkStatsListener(networkStatsListener);
+            networkStatsListener.networkContext(nc);
         }
 
         boolean firstTime = true;

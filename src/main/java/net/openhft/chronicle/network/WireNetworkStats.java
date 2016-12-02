@@ -26,14 +26,15 @@ public class WireNetworkStats extends AbstractMarshallable implements
         NetworkStats<WireNetworkStats> {
     private long writeBps, readBps, socketPollCountPerSecond;
     private long timestamp;
-    private long localIdentifier;
-    private long remoteIdentifier;
+    private int localIdentifier;
+    private int remoteIdentifier;
     private String remoteHostName;
     private int remotePort;
     private String userId;
     private UUID clientId;
     private boolean isConnected;
     private Enum wireType;
+    private boolean isAcceptor;
 
     public Enum wireType() {
         return wireType;
@@ -118,23 +119,33 @@ public class WireNetworkStats extends AbstractMarshallable implements
     }
 
     @Override
-    public long localIdentifier() {
+    public int localIdentifier() {
         return localIdentifier;
     }
 
     @Override
-    public WireNetworkStats localIdentifier(long localIdentifer) {
+    public WireNetworkStats localIdentifier(int localIdentifer) {
         this.localIdentifier = localIdentifer;
         return this;
     }
 
     @Override
-    public long remoteIdentifier() {
+    public boolean isAcceptor() {
+        return this.isAcceptor;
+    }
+
+    @Override
+    public void isAcceptor(boolean isAcceptor) {
+        this.isAcceptor = isAcceptor;
+    }
+
+    @Override
+    public int remoteIdentifier() {
         return remoteIdentifier;
     }
 
     @Override
-    public WireNetworkStats remoteIdentifier(long remoteIdentifier) {
+    public WireNetworkStats remoteIdentifier(int remoteIdentifier) {
         this.remoteIdentifier = remoteIdentifier;
         return this;
     }

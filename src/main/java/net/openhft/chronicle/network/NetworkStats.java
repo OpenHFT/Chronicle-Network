@@ -64,17 +64,20 @@ public interface NetworkStats<T extends NetworkStats> extends ReadMarshallable, 
     /**
      * @return the identifier of this instance of engine
      */
-    long localIdentifier();
+    int localIdentifier();
 
-    T localIdentifier(long localIdentifier);
+    T localIdentifier(int localIdentifier);
 
+    boolean isAcceptor();
+
+    void isAcceptor(boolean isAcceptor);
 
     /**
      * the identifier of the remote instance of engine
      */
-    long remoteIdentifier();
+    int remoteIdentifier();
 
-    T remoteIdentifier(long remoteIdentifier);
+    T remoteIdentifier(int remoteIdentifier);
 
     void clientId(UUID clientId);
 

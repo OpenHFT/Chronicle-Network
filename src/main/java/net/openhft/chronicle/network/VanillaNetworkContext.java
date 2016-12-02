@@ -47,6 +47,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     private Runnable socketReconnector;
     private NetworkStatsListener networkStatsListener;
     private ServerThreadingStrategy serverThreadingStrategy = ServerThreadingStrategy.SINGLE_THREADED;
+    private volatile boolean isClosed;
 
     @Override
     public SocketChannel socketChannel() {
@@ -113,15 +114,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         return (T) this;
     }
 
-    public boolean connectionClosed() {
-        return this.connectionClosed;
-    }
-
-    @Override
-    public void connectionClosed(boolean connectionClosed) {
-        this.connectionClosed = connectionClosed;
-    }
-
     @Override
     public TerminationEventHandler terminationEventHandler() {
         return terminationEventHandler;
@@ -168,7 +160,16 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
 
     @Override
     public void close() {
+        if (isClosed)
+            return;
+        isClosed = true;
+        Closeable.closeQuietly(networkStatsListener);
+    }
 
+
+    @Override
+    public boolean isClosed() {
+        return isClosed;
     }
 
     public Runnable socketReconnector() {
