@@ -17,12 +17,13 @@
 
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.core.io.Closeable;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * @author Rob Austin.
  */
-public interface NetworkStatsListener<N extends NetworkContext> {
+public interface NetworkStatsListener<N extends NetworkContext> extends Closeable {
     void onNetworkStats(long writeBps, long readBps, long socketPollCountPerSecond,
                         @NotNull N networkContext, boolean connectionStatus);
 

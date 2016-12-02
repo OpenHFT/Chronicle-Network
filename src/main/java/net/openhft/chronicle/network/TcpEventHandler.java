@@ -316,6 +316,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     }
 
     private void closeSC() {
+        Closeable.closeQuietly(this.nc.networkStatsListener());
         Closeable.closeQuietly(tcpHandler);
         Closeable.closeQuietly(sc);
         Closeable.closeQuietly(nc);
