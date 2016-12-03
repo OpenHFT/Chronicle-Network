@@ -29,14 +29,17 @@ import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.TextWire;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.WireType;
+import net.openhft.chronicle.wire.YamlLogging;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.TimeoutException;
 
 import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri;
@@ -46,6 +49,8 @@ import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri
  */
 public class SimpleServerAndClientTest {
     private ThreadDump threadDump;
+
+    private static final Logger LOG = LoggerFactory.getLogger(SimpleServerAndClientTest.class);
 
     @Before
     public void threadDump() {
@@ -60,7 +65,7 @@ public class SimpleServerAndClientTest {
 
     @Test
     public void test() throws IOException, TimeoutException, InterruptedException {
-
+        YamlLogging.setAll(true);
 
         for (; ; ) {
             // this the name of a reference to the host name and port,
@@ -139,7 +144,7 @@ public class SimpleServerAndClientTest {
                 VanillaNetworkContext::new);
 
         eg.addHandler(eah);
-        SocketChannel sc = TCPRegistry.createSocketChannel(desc);
+        ServerSocketChannel sc = TCPRegistry.acquireServerSocketChannel(desc);
         sc.configureBlocking(false);
     }
 }

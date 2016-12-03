@@ -80,15 +80,19 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
                 final NetworkContext nc = ncFactory.get();
                 nc.socketChannel(sc);
                 nc.isAcceptor(true);
-                notifyHostPort(sc, nc.networkStatsListener());
-                eventLoop.addHandler(handlerFactory.apply(nc));
+                NetworkStatsListener nl = nc.networkStatsListener();
+                if (nl != null)
+                    notifyHostPort(sc, nl);
+                TcpEventHandler apply = handlerFactory.apply(nc);
+                eventLoop.addHandler(apply);
+
             }
 
         } catch (AsynchronousCloseException e) {
             closeSocket();
         } catch (Exception e) {
             if (!closed) {
-                Jvm.debug().on(getClass(), e);
+                Jvm.fatal().on(getClass(), e);
                 closeSocket();
             }
         }
