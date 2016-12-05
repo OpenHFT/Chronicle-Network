@@ -1400,7 +1400,6 @@ public class TcpChannelHub implements Closeable {
                     asyncSubscription.onConsumer(inWire);
 
                 } catch (Exception e) {
-                    e.printStackTrace();
                     if (LOG.isDebugEnabled())
                         Jvm.debug().on(getClass(), "Removing " + tid + " " + o, e);
                     omap.remove(tid);

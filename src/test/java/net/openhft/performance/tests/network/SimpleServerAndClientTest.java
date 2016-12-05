@@ -29,7 +29,6 @@ import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.TextWire;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.WireType;
-import net.openhft.chronicle.wire.YamlLogging;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Assert;
@@ -65,7 +64,7 @@ public class SimpleServerAndClientTest {
 
     @Test
     public void test() throws IOException, TimeoutException, InterruptedException {
-        YamlLogging.setAll(true);
+        //YamlLogging.setAll(true);
 
         for (; ; ) {
             // this the name of a reference to the host name and port,
