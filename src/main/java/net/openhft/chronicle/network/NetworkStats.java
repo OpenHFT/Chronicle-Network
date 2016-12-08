@@ -90,4 +90,12 @@ public interface NetworkStats<T extends NetworkStats> extends ReadMarshallable, 
     boolean isConnected();
 
     void isConnected(boolean isConnected);
+
+    void h50(long value);
+
+    void h90(long value);
+
+    void h99(long value);
+
+    void h99_9(long value);
 }
