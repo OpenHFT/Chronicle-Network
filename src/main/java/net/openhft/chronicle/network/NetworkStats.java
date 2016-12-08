@@ -91,5 +91,24 @@ public interface NetworkStats<T extends NetworkStats> extends ReadMarshallable, 
 
     void isConnected(boolean isConnected);
 
+    /**
+     * @param value round trip latency, 50th percentile
+     */
+    void percentile50th(long value);
 
+    /**
+     * @param value round trip latency, 90th percentile
+     */
+
+    void percentile90th(long value);
+
+    /**
+     * @param value round trip latency, 99th percentile
+     */
+    void percentile99th(long value);
+
+    /**
+     * @param value round trip latency, 99.9th percentile
+     */
+    void percentile99_9th(long value);
 }

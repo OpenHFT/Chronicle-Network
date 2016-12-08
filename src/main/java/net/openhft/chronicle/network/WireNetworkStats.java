@@ -35,6 +35,27 @@ public class WireNetworkStats extends AbstractMarshallable implements
     private boolean isConnected;
     private Enum wireType;
     private boolean isAcceptor;
+    private long percentile90th;
+    private long percentile50th;
+    private long percentile99th;
+
+    private long percentile99_9th;
+
+    public long percentile90th() {
+        return percentile90th;
+    }
+
+    public long percentile50th() {
+        return percentile50th;
+    }
+
+    public long percentile99th() {
+        return percentile99th;
+    }
+
+    public long percentile99_9th() {
+        return percentile99_9th;
+    }
 
     public Enum wireType() {
         return wireType;
@@ -124,8 +145,8 @@ public class WireNetworkStats extends AbstractMarshallable implements
     }
 
     @Override
-    public WireNetworkStats localIdentifier(int localIdentifer) {
-        this.localIdentifier = localIdentifer;
+    public WireNetworkStats localIdentifier(int localIdentifier) {
+        this.localIdentifier = localIdentifier;
         return this;
     }
 
@@ -178,6 +199,26 @@ public class WireNetworkStats extends AbstractMarshallable implements
     @Override
     public void isConnected(boolean isConnected) {
         this.isConnected = isConnected;
+    }
+
+    @Override
+    public void percentile50th(long percentile50th) {
+        this.percentile50th = percentile50th;
+    }
+
+    @Override
+    public void percentile90th(long percentile90th) {
+        this.percentile90th = percentile90th;
+    }
+
+    @Override
+    public void percentile99th(long percentile99th) {
+        this.percentile99th = percentile99th;
+    }
+
+    @Override
+    public void percentile99_9th(long percentile99_9th) {
+        this.percentile99_9th = percentile99_9th;
     }
 
 }

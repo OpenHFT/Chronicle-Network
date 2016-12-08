@@ -32,6 +32,8 @@ public interface NetworkStatsListener<N extends NetworkContext> extends Closeabl
 
     void onHostPort(String hostName, int port);
 
+    void onRoundTripLatency(long nanosecondLatency);
+
     /**
      * notifies the NetworkStatsListener of the host and port based on the SocketChannel
      *
