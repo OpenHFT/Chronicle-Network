@@ -45,7 +45,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     long writeBps;
     long bytesReadCount;
     int socketPollCount;
-    long lastMonitor;
+    volatile long lastMonitor;
     @NotNull
     private Wire inWire;
     private boolean recreateWire;
