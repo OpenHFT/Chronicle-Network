@@ -133,10 +133,10 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
             @Nullable R usingValue,
             @NotNull final Class<R> resultType) {
 
-        Function<ValueIn, R> consumerIn = resultType == CharSequence.class && usingValue != null
-                ? f -> {
-            f.textTo((StringBuilder) usingValue);
-            return usingValue;
+        Function<ValueIn, R> consumerIn =
+                resultType == CharSequence.class && usingValue != null ? f -> {
+                        f.textTo((StringBuilder) usingValue);
+                        return usingValue;
         }
                 : f -> f.object(resultType);
         return proxyReturnWireConsumerInOut(eventId,
