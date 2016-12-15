@@ -135,10 +135,10 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
         Function<ValueIn, R> consumerIn =
                 resultType == CharSequence.class && usingValue != null ? f -> {
-                        f.textTo((StringBuilder) usingValue);
-                        return usingValue;
-        }
-                : f -> f.object(resultType);
+                    f.textTo((StringBuilder) usingValue);
+                    return usingValue;
+                }
+                        : f -> f.object(resultType);
         return proxyReturnWireConsumerInOut(eventId,
                 CoreFields.reply,
                 x -> {
@@ -227,7 +227,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
     @SuppressWarnings("SameParameterValue")
     protected void proxyReturnVoid(@NotNull final WireKey eventId,
-                                 @Nullable final WriteValue consumer) {
+                                   @Nullable final WriteValue consumer) {
         final long startTime = Time.currentTimeMillis();
 
         attempt(() -> readWire(sendEvent(startTime, eventId, consumer), startTime, CoreFields
