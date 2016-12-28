@@ -39,10 +39,11 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
     private volatile boolean closed;
     private Wire wire;
+    @NotNull
     private List<WireOutConsumer> consumers = new CopyOnWriteArrayList<>();
     private int consumerIndex;
 
-    public VanillaWireOutPublisher(WireType wireType) {
+    public VanillaWireOutPublisher(@NotNull WireType wireType) {
         this.closed = false;
         bytes = Bytes.elasticByteBuffer(TcpChannelHub.TCP_BUFFER);
         wire = wireType.apply(bytes);
@@ -151,7 +152,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     }
 
     @Override
-    public void put(final Object key, WriteMarshallable event) {
+    public void put(final Object key, @NotNull WriteMarshallable event) {
 
         if (closed) {
             Jvm.debug().on(getClass(), "message ignored as closed");
@@ -236,6 +237,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         }
     }
 
+    @NotNull
     @Override
     public String toString() {
 

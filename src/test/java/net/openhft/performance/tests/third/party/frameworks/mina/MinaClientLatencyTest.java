@@ -27,6 +27,7 @@ import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
@@ -43,8 +44,8 @@ public class MinaClientLatencyTest {
 
     public static void main(String[] args) throws Throwable {
 
-        final NioSocketConnector connector = new NioSocketConnector();
-        final long[] times = new long[500_000];
+        @NotNull final NioSocketConnector connector = new NioSocketConnector();
+        @NotNull final long[] times = new long[500_000];
         final int bufferSize = 32 * 1024;
 
         final IoBuffer ioBuffer = IoBuffer.allocate(bufferSize);
@@ -113,7 +114,7 @@ public class MinaClientLatencyTest {
                 session.close(true);
             }
         });
-        IoSession session = null;
+        @Nullable IoSession session = null;
         try {
             for (; ; ) {
                 try {

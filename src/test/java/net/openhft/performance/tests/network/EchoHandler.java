@@ -38,9 +38,9 @@ class EchoHandler implements TcpHandler {
     }
 
     public static <T extends NetworkContext> void main(String[] args) throws IOException {
-        EventLoop eg = new EventGroup(false);
+        @NotNull EventLoop eg = new EventGroup(false);
         eg.start();
-        AcceptorEventHandler eah = new AcceptorEventHandler("*:" + EchoClientMain.PORT,
+        @NotNull AcceptorEventHandler eah = new AcceptorEventHandler("*:" + EchoClientMain.PORT,
                 LegacyHanderFactory.legacyTcpEventHandlerFactory(EchoHandler::new),
                 VanillaNetworkContext::new);
         eg.addHandler(eah);

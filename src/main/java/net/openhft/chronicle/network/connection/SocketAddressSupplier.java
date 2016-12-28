@@ -39,6 +39,7 @@ import java.util.function.Supplier;
 public class SocketAddressSupplier implements Supplier<SocketAddress> {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SocketAddressSupplier.class);
+    @NotNull
     private final String name;
     private final List<RemoteAddressSupplier> remoteAddresses = new ArrayList<>();
     private final long failoverTimeout = Integer.getInteger("tcp.failover.time", 2_000);
@@ -52,7 +53,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
      */
     public SocketAddressSupplier(@NotNull final String[] connectURIs, @NotNull final String name) {
         this.name = name;
-        for (String connectURI : connectURIs) {
+        for (@NotNull String connectURI : connectURIs) {
             this.remoteAddresses.add(new RemoteAddressSupplier(connectURI));
         }
 
@@ -65,6 +66,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
      * @param connectURI the uri of the server
      * @return a SocketAddressSupplier containing the UIR you provide
      */
+    @NotNull
     public static SocketAddressSupplier uri(String connectURI) {
         return new SocketAddressSupplier(new String[]{connectURI}, "");
     }
@@ -74,6 +76,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
         return remoteAddresses;
     }
 
+    @NotNull
     public String name() {
         return name;
     }
@@ -101,7 +104,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
     @Nullable
     @Override
     public InetSocketAddress get() {
-        final RemoteAddressSupplier current = this.current;
+        @Nullable final RemoteAddressSupplier current = this.current;
         if (current == null)
             return null;
         return current.get();
@@ -111,7 +114,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
     @NotNull
     public String toString() {
 
-        RemoteAddressSupplier current = this.current;
+        @Nullable RemoteAddressSupplier current = this.current;
 
         if (current == null)
             return "(none)";
@@ -127,9 +130,10 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
     private class RemoteAddressSupplier implements Supplier<SocketAddress> {
 
         private final InetSocketAddress remoteAddress;
+        @NotNull
         private final String description;
 
-        public RemoteAddressSupplier(String description) {
+        public RemoteAddressSupplier(@NotNull String description) {
             this.description = description;
             remoteAddress = TCPRegistry.lookup(description);
         }
@@ -139,6 +143,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
             return remoteAddress;
         }
 
+        @NotNull
         @Override
         public String toString() {
             return description;

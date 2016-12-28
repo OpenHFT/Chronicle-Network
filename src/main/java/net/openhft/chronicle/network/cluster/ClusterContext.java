@@ -69,6 +69,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         return networkStatsListenerFactory;
     }
 
+    @NotNull
     public ClusterContext networkStatsListenerFactory(Function<ClusterContext, NetworkStatsListener> networkStatsListenerFactory) {
         this.networkStatsListenerFactory = networkStatsListenerFactory;
         return this;
@@ -78,13 +79,14 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         return heartbeatIntervalMs;
     }
 
+    @NotNull
     public ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpEventHandlerFactory() {
         throw new UnsupportedOperationException();
     }
 
     @NotNull
     private WireParser<Void> wireParser() {
-        WireParser<Void> parser = new VanillaWireParser<>((s, v, $) -> {
+        @NotNull WireParser<Void> parser = new VanillaWireParser<>((s, v, $) -> {
         });
         parser.register(() -> "wireType", (s, v, $) -> v.text(this, (o, x) -> this.wireType(WireType.valueOf(x))));
         parser.register(() -> "handlerFactory", (s, v, $) -> this.handlerFactory(v.typedMarshallable()));
@@ -131,6 +133,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         return eventLoop;
     }
 
+    @NotNull
     public ClusterContext eventLoop(EventLoop eventLoop) {
         this.eventLoop = eventLoop;
         return this;
@@ -139,37 +142,44 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
     public void defaults() {
     }
 
+    @NotNull
     public ClusterContext localIdentifier(byte localIdentifier) {
         this.localIdentifier = localIdentifier;
         return this;
     }
 
+    @NotNull
     public ClusterContext wireType(WireType wireType) {
         this.wireType = wireType;
         return this;
     }
 
+    @NotNull
     public ClusterContext heartbeatFactory(Function<ClusterContext, WriteMarshallable>
                                                    heartbeatFactor) {
         this.heartbeatFactory = heartbeatFactor;
         return this;
     }
 
+    @NotNull
     public ClusterContext heartbeatIntervalMs(long heartbeatIntervalMs) {
         this.heartbeatIntervalMs = heartbeatIntervalMs;
         return this;
     }
 
+    @NotNull
     public ClusterContext heartbeatTimeoutMs(long heartbeatTimeoutMs) {
         this.heartbeatTimeoutMs = heartbeatTimeoutMs;
         return this;
     }
 
+    @NotNull
     public ClusterContext wireOutPublisherFactory(Function<WireType, WireOutPublisher> wireOutPublisherFactory) {
         this.wireOutPublisherFactory = wireOutPublisherFactory;
         return this;
     }
 
+    @NotNull
     public ClusterContext networkContextFactory(Function<ClusterContext, NetworkContext> networkContextFactory) {
         this.networkContextFactory = networkContextFactory;
         return this;
@@ -199,6 +209,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         return networkContextFactory;
     }
 
+    @NotNull
     public ClusterContext connectionStrategy(ConnectionStrategy connectionStrategy) {
         this.connectionStrategy = connectionStrategy;
         return this;
@@ -212,6 +223,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         return connectionEventHandler;
     }
 
+    @NotNull
     public ClusterContext connectionEventHandler(Supplier<ConnectionManager> connectionEventHandler) {
         this.connectionEventHandler = connectionEventHandler;
         return this;
@@ -238,12 +250,12 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
                 .connectionEventHandler().get();
         hd.connectionManager(connectionManager);
 
-        final HostConnector hostConnector = new HostConnector(this, new
+        @NotNull final HostConnector hostConnector = new HostConnector(this, new
                 RemoteConnector(this.tcpEventHandlerFactory()), hd);
 
         hd.hostConnector(hostConnector);
 
-        ClusterNotifier clusterNotifier = new ClusterNotifier(connectionManager,
+        @NotNull ClusterNotifier clusterNotifier = new ClusterNotifier(connectionManager,
                 hostConnector, bootstraps(hd));
 
         hd.clusterNotifier(clusterNotifier);
@@ -252,12 +264,13 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         clusterNotifier.connect();
     }
 
+    @NotNull
     private List<WriteMarshallable> bootstraps(HostDetails hd) {
         final BiFunction<ClusterContext, HostDetails, WriteMarshallable> handler = this
                 .handlerFactory();
         final Function<ClusterContext, WriteMarshallable> heartbeat = this.heartbeatFactory();
 
-        ArrayList<WriteMarshallable> result = new ArrayList<WriteMarshallable>();
+        @NotNull ArrayList<WriteMarshallable> result = new ArrayList<WriteMarshallable>();
         result.add(handler.apply(this, hd));
         result.add(heartbeat.apply(this));
         return result;

@@ -39,7 +39,7 @@ public class GrizzlyEchoServer {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         // Create a FilterChain using FilterChainBuilder
-        FilterChainBuilder filterChainBuilder = FilterChainBuilder.stateless();
+        @NotNull FilterChainBuilder filterChainBuilder = FilterChainBuilder.stateless();
 
         // Add TransportFilter, which is responsible
         // for reading and writing data to the connection

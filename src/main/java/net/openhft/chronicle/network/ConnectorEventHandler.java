@@ -87,7 +87,7 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
 
                     sessionDetails.clientAddress((InetSocketAddress) socketChannel.getRemoteAddress());
                     connectionDetails.socketChannel(socketChannel);
-                    final TcpEventHandler evntHandler = new TcpEventHandler(connectionDetails);
+                    @NotNull final TcpEventHandler evntHandler = new TcpEventHandler(connectionDetails);
                     evntHandler.tcpHandler(tcpHandlerSupplier.apply(connectionDetails));
                     eventLoop.addHandler(evntHandler);
                 } else if (socketChannel.isOpen()) {
@@ -113,7 +113,7 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
         return false;
     }
 
-    public void updateConnectionDetails(ConnectionDetails connectionDetails) {
+    public void updateConnectionDetails(@NotNull ConnectionDetails connectionDetails) {
         //todo this is not strictly necessary
         nameToConnectionDetails.put(connectionDetails.getID(), connectionDetails);
         forceRescan();

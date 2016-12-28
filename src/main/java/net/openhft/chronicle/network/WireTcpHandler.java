@@ -57,7 +57,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     private boolean isAcceptor;
     private long lastReadRemaining;
 
-    private static void logYaml(final DocumentContext dc) {
+    private static void logYaml(@NotNull final DocumentContext dc) {
         if (YamlLogging.showServerWrites() || YamlLogging.showServerReads())
             try {
                 LOG.info("\nDocumentContext:\n" +
@@ -69,7 +69,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
             }
     }
 
-    private static void logYaml(final WireOut outWire) {
+    private static void logYaml(@NotNull final WireOut outWire) {
         if (YamlLogging.showServerWrites())
             try {
                 LOG.info("\nServer Sends:\n" +
@@ -97,7 +97,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
         return publisher;
     }
 
-    public void publisher(WireOutPublisher publisher) {
+    public void publisher(@NotNull WireOutPublisher publisher) {
         this.publisher = publisher;
         if (wireType() != null)
             publisher.wireType(wireType());
@@ -211,7 +211,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     }
 
     private void ensureCapacity() {
-        final Bytes<?> bytes = inWire.bytes();
+        @NotNull final Bytes<?> bytes = inWire.bytes();
         if (bytes.readRemaining() >= 4) {
             final long pos = bytes.readPosition();
             int length = bytes.readInt(pos);
@@ -223,7 +223,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     }
 
     private void resizeInWire(long size) {
-        final Bytes<?> bytes = inWire.bytes();
+        @NotNull final Bytes<?> bytes = inWire.bytes();
         if (size > bytes.realCapacity()) {
             Jvm.debug().on(getClass(), Integer.toHexString(System.identityHashCode(bytes)) + " resized to: " + size);
             bytes.ensureCapacity(size);
@@ -316,7 +316,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
      */
     protected void writeData(boolean isNotComplete, @NotNull Bytes inBytes, @NotNull WriteMarshallable c) {
 
-        final WriteMarshallable marshallable = out -> {
+        @NotNull final WriteMarshallable marshallable = out -> {
             final long readPosition = inBytes.readPosition();
             final long position = outWire.bytes().writePosition();
             try {

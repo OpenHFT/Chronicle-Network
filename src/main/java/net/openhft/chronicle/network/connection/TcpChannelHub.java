@@ -106,14 +106,17 @@ public class TcpChannelHub implements Closeable {
     @NotNull
     private final WireType wireType;
     private final Wire handShakingWire;
+    @Nullable
     private final ClientConnectionMonitor clientConnectionMonitor;
 
+    @NotNull
     private Pauser pauser = new LongPauser(100, 100, 500, 20_000, TimeUnit.MICROSECONDS);
     // private final String description;
     private long largestChunkSoFar = 0;
     @Nullable
     private volatile SocketChannel clientChannel;
     private volatile boolean closed;
+    @NotNull
     private CountDownLatch receivedClosedAcknowledgement = new CountDownLatch(1);
     // set up in the header
     private long limitOfLast = 0;
@@ -154,8 +157,8 @@ public class TcpChannelHub implements Closeable {
     }
 
     public static void assertAllHubsClosed() {
-        StringBuilder errors = new StringBuilder();
-        for (TcpChannelHub h : hubs) {
+        @NotNull StringBuilder errors = new StringBuilder();
+        for (@NotNull TcpChannelHub h : hubs) {
             if (!h.isClosed())
                 errors.append("Connection ").append(h).append(" still open\n");
             h.close();
@@ -166,8 +169,8 @@ public class TcpChannelHub implements Closeable {
     }
 
     public static void closeAllHubs() {
-        final TcpChannelHub[] hubsArr = hubs.toArray(new TcpChannelHub[hubs.size()]);
-        for (TcpChannelHub hub : hubsArr) {
+        @NotNull final TcpChannelHub[] hubsArr = hubs.toArray(new TcpChannelHub[hubs.size()]);
+        for (@NotNull TcpChannelHub hub : hubsArr) {
             if (hub.isClosed())
                 continue;
 
@@ -178,7 +181,7 @@ public class TcpChannelHub implements Closeable {
     }
 
     private static void logToStandardOutMessageReceived(@NotNull Wire wire) {
-        final Bytes<?> bytes = wire.bytes();
+        @NotNull final Bytes<?> bytes = wire.bytes();
 
         if (!YamlLogging.showClientReads())
             return;
@@ -206,7 +209,7 @@ public class TcpChannelHub implements Closeable {
     }
 
     private static void logToStandardOutMessageReceivedInERROR(@NotNull Wire wire) {
-        final Bytes<?> bytes = wire.bytes();
+        @NotNull final Bytes<?> bytes = wire.bytes();
 
         final long position = bytes.writePosition();
         final long limit = bytes.writeLimit();
@@ -230,7 +233,7 @@ public class TcpChannelHub implements Closeable {
         }
     }
 
-    private static boolean checkWritesOnReadThread(TcpSocketConsumer tcpSocketConsumer) {
+    private static boolean checkWritesOnReadThread(@NotNull TcpSocketConsumer tcpSocketConsumer) {
         assert Thread.currentThread() != tcpSocketConsumer.readThread : "if writes" +
                 " and reads are on the same thread this can lead " +
                 "to deadlocks with the server, if the server buffer becomes full";
@@ -249,7 +252,7 @@ public class TcpChannelHub implements Closeable {
     @Nullable
     SocketChannel openSocketChannel(InetSocketAddress socketAddress) throws IOException {
         final SocketChannel result = SocketChannel.open();
-        Selector selector = null;
+        @Nullable Selector selector = null;
         boolean failed = true;
         try {
             result.configureBlocking(false);
@@ -314,7 +317,7 @@ public class TcpChannelHub implements Closeable {
         tcpSocketConsumer.onConnectionClosed();
 
         if (clientConnectionMonitor != null) {
-            final SocketAddress socketAddress = socketAddressSupplier.get();
+            @Nullable final SocketAddress socketAddress = socketAddressSupplier.get();
             if (socketAddress != null)
                 clientConnectionMonitor.onDisconnected(name, socketAddress);
         }
@@ -326,7 +329,7 @@ public class TcpChannelHub implements Closeable {
             Jvm.debug().on(getClass(), "connected to remoteAddress=" + socketAddressSupplier);
 
         if (clientConnectionMonitor != null) {
-            final SocketAddress socketAddress = socketAddressSupplier.get();
+            @Nullable final SocketAddress socketAddress = socketAddressSupplier.get();
             if (socketAddress != null)
                 clientConnectionMonitor.onConnected(name, socketAddress);
         }
@@ -365,10 +368,10 @@ public class TcpChannelHub implements Closeable {
     void doHandShaking(@NotNull SocketChannel socketChannel) throws IOException {
 
         assert outBytesLock.isHeldByCurrentThread();
-        final SessionDetails sessionDetails = sessionDetails();
+        @Nullable final SessionDetails sessionDetails = sessionDetails();
         if (sessionDetails != null) {
             handShakingWire.clear();
-            final Bytes<?> bytes = handShakingWire.bytes();
+            @NotNull final Bytes<?> bytes = handShakingWire.bytes();
             bytes.clear();
 
             // we are always going to send the header as text wire, the server will
@@ -399,7 +402,7 @@ public class TcpChannelHub implements Closeable {
      */
     synchronized void closeSocket() {
 
-        SocketChannel clientChannel = this.clientChannel;
+        @Nullable SocketChannel clientChannel = this.clientChannel;
 
         if (clientChannel != null) {
 
@@ -426,7 +429,7 @@ public class TcpChannelHub implements Closeable {
             if (LOG.isDebugEnabled())
                 Jvm.debug().on(getClass(), "closing", new Throwable("only added for logging - please ignore !"));
 
-            final TcpSocketConsumer tcpSocketConsumer = this.tcpSocketConsumer;
+            @NotNull final TcpSocketConsumer tcpSocketConsumer = this.tcpSocketConsumer;
 
             tcpSocketConsumer.tid = 0;
             tcpSocketConsumer.omap.clear();
@@ -486,6 +489,7 @@ public class TcpChannelHub implements Closeable {
                     throw new InvalidEventHandlerException();
                 }
 
+                @NotNull
                 @Override
                 public String toString() {
                     return TcpChannelHub.class.getSimpleName() + "..close()";
@@ -547,7 +551,7 @@ public class TcpChannelHub implements Closeable {
 
         try {
             assert wire.startUse();
-            SocketChannel clientChannel = this.clientChannel;
+            @Nullable SocketChannel clientChannel = this.clientChannel;
 
             // wait for the channel to be non null
             if (clientChannel == null) {
@@ -636,8 +640,8 @@ public class TcpChannelHub implements Closeable {
         long start = Time.currentTimeMillis();
         assert outWire.startUse();
         try {
-            final Bytes<?> bytes = outWire.bytes();
-            final ByteBuffer outBuffer = (ByteBuffer) bytes.underlyingObject();
+            @NotNull final Bytes<?> bytes = outWire.bytes();
+            @Nullable final ByteBuffer outBuffer = (ByteBuffer) bytes.underlyingObject();
             outBuffer.limit((int) bytes.writePosition());
             outBuffer.position(0);
 
@@ -676,7 +680,7 @@ public class TcpChannelHub implements Closeable {
                         //    System.out.println("W: " + (prevRemaining - outBuffer
                         //          .remaining()));
                         prevRemaining = outBuffer.remaining();
-                        final TcpSocketConsumer tcpSocketConsumer = this.tcpSocketConsumer;
+                        @NotNull final TcpSocketConsumer tcpSocketConsumer = this.tcpSocketConsumer;
 
                         if (tcpSocketConsumer != null)
                             this.tcpSocketConsumer.lastTimeMessageReceivedOrSent = start;
@@ -693,11 +697,11 @@ public class TcpChannelHub implements Closeable {
                         // we don't want this to fail as it will cause a disconnection !
                         if (writeTime > TimeUnit.MINUTES.toMillis(15)) {
 
-                            for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
+                            for (@NotNull Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
                                 Thread thread = entry.getKey();
                                 if (thread.getThreadGroup().getName().equals("system"))
                                     continue;
-                                StringBuilder sb = new StringBuilder();
+                                @NotNull StringBuilder sb = new StringBuilder();
                                 sb.append("\n========= THREAD DUMP =========\n");
                                 sb.append(thread).append(" ").append(thread.getState());
                                 Jvm.trimStackTrace(sb, entry.getValue());
@@ -732,7 +736,7 @@ public class TcpChannelHub implements Closeable {
         if (!YamlLogging.showClientWrites())
             return;
 
-        Bytes<?> bytes = wire.bytes();
+        @NotNull Bytes<?> bytes = wire.bytes();
 
         try {
 
@@ -842,17 +846,17 @@ public class TcpChannelHub implements Closeable {
         return lock(r, TryLock.LOCK);
     }
 
-    private boolean lock(@NotNull Task r, TryLock tryLock) {
+    private boolean lock(@NotNull Task r, @NotNull TryLock tryLock) {
         return lock2(r, false, tryLock);
     }
 
-    public boolean lock2(@NotNull Task r, boolean reconnectOnFailure, TryLock tryLock) {
+    public boolean lock2(@NotNull Task r, boolean reconnectOnFailure, @NotNull TryLock tryLock) {
         assert !outBytesLock.isHeldByCurrentThread();
         try {
             if (clientChannel == null && !reconnectOnFailure)
                 return TryLock.LOCK != tryLock;
 
-            final ReentrantLock lock = outBytesLock();
+            @NotNull final ReentrantLock lock = outBytesLock();
             if (TryLock.LOCK == tryLock) {
                 try {
                     //   if (lock.isLocked())
@@ -949,6 +953,7 @@ public class TcpChannelHub implements Closeable {
         @NotNull
         private final Map<Long, Object> map = new ConcurrentHashMap<>();
         private final Map<Long, Object> omap = new ConcurrentHashMap<>();
+        @NotNull
         private final ExecutorService service;
         @NotNull
         private final ThreadLocal<Wire> syncInWireThreadLocal = withInitial(() -> {
@@ -1030,7 +1035,7 @@ public class TcpChannelHub implements Closeable {
             final Wire wire = syncInWireThreadLocal.get();
             wire.clear();
 
-            Bytes<?> bytes = wire.bytes();
+            @NotNull Bytes<?> bytes = wire.bytes();
             ((ByteBuffer) bytes.underlyingObject()).clear();
 
             //noinspection SynchronizationOnLocalVariableOrMethodParameter
@@ -1058,7 +1063,7 @@ public class TcpChannelHub implements Closeable {
                     } while (bytes.readLimit() == 0 && !isShutdown);
 
                 } catch (InterruptedException ie) {
-                    TimeoutException te = new TimeoutException();
+                    @NotNull TimeoutException te = new TimeoutException();
                     te.initCause(ie);
                     throw te;
                 }
@@ -1104,7 +1109,7 @@ public class TcpChannelHub implements Closeable {
             }
 
             // we have lock here to prevent a race with the resubscribe upon a reconnection
-            final ReentrantLock lock = outBytesLock();
+            @NotNull final ReentrantLock lock = outBytesLock();
             if (tryLock) {
                 if (!lock.tryLock())
                     return;
@@ -1171,7 +1176,7 @@ public class TcpChannelHub implements Closeable {
 
             service.submit(() -> {
                 int count = 0;
-                String lastMsg = null;
+                @Nullable String lastMsg = null;
                 while (!isShuttingdown()) {
                     Jvm.pause(50);
                     if (count++ < 2000 / 50)
@@ -1182,7 +1187,7 @@ public class TcpChannelHub implements Closeable {
                         StringBuilder sb = new StringBuilder().append(readThread).append(" at ").append(delay).append(" ms");
                         Jvm.trimStackTrace(sb, readThread.getStackTrace());
 
-                        String msg = sb.toString();
+                        @NotNull String msg = sb.toString();
                         if (!msg.contains("sun.nio.ch.SocketChannelImpl.read")) {
                             if (delay < 20) {
                                 lastMsg = msg;
@@ -1215,7 +1220,7 @@ public class TcpChannelHub implements Closeable {
 
                     try {
                         // if we have processed all the bytes that we have read in
-                        final Bytes<?> bytes = inWire.bytes();
+                        @NotNull final Bytes<?> bytes = inWire.bytes();
 
                         // the number bytes ( still required  ) to read the size
                         blockingRead(inWire, SIZE_OF_SIZE);
@@ -1319,12 +1324,12 @@ public class TcpChannelHub implements Closeable {
             assert tid != -1;
             boolean isLastMessageForThisTid = false;
             long startTime = 0;
-            Object o = null;
+            @Nullable Object o = null;
 
             // tid == 0 for system messages
             if (tid != 0) {
 
-                final SocketChannel c = clientChannel;
+                @Nullable final SocketChannel c = clientChannel;
 
                 // this can occur if we received a shutdown
                 if (c == null)
@@ -1394,7 +1399,7 @@ public class TcpChannelHub implements Closeable {
 
                 blockingRead(inWire, messageSize);
                 logToStandardOutMessageReceived(inWire);
-                AsyncSubscription asyncSubscription = (AsyncSubscription) o;
+                @NotNull AsyncSubscription asyncSubscription = (AsyncSubscription) o;
 
                 try {
                     asyncSubscription.onConsumer(inWire);
@@ -1408,13 +1413,13 @@ public class TcpChannelHub implements Closeable {
 
             // for sync
             if (o instanceof Bytes) {
-                final Bytes bytes = (Bytes) o;
+                @Nullable final Bytes bytes = (Bytes) o;
                 // for sync
                 //noinspection SynchronizationOnLocalVariableOrMethodParameter
                 synchronized (bytes) {
                     bytes.clear();
                     bytes.ensureCapacity(SIZE_OF_SIZE + messageSize);
-                    final ByteBuffer byteBuffer = (ByteBuffer) bytes.underlyingObject();
+                    @Nullable final ByteBuffer byteBuffer = (ByteBuffer) bytes.underlyingObject();
                     byteBuffer.clear();
                     // we have to first write the header back to the bytes so that is can be
                     // viewed as a document
@@ -1443,7 +1448,7 @@ public class TcpChannelHub implements Closeable {
             final Bytes bytes = serverHeartBeatHandler;
 
             bytes.clear();
-            final ByteBuffer byteBuffer = (ByteBuffer) bytes.underlyingObject();
+            @NotNull final ByteBuffer byteBuffer = (ByteBuffer) bytes.underlyingObject();
             byteBuffer.clear();
             // we have to first write the header back to the bytes so that is can be
             // viewed as a document
@@ -1459,7 +1464,7 @@ public class TcpChannelHub implements Closeable {
             if (YamlLogging.showHeartBeats())
                 logToStandardOutMessageReceived(inWire);
             inWire.readDocument(null, d -> {
-                        final ValueIn valueIn = d.readEventName(eventName);
+                        @NotNull final ValueIn valueIn = d.readEventName(eventName);
                         if (EventId.heartbeat.contentEquals(eventName))
                             reflectServerHeartbeatMessage(valueIn);
                         else if (EventId.onClosingReply.contentEquals(eventName))
@@ -1480,10 +1485,10 @@ public class TcpChannelHub implements Closeable {
         private void blockingRead(@NotNull final WireIn wire, final long numberOfBytes)
                 throws IOException {
 
-            final Bytes<?> bytes = wire.bytes();
+            @NotNull final Bytes<?> bytes = wire.bytes();
             bytes.ensureCapacity(bytes.writePosition() + numberOfBytes);
 
-            final ByteBuffer buffer = (ByteBuffer) bytes.underlyingObject();
+            @NotNull final ByteBuffer buffer = (ByteBuffer) bytes.underlyingObject();
             final int start = (int) bytes.writePosition();
             //noinspection ConstantConditions
             buffer.position(start);
@@ -1498,7 +1503,7 @@ public class TcpChannelHub implements Closeable {
             //  long start = System.currentTimeMillis();
             boolean emptyRead = true;
             while (buffer.remaining() > 0) {
-                final SocketChannel clientChannel = TcpChannelHub.this.clientChannel;
+                @Nullable final SocketChannel clientChannel = TcpChannelHub.this.clientChannel;
                 if (clientChannel == null)
                     throw new IOException("Disconnection to server=" + socketAddressSupplier +
                             " channel is closed, name=" + name);
@@ -1544,14 +1549,14 @@ public class TcpChannelHub implements Closeable {
 
                 if (lastTimeMessageReceivedOrSent + 60_000 < System.currentTimeMillis()) {
 
-                    for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
+                    for (@NotNull Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
                         Thread thread = entry.getKey();
                         if (thread == null ||
                                 thread.getThreadGroup() == null ||
                                 thread.getThreadGroup().getName() == null ||
                                 thread.getThreadGroup().getName().equals("system"))
                             continue;
-                        StringBuilder sb = new StringBuilder();
+                        @NotNull StringBuilder sb = new StringBuilder();
                         sb.append(thread).append(" ").append(thread.getState());
                         Jvm.trimStackTrace(sb, entry.getValue());
                         sb.append("\n");
@@ -1685,7 +1690,7 @@ public class TcpChannelHub implements Closeable {
                 else if (i >= socketAddressSupplier.all().size())
                     LOG.info("attemptConnect remoteAddress=" + socketAddressSupplier);
 
-                SocketChannel socketChannel = null;
+                @Nullable SocketChannel socketChannel = null;
                 try {
 
                     INNER_LOOP:
@@ -1696,7 +1701,7 @@ public class TcpChannelHub implements Closeable {
 
                         if (start + socketAddressSupplier.timeoutMS() < System.currentTimeMillis()) {
 
-                            String oldAddress = socketAddressSupplier.toString();
+                            @NotNull String oldAddress = socketAddressSupplier.toString();
 
                             socketAddressSupplier.failoverToNextAddress();
                             if ("(none)".equals(oldAddress)) {
@@ -1718,7 +1723,7 @@ public class TcpChannelHub implements Closeable {
 
                         try {
 
-                            final InetSocketAddress socketAddress = socketAddressSupplier.get();
+                            @Nullable final InetSocketAddress socketAddress = socketAddressSupplier.get();
 
                             socketChannel = openSocketChannel(socketAddress);
 
@@ -1811,7 +1816,7 @@ public class TcpChannelHub implements Closeable {
             tid = 0;
             omap.clear();
 
-            final Set<Long> keys = new HashSet<>(map.keySet());
+            @NotNull final Set<Long> keys = new HashSet<>(map.keySet());
 
             keys.forEach(k -> {
                 final Object o = map.get(k);

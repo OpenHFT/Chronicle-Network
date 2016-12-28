@@ -36,7 +36,7 @@ public class MinaEchoServer {
 
     public static void main(String[] args) throws IOException {
 
-        final IoAcceptor acceptor = new NioSocketAcceptor();
+        @NotNull final IoAcceptor acceptor = new NioSocketAcceptor();
 
         acceptor.setHandler(new IoHandlerAdapter() {
             @Override

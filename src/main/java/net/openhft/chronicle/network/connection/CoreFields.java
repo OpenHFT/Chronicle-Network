@@ -40,7 +40,7 @@ public enum CoreFields implements WireKey {
     private static long longEvent(@NotNull final WireKey expecting, @NotNull final WireIn wire) {
         final StringBuilder eventName = Wires.acquireStringBuilder();
         long position = wire.bytes().readPosition();
-        final ValueIn valueIn = wire.readEventName(eventName);
+        @NotNull final ValueIn valueIn = wire.readEventName(eventName);
         if (expecting.contentEquals(eventName))
             return valueIn.int64();
 
@@ -52,7 +52,7 @@ public enum CoreFields implements WireKey {
     public static StringBuilder stringEvent(@NotNull final WireKey expecting, @NotNull StringBuilder using,
                                             @NotNull final WireIn wire) {
         final StringBuilder eventName = Wires.acquireStringBuilder();
-        final ValueIn valueIn = wire.readEventName(eventName);
+        @NotNull final ValueIn valueIn = wire.readEventName(eventName);
         if (expecting.contentEquals(eventName)) {
             valueIn.textTo(using);
             return using;

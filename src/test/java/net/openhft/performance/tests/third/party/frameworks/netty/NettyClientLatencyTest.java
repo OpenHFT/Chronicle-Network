@@ -27,6 +27,7 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.ReferenceCountUtil;
 import net.openhft.performance.tests.vanilla.tcp.EchoClientMain;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.net.ssl.SSLException;
 import java.util.Arrays;
@@ -118,7 +119,7 @@ public final class NettyClientLatencyTest {
 
     public static void main(String[] args) throws SSLException, InterruptedException {
         // Configure SSL.git
-        final SslContext sslCtx;
+        @Nullable final SslContext sslCtx;
         if (SSL) {
             sslCtx = SslContext.newClientContext(InsecureTrustManagerFactory.INSTANCE);
 
@@ -127,9 +128,9 @@ public final class NettyClientLatencyTest {
         }
 
         // Configure the client.
-        EventLoopGroup group = new NioEventLoopGroup();
+        @NotNull EventLoopGroup group = new NioEventLoopGroup();
         try {
-            Bootstrap b = new Bootstrap();
+            @NotNull Bootstrap b = new Bootstrap();
             b.group(group)
                     .channel(NioSocketChannel.class)
                     .option(ChannelOption.TCP_NODELAY, true)

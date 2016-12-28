@@ -58,7 +58,7 @@ public interface SessionDetailsProvider extends SessionDetails, Marshallable {
         domain(wire.read(EventId.domain).text());
         sessionMode(wire.read(EventId.sessionMode).object(SessionMode.class));
         securityToken(wire.read(EventId.securityToken).text());
-        final String uid = wire.read(EventId.clientId).text();
+        @Nullable final String uid = wire.read(EventId.clientId).text();
         if (uid != null)
             clientId(UUID.fromString(uid));
         wireType(wire.read(EventId.wireType).object(WireType.class));

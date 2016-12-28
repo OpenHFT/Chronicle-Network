@@ -67,24 +67,24 @@ public class ConnectionEventHandlerTest {
     // 7. The client is then enabled
     // 8. After 2 seconds we test that the client has received 2 responses from the client
     public void testConnection() throws IOException {
-        List<String> messages = new ArrayList<>();
+        @org.jetbrains.annotations.NotNull List<String> messages = new ArrayList<>();
 
         TCPRegistry.createServerSocketChannelFor("host.port1");
 
-        Map<String, ConnectionDetails> nameToConnectionDetails = new ConcurrentHashMap<>();
-        ConnectionDetails test1 = new ConnectionDetails("Test1", "host.port1");
+        @org.jetbrains.annotations.NotNull Map<String, ConnectionDetails> nameToConnectionDetails = new ConcurrentHashMap<>();
+        @org.jetbrains.annotations.NotNull ConnectionDetails test1 = new ConnectionDetails("Test1", "host.port1");
         nameToConnectionDetails.put("Test1", test1);
 
-        EventLoop eg2 = new EventGroup(false, BusyPauser.INSTANCE, true);
+        @org.jetbrains.annotations.NotNull EventLoop eg2 = new EventGroup(false, BusyPauser.INSTANCE, true);
         eg2.start();
-        ConnectorEventHandler ceh = new ConnectorEventHandler(nameToConnectionDetails,
+        @org.jetbrains.annotations.NotNull ConnectorEventHandler ceh = new ConnectorEventHandler(nameToConnectionDetails,
                 cd -> new TcpClientHandler(cd, messages), VanillaSessionDetails::new);
         //     ceh.unchecked(true);
         eg2.addHandler(ceh);
 
-        EventLoop eg1 = new EventGroup(false, BusyPauser.INSTANCE, true);
+        @org.jetbrains.annotations.NotNull EventLoop eg1 = new EventGroup(false, BusyPauser.INSTANCE, true);
         eg1.start();
-        AcceptorEventHandler eah = new AcceptorEventHandler("host.port1",
+        @org.jetbrains.annotations.NotNull AcceptorEventHandler eah = new AcceptorEventHandler("host.port1",
                 LegacyHanderFactory.simpleTcpEventHandlerFactory(TcpServerHandler::new, WireType.TEXT),
                 VanillaNetworkContext::new);
 
@@ -135,6 +135,7 @@ public class ConnectionEventHandlerTest {
     }
 
     private class TcpClientHandler implements TcpHandler {
+        @org.jetbrains.annotations.NotNull
         AtomicInteger i = new AtomicInteger(2);
         private ConnectionDetails cd;
         private List<String> messages;

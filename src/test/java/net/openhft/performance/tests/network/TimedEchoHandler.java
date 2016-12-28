@@ -38,9 +38,9 @@ class TimedEchoHandler implements TcpHandler {
     }
 
     public static void main(String[] args) throws IOException {
-        EventLoop eg = new EventGroup(false);
+        @NotNull EventLoop eg = new EventGroup(false);
         eg.start();
-        AcceptorEventHandler eah = new AcceptorEventHandler("*:" + EchoClientMain.PORT,
+        @NotNull AcceptorEventHandler eah = new AcceptorEventHandler("*:" + EchoClientMain.PORT,
                 LegacyHanderFactory.legacyTcpEventHandlerFactory(TimedEchoHandler::new),
                 VanillaNetworkContext::new);
 

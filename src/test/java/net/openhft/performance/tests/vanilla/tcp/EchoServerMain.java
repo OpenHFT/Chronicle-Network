@@ -37,14 +37,14 @@ public class EchoServerMain {
         ssc.bind(new InetSocketAddress(port));
         System.out.println("listening on " + ssc);
 
-        AtomicReference<SocketChannel> nextSocket = new AtomicReference<>();
+        @NotNull AtomicReference<SocketChannel> nextSocket = new AtomicReference<>();
 
         new Thread(() -> {
 //            Affinity.setAffinity(3);
 
             ByteBuffer bb = ByteBuffer.allocateDirect(32 * 1024);
             ByteBuffer bb2 = ByteBuffer.allocateDirect(32 * 1024);
-            List<SocketChannel> sockets = new ArrayList<>();
+            @NotNull List<SocketChannel> sockets = new ArrayList<>();
             for (; ; ) {
                 if (sockets.isEmpty())
                     Thread.yield();

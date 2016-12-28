@@ -30,6 +30,7 @@ import net.openhft.chronicle.wire.TextWire;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -69,18 +70,18 @@ public class SimpleServerAndClientTest {
         for (; ; ) {
             // this the name of a reference to the host name and port,
             // allocated automatically when to a free port on localhost
-            final String desc = "host.port";
+            @NotNull final String desc = "host.port";
             TCPRegistry.createServerSocketChannelFor(desc);
 
             // we use an event loop rather than lots of threads
-            try (EventLoop eg = new EventGroup(true)) {
+            try (@NotNull EventLoop eg = new EventGroup(true)) {
                 eg.start();
 
                 // an example message that we are going to send from the server to the client and back
-                final String expectedMessage = "<my message>";
+                @NotNull final String expectedMessage = "<my message>";
                 createServer(desc, eg);
 
-                try (TcpChannelHub tcpChannelHub = createClient(eg, desc)) {
+                try (@NotNull TcpChannelHub tcpChannelHub = createClient(eg, desc)) {
 
                     // create the message the client sends to the server
 
@@ -90,7 +91,7 @@ public class SimpleServerAndClientTest {
                     final long tid = tcpChannelHub.nextUniqueTransaction(System.currentTimeMillis());
 
                     // we will use a text wire backed by a elasticByteBuffer
-                    final Wire wire = new TextWire(Bytes.elasticByteBuffer());
+                    @NotNull final Wire wire = new TextWire(Bytes.elasticByteBuffer());
 
                     wire.writeDocument(true, w -> w.write(() -> "tid").int64(tid));
                     wire.writeDocument(false, w -> w.write(() -> "payload").text(expectedMessage));
@@ -106,7 +107,7 @@ public class SimpleServerAndClientTest {
 
                         // read the reply and check the result
                         reply.readDocument(null, data -> {
-                            final String text = data.read(() -> "payloadResponse").text();
+                            @Nullable final String text = data.read(() -> "payloadResponse").text();
                             Assert.assertEquals(expectedMessage, text);
                         });
 
@@ -132,12 +133,12 @@ public class SimpleServerAndClientTest {
     }
 
     @NotNull
-    private TcpChannelHub createClient(EventLoop eg, String desc) {
+    private TcpChannelHub createClient(@NotNull EventLoop eg, String desc) {
         return new TcpChannelHub(null, eg, WireType.TEXT, "/", uri(desc), false, null, HandlerPriority.TIMER);
     }
 
-    private void createServer(String desc, EventLoop eg) throws IOException {
-        AcceptorEventHandler eah = new AcceptorEventHandler(desc,
+    private void createServer(@NotNull String desc, @NotNull EventLoop eg) throws IOException {
+        @NotNull AcceptorEventHandler eah = new AcceptorEventHandler(desc,
 
                 LegacyHanderFactory.simpleTcpEventHandlerFactory(WireEchoRequestHandler::new, WireType.TEXT),
                 VanillaNetworkContext::new);

@@ -23,6 +23,7 @@ import org.glassfish.grizzly.memory.MemoryManager;
 import org.glassfish.grizzly.nio.transport.TCPNIOTransport;
 import org.glassfish.grizzly.nio.transport.TCPNIOTransportBuilder;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -46,20 +47,20 @@ public class GrizzlyClientLatencyTest {
 
         System.out.println("Starting Grizzly latency test");
 
-        final CountDownLatch finished = new CountDownLatch(1);
+        @NotNull final CountDownLatch finished = new CountDownLatch(1);
         final Buffer buffer = MemoryManager.DEFAULT_MEMORY_MANAGER.allocate(8);
 
-        Connection connection = null;
+        @Nullable Connection connection = null;
 
         // Create a FilterChain using FilterChainBuilder
-        FilterChainBuilder filterChainBuilder = FilterChainBuilder.stateless();
+        @NotNull FilterChainBuilder filterChainBuilder = FilterChainBuilder.stateless();
 
         // Add TransportFilter, which is responsible
         // for reading and writing data to the connection
         filterChainBuilder.add(new TransportFilter());
 
         final long startTime = System.nanoTime();
-        final AtomicLong bytesReceived = new AtomicLong();
+        @NotNull final AtomicLong bytesReceived = new AtomicLong();
 
         filterChainBuilder.add(new BaseFilter() {
             final long[] times = new long[500_000];

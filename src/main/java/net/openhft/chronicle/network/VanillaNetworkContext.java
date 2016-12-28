@@ -54,6 +54,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         return socketChannel;
     }
 
+    @NotNull
     @Override
     public T socketChannel(SocketChannel socketChannel) {
         this.socketChannel = socketChannel;
@@ -69,6 +70,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
      * @param isAcceptor {@code} true if its a server socket, {@code} false if its a client
      * @return
      */
+    @NotNull
     @Override
     public T isAcceptor(boolean isAcceptor) {
         this.isAcceptor = isAcceptor;
@@ -98,6 +100,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         return wireType;
     }
 
+    @NotNull
     public T wireType(WireType wireType) {
         this.wireType = wireType;
         return (T) this;
@@ -108,12 +111,14 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         return this.sessionDetails;
     }
 
+    @NotNull
     @Override
     public T sessionDetails(SessionDetailsProvider sessionDetails) {
         this.sessionDetails = sessionDetails;
         return (T) this;
     }
 
+    @Nullable
     @Override
     public TerminationEventHandler terminationEventHandler() {
         return terminationEventHandler;
@@ -176,6 +181,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         return socketReconnector;
     }
 
+    @NotNull
     public T socketReconnector(Runnable socketReconnector) {
         this.socketReconnector = socketReconnector;
         return (T) this;

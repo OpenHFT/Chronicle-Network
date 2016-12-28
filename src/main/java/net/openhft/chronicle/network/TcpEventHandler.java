@@ -51,7 +51,9 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
     @NotNull
     private final SocketChannel sc;
+    @NotNull
     private final NetworkContext nc;
+    @NotNull
     private final SessionDetailsProvider sessionDetails;
     @NotNull
     private final WriteEventHandler writeEventHandler;
@@ -164,7 +166,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             }
         }
         try {
-            ByteBuffer inBB = inBBB.underlyingObject();
+            @Nullable ByteBuffer inBB = inBBB.underlyingObject();
             int start = inBB.position();
 
             int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
@@ -257,12 +259,12 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
         if (inBBB.readRemaining() == 0) {
             inBBB.clear();
-            ByteBuffer inBB = inBBB.underlyingObject();
+            @Nullable ByteBuffer inBB = inBBB.underlyingObject();
             inBB.clear();
 
         } else if (inBBB.readPosition() > 0) {
             // if it read some data compact();
-            ByteBuffer inBB = inBBB.underlyingObject();
+            @Nullable ByteBuffer inBB = inBBB.underlyingObject();
             inBB.position((int) inBBB.readPosition());
             inBB.limit((int) inBBB.readLimit());
             inBB.compact();
@@ -351,8 +353,9 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         public Factory() {
         }
 
+        @NotNull
         @Override
-        public TcpEventHandler apply(NetworkContext nc) {
+        public TcpEventHandler apply(@NotNull NetworkContext nc) {
             return new TcpEventHandler(nc);
         }
     }

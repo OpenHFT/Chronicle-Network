@@ -128,9 +128,9 @@ public class EchoClientMain {
 
     public static void main(@NotNull String... args) throws IOException, InterruptedException {
         Affinity.setAffinity(2);
-        String[] hostnames = args.length > 0 ? args : "localhost".split(",");
+        @NotNull String[] hostnames = args.length > 0 ? args : "localhost".split(",");
 
-        SocketChannel[] sockets = new SocketChannel[CLIENTS];
+        @NotNull SocketChannel[] sockets = new SocketChannel[CLIENTS];
         openConnections(hostnames, PORT, sockets);
         testThroughput(sockets);
         closeConnections(sockets);
@@ -150,7 +150,7 @@ public class EchoClientMain {
     }
 
     private static void closeConnections(@NotNull SocketChannel... sockets) throws IOException {
-        for (Closeable socket : sockets)
+        for (@NotNull Closeable socket : sockets)
             socket.close();
     }
 
@@ -161,19 +161,19 @@ public class EchoClientMain {
         int count = 0, window = 5;
         long start = System.nanoTime();
         while (System.nanoTime() - start < 10e9) {
-            for (SocketChannel socket : sockets) {
+            for (@NotNull SocketChannel socket : sockets) {
                 bb.clear();
                 if (socket.write(bb) < 0)
                     throw new AssertionError("Socket " + socket + " unable to write in one go.");
             }
             if (count >= window)
-                for (SocketChannel socket : sockets) {
+                for (@NotNull SocketChannel socket : sockets) {
                     bb.clear();
                     while (socket.read(bb) >= 0 && bb.remaining() > 0) ;
                 }
             count++;
         }
-        for (SocketChannel socket : sockets) {
+        for (@NotNull SocketChannel socket : sockets) {
             try {
                 do {
                     bb.clear();
@@ -189,15 +189,15 @@ public class EchoClientMain {
     private static void testByteLatency(int targetThroughput, @NotNull SocketChannel... sockets) throws IOException {
         System.out.println("Starting latency test rate: " + targetThroughput);
         int tests = Math.min(18 * targetThroughput, 1000000);
-        long[] times = new long[tests * sockets.length];
+        @NotNull long[] times = new long[tests * sockets.length];
         int count = 0;
         long now = System.nanoTime();
         int interval = (int) (1e9 * sockets.length / targetThroughput);
 
         ByteBuffer bb = ByteBuffer.allocateDirect(40);
         bb.putInt(0, 0x12345678);
-        Random rand = new Random();
-        long[] start = new long[sockets.length];
+        @NotNull Random rand = new Random();
+        @NotNull long[] start = new long[sockets.length];
         for (int i = -20000; i < tests; i += sockets.length) {
             now += rand.nextInt(2 * interval);
             while (System.nanoTime() < now)

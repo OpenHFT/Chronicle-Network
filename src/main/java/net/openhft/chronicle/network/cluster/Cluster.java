@@ -31,9 +31,11 @@ import java.util.concurrent.ConcurrentSkipListMap;
 abstract public class Cluster<E extends HostDetails, C extends ClusterContext> implements Marshallable,
         Closeable {
 
+    @NotNull
     private final Map<String, E> hostDetails;
     private final String clusterName;
 
+    @org.jetbrains.annotations.Nullable
     private C clusterContext;
 
     public Cluster(String clusterName) {
@@ -45,6 +47,7 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
         return clusterName;
     }
 
+    @org.jetbrains.annotations.Nullable
     public C clusterContext() {
         return (C) clusterContext;
     }
@@ -58,7 +61,7 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
             return;
         while (!wire.isEmpty()) {
             final StringBuilder sb = Wires.acquireStringBuilder();
-            final ValueIn valueIn = wire.readEventName(sb);
+            @NotNull final ValueIn valueIn = wire.readEventName(sb);
 
             if ("context".contentEquals(sb)) {
                 clusterContext = (C) valueIn.typedMarshallable();
@@ -67,7 +70,7 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
             }
 
             valueIn.marshallable(details -> {
-                final E hd = newHostDetails();
+                @NotNull final E hd = newHostDetails();
                 hd.readMarshallable(details);
                 hostDetails.put(sb.toString(), hd);
             });
@@ -80,48 +83,54 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
 
     }
 
+    @org.jetbrains.annotations.Nullable
     @Nullable
     public HostDetails findHostDetails(int id) {
 
-        for (HostDetails hd : hostDetails.values()) {
+        for (@NotNull HostDetails hd : hostDetails.values()) {
             if (hd.hostId() == id)
                 return hd;
         }
         return null;
     }
 
+    @org.jetbrains.annotations.Nullable
     public <H extends HostDetails, C extends ClusterContext> ConnectionStrategy
     findConnectionStrategy(int remoteIdentifier) {
 
-        HostDetails hostDetails = findHostDetails(remoteIdentifier);
+        @org.jetbrains.annotations.Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.connectionStrategy();
     }
 
+    @org.jetbrains.annotations.Nullable
     public ConnectionManager findConnectionManager(int remoteIdentifier) {
-        HostDetails hostDetails = findHostDetails(remoteIdentifier);
+        @org.jetbrains.annotations.Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.connectionManager();
     }
 
+    @org.jetbrains.annotations.Nullable
     public TerminationEventHandler findTerminationEventHandler(int remoteIdentifier) {
-        HostDetails hostDetails = findHostDetails(remoteIdentifier);
+        @org.jetbrains.annotations.Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.terminationEventHandler();
 
     }
 
+    @org.jetbrains.annotations.Nullable
     public ConnectionChangedNotifier findClusterNotifier(int remoteIdentifier) {
-        HostDetails hostDetails = findHostDetails(remoteIdentifier);
+        @org.jetbrains.annotations.Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.clusterNotifier();
     }
 
+    @NotNull
     abstract protected E newHostDetails();
 
     @Override
     public void writeMarshallable(@NotNull WireOut wire) {
-        for (Map.Entry<String, E> entry2 : hostDetails.entrySet()) {
+        for (@NotNull Map.Entry<String, E> entry2 : hostDetails.entrySet()) {
             wire.writeEventName(entry2::getKey).marshallable(entry2.getValue());
         }
     }

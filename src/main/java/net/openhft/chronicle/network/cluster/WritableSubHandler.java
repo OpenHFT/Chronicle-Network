@@ -18,11 +18,13 @@
 package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.wire.WriteMarshallable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * @author Rob Austin.
  */
 public interface WritableSubHandler {
 
+    @NotNull
     WriteMarshallable writer();
 }

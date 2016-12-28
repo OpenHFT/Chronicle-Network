@@ -24,7 +24,7 @@ public class ClientSessionProvider implements SessionProvider {
     @NotNull
     private SessionDetails sessionDetails;
 
-    public ClientSessionProvider(SessionDetails sessionDetails) {
+    public ClientSessionProvider(@NotNull SessionDetails sessionDetails) {
         this.sessionDetails = sessionDetails;
     }
 
@@ -43,6 +43,7 @@ public class ClientSessionProvider implements SessionProvider {
         throw new UnsupportedOperationException();
     }
 
+    @NotNull
     @Override
     public String toString() {
         return "sessionDetails=" + sessionDetails;

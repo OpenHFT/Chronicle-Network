@@ -61,6 +61,7 @@ public class WireNetworkStats extends AbstractMarshallable implements
         return wireType;
     }
 
+    @NotNull
     public WireNetworkStats wireType(Enum wireType) {
         this.wireType = wireType;
         return this;
@@ -78,6 +79,7 @@ public class WireNetworkStats extends AbstractMarshallable implements
         return userId;
     }
 
+    @NotNull
     @Override
     public WireNetworkStats userId(String userId) {
         this.userId = userId;
@@ -89,6 +91,7 @@ public class WireNetworkStats extends AbstractMarshallable implements
         return writeBps;
     }
 
+    @NotNull
     @Override
     public WireNetworkStats writeBps(long writeBps) {
         this.writeBps = writeBps;
@@ -100,6 +103,7 @@ public class WireNetworkStats extends AbstractMarshallable implements
         return readBps;
     }
 
+    @NotNull
     @Override
     public WireNetworkStats readBps(long readBps) {
         this.readBps = readBps;
@@ -111,6 +115,7 @@ public class WireNetworkStats extends AbstractMarshallable implements
         return socketPollCountPerSecond;
     }
 
+    @NotNull
     @Override
     public WireNetworkStats socketPollCountPerSecond(long socketPollCountPerSecond) {
         this.socketPollCountPerSecond = socketPollCountPerSecond;
@@ -122,12 +127,14 @@ public class WireNetworkStats extends AbstractMarshallable implements
         return timestamp;
     }
 
+    @NotNull
     @Override
     public WireNetworkStats timestamp(long timestamp) {
         this.timestamp = timestamp;
         return this;
     }
 
+    @NotNull
     @Override
     public synchronized WireNetworkStats remoteHostName(@NotNull String hostName) {
         this.remoteHostName = hostName;
@@ -144,6 +151,7 @@ public class WireNetworkStats extends AbstractMarshallable implements
         return localIdentifier;
     }
 
+    @NotNull
     @Override
     public WireNetworkStats localIdentifier(int localIdentifier) {
         this.localIdentifier = localIdentifier;
@@ -165,6 +173,7 @@ public class WireNetworkStats extends AbstractMarshallable implements
         return remoteIdentifier;
     }
 
+    @NotNull
     @Override
     public WireNetworkStats remoteIdentifier(int remoteIdentifier) {
         this.remoteIdentifier = remoteIdentifier;

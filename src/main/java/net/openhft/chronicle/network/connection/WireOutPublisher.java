@@ -47,7 +47,7 @@ public interface WireOutPublisher extends Closeable {
 
         try {
             final Class<?> aClass = Class.forName("software.chronicle.enterprise.throttle.ThrottledWireOutPublisher");
-            final Constructor<WireOutPublisher> constructor = (Constructor) aClass.getConstructors()[0];
+            @NotNull final Constructor<WireOutPublisher> constructor = (Constructor) aClass.getConstructors()[0];
             return constructor.newInstance(periodMs, delegate);
 
         } catch (Exception e) {

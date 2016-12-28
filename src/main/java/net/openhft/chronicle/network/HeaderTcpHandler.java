@@ -22,6 +22,7 @@ import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +35,11 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
 
     public static final String HANDLER = "handler";
     private static final Logger LOG = LoggerFactory.getLogger(HeaderTcpHandler.class);
+    @NotNull
     private final TcpEventHandler handlerManager;
+    @NotNull
     private final Function<Object, TcpHandler> handlerFunction;
+    @NotNull
     private final NetworkContext nc;
 
     public HeaderTcpHandler(@NotNull final TcpEventHandler handlerManager,
@@ -66,9 +70,9 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
                         ", read:\n" + Wires.fromSizePrefixedBlobs(in, start, in.readLimit() - start));
             final TcpHandler handler;
             final long readPosition = inWire.bytes().readPosition();
-            final ValueIn read = inWire.read(() -> HANDLER);
+            @NotNull final ValueIn read = inWire.read(() -> HANDLER);
 
-            final Object o;
+            @Nullable final Object o;
 
             if (dc.isMetaData() && read.isTyped())
                 o = read.typedMarshallable();
@@ -90,8 +94,8 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
     }
 
     @NotNull
-    private SessionDetailsProvider toSessionDetails(Wire inWire) {
-        VanillaSessionDetails sd = new VanillaSessionDetails();
+    private SessionDetailsProvider toSessionDetails(@NotNull Wire inWire) {
+        @NotNull VanillaSessionDetails sd = new VanillaSessionDetails();
         sd.readMarshallable(inWire);
         return sd;
     }

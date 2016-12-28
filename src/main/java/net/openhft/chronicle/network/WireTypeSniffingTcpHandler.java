@@ -34,9 +34,12 @@ import static net.openhft.chronicle.wire.WireType.*;
  */
 public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements TcpHandler {
 
+    @NotNull
     private final TcpEventHandler handlerManager;
 
+    @NotNull
     private final T nc;
+    @NotNull
     private final Function<T, TcpHandler> delegateHandlerFactory;
 
     public WireTypeSniffingTcpHandler(@NotNull final TcpEventHandler handlerManager,
@@ -69,7 +72,7 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements Tcp
 
         final byte b = in.readByte(4);
 
-        final WireType wireType;
+        @NotNull final WireType wireType;
         if (b < 0)
             wireType = DELTA_BINARY.isAvailable() ? DELTA_BINARY : BINARY;
         else if (b > ' ')

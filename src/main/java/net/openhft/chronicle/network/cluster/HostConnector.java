@@ -43,16 +43,18 @@ public class HostConnector implements Closeable {
     private final RemoteConnector remoteConnector;
     private final String connectUri;
     private final Function<ClusterContext, NetworkContext> networkContextFactory;
+    @NotNull
     private final ClusterContext clusterContext;
     private final Function<ClusterContext, NetworkStatsListener> networkStatsListenerFactory;
     private NetworkContext nc;
+    @NotNull
     private volatile AtomicReference<WireOutPublisher> wireOutPublisher = new AtomicReference<>();
     @NotNull
     private EventLoop eventLoop;
 
     HostConnector(@NotNull ClusterContext clusterContext,
                   final RemoteConnector remoteConnector,
-                  final HostDetails hostdetails) {
+                  @NotNull final HostDetails hostdetails) {
         this.clusterContext = clusterContext;
         this.remoteConnector = remoteConnector;
         this.networkStatsListenerFactory = clusterContext.networkStatsListenerFactory();

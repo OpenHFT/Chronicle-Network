@@ -72,7 +72,7 @@ public class WireTcpHandlerTest {
     private static void testLatency(String desc, @NotNull Function<Bytes, Wire> wireWrapper, @NotNull SocketChannel... sockets) throws IOException {
 //        System.out.println("Starting latency test");
         int tests = 40000;
-        long[] times = new long[tests * sockets.length];
+        @NotNull long[] times = new long[tests * sockets.length];
         int count = 0;
         ByteBuffer out = ByteBuffer.allocateDirect(64 * 1024);
         Bytes outBytes = Bytes.wrapForWrite(out);
@@ -81,11 +81,11 @@ public class WireTcpHandlerTest {
         ByteBuffer in = ByteBuffer.allocateDirect(64 * 1024);
         Bytes inBytes = Bytes.wrapForRead(in);
         Wire inWire = wireWrapper.apply(inBytes);
-        TestData td = new TestData();
-        TestData td2 = new TestData();
+        @NotNull TestData td = new TestData();
+        @NotNull TestData td2 = new TestData();
         for (int i = -12000; i < tests; i++) {
             long now = System.nanoTime();
-            for (SocketChannel socket : sockets) {
+            for (@NotNull SocketChannel socket : sockets) {
                 out.clear();
                 outBytes.clear();
                 td.value3 = td.value2 = td.value1 = i;
@@ -96,7 +96,7 @@ public class WireTcpHandlerTest {
                     throw new AssertionError("Unable to write in one go.");
             }
 
-            for (SocketChannel socket : sockets) {
+            for (@NotNull SocketChannel socket : sockets) {
                 in.clear();
                 inBytes.clear();
                 while (true) {
@@ -143,10 +143,10 @@ public class WireTcpHandlerTest {
     @Ignore("todo fix")
     @Test
     public void testProcess() throws IOException {
-        EventLoop eg = new EventGroup(true);
+        @NotNull EventLoop eg = new EventGroup(true);
         eg.start();
         TCPRegistry.createServerSocketChannelFor(desc);
-        AcceptorEventHandler eah = new AcceptorEventHandler(desc,
+        @NotNull AcceptorEventHandler eah = new AcceptorEventHandler(desc,
                 LegacyHanderFactory.simpleTcpEventHandlerFactory(EchoRequestHandler::new, wireType),
                 VanillaNetworkContext::new);
         eg.addHandler(eah);

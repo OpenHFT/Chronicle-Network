@@ -43,6 +43,7 @@ import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.Wires;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -80,7 +81,7 @@ public class VerySimpleClientTest {
 
     @Before
     public void setUp() throws IOException {
-        String desc = "host.port";
+        @NotNull String desc = "host.port";
         TCPRegistry.createServerSocketChannelFor(desc);
         eg = new EventGroup(true);
         eg.start();
@@ -106,7 +107,7 @@ public class VerySimpleClientTest {
         outWire.writeDocument(true, w -> w.write(() -> "tid").int64(tid));
         outWire.writeDocument(false, w -> w.write(() -> "payload").text(expectedMessage));
 
-        final ByteBuffer outBuff = (ByteBuffer) outWire.bytes().underlyingObject();
+        @Nullable final ByteBuffer outBuff = (ByteBuffer) outWire.bytes().underlyingObject();
 
         outBuff.clear();
         outBuff.limit((int) outWire.bytes().writePosition());
@@ -127,8 +128,8 @@ public class VerySimpleClientTest {
 
     }
 
-    private void readDocument(Wire inMetaDataWire) throws IOException {
-        ByteBuffer inBuff = (ByteBuffer) inMetaDataWire.bytes().underlyingObject();
+    private void readDocument(@NotNull Wire inMetaDataWire) throws IOException {
+        @Nullable ByteBuffer inBuff = (ByteBuffer) inMetaDataWire.bytes().underlyingObject();
 
         // write the data to the socket
         long start = inMetaDataWire.bytes().readPosition();
@@ -142,7 +143,7 @@ public class VerySimpleClientTest {
     }
 
     @NotNull
-    private SocketChannel createClient(EventLoop eg, String desc) throws IOException {
+    private SocketChannel createClient(EventLoop eg, @NotNull String desc) throws IOException {
 
         SocketChannel result = TCPRegistry.createSocketChannel(desc);
         int tcpBufferSize = 2 << 20;
@@ -154,8 +155,8 @@ public class VerySimpleClientTest {
         return result;
     }
 
-    private void createServer(String desc, EventLoop eg) throws IOException {
-        AcceptorEventHandler eah = new AcceptorEventHandler(desc,
+    private void createServer(@NotNull String desc, @NotNull EventLoop eg) throws IOException {
+        @NotNull AcceptorEventHandler eah = new AcceptorEventHandler(desc,
                 LegacyHanderFactory.simpleTcpEventHandlerFactory(
                         WireEchoRequestHandler::new, WIRE_TYPE),
                 VanillaNetworkContext::new);

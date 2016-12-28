@@ -43,7 +43,7 @@ public class MinaClientThroughPutTest {
 
     public static void main(String[] args) throws Throwable {
 
-        final NioSocketConnector connector = new NioSocketConnector();
+        @NotNull final NioSocketConnector connector = new NioSocketConnector();
         final IoBuffer ioBuffer = IoBuffer.allocate(1024);
         connector.setConnectTimeoutMillis(CONNECT_TIMEOUT);
 

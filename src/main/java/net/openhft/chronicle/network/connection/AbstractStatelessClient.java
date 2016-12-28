@@ -45,6 +45,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
     @NotNull
     protected final TcpChannelHub hub;
+    @NotNull
     protected final String csp;
     private final long cid;
 
@@ -65,7 +66,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
     WriteValue toParameters(@NotNull final E eventId,
                             @Nullable final Object... args) {
         return out -> {
-            final WireKey[] paramNames = eventId.params();
+            @NotNull final WireKey[] paramNames = eventId.params();
 
             //args can be null, e.g. when get() is called from Reference.
             if (args == null) return;
@@ -82,7 +83,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
             out.marshallable(m -> {
                 for (int i = 0; i < paramNames.length; i++) {
-                    final ValueOut vo = m.write(paramNames[i]);
+                    @NotNull final ValueOut vo = m.write(paramNames[i]);
                     vo.object(args[i]);
                 }
             });
@@ -96,7 +97,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
             @NotNull final Class<R> resultType,
             @NotNull Object... args) {
 
-        Function<ValueIn, R> consumerIn = resultType == CharSequence.class && usingValue != null
+        @Nullable Function<ValueIn, R> consumerIn = resultType == CharSequence.class && usingValue != null
                 ? f -> {
             f.textTo((StringBuilder) usingValue);
             return usingValue;
@@ -115,7 +116,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
             @NotNull final Class<R> resultType,
             @NotNull Object... args) {
 
-        Function<ValueIn, R> consumerIn = resultType == CharSequence.class && usingValue != null
+        @NotNull Function<ValueIn, R> consumerIn = resultType == CharSequence.class && usingValue != null
                 ? f -> {
             f.textTo((StringBuilder) usingValue);
             return usingValue;
@@ -133,7 +134,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
             @Nullable R usingValue,
             @NotNull final Class<R> resultType) {
 
-        Function<ValueIn, R> consumerIn =
+        @NotNull Function<ValueIn, R> consumerIn =
                 resultType == CharSequence.class && usingValue != null ? f -> {
                     f.textTo((StringBuilder) usingValue);
                     return usingValue;
@@ -157,8 +158,8 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
      */
     protected <T> T attempt(@NotNull final ThrowingSupplier<T, TimeoutException> s) {
 
-        ConnectionDroppedException t = null;
-        TimeoutException te = null;
+        @Nullable ConnectionDroppedException t = null;
+        @Nullable TimeoutException te = null;
         for (int i = 1; i <= 20; i++) {
 
             try {
@@ -260,7 +261,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
             hub.outWire().writeDocument(false, wireOut -> {
 
-                final ValueOut valueOut = wireOut.writeEventName(eventId);
+                @NotNull final ValueOut valueOut = wireOut.writeEventName(eventId);
 
                 if (consumer == null)
                     valueOut.marshallable(WriteMarshallable.EMPTY);
@@ -325,7 +326,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         return false;
     }
 
-    private void quietSendEventAsyncWithoutLock(final WireKey eventId, final WriteValue consumer) {
+    private void quietSendEventAsyncWithoutLock(@NotNull final WireKey eventId, final WriteValue consumer) {
         try {
             sendEventAsyncWithoutLock(eventId, consumer);
         } catch (ConnectionDroppedException e) {
@@ -339,7 +340,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         }
     }
 
-    private void quietSendBytesAsyncWithoutLock(final Bytes bytes) {
+    private void quietSendBytesAsyncWithoutLock(@NotNull final Bytes bytes) {
         try {
             sendBytesAsyncWithoutLock(bytes);
 
@@ -366,7 +367,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
         writeAsyncMetaData();
         hub.outWire().writeDocument(false, wireOut -> {
-            final ValueOut valueOut = wireOut.writeEventName(eventId);
+            @NotNull final ValueOut valueOut = wireOut.writeEventName(eventId);
             if (consumer == null)
                 valueOut.marshallable(WriteMarshallable.EMPTY);
             else
@@ -401,7 +402,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
     }
 
     private void checkIsData(@NotNull Wire wireIn) {
-        Bytes<?> bytes = wireIn.bytes();
+        @NotNull Bytes<?> bytes = wireIn.bytes();
         int dataLen = bytes.readVolatileInt();
 
         if (!Wires.isData(dataLen))
@@ -437,7 +438,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
     private <R> R readReply(@NotNull WireIn wireIn, @NotNull WireKey replyId, @NotNull Function<ValueIn, R> function) {
 
         final StringBuilder eventName = Wires.acquireStringBuilder();
-        final ValueIn event = wireIn.read(eventName);
+        @NotNull final ValueIn event = wireIn.read(eventName);
 
         if (replyId.contentEquals(eventName))
             return function.apply(event);

@@ -16,6 +16,8 @@
 
 package net.openhft.chronicle.network;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Created by daniel on 10/02/2016.
  */
@@ -60,6 +62,7 @@ public class ConnectionDetails extends VanillaNetworkContext {
         this.disable = disable;
     }
 
+    @NotNull
     @Override
     public String toString() {
         return "ConnectionDetails{" +

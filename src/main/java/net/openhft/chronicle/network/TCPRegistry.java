@@ -62,8 +62,8 @@ public enum TCPRegistry {
     }
 
     public static void assertAllServersStopped() {
-        List<String> closed = new ArrayList<>();
-        for (Map.Entry<String, ServerSocketChannel> entry : DESC_TO_SERVER_SOCKET_CHANNEL_MAP.entrySet()) {
+        @NotNull List<String> closed = new ArrayList<>();
+        for (@NotNull Map.Entry<String, ServerSocketChannel> entry : DESC_TO_SERVER_SOCKET_CHANNEL_MAP.entrySet()) {
             if (entry.getValue().isOpen())
                 closed.add(entry.toString());
             closeQuietly(entry.getValue());
@@ -84,10 +84,10 @@ public enum TCPRegistry {
      * @throws IOException
      */
     public static void createServerSocketChannelFor(@NotNull String... descriptions) throws IOException {
-        for (String description : descriptions) {
+        for (@NotNull String description : descriptions) {
             InetSocketAddress address;
             if (description.contains(":")) {
-                String[] split = description.trim().split(":");
+                @NotNull String[] split = description.trim().split(":");
                 String host = split[0];
                 int port = Integer.parseInt(split[1]);
                 address = createInetSocketAddress(host, port);
@@ -124,7 +124,7 @@ public enum TCPRegistry {
             return address;
         String property = System.getProperty(description);
         if (property != null) {
-            String[] parts = property.split(":", 2);
+            @NotNull String[] parts = property.split(":", 2);
             if (parts[0].equals("null"))
                 throw new IllegalArgumentException("Invalid hostname \"null\"");
             if (parts.length == 1)
@@ -138,7 +138,7 @@ public enum TCPRegistry {
             }
         }
 
-        String[] parts = description.split(":", 2);
+        @NotNull String[] parts = description.split(":", 2);
         if (parts.length == 1)
             throw new IllegalArgumentException("Description " + description + " malformed, expected hostname:port");
         try {
@@ -155,7 +155,7 @@ public enum TCPRegistry {
         if (port <= 0 || port >= 65536)
             throw new IllegalArgumentException("Invalid port " + port);
 
-        InetSocketAddress address = createInetSocketAddress(hostname, port);
+        @NotNull InetSocketAddress address = createInetSocketAddress(hostname, port);
         HOSTNAME_PORT_ALIAS.put(description, address);
         return address;
     }

@@ -22,6 +22,7 @@ import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.cluster.TerminationEventHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.channels.SocketChannel;
 
@@ -69,6 +70,7 @@ public interface NetworkContext<T extends NetworkContext> extends Closeable {
 
     ServerThreadingStrategy serverThreadingStrategy();
 
+    @NotNull
     default ConnectionListener acquireConnectionListener() {
         return new ConnectionListener() {
             @Override

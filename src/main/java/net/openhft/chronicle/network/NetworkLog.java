@@ -65,7 +65,7 @@ class NetworkLog {
     }
 
     private void log0(@NotNull ByteBuffer bytes, int start, int end) {
-        final StringBuilder sb = new StringBuilder(desc);
+        @NotNull final StringBuilder sb = new StringBuilder(desc);
         sb.append(" len: ").append(end - start).append(" - ");
         if (end - start > 128) {
             for (int i = start; i < start + 64; i++)

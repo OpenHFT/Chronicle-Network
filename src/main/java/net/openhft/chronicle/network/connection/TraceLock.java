@@ -17,6 +17,8 @@
 package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.core.Jvm;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -27,8 +29,10 @@ import java.util.concurrent.locks.ReentrantLock;
 class TraceLock extends ReentrantLock {
 
     private static final long serialVersionUID = 1997992705529515418L;
+    @Nullable
     private volatile Throwable here;
 
+    @NotNull
     public static ReentrantLock create() {
         return Jvm.isDebug() ? new TraceLock() : new ReentrantLock();
     }
@@ -49,11 +53,11 @@ class TraceLock extends ReentrantLock {
     @Override
     public String toString() {
 
-        Throwable here = this.here;
+        @Nullable Throwable here = this.here;
         if (here == null)
             return super.toString();
 
-        final StringBuilder sb = new StringBuilder(super.toString());
+        @NotNull final StringBuilder sb = new StringBuilder(super.toString());
 
         for (StackTraceElement s : here.getStackTrace()) {
             sb.append("\n\tat ").append(s);

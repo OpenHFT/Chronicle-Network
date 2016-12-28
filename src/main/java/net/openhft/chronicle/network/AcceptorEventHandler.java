@@ -45,6 +45,7 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
     @NotNull
 
     private final ServerSocketChannel ssc;
+    @NotNull
     private final Supplier<? extends NetworkContext> ncFactory;
 
     private EventLoop eventLoop;

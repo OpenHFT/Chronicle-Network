@@ -41,9 +41,9 @@ public class LegacyHanderFactory {
                                  final long heartbeatIntervalTicks,
                                  final long heartbeatIntervalTimeout) {
         return (networkContext) -> {
-            final TcpEventHandler handler = new TcpEventHandler(networkContext);
+            @NotNull final TcpEventHandler handler = new TcpEventHandler(networkContext);
 
-            final Function<Object, TcpHandler> consumer = o -> {
+            @NotNull final Function<Object, TcpHandler> consumer = o -> {
                 if (o instanceof SessionDetailsProvider) {
                     networkContext.sessionDetails((SessionDetailsProvider) o);
                     return defaultHandedFactory.apply(networkContext);
@@ -55,12 +55,12 @@ public class LegacyHanderFactory {
 
             final Function<WireType, WireOutPublisher> f = VanillaWireOutPublisher::new;
 
-            final HeaderTcpHandler<T> headerTcpHandler = new HeaderTcpHandler<>(handler,
+            @NotNull final HeaderTcpHandler<T> headerTcpHandler = new HeaderTcpHandler<>(handler,
                     consumer,
                     networkContext
             );
 
-            final WireTypeSniffingTcpHandler<T> wireTypeSniffingTcpHandler =
+            @NotNull final WireTypeSniffingTcpHandler<T> wireTypeSniffingTcpHandler =
                     new WireTypeSniffingTcpHandler<>(handler, networkContext, (nc) -> headerTcpHandler);
 
             handler.tcpHandler(wireTypeSniffingTcpHandler);
@@ -78,7 +78,7 @@ public class LegacyHanderFactory {
         return (networkContext) -> {
 
             networkContext.wireOutPublisher(new VanillaWireOutPublisher(TEXT));
-            final TcpEventHandler handler = new TcpEventHandler(networkContext);
+            @NotNull final TcpEventHandler handler = new TcpEventHandler(networkContext);
             handler.tcpHandler(new WireTypeSniffingTcpHandler<>(handler, networkContext,
                     defaultHandedFactory));
             return handler;

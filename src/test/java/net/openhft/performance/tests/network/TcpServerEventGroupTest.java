@@ -63,14 +63,14 @@ public class TcpServerEventGroupTest {
         int count = 1, window = 0;
         long start = System.nanoTime();
         while (System.nanoTime() - start < 10e9) {
-            for (SocketChannel socket : sockets) {
+            for (@NotNull SocketChannel socket : sockets) {
                 bb.clear();
                 bb.putLong(0, count);
                 if (socket.write(bb) < 0)
                     throw new AssertionError("Socket " + socket + " unable to write in one go.");
             }
             if (count > window)
-                for (SocketChannel socket : sockets) {
+                for (@NotNull SocketChannel socket : sockets) {
                     bb.clear();
                     while (socket.read(bb) >= 0 && bb.remaining() > 0) ;
                     long ts2 = bb.getLong(0);
@@ -79,7 +79,7 @@ public class TcpServerEventGroupTest {
                 }
             count++;
         }
-        for (SocketChannel socket : sockets) {
+        for (@NotNull SocketChannel socket : sockets) {
             try {
                 do {
                     bb.clear();
@@ -94,18 +94,18 @@ public class TcpServerEventGroupTest {
     private static void testLatency(@NotNull SocketChannel... sockets) throws IOException {
         System.out.println("Starting latency test");
         int tests = 500000;
-        long[] times = new long[tests * sockets.length];
+        @NotNull long[] times = new long[tests * sockets.length];
         int count = 0;
         ByteBuffer bb = ByteBuffer.allocateDirect(64);
         for (int i = -50000; i < tests; i++) {
             long now = System.nanoTime();
-            for (SocketChannel socket : sockets) {
+            for (@NotNull SocketChannel socket : sockets) {
                 bb.clear();
                 socket.write(bb);
                 if (bb.remaining() > 0)
                     throw new AssertionError("Unable to write in one go.");
             }
-            for (SocketChannel socket : sockets) {
+            for (@NotNull SocketChannel socket : sockets) {
                 bb.clear();
                 while (bb.remaining() > 0)
                     if (socket.read(bb) < 0)
@@ -138,10 +138,10 @@ public class TcpServerEventGroupTest {
     @Ignore("fix JIRA https://higherfrequencytrading.atlassian.net/browse/NET-13")
     @Test
     public void testStart() throws IOException, InterruptedException {
-        EventLoop eg = new EventGroup(true);
+        @NotNull EventLoop eg = new EventGroup(true);
         eg.start();
         TCPRegistry.createServerSocketChannelFor("TcpServerEventGroupTest");
-        AcceptorEventHandler eah = new AcceptorEventHandler("TcpServerEventGroupTest",
+        @NotNull AcceptorEventHandler eah = new AcceptorEventHandler("TcpServerEventGroupTest",
                 LegacyHanderFactory.legacyTcpEventHandlerFactory(EchoHandler::new),
                 VanillaNetworkContext::new);
 

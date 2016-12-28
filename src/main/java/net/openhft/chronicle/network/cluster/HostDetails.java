@@ -40,6 +40,7 @@ public class HostDetails implements Marshallable {
         return tcpBufferSize;
     }
 
+    @NotNull
     public HostDetails hostId(int hostId) {
         this.hostId = hostId;
         return this;
@@ -68,16 +69,19 @@ public class HostDetails implements Marshallable {
         return hostId;
     }
 
+    @NotNull
     public HostDetails tcpBufferSize(int tcpBufferSize) {
         this.tcpBufferSize = tcpBufferSize;
         return this;
     }
 
+    @NotNull
     public HostDetails connectUri(@NotNull String connectUri) {
         this.connectUri = connectUri;
         return this;
     }
 
+    @NotNull
     public HostDetails timeoutMs(int timeoutMs) {
         this.timeoutMs = timeoutMs;
         return this;

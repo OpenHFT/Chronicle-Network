@@ -51,7 +51,7 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
 
     @NotNull
     public static VanillaSessionDetails of(String userId, String securityToken, String domain) {
-        final VanillaSessionDetails vanillaSessionDetails = new VanillaSessionDetails();
+        @NotNull final VanillaSessionDetails vanillaSessionDetails = new VanillaSessionDetails();
         vanillaSessionDetails.userId(userId);
         vanillaSessionDetails.securityToken(securityToken);
         vanillaSessionDetails.domain(domain);
@@ -171,6 +171,7 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
         this.userId = userId;
     }
 
+    @NotNull
     @Override
     public String toString() {
         return "VanillaSessionDetails{" +
