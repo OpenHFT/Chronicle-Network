@@ -24,11 +24,10 @@ import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
+import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.threads.LongPauser;
 import net.openhft.chronicle.threads.Pauser;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -74,11 +73,14 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
                         return;
                     }
                     final NetworkStatsListener<NetworkContext> networkStatsListener = connectionDetails.networkStatsListener();
-                    socketChannel = connectionStrategy.connect(k, connectionDetails.sessionProvider(), networkStatsListener);
+                    SocketAddressSupplier socketAddressSupplier = connectionDetails.sessionProvider();
+                    socketChannel = connectionStrategy.connect(k, socketAddressSupplier, networkStatsListener);
                     if (socketChannel == null) {
                         Jvm.warn().on(ConnectorEventHandler.class, "unable to connect to any of the hosts");
                         return;
                     }
+
+                    Jvm.debug().on(ConnectorEventHandler.class, "successfully connect to " + socketAddressSupplier.toString());
 
                     descriptionToChannel.put(k, socketChannel);
                     connectionDetails.setConnected(true);
