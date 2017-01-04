@@ -34,7 +34,8 @@ import static net.openhft.chronicle.wire.WireType.TEXT;
 /**
  * @author Rob Austin.
  */
-public class LegacyHanderFactory {
+public enum LegacyHanderFactory {
+    INSTANCE;
 
     public static <T extends NetworkContext> Function<T, TcpEventHandler>
     legacyTcpEventHandlerFactory(@NotNull final Function<T, TcpHandler> defaultHandedFactory,
@@ -81,6 +82,18 @@ public class LegacyHanderFactory {
             @NotNull final TcpEventHandler handler = new TcpEventHandler(networkContext);
             handler.tcpHandler(new WireTypeSniffingTcpHandler<>(handler, networkContext,
                     defaultHandedFactory));
+            return handler;
+
+        };
+    }
+
+
+    public static <T extends NetworkContext> Function<T, TcpEventHandler>
+    defaultTcpEventHandlerFactory(@NotNull final Function<T, TcpHandler> defaultHandedFactory) {
+        return (networkContext) -> {
+            networkContext.wireOutPublisher(new VanillaWireOutPublisher(TEXT));
+            @NotNull final TcpEventHandler handler = new TcpEventHandler(networkContext);
+            handler.tcpHandler(defaultHandedFactory.apply(networkContext));
             return handler;
 
         };

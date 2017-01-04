@@ -139,7 +139,6 @@ public class SimpleServerAndClientTest {
 
     private void createServer(@NotNull String desc, @NotNull EventLoop eg) throws IOException {
         @NotNull AcceptorEventHandler eah = new AcceptorEventHandler(desc,
-
                 LegacyHanderFactory.simpleTcpEventHandlerFactory(WireEchoRequestHandler::new, WireType.TEXT),
                 VanillaNetworkContext::new);
 

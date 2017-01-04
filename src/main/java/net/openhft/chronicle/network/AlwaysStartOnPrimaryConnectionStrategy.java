@@ -24,12 +24,11 @@ import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
  */
 public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrategy {
 
-    private int tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
+    private static final Logger LOG = LoggerFactory.getLogger(AlwaysStartOnPrimaryConnectionStrategy.class);
 
+    private int tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
     private int timeoutMs = Integer.getInteger("client.timeout", 2_000);
     private int pausePeriodMs = Integer.getInteger("client.timeout", 1_000);
-
-    private static final Logger LOG = LoggerFactory.getLogger(AlwaysStartOnPrimaryConnectionStrategy.class);
 
     public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
         Wires.readMarshallable(this, wire, false);
