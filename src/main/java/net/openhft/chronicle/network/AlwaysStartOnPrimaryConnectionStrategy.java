@@ -1,7 +1,10 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
+import net.openhft.chronicle.wire.WireIn;
+import net.openhft.chronicle.wire.Wires;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -17,12 +20,17 @@ import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 /**
  * loops through all the host, till if finds a host that it can connect to.
  * If an established connected is dropped, will always return to the primary to begin attempting to find a successful connection,
+ * If no successful connection can be found, then null is returned
  */
-public class AlwaysStartOnPrimaryConnectStrategy implements ConnectionStrategy {
+public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrategy {
 
     private int tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
 
-    private static final Logger LOG = LoggerFactory.getLogger(AlwaysStartOnPrimaryConnectStrategy.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AlwaysStartOnPrimaryConnectionStrategy.class);
+
+    public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
+        Wires.readMarshallable(this, wire, false);
+    }
 
     @Nullable
     public SocketChannel connect(String name,
@@ -66,7 +74,7 @@ public class AlwaysStartOnPrimaryConnectStrategy implements ConnectionStrategy {
 
                 @Nullable final InetSocketAddress socketAddress = socketAddressSupplier.get();
                 if (socketAddress == null) {
-                    Jvm.warn().on(AlwaysStartOnPrimaryConnectStrategy.class, "failed to obtain socketAddress");
+                    Jvm.warn().on(AlwaysStartOnPrimaryConnectionStrategy.class, "failed to obtain socketAddress");
                     continue;
                 }
 

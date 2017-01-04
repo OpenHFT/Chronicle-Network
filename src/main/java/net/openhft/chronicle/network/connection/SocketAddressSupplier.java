@@ -37,7 +37,7 @@ import java.util.function.Supplier;
  *
  * @author Rob Austin.
  */
-public class SocketAddressSupplier implements Supplier<SocketAddress> {
+public class SocketAddressSupplier implements Supplier<SocketAddress>{
 
     private static final Logger LOG = LoggerFactory.getLogger(SocketAddressSupplier.class);
     @NotNull

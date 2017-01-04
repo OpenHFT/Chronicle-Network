@@ -79,7 +79,7 @@ public class ConnectionEventHandlerTest {
         @NotNull EventLoop eg2 = new EventGroup(false, BusyPauser.INSTANCE, true);
         eg2.start();
 
-        ConnectionStrategy connectionStrategy = new AlwaysStartOnPrimaryConnectStrategy();
+        ConnectionStrategy connectionStrategy = new AlwaysStartOnPrimaryConnectionStrategy();
 
         @NotNull ConnectorEventHandler ceh = new ConnectorEventHandler(nameToConnectionDetails,
                 cd -> new TcpClientHandler(cd, messages), VanillaSessionDetails::new,connectionStrategy );

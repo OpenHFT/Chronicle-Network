@@ -72,6 +72,7 @@ public class ConnectionDetails extends VanillaNetworkContext {
         return "ConnectionDetails{" +
                 "isConnected=" + isConnected +
                 ", id='" + id + '\'' +
+                ", scocketAddressSupplier='" + socketAddressSupplier + '\'' +
                 ", disable=" + disable +
                 '}';
     }
