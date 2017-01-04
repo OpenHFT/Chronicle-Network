@@ -26,6 +26,9 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
 
     private int tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
 
+    private int timeoutMs = Integer.getInteger("client.timeout", 2_000);
+    private int pausePeriodMs = Integer.getInteger("client.timeout", 1_000);
+
     private static final Logger LOG = LoggerFactory.getLogger(AlwaysStartOnPrimaryConnectionStrategy.class);
 
     public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
@@ -43,7 +46,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
 
         for (; ; ) {
 
-            if (start + socketAddressSupplier.timeoutMS() < System.currentTimeMillis()) {
+            if (start + timeoutMs < System.currentTimeMillis()) {
 
                 @NotNull String oldAddress = socketAddressSupplier.toString();
 
@@ -69,6 +72,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
                 // reset the timer, so that we can try this new address for a while
                 start = System.currentTimeMillis();
             }
+
             SocketChannel socketChannel = null;
             try {
 
@@ -81,7 +85,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
                 socketChannel = openSocketChannel(socketAddress, tcpBufferSize);
 
                 if (socketChannel == null) {
-                    pause(1_000);
+                    pause(pausePeriodMs);
                     continue;
                 }
 
@@ -100,7 +104,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
                     LOG.info("", e);
 
                 socketAddressSupplier.failoverToNextAddress();
-                pause(1_000);
+                pause(pausePeriodMs);
             }
         }
     }
