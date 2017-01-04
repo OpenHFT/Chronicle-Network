@@ -20,6 +20,7 @@ import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.network.TCPRegistry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
@@ -38,7 +39,7 @@ import java.util.function.Supplier;
  */
 public class SocketAddressSupplier implements Supplier<SocketAddress> {
 
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SocketAddressSupplier.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SocketAddressSupplier.class);
     @NotNull
     private final String name;
     private final List<RemoteAddressSupplier> remoteAddresses = new ArrayList<>();
