@@ -18,7 +18,7 @@ package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.annotation.NotNull;
+
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.ThreadDump;
 import net.openhft.chronicle.network.*;
@@ -26,6 +26,7 @@ import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.threads.BusyPauser;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.WireType;
+import org.jetbrains.annotations.NotNull;
 import org.junit.*;
 
 import java.io.IOException;
@@ -67,24 +68,27 @@ public class ConnectionEventHandlerTest {
     // 7. The client is then enabled
     // 8. After 2 seconds we test that the client has received 2 responses from the client
     public void testConnection() throws IOException {
-        @org.jetbrains.annotations.NotNull List<String> messages = new ArrayList<>();
+        @NotNull List<String> messages = new ArrayList<>();
 
         TCPRegistry.createServerSocketChannelFor("host.port1");
 
-        @org.jetbrains.annotations.NotNull Map<String, ConnectionDetails> nameToConnectionDetails = new ConcurrentHashMap<>();
-        @org.jetbrains.annotations.NotNull ConnectionDetails test1 = new ConnectionDetails("Test1", "host.port1");
+        @NotNull Map<String, ConnectionDetails> nameToConnectionDetails = new ConcurrentHashMap<>();
+        @NotNull ConnectionDetails test1 = new ConnectionDetails("Test1", "host.port1");
         nameToConnectionDetails.put("Test1", test1);
 
-        @org.jetbrains.annotations.NotNull EventLoop eg2 = new EventGroup(false, BusyPauser.INSTANCE, true);
+        @NotNull EventLoop eg2 = new EventGroup(false, BusyPauser.INSTANCE, true);
         eg2.start();
-        @org.jetbrains.annotations.NotNull ConnectorEventHandler ceh = new ConnectorEventHandler(nameToConnectionDetails,
-                cd -> new TcpClientHandler(cd, messages), VanillaSessionDetails::new);
+
+        ConnectionStrategy connectionStrategy = new AlwaysStartOnPrimaryConnectStrategy();
+
+        @NotNull ConnectorEventHandler ceh = new ConnectorEventHandler(nameToConnectionDetails,
+                cd -> new TcpClientHandler(cd, messages), VanillaSessionDetails::new,connectionStrategy );
         //     ceh.unchecked(true);
         eg2.addHandler(ceh);
 
-        @org.jetbrains.annotations.NotNull EventLoop eg1 = new EventGroup(false, BusyPauser.INSTANCE, true);
+        @NotNull EventLoop eg1 = new EventGroup(false, BusyPauser.INSTANCE, true);
         eg1.start();
-        @org.jetbrains.annotations.NotNull AcceptorEventHandler eah = new AcceptorEventHandler("host.port1",
+        @NotNull AcceptorEventHandler eah = new AcceptorEventHandler("host.port1",
                 LegacyHanderFactory.simpleTcpEventHandlerFactory(TcpServerHandler::new, WireType.TEXT),
                 VanillaNetworkContext::new);
 
@@ -124,7 +128,7 @@ public class ConnectionEventHandlerTest {
         }
 
         @Override
-        public void process(@org.jetbrains.annotations.NotNull @NotNull Bytes in, @org.jetbrains.annotations.NotNull @NotNull Bytes out) {
+        public void process(@NotNull  Bytes in,  @NotNull Bytes out) {
             if (in.readRemaining() == 0)
                 return;
             int v = in.readInt();
@@ -135,7 +139,7 @@ public class ConnectionEventHandlerTest {
     }
 
     private class TcpClientHandler implements TcpHandler {
-        @org.jetbrains.annotations.NotNull
+        @NotNull
         AtomicInteger i = new AtomicInteger(2);
         private ConnectionDetails cd;
         private List<String> messages;
@@ -154,7 +158,7 @@ public class ConnectionEventHandlerTest {
         }
 
         @Override
-        public void process(@org.jetbrains.annotations.NotNull @NotNull Bytes in, @org.jetbrains.annotations.NotNull @NotNull Bytes out) {
+        public void process(@NotNull Bytes in, @NotNull  Bytes out) {
             if (in.readRemaining() != 0) {
                 double v = in.readDouble();
                 messages.add("Client " + cd.getID() + " receives:" + v);

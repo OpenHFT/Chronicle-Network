@@ -88,7 +88,10 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
         next();
     }
 
-    public void startAddresses() {
+    /**
+     * reset back to the primary
+     */
+    public void resetToPrimary() {
         addressCount = 0;
         current = remoteAddresses.get(addressCount);
     }
@@ -96,6 +99,18 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
     private void next() {
         addressCount = (addressCount + 1) % remoteAddresses.size();
         current = remoteAddresses.get(addressCount);
+    }
+
+    public int size() {
+        return remoteAddresses.size();
+    }
+
+
+    /**
+     * @return index ( primary has index of ZERO )
+     */
+    public int index() {
+        return addressCount;
     }
 
     public long timeoutMS() {

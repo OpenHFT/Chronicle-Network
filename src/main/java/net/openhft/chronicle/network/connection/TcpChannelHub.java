@@ -1679,7 +1679,7 @@ public class TcpChannelHub implements Closeable {
 
             keepSubscriptionsAndClearEverythingElse();
             long start = System.currentTimeMillis();
-            socketAddressSupplier.startAddresses();
+            socketAddressSupplier.resetToPrimary();
 
             OUTER:
             for (int i = 0; ; i++) {
@@ -1714,7 +1714,7 @@ public class TcpChannelHub implements Closeable {
                                 Jvm.warn().on(getClass(), "failed to establish a socket " +
                                         "connection of any of the following servers=" +
                                         socketAddressSupplier.all() + " so will re-attempt");
-                                socketAddressSupplier.startAddresses();
+                                socketAddressSupplier.resetToPrimary();
                             }
 
                             // reset the timer, so that we can try this new address for a while

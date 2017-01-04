@@ -16,22 +16,34 @@
 
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Created by daniel on 10/02/2016.
- */
+
 public class ConnectionDetails extends VanillaNetworkContext {
     private boolean isConnected;
     private String id;
-    private String hostNameDescription;
+    private SocketAddressSupplier socketAddressSupplier;
     private boolean disable;
 
-    public ConnectionDetails(String id, String hostNameDescription) {
+    public ConnectionDetails(String id, String hostPort) {
+        this(id, new SocketAddressSupplier(new String[]{hostPort}, id));
+    }
+
+    public SocketAddressSupplier sessionProvider() {
+        return socketAddressSupplier;
+    }
+
+    public ConnectionDetails sessionProvider(SocketAddressSupplier sessionProvider) {
+        this.socketAddressSupplier = sessionProvider;
+        return this;
+    }
+
+    public ConnectionDetails(String id, SocketAddressSupplier socketAddressSupplier) {
         this.id = id;
+        this.socketAddressSupplier = socketAddressSupplier;
         sessionDetails(new VanillaSessionDetails());
         sessionDetails().userId(id);
-        this.hostNameDescription = hostNameDescription;
     }
 
     public String getID() {
@@ -44,14 +56,6 @@ public class ConnectionDetails extends VanillaNetworkContext {
 
     void setConnected(boolean connected) {
         isConnected = connected;
-    }
-
-    public String getHostNameDescription() {
-        return hostNameDescription;
-    }
-
-    public void setHostNameDescription(String hostNameDescription) {
-        this.hostNameDescription = hostNameDescription;
     }
 
     public boolean isDisable() {
@@ -68,7 +72,6 @@ public class ConnectionDetails extends VanillaNetworkContext {
         return "ConnectionDetails{" +
                 "isConnected=" + isConnected +
                 ", id='" + id + '\'' +
-                ", hostNameDescription='" + hostNameDescription + '\'' +
                 ", disable=" + disable +
                 '}';
     }

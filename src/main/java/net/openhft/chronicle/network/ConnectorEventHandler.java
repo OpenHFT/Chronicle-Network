@@ -17,6 +17,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -29,7 +30,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
@@ -39,12 +39,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-/**
- * Created by daniel on 09/02/2016. This class handles the creation, running and monitoring of
- * client connections
- */
 public class ConnectorEventHandler implements EventHandler, Closeable {
-    private static final Logger LOG = LoggerFactory.getLogger(ConnectorEventHandler.class);
 
     @NotNull
     private final Function<ConnectionDetails, TcpHandler> tcpHandlerSupplier;
@@ -53,16 +48,18 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
 
     private final Map<String, SocketChannel> descriptionToChannel = new ConcurrentHashMap<>();
     private final Pauser pauser = new LongPauser(0, 0, 5, 5, TimeUnit.SECONDS);
+    private final ConnectionStrategy connectionStrategy;
     private EventLoop eventLoop;
     private Map<String, ConnectionDetails> nameToConnectionDetails;
 
     public ConnectorEventHandler(@NotNull Map<String, ConnectionDetails> nameToConnectionDetails,
                                  @NotNull final Function<ConnectionDetails, TcpHandler> tcpHandlerSupplier,
-                                 @NotNull final Supplier<SessionDetailsProvider>
-                                         sessionDetailsSupplier) {
-        this.nameToConnectionDetails = nameToConnectionDetails;
+                                 @NotNull final Supplier<SessionDetailsProvider> sessionDetailsSupplier,
+                                 @NotNull final ConnectionStrategy connectionStrategy) {
         this.tcpHandlerSupplier = tcpHandlerSupplier;
         this.sessionDetailsSupplier = sessionDetailsSupplier;
+        this.nameToConnectionDetails = nameToConnectionDetails;
+        this.connectionStrategy = connectionStrategy;
     }
 
     @Override
@@ -76,11 +73,13 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
                         //we shouldn't create anything
                         return;
                     }
-                    socketChannel = TCPRegistry.createSocketChannel(connectionDetails.getHostNameDescription());
-                    socketChannel.socket().setTcpNoDelay(true);
-                    socketChannel.socket().setSendBufferSize(1 << 20);
-                    socketChannel.socket().setReceiveBufferSize(1 << 20);
-                    socketChannel.configureBlocking(false);
+                    final NetworkStatsListener<NetworkContext> networkStatsListener = connectionDetails.networkStatsListener();
+                    socketChannel = connectionStrategy.connect(k, connectionDetails.sessionProvider(), networkStatsListener);
+                    if (socketChannel == null) {
+                        Jvm.warn().on(ConnectorEventHandler.class, "unable to connect to any of the hosts");
+                        return;
+                    }
+
                     descriptionToChannel.put(k, socketChannel);
                     connectionDetails.setConnected(true);
                     final SessionDetailsProvider sessionDetails = sessionDetailsSupplier.get();
@@ -139,7 +138,7 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
 
     }
 }
