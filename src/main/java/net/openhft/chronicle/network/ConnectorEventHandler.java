@@ -89,7 +89,8 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
                     sessionDetails.clientAddress((InetSocketAddress) socketChannel.getRemoteAddress());
                     connectionDetails.socketChannel(socketChannel);
                     @NotNull final TcpEventHandler evntHandler = new TcpEventHandler(connectionDetails);
-                    evntHandler.tcpHandler(tcpHandlerSupplier.apply(connectionDetails));
+                    TcpHandler tcpHandler = tcpHandlerSupplier.apply(connectionDetails);
+                    evntHandler.tcpHandler(tcpHandler);
                     eventLoop.addHandler(evntHandler);
                 } else if (socketChannel.isOpen()) {
                     //the socketChannel is doing fine
