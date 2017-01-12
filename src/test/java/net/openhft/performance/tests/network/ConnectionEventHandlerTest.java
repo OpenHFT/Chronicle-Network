@@ -77,11 +77,15 @@ public class ConnectionEventHandlerTest {
         @NotNull EventLoop eg2 = new EventGroup(false, BusyPauser.INSTANCE, true);
         eg2.start();
 
-        ConnectionStrategy connectionStrategy = new AlwaysStartOnPrimaryConnectionStrategy();
+        final ConnectionStrategy connectionStrategy = new AlwaysStartOnPrimaryConnectionStrategy();
+        final SocketConnectionNotifier socketConnectionNotifier = SocketConnectionNotifier.newDefaultConnectionNotifier();
 
         @NotNull ConnectorEventHandler ceh = new ConnectorEventHandler(nameToConnectionDetails,
-                cd -> new TcpClientHandler(cd, messages), VanillaSessionDetails::new, connectionStrategy);
-        //     ceh.unchecked(true);
+                cd -> new TcpClientHandler(cd, messages),
+                VanillaSessionDetails::new,
+                connectionStrategy,
+                socketConnectionNotifier);
+
         eg2.addHandler(ceh);
 
         @NotNull EventLoop eg1 = new EventGroup(false, BusyPauser.INSTANCE, true);

@@ -48,21 +48,26 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
     private final Map<String, SocketChannel> descriptionToChannel = new ConcurrentHashMap<>();
     private final Pauser pauser = new LongPauser(0, 0, 5, 5, TimeUnit.SECONDS);
     private final ConnectionStrategy connectionStrategy;
+    @NotNull
+    private final SocketConnectionNotifier socketConnectionNotifier;
     private EventLoop eventLoop;
     private Map<String, ConnectionDetails> nameToConnectionDetails;
 
     public ConnectorEventHandler(@NotNull Map<String, ConnectionDetails> nameToConnectionDetails,
                                  @NotNull final Function<ConnectionDetails, TcpHandler> tcpHandlerSupplier,
                                  @NotNull final Supplier<SessionDetailsProvider> sessionDetailsSupplier,
-                                 @NotNull final ConnectionStrategy connectionStrategy) {
+                                 @NotNull final ConnectionStrategy connectionStrategy,
+                                 @NotNull final SocketConnectionNotifier socketConnectionNotifier) {
         this.tcpHandlerSupplier = tcpHandlerSupplier;
         this.sessionDetailsSupplier = sessionDetailsSupplier;
         this.nameToConnectionDetails = nameToConnectionDetails;
         this.connectionStrategy = connectionStrategy;
+        this.socketConnectionNotifier = socketConnectionNotifier;
     }
 
     @Override
     public boolean action() throws InvalidEventHandlerException, InterruptedException {
+
         nameToConnectionDetails.forEach((k, connectionDetails) -> {
             try {
                 SocketChannel socketChannel = descriptionToChannel.get(k);
@@ -82,16 +87,19 @@ public class ConnectorEventHandler implements EventHandler, Closeable {
 
                     Jvm.debug().on(ConnectorEventHandler.class, "successfully connect to " + socketAddressSupplier.toString());
 
+                    final InetSocketAddress remoteAddress = (InetSocketAddress) socketChannel.getRemoteAddress();
+
                     descriptionToChannel.put(k, socketChannel);
                     connectionDetails.setConnected(true);
                     final SessionDetailsProvider sessionDetails = sessionDetailsSupplier.get();
-
-                    sessionDetails.clientAddress((InetSocketAddress) socketChannel.getRemoteAddress());
+                    sessionDetails.clientAddress(remoteAddress);
                     connectionDetails.socketChannel(socketChannel);
                     @NotNull final TcpEventHandler evntHandler = new TcpEventHandler(connectionDetails);
                     TcpHandler tcpHandler = tcpHandlerSupplier.apply(connectionDetails);
                     evntHandler.tcpHandler(tcpHandler);
                     eventLoop.addHandler(evntHandler);
+
+                    socketConnectionNotifier.onConnected(remoteAddress.getHostString(), remoteAddress.getPort(), connectionDetails.getID());
                 } else if (socketChannel.isOpen()) {
                     //the socketChannel is doing fine
                     //check whether it should be disabled
