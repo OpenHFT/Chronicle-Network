@@ -23,6 +23,8 @@ import net.openhft.chronicle.wire.WireIn;
 import net.openhft.chronicle.wire.WireOut;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.RejectedExecutionException;
+
 /**
  * @author Rob Austin.
  */
@@ -50,7 +52,7 @@ public interface SubHandler<T extends NetworkContext> extends NetworkContextMana
      *
      * @param outWire allow data to be written
      */
-    void onInitialize(WireOut outWire);
+    void onInitialize(WireOut outWire) throws RejectedExecutionException;
 
     void closeable(Closeable closeable);
 
