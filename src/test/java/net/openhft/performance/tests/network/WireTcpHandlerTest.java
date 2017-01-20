@@ -38,6 +38,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Function;
 
+import static net.openhft.performance.tests.network.LegacyHanderFactory.simpleTcpEventHandlerFactory;
+
 /*
 Running on an i7-3970X
 
@@ -147,7 +149,7 @@ public class WireTcpHandlerTest {
         eg.start();
         TCPRegistry.createServerSocketChannelFor(desc);
         @NotNull AcceptorEventHandler eah = new AcceptorEventHandler(desc,
-                LegacyHanderFactory.simpleTcpEventHandlerFactory(EchoRequestHandler::new, wireType),
+                simpleTcpEventHandlerFactory(EchoRequestHandler::new, wireType),
                 VanillaNetworkContext::new);
         eg.addHandler(eah);
 

@@ -9,9 +9,9 @@ import static net.openhft.chronicle.core.Mocker.intercepting;
  * @author Rob Austin.
  */
 @FunctionalInterface
-public interface SocketConnectionNotifier extends Marshallable {
+public interface SocketConnectionNotifier<T extends NetworkContext> extends Marshallable {
 
-    void onConnected(String host, long port, String id);
+    void onConnected(String host, long port, T nc);
 
     default void onDisconnected(String host, long port) {
     }

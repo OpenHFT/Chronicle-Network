@@ -43,15 +43,16 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements Tcp
     private final Function<T, TcpHandler> delegateHandlerFactory;
 
     public WireTypeSniffingTcpHandler(@NotNull final TcpEventHandler handlerManager,
-                                      @NotNull T nc,
-                                      @NotNull Function<T, TcpHandler> delegateHandlerFactory) {
+                                      @NotNull final T nc,
+                                      @NotNull final Function<T, TcpHandler> delegateHandlerFactory) {
         this.handlerManager = handlerManager;
         this.nc = nc;
         this.delegateHandlerFactory = delegateHandlerFactory;
     }
 
     @Override
-    public void process(@NotNull Bytes in, @NotNull Bytes out) {
+    public void process(final @NotNull Bytes in,
+                        final @NotNull Bytes out) {
 
         final WireOutPublisher publisher = nc.wireOutPublisher();
 

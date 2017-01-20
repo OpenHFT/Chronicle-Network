@@ -17,6 +17,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -25,7 +26,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ServerSocketChannel;
@@ -52,12 +52,11 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
 
     private volatile boolean closed;
 
-    public AcceptorEventHandler(@NotNull String description,
+    public AcceptorEventHandler(@NotNull final String hostPort,
                                 @NotNull final Function<NetworkContext, TcpEventHandler> handlerFactory,
-                                @NotNull Supplier<NetworkContext> ncFactory)
-            throws IOException {
+                                @NotNull final Supplier<NetworkContext> ncFactory) throws IOException {
         this.handlerFactory = handlerFactory;
-        this.ssc = TCPRegistry.acquireServerSocketChannel(description);
+        this.ssc = TCPRegistry.acquireServerSocketChannel(hostPort);
         this.ncFactory = ncFactory;
     }
 
@@ -86,7 +85,6 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
                     notifyHostPort(sc, nl);
                 TcpEventHandler apply = handlerFactory.apply(nc);
                 eventLoop.addHandler(apply);
-
             }
 
         } catch (AsynchronousCloseException e) {
@@ -121,8 +119,10 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         closed = true;
         closeSocket();
     }
+
+
 }

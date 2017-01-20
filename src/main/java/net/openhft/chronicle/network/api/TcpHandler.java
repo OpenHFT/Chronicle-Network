@@ -19,6 +19,7 @@ package net.openhft.chronicle.network.api;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.ClientClosedProvider;
+import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,15 +27,20 @@ import org.jetbrains.annotations.NotNull;
  * Created by peter.lawrey on 22/01/15.
  */
 @FunctionalInterface
-public interface TcpHandler extends ClientClosedProvider, Closeable {
+public interface TcpHandler<N extends NetworkContext> extends ClientClosedProvider, Closeable {
 
     /**
      * The server reads the bytes {@code in} from the client and sends a response {@code out} back
      * to the client.
-     *  @param in             the bytes send from the client
-     * @param out            the response send back to the client
+     *
+     * @param in  the bytes send from the client
+     * @param out the response send back to the client
      */
     void process(@NotNull Bytes in, @NotNull Bytes out);
+
+    default void process(@NotNull Bytes in, @NotNull Bytes out, N nc) {
+        process(in, out);
+    }
 
     default void sendHeartBeat(Bytes out, SessionDetailsProvider sessionDetails) {
     }
@@ -51,4 +57,6 @@ public interface TcpHandler extends ClientClosedProvider, Closeable {
 
     default void onWriteTime(long writeTimeNS) {
     }
+
+
 }

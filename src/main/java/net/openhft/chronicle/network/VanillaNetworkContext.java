@@ -45,7 +45,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     private WireOutPublisher wireOutPublisher;
     private WireType wireType = WireType.TEXT;
     private Runnable socketReconnector;
-    private NetworkStatsListener<?  extends NetworkContext> networkStatsListener;
+    private NetworkStatsListener<? extends NetworkContext> networkStatsListener;
     private ServerThreadingStrategy serverThreadingStrategy = ServerThreadingStrategy.SINGLE_THREADED;
     private volatile boolean isClosed;
 
@@ -164,7 +164,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         if (isClosed)
             return;
         isClosed = true;
@@ -193,7 +193,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     }
 
     @Override
-    public NetworkStatsListener<?  extends NetworkContext> networkStatsListener() {
+    public NetworkStatsListener<? extends NetworkContext> networkStatsListener() {
         return this.networkStatsListener;
     }
 

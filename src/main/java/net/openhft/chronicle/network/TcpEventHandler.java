@@ -247,7 +247,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         long lastInBBBReadPosition;
         do {
             lastInBBBReadPosition = inBBB.readPosition();
-            tcpHandler.process(inBBB, outBBB);
+            tcpHandler.process(inBBB, outBBB,nc);
 
             // did it write something?
             if (outBBB.writePosition() > outBBB.underlyingObject().limit() || outBBB.writePosition() >= 4) {
