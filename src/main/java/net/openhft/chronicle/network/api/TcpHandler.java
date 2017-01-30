@@ -36,11 +36,7 @@ public interface TcpHandler<N extends NetworkContext> extends ClientClosedProvid
      * @param in  the bytes send from the client
      * @param out the response send back to the client
      */
-    void process(@NotNull Bytes in, @NotNull Bytes out);
-
-    default void process(@NotNull Bytes in, @NotNull Bytes out, N nc) {
-        process(in, out);
-    }
+    void process(@NotNull Bytes in, @NotNull Bytes out, N nc);
 
     default void sendHeartBeat(Bytes out, SessionDetailsProvider sessionDetails) {
     }
@@ -58,5 +54,6 @@ public interface TcpHandler<N extends NetworkContext> extends ClientClosedProvid
     default void onWriteTime(long writeTimeNS) {
     }
 
-
+    default void onReadComplete() {
+    }
 }

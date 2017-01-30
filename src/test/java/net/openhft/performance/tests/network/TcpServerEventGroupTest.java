@@ -142,7 +142,7 @@ public class TcpServerEventGroupTest {
         eg.start();
         TCPRegistry.createServerSocketChannelFor("TcpServerEventGroupTest");
         @NotNull AcceptorEventHandler eah = new AcceptorEventHandler("TcpServerEventGroupTest",
-                LegacyHanderFactory.legacyTcpEventHandlerFactory(EchoHandler::new),
+                LegacyHanderFactory.legacyTcpEventHandlerFactory(nc -> new EchoHandler()),
                 VanillaNetworkContext::new);
 
         eg.addHandler(eah);

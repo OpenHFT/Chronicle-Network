@@ -185,7 +185,14 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 if (invokeHandler())
                     oneInTen++;
                 return true;
+            } else if (read == 0) {
+                if (outBBB.readRemaining() > 0) {
+                    System.out.println("w " + outBBB.readRemaining());
+                    if (invokeHandler()) return true;
+                }
+                return false;
             }
+
             if (read < 0) {
                 close();
                 throw new InvalidEventHandlerException("socket closed " + sc);
@@ -247,7 +254,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         long lastInBBBReadPosition;
         do {
             lastInBBBReadPosition = inBBB.readPosition();
-            tcpHandler.process(inBBB, outBBB,nc);
+            tcpHandler.process(inBBB, outBBB, nc);
 
             // did it write something?
             if (outBBB.writePosition() > outBBB.underlyingObject().limit() || outBBB.writePosition() >= 4) {

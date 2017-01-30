@@ -62,7 +62,7 @@ public enum LegacyHanderFactory {
             );
 
             @NotNull final WireTypeSniffingTcpHandler<T> wireTypeSniffingTcpHandler =
-                    new WireTypeSniffingTcpHandler<>(handler, networkContext, (nc) -> headerTcpHandler);
+                    new WireTypeSniffingTcpHandler<>(handler, (nc) -> headerTcpHandler);
 
             handler.tcpHandler(wireTypeSniffingTcpHandler);
             return handler;
@@ -80,7 +80,7 @@ public enum LegacyHanderFactory {
 
             networkContext.wireOutPublisher(new VanillaWireOutPublisher(TEXT));
             @NotNull final TcpEventHandler handler = new TcpEventHandler(networkContext);
-            handler.tcpHandler(new WireTypeSniffingTcpHandler<>(handler, networkContext,
+            handler.tcpHandler(new WireTypeSniffingTcpHandler<>(handler,
                     defaultHandedFactory));
             return handler;
 

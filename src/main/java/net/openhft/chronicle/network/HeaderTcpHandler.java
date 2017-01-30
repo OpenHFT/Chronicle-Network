@@ -51,7 +51,7 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
     }
 
     @Override
-    public void process(@NotNull Bytes in, @NotNull Bytes out) {
+    public void process(@NotNull Bytes in, @NotNull Bytes out, NetworkContext nc) {
 
         assert nc.wireType() != null;
 

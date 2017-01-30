@@ -31,7 +31,7 @@ import java.io.IOException;
 /**
  * Created by peter.lawrey on 22/01/15.
  */
-class TimedEchoHandler implements TcpHandler {
+class TimedEchoHandler implements TcpHandler<NetworkContext> {
 
     public <T extends NetworkContext> TimedEchoHandler(T t) {
 
@@ -48,7 +48,7 @@ class TimedEchoHandler implements TcpHandler {
     }
 
     @Override
-    public void process(@NotNull final Bytes in, @NotNull final Bytes out) {
+    public void process(@NotNull final Bytes in, @NotNull final Bytes out, NetworkContext nc) {
         if (in.readRemaining() == 0)
             return;
 //        System.out.println("P start " + in.toDebugString());

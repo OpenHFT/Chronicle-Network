@@ -31,23 +31,22 @@ import java.io.IOException;
 /**
  * Created by peter.lawrey on 22/01/15.
  */
-class EchoHandler implements TcpHandler {
+class EchoHandler implements TcpHandler<NetworkContext> {
 
-    public <T extends NetworkContext> EchoHandler(T t) {
-
+    public EchoHandler() {
     }
 
     public static <T extends NetworkContext> void main(String[] args) throws IOException {
         @NotNull EventLoop eg = new EventGroup(false);
         eg.start();
         @NotNull AcceptorEventHandler eah = new AcceptorEventHandler("*:" + EchoClientMain.PORT,
-                LegacyHanderFactory.legacyTcpEventHandlerFactory(EchoHandler::new),
+                LegacyHanderFactory.legacyTcpEventHandlerFactory(nc -> new EchoHandler()),
                 VanillaNetworkContext::new);
         eg.addHandler(eah);
     }
 
     @Override
-    public void process(@NotNull final Bytes in, @NotNull final Bytes out) {
+    public void process(@NotNull final Bytes in, @NotNull final Bytes out, NetworkContext nc) {
         if (in.readRemaining() == 0)
             return;
 //        System.out.println("P start " + in.toDebugString());

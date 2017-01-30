@@ -32,27 +32,24 @@ import static net.openhft.chronicle.wire.WireType.*;
  *
  * @author Rob Austin.
  */
-public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements TcpHandler {
+public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements TcpHandler<T> {
 
     @NotNull
     private final TcpEventHandler handlerManager;
 
     @NotNull
-    private final T nc;
-    @NotNull
     private final Function<T, TcpHandler> delegateHandlerFactory;
 
     public WireTypeSniffingTcpHandler(@NotNull final TcpEventHandler handlerManager,
-                                      @NotNull final T nc,
                                       @NotNull final Function<T, TcpHandler> delegateHandlerFactory) {
         this.handlerManager = handlerManager;
-        this.nc = nc;
         this.delegateHandlerFactory = delegateHandlerFactory;
     }
 
     @Override
     public void process(final @NotNull Bytes in,
-                        final @NotNull Bytes out) {
+                        final @NotNull Bytes out,
+                        T nc) {
 
         final WireOutPublisher publisher = nc.wireOutPublisher();
 
