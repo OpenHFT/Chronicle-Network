@@ -129,8 +129,9 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         this.terminationEventHandler = terminationEventHandler;
     }
 
-    public void heartbeatTimeoutMs(long heartbeatTimeoutMs) {
+    public T heartbeatTimeoutMs(long heartbeatTimeoutMs) {
         this.heartbeatTimeoutMs = heartbeatTimeoutMs;
+        return (T) this;
     }
 
     public long heartbeatTimeoutMs() {

@@ -35,7 +35,7 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
     @Override
     public SocketChannel connect(String name,
                                  SocketAddressSupplier socketAddressSupplier,
-                                 NetworkStatsListener<NetworkContext> networkStatsListener) {
+                                 NetworkStatsListener<? extends NetworkContext> networkStatsListener) {
         throw new UnsupportedOperationException("todo");
     }
 }

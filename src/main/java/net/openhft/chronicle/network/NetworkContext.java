@@ -60,7 +60,7 @@ public interface NetworkContext<T extends NetworkContext> extends Closeable {
 
     void heartbeatListener(HeartbeatListener heartbeatListener);
 
-    void heartbeatTimeoutMs(long l);
+    T heartbeatTimeoutMs(long l);
 
     default boolean isUnchecked() {
         return false;

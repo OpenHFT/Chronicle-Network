@@ -37,7 +37,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
     @Nullable
     public SocketChannel connect(String name,
                                  SocketAddressSupplier socketAddressSupplier,
-                                 NetworkStatsListener<NetworkContext> networkStatsListener) {
+                                 NetworkStatsListener<? extends NetworkContext> networkStatsListener) {
 
         socketAddressSupplier.resetToPrimary();
 
