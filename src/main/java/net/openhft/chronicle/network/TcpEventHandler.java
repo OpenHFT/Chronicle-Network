@@ -187,7 +187,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 return true;
             } else if (read == 0) {
                 if (outBBB.readRemaining() > 0) {
-                    System.out.println("w " + outBBB.readRemaining());
+//                    System.out.println("w " + outBBB.readRemaining());
                     if (invokeHandler()) return true;
                 }
                 return false;
