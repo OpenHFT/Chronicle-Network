@@ -27,19 +27,24 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
     private static final Logger LOG = LoggerFactory.getLogger(AlwaysStartOnPrimaryConnectionStrategy.class);
 
     private int tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
-    private int timeoutMs = Integer.getInteger("client.timeout", 2_000);
-    private int pausePeriodMs = Integer.getInteger("client.timeout", 1_000);
+    private int timeoutMs = Integer.getInteger("client.timeout", 1_000);
+    private int pausePeriodMs = Integer.getInteger("client.timeout", 500);
 
     public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
         Wires.readMarshallable(this, wire, false);
     }
 
     @Nullable
-    public SocketChannel connect(String name,
-                                 SocketAddressSupplier socketAddressSupplier,
-                                 NetworkStatsListener<? extends NetworkContext> networkStatsListener) {
+    @Override
+    public SocketChannel connect(String name, SocketAddressSupplier socketAddressSupplier,
+                                 @NotNull NetworkStatsListener<? extends NetworkContext> networkStatsListener,
+                                 boolean hasLoggedInPreviously) {
 
-        socketAddressSupplier.resetToPrimary();
+
+        if (socketAddressSupplier.get() == null || hasLoggedInPreviously)
+            socketAddressSupplier.resetToPrimary();
+        else
+            socketAddressSupplier.failoverToNextAddress();
 
         long start = System.currentTimeMillis();
 
@@ -83,10 +88,14 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
 
                 socketChannel = openSocketChannel(socketAddress, tcpBufferSize);
 
+
                 if (socketChannel == null) {
+                    Jvm.warn().on(getClass(), "unable to connected to " + socketAddressSupplier.toString());
                     pause(pausePeriodMs);
                     continue;
                 }
+
+                Jvm.debug().on(getClass(), "successfully connected to " + socketAddressSupplier.toString());
 
                 if (networkStatsListener != null)
                     networkStatsListener.onHostPort(socketAddress.getHostString(), socketAddress.getPort());
@@ -111,4 +120,5 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
     private boolean isAtEnd(SocketAddressSupplier socketAddressSupplier) {
         return socketAddressSupplier.size() - 1 == socketAddressSupplier.index();
     }
+
 }

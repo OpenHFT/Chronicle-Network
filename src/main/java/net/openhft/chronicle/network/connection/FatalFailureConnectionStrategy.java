@@ -32,10 +32,12 @@ import java.nio.channels.SocketChannel;
  */
 public class FatalFailureConnectionStrategy implements ConnectionStrategy {
 
+
     @Override
     public SocketChannel connect(String name,
                                  SocketAddressSupplier socketAddressSupplier,
-                                 NetworkStatsListener<? extends NetworkContext> networkStatsListener) {
+                                 NetworkStatsListener<? extends NetworkContext> networkStatsListener,
+                                 boolean hasLoggedInPreviously) {
         throw new UnsupportedOperationException("todo");
     }
 }

@@ -54,7 +54,7 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
 
     public AcceptorEventHandler(@NotNull final String hostPort,
                                 @NotNull final Function<NetworkContext, TcpEventHandler> handlerFactory,
-                                @NotNull final Supplier<NetworkContext> ncFactory) throws IOException {
+                                @NotNull final Supplier<? extends NetworkContext> ncFactory) throws IOException {
         this.handlerFactory = handlerFactory;
         this.ssc = TCPRegistry.acquireServerSocketChannel(hostPort);
         this.ncFactory = ncFactory;

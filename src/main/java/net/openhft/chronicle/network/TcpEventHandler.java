@@ -200,17 +200,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
             readLog.idle();
 
-            if (nc.heartbeatTimeoutMs() == 0)
-                return busy;
-
-            long tickTime = Time.tickTime();
-            if (tickTime > lastTickReadTime + nc.heartbeatTimeoutMs()) {
-
-                if (heartbeatListener != null)
-                    nc.heartbeatListener().onMissedHeartbeat();
-                closeSC();
-                throw new InvalidEventHandlerException("heatbeat timeout");
-            }
 
         } catch (ClosedChannelException e) {
             closeSC();
@@ -226,6 +215,22 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             closeSC();
             Jvm.warn().on(getClass(), "", e);
             throw new InvalidEventHandlerException(e);
+        } finally {
+
+            if (nc.heartbeatTimeoutMs() > 0) {
+                long tickTime = Time.tickTime();
+                if (tickTime > lastTickReadTime + nc.heartbeatTimeoutMs()) {
+
+                    if (heartbeatListener != null)
+                        nc.heartbeatListener().onMissedHeartbeat();
+/*
+                    if (tcpHandler.toString().contains("host - id = 3")) {
+                        System.out.println("************************* closing client connection ");
+                    }*/
+                    closeSC();
+                    throw new InvalidEventHandlerException("heartbeat timeout");
+                }
+            }
         }
 
         return busy;
@@ -348,7 +353,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         if (wrote < 0) {
             closeSC();
         } else if (wrote > 0) {
-            lastTickReadTime = writeTickTime;
+            // lastTickReadTime = writeTickTime;
             outBBB.underlyingObject().compact().flip();
             outBBB.writePosition(outBBB.underlyingObject().limit());
             return true;

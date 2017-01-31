@@ -20,7 +20,8 @@ public interface ConnectionStrategy extends Marshallable {
 
     SocketChannel connect(String name,
                           SocketAddressSupplier socketAddressSupplier,
-                          NetworkStatsListener<? extends NetworkContext> networkStatsListener);
+                          NetworkStatsListener<? extends NetworkContext> networkStatsListener,
+                          boolean hasLoggedInPreviously);
 
     @Nullable
     default SocketChannel openSocketChannel(@NotNull InetSocketAddress socketAddress, int tcpBufferSize) throws IOException {
