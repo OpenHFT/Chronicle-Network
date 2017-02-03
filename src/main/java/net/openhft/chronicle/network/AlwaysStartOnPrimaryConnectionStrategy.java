@@ -2,6 +2,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.wire.WireIn;
@@ -13,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.TimeUnit;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
@@ -27,7 +29,6 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
     private static final Logger LOG = LoggerFactory.getLogger(AlwaysStartOnPrimaryConnectionStrategy.class);
 
     private int tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
-    private int timeoutMs = Integer.getInteger("client.timeout", 1_000);
     private int pausePeriodMs = Integer.getInteger("client.timeout", 500);
 
     public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
@@ -38,11 +39,11 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
     @Override
     public SocketChannel connect(String name, SocketAddressSupplier socketAddressSupplier,
                                  @Nullable NetworkStatsListener<? extends NetworkContext> networkStatsListener,
-                                 boolean hasLoggedInPreviously,
+                                 boolean didLogIn,
                                  @NotNull FatalFailureMonitor fatalFailureMonitorMonitor) throws InterruptedException {
 
 
-        if (socketAddressSupplier.get() == null || hasLoggedInPreviously)
+        if (socketAddressSupplier.get() == null || didLogIn)
             socketAddressSupplier.resetToPrimary();
         else
             socketAddressSupplier.failoverToNextAddress();
@@ -96,7 +97,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
                     LOG.info("", e);
 
                 socketAddressSupplier.failoverToNextAddress();
-                Thread.sleep(pausePeriodMs);
+                Time.parkNanos(TimeUnit.MILLISECONDS.toNanos(pausePeriodMs));
             }
         }
     }
