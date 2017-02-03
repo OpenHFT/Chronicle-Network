@@ -26,6 +26,7 @@ import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.core.util.Time;
+import net.openhft.chronicle.network.ConnectionStrategy;
 import net.openhft.chronicle.network.WanSimulator;
 import net.openhft.chronicle.network.api.session.SessionDetails;
 import net.openhft.chronicle.network.api.session.SessionProvider;
@@ -61,7 +62,6 @@ import static java.lang.ThreadLocal.withInitial;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.*;
 import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
-import static net.openhft.chronicle.core.Jvm.pause;
 
 /**
  * The TcpChannelHub is used to send your messages to the server and then read the servers response.
@@ -108,6 +108,7 @@ public class TcpChannelHub implements Closeable {
     private final Wire handShakingWire;
     @Nullable
     private final ClientConnectionMonitor clientConnectionMonitor;
+    private final ConnectionStrategy connectionStrategy;
 
     @NotNull
     private Pauser pauser = new LongPauser(100, 100, 500, 20_000, TimeUnit.MICROSECONDS);
@@ -130,8 +131,10 @@ public class TcpChannelHub implements Closeable {
                          @NotNull final SocketAddressSupplier socketAddressSupplier,
                          boolean shouldSendCloseMessage,
                          @Nullable ClientConnectionMonitor clientConnectionMonitor,
-                         @NotNull final HandlerPriority monitor) {
+                         @NotNull final HandlerPriority monitor,
+                         @NotNull final ConnectionStrategy connectionStrategy) {
         assert !name.trim().isEmpty();
+        this.connectionStrategy = connectionStrategy;
         this.priority = monitor;
         this.socketAddressSupplier = socketAddressSupplier;
         this.eventLoop = eventLoop;
@@ -1693,70 +1696,17 @@ public class TcpChannelHub implements Closeable {
                 @Nullable SocketChannel socketChannel = null;
                 try {
 
-                    INNER_LOOP:
-                    for (; ; ) {
+                    if (isShuttingdown())
+                        continue;
 
-                        if (isShuttingdown())
-                            continue OUTER;
+                    socketChannel = connectionStrategy.connect(name, socketAddressSupplier, null, false, clientConnectionMonitor);
 
-                        if (start + socketAddressSupplier.timeoutMS() < System.currentTimeMillis()) {
+                    if (isShuttingdown())
+                        continue;
 
-                            @NotNull String oldAddress = socketAddressSupplier.toString();
-
-                            socketAddressSupplier.failoverToNextAddress();
-                            if ("(none)".equals(oldAddress)) {
-                                LOG.info("Connection Dropped to address=" +
-                                        oldAddress + ", so will fail over to" +
-                                        socketAddressSupplier + ", name=" + name);
-                            }
-
-                            if (socketAddressSupplier.get() == null) {
-                                Jvm.warn().on(getClass(), "failed to establish a socket " +
-                                        "connection of any of the following servers=" +
-                                        socketAddressSupplier.all() + " so will re-attempt");
-                                socketAddressSupplier.resetToPrimary();
-                            }
-
-                            // reset the timer, so that we can try this new address for a while
-                            start = System.currentTimeMillis();
-                        }
-
-                        try {
-
-                            @Nullable final InetSocketAddress socketAddress = socketAddressSupplier.get();
-
-                            socketChannel = openSocketChannel(socketAddress);
-
-                            if (socketChannel == null) {
-                                pause(1_000);
-                                continue;
-                            }
-
-                            // success
-                            this.failedConnectionCount = 0;
-                            break;
-
-                        } catch (Throwable e) {
-                            Closeable.closeQuietly(socketChannel);
-                            if (prepareToShutdown) {
-                                throw e;
-                            }
-                            if (Jvm.isDebug())
-                                LOG.info("", e);
-
-                            socketAddressSupplier.failoverToNextAddress();
-
-                            //  logs with progressive back off, to prevent the log files from
-                            // being filled up
-                            if ((failedConnectionCount < 15 && failedConnectionCount % 5 == 0) ||
-                                    failedConnectionCount % 60 == 0)
-                                LOG.info("Server is unavailable, failed to connect to " +
-                                        "address=" + socketAddressSupplier);
-
-                            failedConnectionCount++;
-
-                            pause(1_000);
-                        }
+                    if (socketChannel == null) {
+                        Jvm.pause(1_000);
+                        continue;
                     }
 
                     // this lock prevents the clients attempt to send data before we have

@@ -37,7 +37,7 @@ import java.util.function.Supplier;
  *
  * @author Rob Austin.
  */
-public class SocketAddressSupplier implements Supplier<SocketAddress>{
+public class SocketAddressSupplier implements Supplier<SocketAddress> {
 
     private static final Logger LOG = LoggerFactory.getLogger(SocketAddressSupplier.class);
     @NotNull
@@ -129,9 +129,19 @@ public class SocketAddressSupplier implements Supplier<SocketAddress>{
     @Override
     @NotNull
     public String toString() {
+        return log(this.current);
+    }
 
-        @Nullable RemoteAddressSupplier current = this.current;
 
+    public String remoteAddresses() {
+        List<String> result = new ArrayList<>();
+        remoteAddresses.forEach(r -> result.add(log(r)));
+        return result.toString();
+
+    }
+
+    @NotNull
+    public String log(RemoteAddressSupplier current) {
         if (current == null)
             return "(none)";
 

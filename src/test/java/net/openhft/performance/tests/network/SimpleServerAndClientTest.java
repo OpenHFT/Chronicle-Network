@@ -23,6 +23,7 @@ import net.openhft.chronicle.core.threads.ThreadDump;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaNetworkContext;
+import net.openhft.chronicle.network.connection.FatalFailureConnectionStrategy;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.network.connection.TryLock;
 import net.openhft.chronicle.threads.EventGroup;
@@ -134,7 +135,9 @@ public class SimpleServerAndClientTest {
 
     @NotNull
     private TcpChannelHub createClient(@NotNull EventLoop eg, String desc) {
-        return new TcpChannelHub(null, eg, WireType.TEXT, "/", uri(desc), false, null, HandlerPriority.TIMER);
+        return new TcpChannelHub(null,
+                eg, WireType.TEXT, "/", uri(desc), false,
+                null, HandlerPriority.TIMER, new FatalFailureConnectionStrategy(3));
     }
 
     private void createServer(@NotNull String desc, @NotNull EventLoop eg) throws IOException {

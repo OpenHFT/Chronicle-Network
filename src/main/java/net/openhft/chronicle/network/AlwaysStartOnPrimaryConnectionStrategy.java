@@ -2,6 +2,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.wire.WireIn;
 import net.openhft.chronicle.wire.Wires;
@@ -13,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
-import static net.openhft.chronicle.core.Jvm.pause;
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 
@@ -37,8 +37,9 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
     @Nullable
     @Override
     public SocketChannel connect(String name, SocketAddressSupplier socketAddressSupplier,
-                                 @NotNull NetworkStatsListener<? extends NetworkContext> networkStatsListener,
-                                 boolean hasLoggedInPreviously) {
+                                 @Nullable NetworkStatsListener<? extends NetworkContext> networkStatsListener,
+                                 boolean hasLoggedInPreviously,
+                                 @NotNull FatalFailureMonitor fatalFailureMonitorMonitor) throws InterruptedException {
 
 
         if (socketAddressSupplier.get() == null || hasLoggedInPreviously)
@@ -46,36 +47,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
         else
             socketAddressSupplier.failoverToNextAddress();
 
-        long start = System.currentTimeMillis();
-
         for (; ; ) {
-
-            if (start + timeoutMs < System.currentTimeMillis()) {
-
-                @NotNull String oldAddress = socketAddressSupplier.toString();
-
-                // fatal failure we have attempted all the host
-                if (isAtEnd(socketAddressSupplier))
-                    return null;
-
-                socketAddressSupplier.failoverToNextAddress();
-
-                if ("(none)".equals(oldAddress)) {
-                    LOG.info("Connection Dropped to address=" +
-                            oldAddress + ", so will fail over to" +
-                            socketAddressSupplier + ", name=" + name);
-                }
-
-                if (socketAddressSupplier.get() == null) {
-                    Jvm.warn().on(getClass(), "failed to establish a socket " +
-                            "connection of any of the following servers=" +
-                            socketAddressSupplier.all() + " so will re-attempt");
-                    socketAddressSupplier.resetToPrimary();
-                }
-
-                // reset the timer, so that we can try this new address for a while
-                start = System.currentTimeMillis();
-            }
 
             SocketChannel socketChannel = null;
             try {
@@ -83,15 +55,27 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
                 @Nullable final InetSocketAddress socketAddress = socketAddressSupplier.get();
                 if (socketAddress == null) {
                     Jvm.warn().on(AlwaysStartOnPrimaryConnectionStrategy.class, "failed to obtain socketAddress");
+                    // at end
+                    if (isAtEnd(socketAddressSupplier)) {
+                        fatalFailureMonitorMonitor.onFatalFailure(name, "Failed to connect to any of these servers=" + socketAddressSupplier.remoteAddresses());
+                        return null;
+                    }
+                    socketAddressSupplier.failoverToNextAddress();
                     continue;
                 }
 
-                socketChannel = openSocketChannel(socketAddress, tcpBufferSize);
-
+                socketChannel = openSocketChannel(socketAddress, tcpBufferSize, 500);
 
                 if (socketChannel == null) {
-                    Jvm.warn().on(getClass(), "unable to connected to " + socketAddressSupplier.toString());
-                    pause(pausePeriodMs);
+                    Jvm.debug().on(getClass(), "unable to connected to " + socketAddressSupplier.toString());
+
+                    // at end
+                    if (isAtEnd(socketAddressSupplier)) {
+                        fatalFailureMonitorMonitor.onFatalFailure(name, "Failed to connect to any of these servers=" + socketAddressSupplier.remoteAddresses());
+                        return null;
+                    }
+
+                    socketAddressSupplier.failoverToNextAddress();
                     continue;
                 }
 
@@ -112,7 +96,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
                     LOG.info("", e);
 
                 socketAddressSupplier.failoverToNextAddress();
-                pause(pausePeriodMs);
+                Thread.sleep(pausePeriodMs);
             }
         }
     }

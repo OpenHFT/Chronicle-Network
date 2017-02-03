@@ -1,6 +1,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.wire.Marshallable;
 import org.jetbrains.annotations.NotNull;
@@ -18,13 +19,31 @@ import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
 public interface ConnectionStrategy extends Marshallable {
 
-    SocketChannel connect(String name,
-                          SocketAddressSupplier socketAddressSupplier,
-                          NetworkStatsListener<? extends NetworkContext> networkStatsListener,
-                          boolean hasLoggedInPreviously);
+    SocketChannel connect(@NotNull String name,
+                          @NotNull  SocketAddressSupplier socketAddressSupplier,
+                          @Nullable NetworkStatsListener<? extends NetworkContext> networkStatsListener,
+                          boolean hasLoggedInPreviously,
+                          @Nullable FatalFailureMonitor fatalFailureMonitor) throws InterruptedException;
 
     @Nullable
-    default SocketChannel openSocketChannel(@NotNull InetSocketAddress socketAddress, int tcpBufferSize) throws IOException {
+    default SocketChannel openSocketChannel(@NotNull InetSocketAddress socketAddress,
+                                            int tcpBufferSize,
+                                            int timeoutMs) throws IOException, InterruptedException {
+
+        long start = System.currentTimeMillis();
+        for (; ; ) {
+            if (start + timeoutMs < System.currentTimeMillis())
+                return null;
+            SocketChannel sc = socketChannel(socketAddress, tcpBufferSize);
+            if (sc != null)
+                return sc;
+           Thread.sleep(100);
+        }
+    }
+
+    @Nullable
+    static SocketChannel socketChannel(@NotNull InetSocketAddress socketAddress, int tcpBufferSize) throws IOException {
+
         final SocketChannel result = SocketChannel.open();
         @Nullable Selector selector = null;
         boolean failed = true;
@@ -43,7 +62,7 @@ public interface ConnectionStrategy extends Marshallable {
 
             int select = selector.select(2500);
             if (select == 0) {
-                Jvm.warn().on(getClass(), "Timed out attempting to connect to " + socketAddress);
+                Jvm.warn().on(ConnectionStrategy.class, "Timed out attempting to connect to " + socketAddress);
                 return null;
             } else {
                 try {
@@ -51,7 +70,7 @@ public interface ConnectionStrategy extends Marshallable {
                         return null;
 
                 } catch (IOException e) {
-                    Jvm.debug().on(getClass(), "Failed to connect to " + socketAddress + " " + e);
+                    Jvm.debug().on(ConnectionStrategy.class, "Failed to connect to " + socketAddress + " " + e);
                     return null;
                 }
             }
@@ -66,8 +85,6 @@ public interface ConnectionStrategy extends Marshallable {
             if (failed)
                 closeQuietly(result);
         }
-
-
     }
 
 

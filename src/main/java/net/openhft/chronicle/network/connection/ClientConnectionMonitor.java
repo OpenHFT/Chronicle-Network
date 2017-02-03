@@ -24,7 +24,7 @@ import java.net.SocketAddress;
 /**
  * @author Rob Austin.
  */
-public interface ClientConnectionMonitor {
+public interface ClientConnectionMonitor extends FatalFailureMonitor {
 
     /**
      * Call just after the client as successfully established a connection to the server
@@ -42,4 +42,5 @@ public interface ClientConnectionMonitor {
      * @param socketAddress the address of the socket that we have been disconnected from
      */
     void onDisconnected(@Nullable String name, @NotNull SocketAddress socketAddress);
+
 }

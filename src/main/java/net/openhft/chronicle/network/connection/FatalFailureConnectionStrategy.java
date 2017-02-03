@@ -1,10 +1,17 @@
 package net.openhft.chronicle.network.connection;
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.network.ConnectionStrategy;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.NetworkStatsListener;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
+
+import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
+import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 
 /**
  * @author Rob Austin.
@@ -32,12 +39,92 @@ import java.nio.channels.SocketChannel;
  */
 public class FatalFailureConnectionStrategy implements ConnectionStrategy {
 
+    private final int failureReportingRetyAttempts;
+    private int tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
+    private boolean hasSentFatalFailure;
 
-    @Override
-    public SocketChannel connect(String name,
-                                 SocketAddressSupplier socketAddressSupplier,
-                                 NetworkStatsListener<? extends NetworkContext> networkStatsListener,
-                                 boolean hasLoggedInPreviously) {
-        throw new UnsupportedOperationException("todo");
+    /**
+     * @param failureReportingRetyAttempts the number of attempts before the error is reported
+     */
+    public FatalFailureConnectionStrategy(int failureReportingRetyAttempts) {
+        this.failureReportingRetyAttempts = failureReportingRetyAttempts;
     }
+
+    @Nullable
+    @Override
+    public SocketChannel connect(@NotNull String name,
+                                 @NotNull SocketAddressSupplier socketAddressSupplier,
+                                 @Nullable NetworkStatsListener<? extends NetworkContext> networkStatsListener,
+                                 boolean hasLoggedInPreviously,
+                                 @Nullable FatalFailureMonitor fatalFailureMonitor) throws InterruptedException {
+
+        if (socketAddressSupplier.size() == 0 && !hasSentFatalFailure && fatalFailureMonitor != null) {
+            hasSentFatalFailure = true;
+            fatalFailureMonitor.onFatalFailure(name, "no connections have not been configured");
+            Thread.sleep(100);
+            return null;
+        }
+
+        int failures = 0;
+        int maxFailures = socketAddressSupplier.size() * failureReportingRetyAttempts;
+        socketAddressSupplier.resetToPrimary();
+
+        for (; ; ) {
+
+            if (failures == maxFailures && fatalFailureMonitor != null) {
+                if (!hasSentFatalFailure) {
+                    hasSentFatalFailure = true;
+
+                    fatalFailureMonitor.onFatalFailure(name, name);
+                }
+
+                return null;
+            }
+
+            SocketChannel socketChannel = null;
+            try {
+                @Nullable final InetSocketAddress socketAddress = socketAddressSupplier.get();
+                if (socketAddress == null) {
+                    failures++;
+                    socketAddressSupplier.failoverToNextAddress();
+                    Thread.sleep(100);
+                    continue;
+                }
+
+                socketChannel = openSocketChannel(socketAddress, tcpBufferSize, 200);
+
+                if (socketChannel == null) {
+                    Jvm.warn().on(getClass(), "unable to connected to " + socketAddressSupplier.toString() + ", name=" + name);
+
+                    failures++;
+                    socketAddressSupplier.failoverToNextAddress();
+                    Thread.sleep(100);
+                    continue;
+                }
+
+                Jvm.debug().on(getClass(), "successfully connected to " + socketAddressSupplier.toString());
+
+                if (networkStatsListener != null)
+                    networkStatsListener.onHostPort(socketAddress.getHostString(), socketAddress.getPort());
+                hasSentFatalFailure = false;
+                failures = 0;
+                // success
+                return socketChannel;
+
+            } catch (Throwable e) {
+
+                //noinspection ConstantConditions
+                if (socketChannel != null)
+                    closeQuietly(socketChannel);
+
+                failures++;
+                socketAddressSupplier.failoverToNextAddress();
+                Thread.sleep(100);
+            }
+
+        }
+
+    }
+
+
 }
