@@ -41,7 +41,7 @@ import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
  */
 public class FatalFailureConnectionStrategy implements ConnectionStrategy {
 
-    private static final long PAUSE = TimeUnit.MILLISECONDS.toNanos(200);
+    private static final long PAUSE = TimeUnit.MILLISECONDS.toNanos(400);
     private final int attempts;
     private int tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
     private boolean hasSentFatalFailure;
