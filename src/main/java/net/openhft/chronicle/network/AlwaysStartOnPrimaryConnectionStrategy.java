@@ -37,10 +37,11 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
 
     @Nullable
     @Override
-    public SocketChannel connect(String name, SocketAddressSupplier socketAddressSupplier,
+    public SocketChannel connect(@NotNull String name,
+                                 @NotNull SocketAddressSupplier socketAddressSupplier,
                                  @Nullable NetworkStatsListener<? extends NetworkContext> networkStatsListener,
                                  boolean didLogIn,
-                                 @NotNull FatalFailureMonitor fatalFailureMonitorMonitor) throws InterruptedException {
+                                 @Nullable FatalFailureMonitor fatalFailureMonitor) throws InterruptedException {
 
 
         if (socketAddressSupplier.get() == null || didLogIn)
@@ -58,7 +59,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
                     Jvm.warn().on(AlwaysStartOnPrimaryConnectionStrategy.class, "failed to obtain socketAddress");
                     // at end
                     if (isAtEnd(socketAddressSupplier)) {
-                        fatalFailureMonitorMonitor.onFatalFailure(name, "Failed to connect to any of these servers=" + socketAddressSupplier.remoteAddresses());
+                        fatalFailureMonitor.onFatalFailure(name, "Failed to connect to any of these servers=" + socketAddressSupplier.remoteAddresses());
                         return null;
                     }
                     socketAddressSupplier.failoverToNextAddress();
@@ -72,7 +73,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
 
                     // at end
                     if (isAtEnd(socketAddressSupplier)) {
-                        fatalFailureMonitorMonitor.onFatalFailure(name, "Failed to connect to any of these servers=" + socketAddressSupplier.remoteAddresses());
+                        fatalFailureMonitor.onFatalFailure(name, "Failed to connect to any of these servers=" + socketAddressSupplier.remoteAddresses());
                         return null;
                     }
 
