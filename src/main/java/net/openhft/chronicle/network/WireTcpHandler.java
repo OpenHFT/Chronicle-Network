@@ -116,6 +116,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
         WireType wireType = wireType();
         if (wireType == null)
             wireType = in.readByte(in.readPosition() + 4) < 0 ? WireType.BINARY : WireType.TEXT;
+
         checkWires(in, out, wireType);
 
         // we assume that if any bytes were in lastOutBytesRemaining the sc.write() would have been
@@ -239,6 +240,11 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     }
 
     protected void checkWires(Bytes in, Bytes out, @NotNull WireType wireType) {
+
+        // both the wireOutPublisher and rpc events can not be delta wired
+        if (wireType == DELTA_BINARY)
+            wireType = BINARY;
+
         if (recreateWire) {
             recreateWire = false;
             inWire = wireType.apply(in);

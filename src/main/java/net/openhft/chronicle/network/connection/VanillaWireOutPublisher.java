@@ -44,7 +44,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     private int consumerIndex;
 
     public VanillaWireOutPublisher(@NotNull WireType wireType) {
-        this.closed = false;
+        closed = false;
         bytes = Bytes.elasticByteBuffer(TcpChannelHub.TCP_BUFFER);
         wire = wireType.apply(bytes);
     }
