@@ -23,7 +23,6 @@ import net.openhft.chronicle.network.WireTypeSniffingTcpHandler;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.connection.VanillaWireOutPublisher;
-import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
 
@@ -53,8 +52,7 @@ public enum LegacyHanderFactory {
 
                 throw new UnsupportedOperationException("");
             };
-
-            final Function<WireType, WireOutPublisher> f = VanillaWireOutPublisher::new;
+ 
 
             @NotNull final HeaderTcpHandler<T> headerTcpHandler = new HeaderTcpHandler<>(handler,
                     consumer,

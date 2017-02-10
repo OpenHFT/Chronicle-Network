@@ -44,9 +44,10 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     private int consumerIndex;
 
     public VanillaWireOutPublisher(@NotNull WireType wireType) {
-        closed = false;
+        this.closed = false;
         bytes = Bytes.elasticByteBuffer(TcpChannelHub.TCP_BUFFER);
-        wire = wireType.apply(bytes);
+        final WireType wireType0 = wireType == WireType.DELTA_BINARY ? WireType.BINARY : wireType;
+        wire = wireType0.apply(bytes);
     }
 
     /**
@@ -215,11 +216,13 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
     @Override
     public void wireType(@NotNull WireType wireType) {
-        if (WireType.valueOf(wire) == wireType)
+
+        final WireType wireType0 = wireType == WireType.DELTA_BINARY ? WireType.BINARY : wireType;
+        if (WireType.valueOf(wire) == wireType0)
             return;
 
         synchronized (lock()) {
-            wire = wireType.apply(bytes);
+            wire = wireType0.apply(bytes);
         }
     }
 

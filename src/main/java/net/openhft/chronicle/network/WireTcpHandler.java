@@ -86,11 +86,12 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     }
 
     public void wireType(@NotNull WireType wireType) {
+        if (publisher != null)
+            publisher.wireType(wireType);
+
         if (wireType == BINARY)
             wireType = DELTA_BINARY.isAvailable() ? DELTA_BINARY : BINARY;
         this.wireType = wireType;
-        if (publisher != null)
-            publisher.wireType(wireType);
     }
 
     public WireOutPublisher publisher() {
@@ -100,7 +101,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     public void publisher(@NotNull WireOutPublisher publisher) {
         this.publisher = publisher;
         if (wireType() != null)
-            publisher.wireType(wireType());
+            publisher.wireType(wireType()  );
     }
 
     public void isAcceptor(boolean isAcceptor) {
@@ -240,11 +241,6 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     }
 
     protected void checkWires(Bytes in, Bytes out, @NotNull WireType wireType) {
-
-        // both the wireOutPublisher and rpc events can not be delta wired
-        if (wireType == DELTA_BINARY)
-            wireType = BINARY;
-
         if (recreateWire) {
             recreateWire = false;
             inWire = wireType.apply(in);
