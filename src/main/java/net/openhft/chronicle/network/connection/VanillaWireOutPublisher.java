@@ -76,9 +76,13 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         try {
             while (wire.bytes().readRemaining() > 0) {
                 try (DocumentContext dc = wire.readingDocument()) {
-                    if (!dc.isPresent())
+                    Bytes<?> bytes = wire.bytes();
+                    if (!dc.isPresent()) {
+                        bytes.readPosition(bytes.readLimit());
                         return;
+                    }
                     LOG.info("Server Sends aync event:\n" + Wires.fromSizePrefixedBlobs(dc));
+                    bytes.readPosition(bytes.readLimit());
                 }
             }
         } finally {
