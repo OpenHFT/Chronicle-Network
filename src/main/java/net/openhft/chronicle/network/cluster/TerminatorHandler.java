@@ -40,12 +40,10 @@ public class TerminatorHandler extends AbstractSubHandler<NetworkContext> implem
     private final AtomicBoolean isClosed = new AtomicBoolean();
 
     @UsedViaReflection
-    private TerminatorHandler(WireIn w) {
-
+    public TerminatorHandler(WireIn w) {
     }
 
     private TerminatorHandler() {
-
     }
 
     public static WriteMarshallable terminationHandler(int localIdentifier, int remoteIdentifier, final long cid) {
