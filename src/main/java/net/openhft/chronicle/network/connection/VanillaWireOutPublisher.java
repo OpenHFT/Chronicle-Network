@@ -192,12 +192,11 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     }
 
     private Object lock() {
-        return bytes;
+        return this;
     }
 
     @Override
     public synchronized void close() {
-
         closed = true;
         clear();
     }
@@ -243,7 +242,6 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     @NotNull
     @Override
     public String toString() {
-
         return "VanillaWireOutPublisher{" +
                 ", closed=" + closed +
                 ", " + wire.getClass().getSimpleName() + "=" + bytes +

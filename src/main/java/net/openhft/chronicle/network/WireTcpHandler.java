@@ -86,12 +86,12 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     }
 
     public void wireType(@NotNull WireType wireType) {
-        if (publisher != null)
-            publisher.wireType(wireType);
-
         if (wireType == BINARY)
             wireType = DELTA_BINARY.isAvailable() ? DELTA_BINARY : BINARY;
         this.wireType = wireType;
+
+        if (publisher != null)
+            publisher.wireType(wireType);
     }
 
     public WireOutPublisher publisher() {
@@ -101,7 +101,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     public void publisher(@NotNull WireOutPublisher publisher) {
         this.publisher = publisher;
         if (wireType() != null)
-            publisher.wireType(wireType()  );
+            publisher.wireType(wireType());
     }
 
     public void isAcceptor(boolean isAcceptor) {
@@ -155,8 +155,9 @@ public abstract class WireTcpHandler<T extends NetworkContext>
 
         if (in.readRemaining() >= SIZE_OF_SIZE)
             onRead0();
-        onWrite(outWire);
-
+        else
+            onWrite(outWire);
+        
         lastWritePosition = outWire.bytes().writePosition();
         lastReadRemaining = inWire.bytes().readRemaining();
 
@@ -201,6 +202,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
                         if (YamlLogging.showServerReads())
                             logYaml(dc);
                         onRead(dc, outWire);
+                        onWrite(outWire);
                     } catch (Exception e) {
                         Jvm.warn().on(getClass(), "inWire=" + inWire.getClass(), e);
                     }
