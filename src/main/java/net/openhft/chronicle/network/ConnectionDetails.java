@@ -26,7 +26,7 @@ public class ConnectionDetails extends VanillaNetworkContext {
     private SocketAddressSupplier socketAddressSupplier;
     private boolean disable;
 
-    public ConnectionDetails(String id, String hostPort) {
+    public ConnectionDetails(@NotNull String id, String hostPort) {
         this(id, new SocketAddressSupplier(new String[]{hostPort}, id));
     }
 
@@ -34,6 +34,7 @@ public class ConnectionDetails extends VanillaNetworkContext {
         return socketAddressSupplier;
     }
 
+    @NotNull
     public ConnectionDetails sessionProvider(SocketAddressSupplier sessionProvider) {
         this.socketAddressSupplier = sessionProvider;
         return this;

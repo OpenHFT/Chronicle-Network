@@ -24,6 +24,7 @@ import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -79,7 +80,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         return heartbeatIntervalMs;
     }
 
-    @NotNull
+    @Nullable
     public ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpEventHandlerFactory() {
         throw new UnsupportedOperationException();
     }

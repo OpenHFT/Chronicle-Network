@@ -23,6 +23,7 @@ import net.openhft.chronicle.network.cluster.TerminationEventHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.channels.SocketChannel;
 
@@ -30,10 +31,12 @@ public interface NetworkContext<T extends NetworkContext> extends Closeable {
 
     void onHandlerChanged(TcpHandler handler);
 
+    @NotNull
     T isAcceptor(boolean serverSocket);
 
     boolean isAcceptor();
 
+    @NotNull
     T socketChannel(SocketChannel sc);
 
     SocketChannel socketChannel();
@@ -44,12 +47,15 @@ public interface NetworkContext<T extends NetworkContext> extends Closeable {
 
     WireType wireType();
 
+    @NotNull
     T wireType(WireType wireType);
 
     SessionDetailsProvider sessionDetails();
 
+    @NotNull
     T sessionDetails(SessionDetailsProvider sessionDetails);
 
+    @Nullable
     TerminationEventHandler terminationEventHandler();
 
     void terminationEventHandler(TerminationEventHandler terminationEventHandler);
@@ -70,7 +76,7 @@ public interface NetworkContext<T extends NetworkContext> extends Closeable {
 
     ServerThreadingStrategy serverThreadingStrategy();
 
-    @NotNull
+    @Nullable
     default ConnectionListener acquireConnectionListener() {
         return new ConnectionListener() {
             @Override
@@ -87,6 +93,7 @@ public interface NetworkContext<T extends NetworkContext> extends Closeable {
 
     Runnable socketReconnector();
 
+    @NotNull
     T socketReconnector(Runnable socketReconnector);
 
     void networkStatsListener(NetworkStatsListener NetworkStatsListener);

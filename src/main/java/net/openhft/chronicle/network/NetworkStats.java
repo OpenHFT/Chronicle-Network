@@ -19,6 +19,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.wire.ReadMarshallable;
 import net.openhft.chronicle.wire.WriteMarshallable;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
@@ -27,6 +28,7 @@ import java.util.UUID;
  */
 public interface NetworkStats<T extends NetworkStats> extends ReadMarshallable, WriteMarshallable {
 
+    @NotNull
     T userId(String userId);
 
     /**
@@ -34,6 +36,7 @@ public interface NetworkStats<T extends NetworkStats> extends ReadMarshallable, 
      */
     long writeBps();
 
+    @NotNull
     T writeBps(long writeBps);
 
     /**
@@ -41,6 +44,7 @@ public interface NetworkStats<T extends NetworkStats> extends ReadMarshallable, 
      */
     long readBps();
 
+    @NotNull
     T readBps(long readBps);
 
     /**
@@ -49,14 +53,17 @@ public interface NetworkStats<T extends NetworkStats> extends ReadMarshallable, 
      */
     long socketPollCountPerSecond();
 
+    @NotNull
     T socketPollCountPerSecond(long socketPollCountPerSecond);
 
     long timestamp();
 
+    @NotNull
     T timestamp(long timestamp);
 
     void remotePort(int port);
 
+    @NotNull
     T remoteHostName(String hostName);
 
     String userId();
@@ -66,6 +73,7 @@ public interface NetworkStats<T extends NetworkStats> extends ReadMarshallable, 
      */
     int localIdentifier();
 
+    @NotNull
     T localIdentifier(int localIdentifier);
 
     boolean isAcceptor();
@@ -77,6 +85,7 @@ public interface NetworkStats<T extends NetworkStats> extends ReadMarshallable, 
      */
     int remoteIdentifier();
 
+    @NotNull
     T remoteIdentifier(int remoteIdentifier);
 
     void clientId(UUID clientId);
