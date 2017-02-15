@@ -187,8 +187,9 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 return true;
             } else if (read == 0) {
                 if (outBBB.readRemaining() > 0) {
-//                    System.out.println("w " + outBBB.readRemaining());
-                    if (invokeHandler()) return true;
+                //    System.out.println("w " + outBBB.readRemaining());
+                    if (invokeHandler())
+                        return true;
                 }
                 return false;
             }
@@ -223,10 +224,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
                     if (heartbeatListener != null)
                         nc.heartbeatListener().onMissedHeartbeat();
-/*
-                    if (tcpHandler.toString().contains("host - id = 3")) {
-                        System.out.println("************************* closing client connection ");
-                    }*/
                     closeSC();
                     throw new InvalidEventHandlerException("heartbeat timeout");
                 }

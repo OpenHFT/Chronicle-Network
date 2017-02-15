@@ -157,7 +157,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
             onRead0();
         else
             onWrite(outWire);
-        
+
         lastWritePosition = outWire.bytes().writePosition();
         lastReadRemaining = inWire.bytes().readRemaining();
 
@@ -204,7 +204,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
                         onRead(dc, outWire);
                         onWrite(outWire);
                     } catch (Exception e) {
-                        Jvm.warn().on(getClass(), "inWire=" + inWire.getClass(), e);
+                        Jvm.warn().on(getClass(), "inWire=" + inWire.getClass() + ",yaml=" + Wires.fromSizePrefixedBlobs(dc), e);
                     }
                 }
             }
