@@ -20,9 +20,10 @@ import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 
 /**
- * loops through all the host, till if finds a host that it can connect to.
- * If an established connected is dropped, will always return to the primary to begin attempting to find a successful connection,
- * If no successful connection can be found, then null is returned
+ * Loops through all the hosts:ports ( in order ) starting at the primary, till if finds a host that it can connect to.
+ * If later, this successful connection is dropped, it will always return to the primary to begin attempting to find a successful connection,
+ * If all the host:ports have been attempted since the last connection was established, no successful connection can be found,
+ * then null is returned, and the fatalFailureMonitor.onFatalFailure() is triggered
  */
 public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrategy {
 
