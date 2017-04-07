@@ -36,6 +36,9 @@ public interface ConnectionStrategy extends Marshallable {
                           boolean didLogIn,
                           @Nullable FatalFailureMonitor fatalFailureMonitor) throws InterruptedException;
 
+    /**
+     * the reason for this method is that unlike the selector it uses tick time
+     */
     @Nullable
     default SocketChannel openSocketChannel(@NotNull InetSocketAddress socketAddress,
                                             int tcpBufferSize,
@@ -47,8 +50,10 @@ public interface ConnectionStrategy extends Marshallable {
             return sc;
 
         for (; ; ) {
-            if (start + timeoutMs < Time.tickTime())
+            if (start + timeoutMs < Time.tickTime()) {
+                Jvm.warn().on(ConnectionStrategy.class, "Timed out attempting to connect to " + socketAddress);
                 return null;
+            }
             sc = socketChannel(socketAddress, tcpBufferSize);
             if (sc != null)
                 return sc;
@@ -75,9 +80,9 @@ public interface ConnectionStrategy extends Marshallable {
             selector = Selector.open();
             result.register(selector, SelectionKey.OP_CONNECT);
 
-            int select = selector.select(2500);
+            int select = selector.select(1);
             if (select == 0) {
-                Jvm.warn().on(ConnectionStrategy.class, "Timed out attempting to connect to " + socketAddress);
+                Jvm.debug().on(ConnectionStrategy.class, "Timed out attempting to connect to " + socketAddress);
                 return null;
             } else {
                 try {
