@@ -126,6 +126,14 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
         return current.get();
     }
 
+    @Nullable
+    public String getDescription() {
+        @Nullable final RemoteAddressSupplier current = this.current;
+        if (current == null)
+            return null;
+        return current.toString();
+    }
+
     @Override
     @NotNull
     public String toString() {
