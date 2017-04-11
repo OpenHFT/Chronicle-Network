@@ -43,13 +43,15 @@ public interface ConnectionStrategy extends Marshallable {
     default SocketChannel openSocketChannel(@NotNull InetSocketAddress socketAddress,
                                             int tcpBufferSize,
                                             long timeoutMs) throws IOException, InterruptedException {
-
+        assert timeoutMs > 0;
         long start = Time.tickTime();
         SocketChannel sc = socketChannel(socketAddress, tcpBufferSize);
         if (sc != null)
             return sc;
 
         for (; ; ) {
+            if (Thread.currentThread().isInterrupted())
+                throw new InterruptedException();
             if (start + timeoutMs < Time.tickTime()) {
                 Jvm.warn().on(ConnectionStrategy.class, "Timed out attempting to connect to " + socketAddress);
                 return null;
