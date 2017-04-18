@@ -90,6 +90,8 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
                 // success
                 return socketChannel;
 
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             } catch (Throwable e) {
                 //noinspection ConstantConditions
                 if (socketChannel != null)
