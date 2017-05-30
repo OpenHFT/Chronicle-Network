@@ -34,7 +34,7 @@ public interface ConnectionStrategy extends Marshallable {
                           @NotNull SocketAddressSupplier socketAddressSupplier,
                           @Nullable NetworkStatsListener<? extends NetworkContext> networkStatsListener,
                           boolean didLogIn,
-                          @Nullable FatalFailureMonitor fatalFailureMonitor) throws InterruptedException;
+                          @NotNull FatalFailureMonitor fatalFailureMonitor) throws InterruptedException;
 
     /**
      * the reason for this method is that unlike the selector it uses tick time
