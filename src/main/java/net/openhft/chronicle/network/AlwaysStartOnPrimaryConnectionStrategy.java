@@ -2,7 +2,6 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.IORuntimeException;
-import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.wire.WireIn;
@@ -15,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
@@ -101,7 +101,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
                     LOG.info("", e);
 
                 socketAddressSupplier.failoverToNextAddress();
-                Time.parkNanos(TimeUnit.MILLISECONDS.toNanos(pausePeriodMs));
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(pausePeriodMs));
             }
         }
     }

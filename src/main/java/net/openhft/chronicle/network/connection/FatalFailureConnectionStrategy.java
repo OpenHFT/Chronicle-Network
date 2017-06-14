@@ -1,7 +1,6 @@
 package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.ConnectionStrategy;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.NetworkStatsListener;
@@ -11,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
@@ -64,7 +64,7 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
         if (socketAddressSupplier.size() == 0 && !hasSentFatalFailure && fatalFailureMonitor != null) {
             hasSentFatalFailure = true;
             fatalFailureMonitor.onFatalFailure(name, "no connections have not been configured");
-            Time.parkNanos(PAUSE);
+            LockSupport.parkNanos(PAUSE);
             return null;
         }
 
@@ -92,7 +92,7 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
                 if (socketAddress == null) {
                     failures++;
                     socketAddressSupplier.failoverToNextAddress();
-                    Time.parkNanos(PAUSE);
+                    LockSupport.parkNanos(PAUSE);
                     continue;
                 }
 
@@ -103,7 +103,7 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
                     Jvm.warn().on(getClass(), "unable to connected to " + socketAddressSupplier.toString() + ", name=" + name);
                     failures++;
                     socketAddressSupplier.failoverToNextAddress();
-                    Time.parkNanos(PAUSE);
+                    LockSupport.parkNanos(PAUSE);
                     continue;
                 }
 
@@ -128,7 +128,7 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
 
                 failures++;
                 socketAddressSupplier.failoverToNextAddress();
-                Time.parkNanos(PAUSE);
+                LockSupport.parkNanos(PAUSE);
             }
 
         }
