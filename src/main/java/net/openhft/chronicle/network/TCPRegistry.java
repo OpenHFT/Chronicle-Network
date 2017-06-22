@@ -38,8 +38,9 @@ import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
  * if you would rather let the application allocate you a free port at random, you can just provide
  * a text reference to the port, for example "host.port", you can provide any text you want, it will
  * always be taken as a reference, that is unless its correctly formed like
- * "&lt;hostname&gt;:&lt;port&gt;”, then it will use the exact host and port you provide. The reason
- * we offer this functionality is quiet often in unit tests you wish to start a test via loopback,
+ * "&lt;hostname&gt;:&lt;port&gt;”, then it will use the exact host and port you provide. For listen
+ * addresses, if hostname is empty or * then all local addresses will be listened on. <p/>The reason
+ * we offer this functionality is quite often in unit tests you wish to start a test via loopback,
  * followed often by another test via loopback, if the first test does not shut down correctly it
  * can impact on the second test. Giving each test a unique port is one solution, but then managing
  * those ports can become a problem in its self. So we created the TCPRegistry which manages those
