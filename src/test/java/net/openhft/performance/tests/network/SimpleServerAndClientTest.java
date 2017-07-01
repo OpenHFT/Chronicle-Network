@@ -30,6 +30,7 @@ import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.TextWire;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.WireType;
+import net.openhft.chronicle.wire.YamlLogging;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.After;
@@ -49,9 +50,8 @@ import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri
  * Created by rob on 26/08/2015.
  */
 public class SimpleServerAndClientTest {
-    private ThreadDump threadDump;
-
     private static final Logger LOG = LoggerFactory.getLogger(SimpleServerAndClientTest.class);
+    private ThreadDump threadDump;
 
     @Before
     public void threadDump() {
@@ -66,7 +66,7 @@ public class SimpleServerAndClientTest {
 
     @Test
     public void test() throws IOException, TimeoutException, InterruptedException {
-        //YamlLogging.setAll(true);
+        YamlLogging.setAll(true);
 
         for (; ; ) {
             // this the name of a reference to the host name and port,
@@ -92,7 +92,7 @@ public class SimpleServerAndClientTest {
                     final long tid = tcpChannelHub.nextUniqueTransaction(System.currentTimeMillis());
 
                     // we will use a text wire backed by a elasticByteBuffer
-                    @NotNull final Wire wire = new TextWire(Bytes.elasticByteBuffer());
+                    @NotNull final Wire wire = new TextWire(Bytes.elasticByteBuffer()).useBinaryDocuments();
 
                     wire.writeDocument(true, w -> w.write(() -> "tid").int64(tid));
                     wire.writeDocument(false, w -> w.write(() -> "payload").text(expectedMessage));
