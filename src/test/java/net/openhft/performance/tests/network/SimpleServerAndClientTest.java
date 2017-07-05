@@ -92,7 +92,7 @@ public class SimpleServerAndClientTest {
                     final long tid = tcpChannelHub.nextUniqueTransaction(System.currentTimeMillis());
 
                     // we will use a text wire backed by a elasticByteBuffer
-                    @NotNull final Wire wire = new TextWire(Bytes.elasticByteBuffer()).useBinaryDocuments();
+                    @NotNull final Wire wire = new TextWire(Bytes.elasticByteBuffer()).useTextDocuments();
 
                     wire.writeDocument(true, w -> w.write(() -> "tid").int64(tid));
                     wire.writeDocument(false, w -> w.write(() -> "payload").text(expectedMessage));
