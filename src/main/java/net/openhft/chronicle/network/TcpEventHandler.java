@@ -196,7 +196,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                     if (invokeHandler())
                         return true;
                 }
-                return false;
+                return busy;
             }
 
             if (read < 0) {
