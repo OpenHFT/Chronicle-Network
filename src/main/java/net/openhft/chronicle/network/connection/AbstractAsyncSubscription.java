@@ -20,7 +20,7 @@ import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.wire.WireOut;
 import org.jetbrains.annotations.NotNull;
 
-/**
+/*
  * Created by Rob Austin
  */
 public abstract class AbstractAsyncSubscription implements AsyncSubscription {

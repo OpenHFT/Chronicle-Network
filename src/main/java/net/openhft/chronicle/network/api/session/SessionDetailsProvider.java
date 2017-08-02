@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 import java.net.InetSocketAddress;
 import java.util.UUID;
 
-/**
+/*
  * Created by Rob Austin
  */
 public interface SessionDetailsProvider extends SessionDetails, Marshallable {

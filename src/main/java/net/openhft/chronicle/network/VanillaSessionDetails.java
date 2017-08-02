@@ -26,7 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/**
+/*
  * Created by peter on 01/06/15.
  */
 public class VanillaSessionDetails implements SessionDetailsProvider {

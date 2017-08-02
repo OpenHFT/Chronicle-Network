@@ -28,7 +28,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-/**
+/*
  * Created by peter.lawrey on 15/07/2015.
  */
 class NetworkLog {

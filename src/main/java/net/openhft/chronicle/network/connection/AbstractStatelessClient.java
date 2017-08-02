@@ -36,7 +36,7 @@ import java.util.function.Function;
 
 import static net.openhft.chronicle.network.connection.CoreFields.reply;
 
-/**
+/*
  * Created by Rob Austin
  */
 public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> implements Closeable {

@@ -23,7 +23,7 @@ import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import org.jetbrains.annotations.NotNull;
 
-/**
+/*
  * Created by peter.lawrey on 22/01/15.
  */
 @FunctionalInterface

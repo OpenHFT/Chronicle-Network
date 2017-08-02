@@ -35,7 +35,7 @@ import java.util.function.Supplier;
 
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
-/**
+/*
  * Created by peter.lawrey on 22/01/15.
  */
 public class AcceptorEventHandler implements EventHandler, Closeable {

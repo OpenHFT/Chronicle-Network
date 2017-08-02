@@ -28,7 +28,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
-/**
+/*
  * Created by peter.lawrey on 22/01/15.
  */
 class EchoHandler implements TcpHandler<NetworkContext> {

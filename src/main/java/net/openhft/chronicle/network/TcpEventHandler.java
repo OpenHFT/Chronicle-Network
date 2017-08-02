@@ -43,7 +43,7 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 
-/**
+/*
  * Created by peter.lawrey on 22/01/15.
  */
 public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandlerManager {
