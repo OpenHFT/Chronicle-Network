@@ -106,6 +106,7 @@ public abstract class AbstractSubHandler<T extends NetworkContext> implements Su
         isClosed = true;
     }
 
+    @Override
     public boolean isClosed() {
         return isClosed;
     }

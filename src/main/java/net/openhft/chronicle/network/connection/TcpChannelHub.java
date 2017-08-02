@@ -446,6 +446,7 @@ public class TcpChannelHub implements Closeable {
         return clientChannel != null;
     }
 
+    @Override
     public boolean isClosed() {
         return closed;
     }

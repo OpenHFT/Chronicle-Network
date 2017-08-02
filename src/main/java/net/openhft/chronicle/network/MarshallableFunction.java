@@ -29,6 +29,7 @@ import java.util.function.Function;
 public interface MarshallableFunction<T, R> extends Demarshallable, WriteMarshallable,
         Function<T, R> {
 
+    @Override
     default void writeMarshallable(@NotNull WireOut wire) {
 
     }

@@ -100,6 +100,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         return wireType;
     }
 
+    @Override
     @NotNull
     public T wireType(WireType wireType) {
         this.wireType = wireType;
@@ -129,11 +130,13 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         this.terminationEventHandler = terminationEventHandler;
     }
 
+    @Override
     public T heartbeatTimeoutMs(long heartbeatTimeoutMs) {
         this.heartbeatTimeoutMs = heartbeatTimeoutMs;
         return (T) this;
     }
 
+    @Override
     public long heartbeatTimeoutMs() {
         return heartbeatTimeoutMs;
     }
@@ -143,10 +146,12 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         return this.heartbeatListener;
     }
 
+    @Override
     public void heartbeatListener(@NotNull HeartbeatListener heartbeatListener) {
         this.heartbeatListener = heartbeatListener;
     }
 
+    @Override
     public long newCid() {
 
         long time = System.currentTimeMillis();
@@ -178,10 +183,12 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         return isClosed;
     }
 
+    @Override
     public Runnable socketReconnector() {
         return socketReconnector;
     }
 
+    @Override
     @NotNull
     public T socketReconnector(Runnable socketReconnector) {
         this.socketReconnector = socketReconnector;
@@ -198,10 +205,12 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         return this.networkStatsListener;
     }
 
+    @Override
     public ServerThreadingStrategy serverThreadingStrategy() {
         return serverThreadingStrategy;
     }
 
+    @Override
     public void serverThreadingStrategy(ServerThreadingStrategy serverThreadingStrategy) {
         this.serverThreadingStrategy = serverThreadingStrategy;
     }

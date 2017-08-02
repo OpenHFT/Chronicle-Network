@@ -46,6 +46,7 @@ public class HostIdConnectionStrategy implements ConnectionStrategy, Demarshalla
     /**
      * @return false if already connected
      */
+    @Override
     public synchronized boolean notifyConnected(@NotNull WireTcpHandler handler,
                                                 int localIdentifier,
                                                 int remoteIdentifier) {

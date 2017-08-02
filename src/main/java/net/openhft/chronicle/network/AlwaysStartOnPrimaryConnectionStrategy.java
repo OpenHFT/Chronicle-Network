@@ -32,6 +32,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
     private int tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
     private int pausePeriodMs = Integer.getInteger("client.timeout", 500);
 
+    @Override
     public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
         Wires.readMarshallable(this, wire, false);
     }

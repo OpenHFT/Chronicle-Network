@@ -208,6 +208,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         clear();
     }
 
+    @Override
     public boolean canTakeMoreData() {
         synchronized (lock()) {
             assert wire.startUse();

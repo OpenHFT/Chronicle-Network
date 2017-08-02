@@ -348,12 +348,14 @@ public abstract class WireTcpHandler<T extends NetworkContext>
         logYaml(outWire);
     }
 
+    @Override
     public final void nc(T nc) {
         this.nc = nc;
         if (!closed)
             onInitialize();
     }
 
+    @Override
     public T nc() {
         return nc;
     }

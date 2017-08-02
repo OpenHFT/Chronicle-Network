@@ -121,6 +121,7 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
         return wireType;
     }
 
+    @Override
     public void hostId(byte hostId) {
         this.hostId = hostId;
     }

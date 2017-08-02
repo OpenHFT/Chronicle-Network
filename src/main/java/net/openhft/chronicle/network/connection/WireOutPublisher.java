@@ -79,6 +79,7 @@ public interface WireOutPublisher extends Closeable {
      */
     void put(@Nullable final Object key, WriteMarshallable event);
 
+    @Override
     default boolean isClosed() {
         throw new UnsupportedOperationException();
     }
