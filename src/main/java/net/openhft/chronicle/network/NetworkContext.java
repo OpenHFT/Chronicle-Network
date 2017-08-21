@@ -103,11 +103,5 @@ public interface NetworkContext<T extends NetworkContext> extends Closeable {
     NetworkStatsListener networkStatsListener();
 
     void serverThreadingStrategy(ServerThreadingStrategy singleThreaded);
-
-    default Supplier<EventLoop> eventLoopSupplier() {
-        return () -> {
-            throw new UnsupportedOperationException("Not supported by this type of NetworkContext");
-        };
-    }
 }
 
