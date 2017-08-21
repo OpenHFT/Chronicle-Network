@@ -21,9 +21,9 @@ import java.util.Map;
 
 import static net.openhft.chronicle.network.connection.CoreFields.csp;
 
-abstract class CspTcpHandler<T extends NetworkContext> extends WireTcpHandler<T> {
+public abstract class CspTcpHandler<T extends NetworkContext> extends WireTcpHandler<T> {
 
-    final List<WriteMarshallable> writers = new ArrayList<>();
+    protected final List<WriteMarshallable> writers = new ArrayList<>();
     @NotNull
     private final Map<Long, SubHandler> cidToHandle = new HashMap<>();
     @Nullable
@@ -33,7 +33,7 @@ abstract class CspTcpHandler<T extends NetworkContext> extends WireTcpHandler<T>
     private long lastCid;
 
     @Nullable
-    SubHandler handler() {
+    protected SubHandler handler() {
         return handler;
     }
 
@@ -48,7 +48,7 @@ abstract class CspTcpHandler<T extends NetworkContext> extends WireTcpHandler<T>
      *
      * @return {@code true} if if a csp was read rather than a cid
      */
-    boolean readMeta(@NotNull final WireIn wireIn) {
+    protected boolean readMeta(@NotNull final WireIn wireIn) {
         final StringBuilder event = Wires.acquireStringBuilder();
 
         @NotNull ValueIn valueIn = wireIn.readEventName(event);
@@ -110,7 +110,7 @@ abstract class CspTcpHandler<T extends NetworkContext> extends WireTcpHandler<T>
     }
 
     @Nullable
-    HeartbeatEventHandler heartbeatEventHandler() {
+    protected HeartbeatEventHandler heartbeatEventHandler() {
         return heartbeatEventHandler;
     }
 }
