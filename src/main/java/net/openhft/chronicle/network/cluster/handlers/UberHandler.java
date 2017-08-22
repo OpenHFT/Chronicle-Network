@@ -225,7 +225,7 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
             if (dc.isData() && !inWire.bytes().isEmpty())
                 handler.onRead(inWire, outWire);
         } catch (Throwable e) {
-            Jvm.warn().on(getClass(), "failed to parse:" + dc.wire().readingPeekYaml(), e);
+            Jvm.warn().on(getClass(), "failed to parse:" + peekContents(dc), e);
         }
     }
 
@@ -294,6 +294,14 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
             final WireType wireType = clusterContext.wireType();
             final String name = clusterContext.clusterName();
             return uberHandler(new UberHandler(localIdentifier, remoteIdentifier, wireType, name));
+        }
+    }
+
+    private static String peekContents(final @NotNull DocumentContext dc) {
+        try {
+            return dc.wire().readingPeekYaml();
+        } catch (RuntimeException e) {
+            return "Failed to peek at contents due to: " + e.getMessage();
         }
     }
 }
