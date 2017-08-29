@@ -1685,13 +1685,12 @@ public class TcpChannelHub implements Closeable {
             long start = System.currentTimeMillis();
             socketAddressSupplier.resetToPrimary();
 
-            OUTER:
             for (int i = 0; ; i++) {
                 checkNotShutdown();
 
                 if (LOG.isDebugEnabled())
                     Jvm.debug().on(getClass(), "attemptConnect remoteAddress=" + socketAddressSupplier);
-                else if (i >= socketAddressSupplier.all().size())
+                else if (i >= socketAddressSupplier.all().size() && !isShuttingdown())
                     LOG.info("attemptConnect remoteAddress=" + socketAddressSupplier);
 
                 @Nullable SocketChannel socketChannel = null;
