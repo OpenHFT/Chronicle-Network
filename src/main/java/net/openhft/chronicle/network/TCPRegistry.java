@@ -18,6 +18,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.tcp.ISocketChannel;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -167,5 +168,9 @@ public enum TCPRegistry {
 
     public static SocketChannel createSocketChannel(@NotNull String description) throws IOException {
         return SocketChannel.open(lookup(description));
+    }
+
+    public static ISocketChannel createChronicleSocketChannel(@NotNull String description) throws IOException {
+        return ISocketChannel.wrap(SocketChannel.open(lookup(description)));
     }
 }

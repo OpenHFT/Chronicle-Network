@@ -22,8 +22,8 @@ import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.core.io.Closeable;
-import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.io.IOTools;
+import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
@@ -37,11 +37,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SocketChannel;
 
 /*
  * Created by peter.lawrey on 22/01/15.
@@ -51,7 +49,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     public static final int TCP_BUFFER = TcpChannelHub.TCP_BUFFER;
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
     @NotNull
-    private final SocketChannel sc;
+    private final ISocketChannel sc;
     @NotNull
     private final NetworkContext nc;
     @NotNull
@@ -77,7 +75,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     public TcpEventHandler(@NotNull NetworkContext nc) {
 
         this.writeEventHandler = new WriteEventHandler();
-        this.sc = nc.socketChannel();
+        this.sc = ISocketChannel.wrap(nc.socketChannel());
         this.nc = nc;
 
         try {
@@ -92,11 +90,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         }
         // there is nothing which needs to be written by default.
         this.sessionDetails = new VanillaSessionDetails();
-        try {
-            sessionDetails.clientAddress((InetSocketAddress) sc.getRemoteAddress());
-        } catch (IOException e) {
-            throw new IORuntimeException(e);
-        }
+        sessionDetails.clientAddress(sc.getRemoteAddress());
         // allow these to be used by another thread.
         // todo check that this can be commented out
 
