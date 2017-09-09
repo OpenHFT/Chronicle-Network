@@ -16,6 +16,8 @@
 
 package net.openhft.performance.tests.vanilla.tcp;
 
+import net.openhft.affinity.Affinity;
+import net.openhft.chronicle.core.tcp.ISocketChannel;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -40,21 +42,21 @@ public class EchoServerMain {
         @NotNull AtomicReference<SocketChannel> nextSocket = new AtomicReference<>();
 
         new Thread(() -> {
-//            Affinity.setAffinity(3);
+            Affinity.setAffinity(7);
 
             ByteBuffer bb = ByteBuffer.allocateDirect(32 * 1024);
             ByteBuffer bb2 = ByteBuffer.allocateDirect(32 * 1024);
-            @NotNull List<SocketChannel> sockets = new ArrayList<>();
+            @NotNull List<ISocketChannel> sockets = new ArrayList<>();
             for (; ; ) {
                 if (sockets.isEmpty())
                     Thread.yield();
                 SocketChannel sc = nextSocket.getAndSet(null);
                 if (sc != null) {
                     System.out.println("Connected " + sc);
-                    sockets.add(sc);
+                    sockets.add(ISocketChannel.wrap(sc));
                 }
                 for (int i = 0; i < sockets.size(); i++) {
-                    SocketChannel socket = sockets.get(i);
+                    ISocketChannel socket = sockets.get(i);
                     try {
                         // simulate copying the data.
                         // obviously faster if you don't touch the data but no real service would do that.

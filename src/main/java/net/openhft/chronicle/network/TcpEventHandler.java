@@ -21,6 +21,7 @@ import net.openhft.chronicle.bytes.BytesUtil;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.core.OS;
+import net.openhft.chronicle.core.annotation.PackageLocal;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IOTools;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
@@ -246,6 +247,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     }
 
+    @PackageLocal
     boolean invokeHandler() throws IOException {
         boolean busy = false;
         final int position = inBBB.underlyingObject().position();
@@ -325,14 +327,16 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         clean();
     }
 
-    private void closeSC() {
+    @PackageLocal
+    void closeSC() {
         Closeable.closeQuietly(this.nc.networkStatsListener());
         Closeable.closeQuietly(tcpHandler);
         Closeable.closeQuietly(sc);
         Closeable.closeQuietly(nc);
     }
 
-    private boolean tryWrite() throws IOException {
+    @PackageLocal
+    boolean tryWrite() throws IOException {
         if (outBBB.underlyingObject().remaining() <= 0)
             return false;
         int start = outBBB.underlyingObject().position();
@@ -378,12 +382,14 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             try {
                 // get more data to write if the buffer was empty
                 // or we can write some of what is there
-                int remaining = outBBB.underlyingObject().remaining();
+                ByteBuffer byteBuffer = outBBB.underlyingObject();
+                int remaining = byteBuffer.remaining();
                 busy = remaining > 0;
                 if (busy)
                     tryWrite();
 
-                if (outBBB.underlyingObject().remaining() == remaining) {
+                // has the remaining changed, i.e. did it write anything?
+                if (byteBuffer.remaining() == remaining) {
                     busy |= invokeHandler();
                     if (!busy)
                         busy = tryWrite();

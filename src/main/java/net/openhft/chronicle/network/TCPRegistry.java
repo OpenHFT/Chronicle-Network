@@ -170,7 +170,7 @@ public enum TCPRegistry {
         return SocketChannel.open(lookup(description));
     }
 
-    public static ISocketChannel createChronicleSocketChannel(@NotNull String description) throws IOException {
+    public static ISocketChannel createISocketChannel(@NotNull String description) throws IOException {
         return ISocketChannel.wrap(SocketChannel.open(lookup(description)));
     }
 }
