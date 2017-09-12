@@ -21,9 +21,10 @@ import net.openhft.chronicle.bytes.BytesUtil;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.core.OS;
+import net.openhft.chronicle.core.annotation.PackageLocal;
 import net.openhft.chronicle.core.io.Closeable;
-import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.io.IOTools;
+import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
@@ -37,11 +38,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SocketChannel;
 
 /*
  * Created by peter.lawrey on 22/01/15.
@@ -51,7 +50,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     public static final int TCP_BUFFER = TcpChannelHub.TCP_BUFFER;
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
     @NotNull
-    private final SocketChannel sc;
+    private final ISocketChannel sc;
     @NotNull
     private final NetworkContext nc;
     @NotNull
@@ -77,7 +76,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     public TcpEventHandler(@NotNull NetworkContext nc) {
 
         this.writeEventHandler = new WriteEventHandler();
-        this.sc = nc.socketChannel();
+        this.sc = ISocketChannel.wrap(nc.socketChannel());
         this.nc = nc;
 
         try {
@@ -92,11 +91,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         }
         // there is nothing which needs to be written by default.
         this.sessionDetails = new VanillaSessionDetails();
-        try {
-            sessionDetails.clientAddress((InetSocketAddress) sc.getRemoteAddress());
-        } catch (IOException e) {
-            throw new IORuntimeException(e);
-        }
+        sessionDetails.clientAddress(sc.getRemoteAddress());
         // allow these to be used by another thread.
         // todo check that this can be commented out
 
@@ -252,6 +247,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     }
 
+    @PackageLocal
     boolean invokeHandler() throws IOException {
         boolean busy = false;
         final int position = inBBB.underlyingObject().position();
@@ -331,14 +327,16 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         clean();
     }
 
-    private void closeSC() {
+    @PackageLocal
+    void closeSC() {
         Closeable.closeQuietly(this.nc.networkStatsListener());
         Closeable.closeQuietly(tcpHandler);
         Closeable.closeQuietly(sc);
         Closeable.closeQuietly(nc);
     }
 
-    private boolean tryWrite() throws IOException {
+    @PackageLocal
+    boolean tryWrite() throws IOException {
         if (outBBB.underlyingObject().remaining() <= 0)
             return false;
         int start = outBBB.underlyingObject().position();
@@ -384,12 +382,14 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             try {
                 // get more data to write if the buffer was empty
                 // or we can write some of what is there
-                int remaining = outBBB.underlyingObject().remaining();
+                ByteBuffer byteBuffer = outBBB.underlyingObject();
+                int remaining = byteBuffer.remaining();
                 busy = remaining > 0;
                 if (busy)
                     tryWrite();
 
-                if (outBBB.underlyingObject().remaining() == remaining) {
+                // has the remaining changed, i.e. did it write anything?
+                if (byteBuffer.remaining() == remaining) {
                     busy |= invokeHandler();
                     if (!busy)
                         busy = tryWrite();

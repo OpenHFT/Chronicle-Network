@@ -18,15 +18,12 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.RandomDataInput;
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.core.tcp.ISocketChannel;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 
 /*
  * Created by peter.lawrey on 15/07/2015.
@@ -38,14 +35,10 @@ class NetworkLog {
     private final String desc;
     private long lastOut = System.currentTimeMillis();
 
-    public NetworkLog(@NotNull SocketChannel channel, String op) {
-        try {
-            this.desc = op
-                    + " " + ((InetSocketAddress) channel.getLocalAddress()).getPort()
-                    + " " + ((InetSocketAddress) channel.getRemoteAddress()).getPort();
-        } catch (IOException e) {
-            throw new IORuntimeException(e);
-        }
+    public NetworkLog(@NotNull ISocketChannel channel, String op) {
+        this.desc = op
+                + " " + channel.getLocalAddress().getPort()
+                + " " + channel.getRemoteAddress().getPort();
     }
 
     public void idle() {

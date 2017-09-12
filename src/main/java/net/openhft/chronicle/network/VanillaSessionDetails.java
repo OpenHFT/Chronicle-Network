@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /*
- * Created by peter on 01/06/15.
+ * Created by Peter Lawrey on 01/06/15.
  */
 public class VanillaSessionDetails implements SessionDetailsProvider {
     private final Map<Class, Object> infoMap = new LinkedHashMap<>();

@@ -28,7 +28,7 @@ import java.net.InetSocketAddress;
 import java.util.UUID;
 
 /**
- * Session local details stored here. <p> Created by peter on 01/06/15.
+ * Session local details stored here. <p> Created by Peter Lawrey on 01/06/15.
  */
 public interface SessionDetails extends WriteMarshallable {
 
