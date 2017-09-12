@@ -27,6 +27,7 @@ public class HostDetails implements Marshallable {
     private int hostId;
     private int tcpBufferSize;
     private String connectUri;
+    private String region;
     private int timeoutMs;
     private ConnectionStrategy connectionStrategy;
     private ConnectionManager connectionManager;
@@ -51,14 +52,16 @@ public class HostDetails implements Marshallable {
         wire.read(() -> "hostId").int32(this, (o, i) -> o.hostId = i)
                 .read(() -> "tcpBufferSize").int32(this, (o, i) -> o.tcpBufferSize = i)
                 .read(() -> "connectUri").text(this, (o, i) -> o.connectUri = i)
-                .read(() -> "timeoutMs").int32(this, (o, i) -> o.timeoutMs = i);
+                .read(() -> "timeoutMs").int32(this, (o, i) -> o.timeoutMs = i)
+                .read(() -> "region").text(this, (o, i) -> o.region = i);
     }
 
     @Override
     public void writeMarshallable(@NotNull WireOut wire) {
         wire.write(() -> "hostId").int32(hostId)
                 .write(() -> "tcpBufferSize").int32(tcpBufferSize)
-                .write(() -> "connectUri").text(connectUri);
+                .write(() -> "connectUri").text(connectUri)
+                .write(() -> "region").text(region);
     }
 
     public String connectUri() {
@@ -81,10 +84,12 @@ public class HostDetails implements Marshallable {
         return this;
     }
 
-    @NotNull
-    public HostDetails timeoutMs(int timeoutMs) {
-        this.timeoutMs = timeoutMs;
-        return this;
+    public String region() {
+        return region;
+    }
+
+    public int timeoutMs() {
+        return timeoutMs;
     }
 
     public ConnectionStrategy connectionStrategy() {

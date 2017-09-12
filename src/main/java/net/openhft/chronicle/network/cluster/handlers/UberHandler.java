@@ -102,6 +102,7 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
         nc.wireType(wireType());
         isAcceptor(nc.isAcceptor());
 
+
         assert checkIdentifierEqualsHostId();
         assert remoteIdentifier != localIdentifier :
                 "remoteIdentifier=" + remoteIdentifier + ", " +

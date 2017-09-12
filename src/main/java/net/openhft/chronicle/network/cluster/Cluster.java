@@ -16,6 +16,7 @@
 
 package net.openhft.chronicle.network.cluster;
 
+import com.oracle.tools.packager.Log;
 import net.openhft.chronicle.core.annotation.Nullable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.wire.*;
@@ -23,7 +24,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.stream.Collectors;
 
 /**
  * @author Rob Austin.
@@ -146,6 +149,14 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
     }
 
     public void install() {
+        Set<Integer> hostIds = hostDetails.values().stream().map(hd -> hd.hostId()).collect(Collectors.toSet());
+
+        Integer local = (Integer) (int) clusterContext.localIdentifier();
+        if (!hostIds.contains(local)) {
+            Log.debug("cluster='" + clusterContext.clusterName() + "' ignored as localIdentifier=" + clusterContext.localIdentifier() + " is in this cluster");
+            return;
+        }
+
         if (clusterContext != null && hostDetails != null && hostDetails.values() != null)
             hostDetails.values().forEach(clusterContext::accept);
     }
