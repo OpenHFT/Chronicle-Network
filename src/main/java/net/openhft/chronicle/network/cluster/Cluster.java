@@ -16,7 +16,7 @@
 
 package net.openhft.chronicle.network.cluster;
 
-import com.oracle.tools.packager.Log;
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.Nullable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.wire.*;
@@ -153,7 +153,7 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
 
         Integer local = (Integer) (int) clusterContext.localIdentifier();
         if (!hostIds.contains(local)) {
-            Log.debug("cluster='" + clusterContext.clusterName() + "' ignored as localIdentifier=" + clusterContext.localIdentifier() + " is in this cluster");
+            Jvm.debug().on(getClass(), "cluster='" + clusterContext.clusterName() + "' ignored as localIdentifier=" + clusterContext.localIdentifier() + " is in this cluster");
             return;
         }
 
