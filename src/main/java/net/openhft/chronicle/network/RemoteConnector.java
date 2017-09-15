@@ -34,7 +34,9 @@ import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.network.NetworkStatsListener.*;
 
@@ -132,10 +134,20 @@ public class RemoteConnector implements Closeable {
                 throw new InvalidEventHandlerException();
             final long time = System.currentTimeMillis();
 
-            if (time > nextPeriod.get())
+            if (time > nextPeriod.get()) {
                 nextPeriod.set(time + retryInterval);
-            else
+            }
+            else {
+                // this is called in a loop from BlockingEventHandler,
+                // so just wait until the end of the retryInterval
+                if (priority() == HandlerPriority.BLOCKING) {
+                    final long sleepMillis = nextPeriod.get() - time;
+                    if (sleepMillis > 10) {
+                        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(sleepMillis - 10));
+                    }
+                }
                 return false;
+            }
 
             final SocketChannel sc;
             final TcpEventHandler eventHandler;
