@@ -26,6 +26,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -38,7 +39,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     private boolean isAcceptor = true;
     private HeartbeatListener heartbeatListener;
     private SessionDetailsProvider sessionDetails;
-    private boolean connectionClosed;
     @Nullable
     private TerminationEventHandler terminationEventHandler;
     private long heartbeatTimeoutMs;
@@ -47,7 +47,8 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     private Runnable socketReconnector;
     private NetworkStatsListener<? extends NetworkContext> networkStatsListener;
     private ServerThreadingStrategy serverThreadingStrategy = ServerThreadingStrategy.SINGLE_THREADED;
-    private volatile boolean isClosed;
+
+    private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
     @Override
     public SocketChannel socketChannel() {
@@ -170,17 +171,26 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     }
 
     @Override
-    public synchronized void close() {
-        if (isClosed)
-            return;
-        isClosed = true;
-        Closeable.closeQuietly(networkStatsListener);
+    public void close() {
+        closeWithCAS();
+    }
+
+    /**
+     * Close the connection atomically.
+     * @return true if state changed to closed; false if nothing changed.
+     */
+    public boolean closeWithCAS() {
+        final boolean didClose = isClosed.compareAndSet(false, true);
+        if (didClose) {
+            Closeable.closeQuietly(networkStatsListener);
+        }
+        return didClose;
     }
 
 
     @Override
     public boolean isClosed() {
-        return isClosed;
+        return isClosed.get();
     }
 
     @Override
