@@ -172,19 +172,21 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
 
     @Override
     public void close() {
-        closeWithCAS();
+        closeAtomically();
     }
 
     /**
      * Close the connection atomically.
      * @return true if state changed to closed; false if nothing changed.
      */
-    public boolean closeWithCAS() {
-        final boolean didClose = isClosed.compareAndSet(false, true);
-        if (didClose) {
+    protected boolean closeAtomically() {
+        if (isClosed.getAndSet(false)) {
             Closeable.closeQuietly(networkStatsListener);
+            return true;
         }
-        return didClose;
+        else {
+            return false;
+        }
     }
 
 
