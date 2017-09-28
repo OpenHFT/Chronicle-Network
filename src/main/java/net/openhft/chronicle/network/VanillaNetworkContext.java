@@ -180,15 +180,15 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
      * @return true if state changed to closed; false if nothing changed.
      */
     protected boolean closeAtomically() {
-        if (isClosed.getAndSet(false)) {
+        if (isClosed.compareAndSet(false, true)) {
             Closeable.closeQuietly(networkStatsListener);
             return true;
         }
         else {
+            //was already closed.
             return false;
         }
     }
-
 
     @Override
     public boolean isClosed() {
