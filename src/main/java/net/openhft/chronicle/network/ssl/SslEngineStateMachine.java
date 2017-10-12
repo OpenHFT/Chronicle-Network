@@ -22,6 +22,8 @@ final class SslEngineStateMachine implements EventHandler {
     private ByteBuffer outboundEncodedData;
     private ByteBuffer inboundEncodedData;
     private ByteBuffer inboundApplicationData;
+    private ByteBuffer[] precomputedWrapArray;
+    private ByteBuffer[] precomputedUnwrapArray;
 
     SslEngineStateMachine(
             final SocketChannel channel,
@@ -46,6 +48,9 @@ final class SslEngineStateMachine implements EventHandler {
             outboundEncodedData = ByteBuffer.allocateDirect(engine.getSession().getPacketBufferSize());
             inboundApplicationData = ByteBuffer.allocateDirect(engine.getSession().getApplicationBufferSize());
             inboundEncodedData = ByteBuffer.allocateDirect(engine.getSession().getPacketBufferSize());
+            // eliminates array creation on each call to SSLEngine.wrap()
+            precomputedWrapArray = new ByteBuffer[] {outboundApplicationData};
+            precomputedUnwrapArray = new ByteBuffer[] {inboundApplicationData};
 
             new Handshaker().performHandshake(engine, channel);
         } catch (IOException e) {
@@ -62,11 +67,12 @@ final class SslEngineStateMachine implements EventHandler {
             if (outboundApplicationData.position() != 0) {
 
                 outboundApplicationData.flip();
-                if (engine.wrap(outboundApplicationData, outboundEncodedData).
+
+                if (engine.wrap(precomputedWrapArray, outboundEncodedData).
                         getStatus() == SSLEngineResult.Status.CLOSED) {
                     throw new InvalidEventHandlerException("Socket closed");
                 }
-                busy |= outboundApplicationData.hasRemaining();
+                busy = outboundApplicationData.hasRemaining();
                 outboundApplicationData.compact();
             }
             if (outboundEncodedData.position() != 0) {
@@ -84,7 +90,7 @@ final class SslEngineStateMachine implements EventHandler {
 
             if (inboundEncodedData.position() != 0) {
                 inboundEncodedData.flip();
-                engine.unwrap(inboundEncodedData, inboundApplicationData);
+                engine.unwrap(inboundEncodedData, precomputedUnwrapArray);
                 busy |= inboundEncodedData.hasRemaining();
                 inboundEncodedData.compact();
             }
