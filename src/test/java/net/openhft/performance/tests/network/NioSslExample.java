@@ -171,6 +171,7 @@ public final class NioSslExample {
         @Override
         public boolean action() throws InvalidEventHandlerException, InterruptedException {
             final int read;
+            boolean busy = false;
             try {
                 if (outboundApplicationData.position() != 0) {
 
@@ -179,42 +180,40 @@ public final class NioSslExample {
                             getStatus() == SSLEngineResult.Status.CLOSED) {
                         throw new InvalidEventHandlerException("Socket closed");
                     }
+                    busy |= outboundApplicationData.hasRemaining();
                     outboundApplicationData.compact();
-
                 }
                 if (outboundEncodedData.position() != 0) {
                     outboundEncodedData.flip();
                     channel.write(outboundEncodedData);
+                    busy |= outboundEncodedData.hasRemaining();
                     outboundEncodedData.compact();
-
                 }
 
                 read = channel.read(inboundEncodedData);
                 if (read == -1) {
                     throw new InvalidEventHandlerException("Socket closed");
                 }
+                busy |= read != 0;
 
                 if (inboundEncodedData.position() != 0) {
                     inboundEncodedData.flip();
                     engine.unwrap(inboundEncodedData, inboundApplicationData);
+                    busy |= inboundEncodedData.hasRemaining();
                     inboundEncodedData.compact();
                 }
 
                 if (inboundApplicationData.position() != 0) {
                     inboundApplicationData.flip();
                     decodedMessageReceiver.accept(inboundApplicationData);
+                    busy |= inboundApplicationData.hasRemaining();
                     inboundApplicationData.compact();
                 }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            final boolean idle = read == 0 &&
-                    outboundApplicationData.limit() == outboundApplicationData.capacity() &&
-                    outboundEncodedData.limit() == outboundEncodedData.capacity() &&
-                    inboundApplicationData.limit() == inboundApplicationData.capacity() &&
-                    inboundEncodedData.limit() == inboundEncodedData.capacity();
 
-            return !(idle);
+            return busy;
         }
     }
 
