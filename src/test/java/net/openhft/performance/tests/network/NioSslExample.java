@@ -35,45 +35,59 @@ public final class NioSslExample {
 
     private static final File KEYSTORE_FILE = new File("src/test/resources", "test.jks");
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         final ExecutorService threadPool = Executors.newFixedThreadPool(2);
+
+        final ServerSocketChannel serverChannel = ServerSocketChannel.open();
+        serverChannel.bind(null);
+        serverChannel.configureBlocking(true);
+
+        final SocketChannel channel = SocketChannel.open();
+        channel.configureBlocking(false);
+        channel.connect(new InetSocketAddress("127.0.0.1", serverChannel.socket().getLocalPort()));
+
+        final Client client = new Client();
+
+        threadPool.submit(new StateMachineProcessor(channel, false,
+                client::onReceivedMessage, client::onAddApplicationData, getInitialisedContext()));
+
+        final SocketChannel serverConnection = serverChannel.accept();
+        serverConnection.configureBlocking(false);
+
         final Server server = new Server();
-        threadPool.submit(server::run);
-        final Client client = new Client("127.0.0.1", server.port());
-        threadPool.submit(client::run);
+        threadPool.submit(new StateMachineProcessor(serverConnection, true,
+                server::onReceivedMessage, server::onAddApplicationData, getInitialisedContext()));
     }
 
-    private static final class Client {
-        private final int serverPort;
-        private final String hostname;
+    private static final class StateMachineProcessor implements Runnable {
+        private final SocketChannel channel;
+        private final boolean isAcceptor;
+        private final Consumer<ByteBuffer> decodedMessageReceiver;
+        private final Consumer<ByteBuffer> applicationDataPopulator;
+        private final SSLContext context;
 
-        private Client(final String host, final int serverPort) {
-            this.serverPort = serverPort;
-            hostname = host;
+        StateMachineProcessor(final SocketChannel channel, final boolean isAcceptor,
+                              final Consumer<ByteBuffer> decodedMessageReceiver,
+                              final Consumer<ByteBuffer> applicationDataPopulator, final SSLContext context) {
+            this.channel = channel;
+            this.isAcceptor = isAcceptor;
+            this.decodedMessageReceiver = decodedMessageReceiver;
+            this.applicationDataPopulator = applicationDataPopulator;
+            this.context = context;
         }
 
-        void run() {
+        @Override
+        public void run() {
             try {
-                final SocketChannel channel = SocketChannel.open(new InetSocketAddress(hostname, serverPort));
-                channel.configureBlocking(false);
                 while (!channel.finishConnect()) {
                     Thread.yield();
                 }
-                final SSLContext context = getInitialisedContext();
-                final SSLEngine engine = context.createSSLEngine();
-                engine.setUseClientMode(true);
-                new Handshaker().performHandshake(engine, channel);
-
-                int counter = 0;
 
                 final SslEngineStateMachine stateMachine =
-                        new SslEngineStateMachine(engine, channel, this::onReceivedMessage);
+                        new SslEngineStateMachine(channel, decodedMessageReceiver, applicationDataPopulator, isAcceptor);
+                stateMachine.initialise(context);
 
                 while (!Thread.currentThread().isInterrupted()) {
-                    final ByteBuffer outboundApplicationData = stateMachine.getOutboundApplicationData();
-
-                    outboundApplicationData.clear();
-                    outboundApplicationData.put(("hello " + (counter++)).getBytes(StandardCharsets.US_ASCII));
                     while (stateMachine.action()) {
                         // process loop
                     }
@@ -83,6 +97,15 @@ public final class NioSslExample {
             } catch (Throwable e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private static final class Client {
+        private int counter = 0;
+
+        private void onAddApplicationData(final ByteBuffer outboundApplicationData) {
+            outboundApplicationData.clear();
+            outboundApplicationData.put(("hello " + (counter++)).getBytes(StandardCharsets.US_ASCII));
         }
 
         private void onReceivedMessage(final ByteBuffer buffer) {
@@ -94,84 +117,69 @@ public final class NioSslExample {
     }
 
     private static final class Server {
-        private final ServerSocketChannel serverChannel;
-        private SslEngineStateMachine stateMachine;
+        private final ByteBuffer lastReceivedMessage = ByteBuffer.allocateDirect(64);
 
-        private Server() throws IOException {
-            serverChannel = ServerSocketChannel.open();
-            serverChannel.bind(null);
-            serverChannel.configureBlocking(true);
-        }
-
-        void run() {
-            try {
-                final SocketChannel channel = serverChannel.accept();
-                channel.configureBlocking(false);
-
-                final SSLContext context = getInitialisedContext();
-                final SSLEngine engine = context.createSSLEngine();
-                engine.setUseClientMode(false);
-                engine.setNeedClientAuth(true);
-
-                new Handshaker().performHandshake(engine, channel);
-
-                stateMachine = new SslEngineStateMachine(engine, channel, this::onReceivedMessage);
-
-                while (!Thread.currentThread().isInterrupted()) {
-                    while (stateMachine.action()) {
-                        // process loop
-                    }
-                    LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1L));
-                }
-
-            } catch (Throwable e) {
-                e.printStackTrace();
+        private void onAddApplicationData(final ByteBuffer applicationData) {
+            if (lastReceivedMessage.remaining() != lastReceivedMessage.capacity() && lastReceivedMessage.hasRemaining()) {
+                applicationData.put("echo: ".getBytes(StandardCharsets.US_ASCII));
+                applicationData.put(lastReceivedMessage);
             }
         }
 
         private void onReceivedMessage(final ByteBuffer buffer) {
-            final ByteBuffer applicationData = stateMachine.getOutboundApplicationData();
-            applicationData.clear();
-            applicationData.put("echo: ".getBytes(StandardCharsets.US_ASCII));
-            applicationData.put(buffer);
-
-        }
-
-        int port() {
-            return serverChannel.socket().getLocalPort();
+            lastReceivedMessage.clear();
+            lastReceivedMessage.put(buffer);
+            lastReceivedMessage.flip();
         }
     }
 
 
     private static final class SslEngineStateMachine implements EventHandler {
-        private final SSLEngine engine;
         private final SocketChannel channel;
         private final Consumer<ByteBuffer> decodedMessageReceiver;
+        private final Consumer<ByteBuffer> applicationDataPopulator;
+        private final boolean isAcceptor;
+        private SSLEngine engine;
         private ByteBuffer outboundApplicationData;
         private ByteBuffer outboundEncodedData;
         private ByteBuffer inboundEncodedData;
         private ByteBuffer inboundApplicationData;
 
         private SslEngineStateMachine(
-                final SSLEngine engine, final SocketChannel channel,
-                final Consumer<ByteBuffer> decodedMessageReceiver) {
-            this.engine = engine;
-            outboundApplicationData = ByteBuffer.allocateDirect(engine.getSession().getApplicationBufferSize());
-            outboundEncodedData = ByteBuffer.allocateDirect(engine.getSession().getPacketBufferSize());
-            inboundApplicationData = ByteBuffer.allocateDirect(engine.getSession().getApplicationBufferSize());
-            inboundEncodedData = ByteBuffer.allocateDirect(engine.getSession().getPacketBufferSize());
+                final SocketChannel channel,
+                final Consumer<ByteBuffer> decodedMessageReceiver,
+                final Consumer<ByteBuffer> applicationDataPopulator,
+                final boolean isAcceptor) {
             this.channel = channel;
             this.decodedMessageReceiver = decodedMessageReceiver;
+            this.applicationDataPopulator = applicationDataPopulator;
+            this.isAcceptor = isAcceptor;
         }
 
-        ByteBuffer getOutboundApplicationData() {
-            return outboundApplicationData;
+        void initialise(SSLContext ctx) {
+            try {
+
+                engine = ctx.createSSLEngine();
+                engine.setUseClientMode(!isAcceptor);
+                if (isAcceptor) {
+                    engine.setNeedClientAuth(true);
+                }
+                outboundApplicationData = ByteBuffer.allocateDirect(engine.getSession().getApplicationBufferSize());
+                outboundEncodedData = ByteBuffer.allocateDirect(engine.getSession().getPacketBufferSize());
+                inboundApplicationData = ByteBuffer.allocateDirect(engine.getSession().getApplicationBufferSize());
+                inboundEncodedData = ByteBuffer.allocateDirect(engine.getSession().getPacketBufferSize());
+
+                new Handshaker().performHandshake(engine, channel);
+            } catch (IOException e) {
+                throw new RuntimeException("Unable to perform handshake", e);
+            }
         }
 
         @Override
         public boolean action() throws InvalidEventHandlerException, InterruptedException {
             final int read;
             boolean busy = false;
+            applicationDataPopulator.accept(outboundApplicationData);
             try {
                 if (outboundApplicationData.position() != 0) {
 
@@ -303,5 +311,4 @@ public final class NioSslExample {
         context.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
         return context;
     }
-
 }
