@@ -1,0 +1,11 @@
+{
+  context: !SslTestClusterContext {},
+  hostOne: {
+    hostId: 1,
+    connectUri: "host1.port"
+  },
+  hostTwo: {
+    hostId: 2,
+    connectUri: "host2.port"
+  }
+}
