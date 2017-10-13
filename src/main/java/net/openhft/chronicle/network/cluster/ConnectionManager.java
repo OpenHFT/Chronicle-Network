@@ -29,6 +29,7 @@ public interface ConnectionManager extends ConnectionChangedNotifier {
      */
     void addListener(ConnectionListener connectionListener);
 
+    @FunctionalInterface
     interface ConnectionListener {
         void onConnectionChange(NetworkContext nc, boolean isConnected);
     }

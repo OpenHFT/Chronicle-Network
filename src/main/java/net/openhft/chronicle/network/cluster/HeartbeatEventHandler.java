@@ -19,6 +19,7 @@ package net.openhft.chronicle.network.cluster;
 /**
  * @author Rob Austin.
  */
+@FunctionalInterface
 public interface HeartbeatEventHandler {
     void onMessageReceived();
 }

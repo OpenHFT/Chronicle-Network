@@ -23,6 +23,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * @author Rob Austin.
  */
+@FunctionalInterface
 public interface WritableSubHandler {
 
     @NotNull

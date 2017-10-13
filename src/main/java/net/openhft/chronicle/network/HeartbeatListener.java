@@ -20,6 +20,7 @@ package net.openhft.chronicle.network;
 /**
  * @author Rob Austin.
  */
+@FunctionalInterface
 public interface HeartbeatListener {
 
     /**

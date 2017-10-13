@@ -946,6 +946,7 @@ public class TcpChannelHub implements Closeable {
         return outWire.bytes().readRemaining() == 0;
     }
 
+    @FunctionalInterface
     public interface Task {
         void run();
     }
