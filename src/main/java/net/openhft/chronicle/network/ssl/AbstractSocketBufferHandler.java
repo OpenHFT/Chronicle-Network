@@ -7,7 +7,7 @@ import java.nio.channels.SocketChannel;
 public abstract class AbstractSocketBufferHandler implements BufferHandler {
     private final SocketChannel channel;
 
-    public AbstractSocketBufferHandler(final SocketChannel socketChannel) {
+    protected AbstractSocketBufferHandler(final SocketChannel socketChannel) {
         this.channel = socketChannel;
     }
 
