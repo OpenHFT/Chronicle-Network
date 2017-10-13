@@ -7,13 +7,11 @@ import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public final class SslTcpHandler<N extends SslNetworkContext> implements TcpHandler<N> {
     private final TcpHandler<N> delegate;
-    private final SSLContext sslContext;
     private final CopyingBufferHandler bufferHandler = new CopyingBufferHandler();
 
     private ByteBuffer decryptedInput;
@@ -21,16 +19,15 @@ public final class SslTcpHandler<N extends SslNetworkContext> implements TcpHand
     private boolean handshakeRequired = true;
     private SslEngineStateMachine stateMachine;
 
-    public SslTcpHandler(final TcpHandler<N> delegate, final SSLContext sslContext) {
+    public SslTcpHandler(final TcpHandler<N> delegate) {
         this.delegate = delegate;
-        this.sslContext = sslContext;
     }
 
     @Override
     public void process(@NotNull final Bytes in, @NotNull final Bytes out, final N nc) {
         if (handshakeRequired) {
             stateMachine = new SslEngineStateMachine(nc.socketChannel(), bufferHandler, nc.isAcceptor());
-            stateMachine.initialise(sslContext);
+            stateMachine.initialise(nc.sslContext());
             handshakeRequired = false;
         }
 

@@ -76,7 +76,7 @@ public final class SslTestClusterContext extends ClusterContext {
             @NotNull final Function<Object, TcpHandler> consumer = o -> {
 
                 if (o instanceof TcpHandler) {
-                    return (TcpHandler) o;
+                    return wrapForSsl((TcpHandler) o);
                 }
 
                 throw new UnsupportedOperationException("not supported class=" + o.getClass());
@@ -96,6 +96,10 @@ public final class SslTestClusterContext extends ClusterContext {
             return handler;
         }
 
+    }
+
+    private static TcpHandler wrapForSsl(final TcpHandler delegate) {
+        return new SslTcpHandler(delegate);
     }
 
     private static class StubConnectionManager implements ConnectionManager {

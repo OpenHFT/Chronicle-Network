@@ -33,8 +33,8 @@ final class Handshaker {
                 status != SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) {
             switch (status) {
                 case NEED_UNWRAP:
-
-                    if (channel.read(peerNetworkData) < 0) {
+                    final int read = channel.read(peerNetworkData);
+                    if (read < 0) {
                         throw new IOException("Channel closed");
                     }
 

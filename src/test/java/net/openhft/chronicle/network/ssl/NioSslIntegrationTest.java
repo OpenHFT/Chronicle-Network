@@ -12,6 +12,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public final class NioSslIntegrationTest {
@@ -21,7 +23,7 @@ public final class NioSslIntegrationTest {
         final ExecutorService threadPool = Executors.newFixedThreadPool(2);
 
         final ServerSocketChannel serverChannel = ServerSocketChannel.open();
-        serverChannel.bind(null);
+        serverChannel.bind(new InetSocketAddress("0.0.0.0", 13337));
         serverChannel.configureBlocking(true);
 
         final SocketChannel channel = SocketChannel.open();
@@ -32,7 +34,6 @@ public final class NioSslIntegrationTest {
 
         final StateMachineProcessor clientProcessor = new StateMachineProcessor(channel, false,
                 SSLContextLoader.getInitialisedContext(), client);
-        threadPool.submit(clientProcessor);
 
         final SocketChannel serverConnection = serverChannel.accept();
         serverConnection.configureBlocking(false);
@@ -40,6 +41,26 @@ public final class NioSslIntegrationTest {
         final Server server = new Server(serverConnection);
         final StateMachineProcessor serverProcessor = new StateMachineProcessor(serverConnection, true,
                 SSLContextLoader.getInitialisedContext(), server);
+
+        while (!(channel.finishConnect() && serverConnection.finishConnect())) {
+            Thread.yield();
+        }
+
+        final ByteBuffer message = ByteBuffer.wrap("test message".getBytes(StandardCharsets.US_ASCII));
+
+        while (message.hasRemaining()) {
+            channel.write(message);
+        }
+
+        message.clear();
+        while (message.hasRemaining()) {
+            serverConnection.read(message);
+        }
+
+        message.flip();
+        assertThat(new String(message.array()), is("test message"));
+
+        threadPool.submit(clientProcessor);
         threadPool.submit(serverProcessor);
 
         client.waitForResponse(10, TimeUnit.SECONDS);
