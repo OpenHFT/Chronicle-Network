@@ -1,0 +1,56 @@
+package net.openhft.chronicle.network.ssl;
+
+import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.network.cluster.AbstractSubHandler;
+import net.openhft.chronicle.network.connection.CoreFields;
+import net.openhft.chronicle.wire.Marshallable;
+import net.openhft.chronicle.wire.ValueIn;
+import net.openhft.chronicle.wire.WireIn;
+import net.openhft.chronicle.wire.WireOut;
+import net.openhft.chronicle.wire.Wires;
+import net.openhft.chronicle.wire.WriteMarshallable;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.concurrent.RejectedExecutionException;
+
+final class PingTcpHandler extends AbstractSubHandler<SslTestClusteredNetworkContext> implements Marshallable {
+    @NotNull
+    public static WriteMarshallable newPingHandler(final String csp, final long cid) {
+        @NotNull final PingTcpHandler handler = new PingTcpHandler();
+
+        return w -> w.writeDocument(true, d -> d.writeEventName(CoreFields.csp).text(csp)
+                .writeEventName(CoreFields.cid).int64(cid)
+                .writeEventName(CoreFields.handler).typedMarshallable(handler));
+    }
+
+    @Override
+    public void readMarshallable(@NotNull final WireIn wire) throws IORuntimeException {
+    }
+
+    @Override
+    public void onRead(@NotNull final WireIn inWire, @NotNull final WireOut outWire) {
+        final StringBuilder eventName = Wires.acquireStringBuilder();
+        @NotNull final ValueIn valueIn = inWire.readEventName(eventName);
+        if ("ping".contentEquals(eventName)) {
+            final long id = valueIn.int64();
+
+            nc().wireOutPublisher().put(null, wireOut -> {
+                wireOut.writeDocument(true, d -> d.write(CoreFields.cid).int64(cid()));
+                wireOut.writeDocument(false,
+                        d -> d.writeEventName("pong").int64(id));
+            });
+        } else
+            if ("pong".contentEquals(eventName)) {
+                final long id = valueIn.int64();
+            }
+    }
+
+    @Override
+    public void onInitialize(final WireOut outWire) throws RejectedExecutionException {
+        if (nc().isAcceptor()) {
+            @NotNull WriteMarshallable writeMarshallable = newPingHandler(csp(), cid());
+            publish(writeMarshallable);
+            nc().eventLoop().addHandler(true, new PingSender(this::nc, this::localIdentifier, this::remoteIdentifier, cid()));
+        }
+    }
+}

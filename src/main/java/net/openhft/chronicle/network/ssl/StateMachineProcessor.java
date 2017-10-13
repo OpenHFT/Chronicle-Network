@@ -3,9 +3,7 @@ package net.openhft.chronicle.network.ssl;
 import net.openhft.chronicle.threads.Pauser;
 
 import javax.net.ssl.SSLContext;
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.function.Consumer;
 
 public final class StateMachineProcessor implements Runnable {
     private final SocketChannel channel;
@@ -15,13 +13,10 @@ public final class StateMachineProcessor implements Runnable {
     private volatile boolean running = true;
 
     public StateMachineProcessor(final SocketChannel channel, final boolean isAcceptor,
-                                 final Consumer<ByteBuffer> decodedMessageReceiver,
-                                 final Consumer<ByteBuffer> applicationDataPopulator,
-                                 final SSLContext context) {
+                                 final SSLContext context, final BufferHandler bufferHandler) {
         this.channel = channel;
         this.context = context;
-        stateMachine = new SslEngineStateMachine(channel, decodedMessageReceiver,
-                applicationDataPopulator, isAcceptor);
+        stateMachine = new SslEngineStateMachine(channel, bufferHandler, isAcceptor);
     }
 
     @Override

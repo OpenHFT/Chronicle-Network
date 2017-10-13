@@ -14,9 +14,9 @@ import java.util.function.Consumer;
 
 final class SslEngineStateMachine implements EventHandler {
     private final SocketChannel channel;
-    private final Consumer<ByteBuffer> decodedMessageReceiver;
-    private final Consumer<ByteBuffer> applicationDataPopulator;
+    private final BufferHandler bufferHandler;
     private final boolean isAcceptor;
+
     private SSLEngine engine;
     private ByteBuffer outboundApplicationData;
     private ByteBuffer outboundEncodedData;
@@ -27,12 +27,9 @@ final class SslEngineStateMachine implements EventHandler {
 
     SslEngineStateMachine(
             final SocketChannel channel,
-            final Consumer<ByteBuffer> decodedMessageReceiver,
-            final Consumer<ByteBuffer> applicationDataPopulator,
-            final boolean isAcceptor) {
+            final BufferHandler bufferHandler, final boolean isAcceptor) {
         this.channel = channel;
-        this.decodedMessageReceiver = decodedMessageReceiver;
-        this.applicationDataPopulator = applicationDataPopulator;
+        this.bufferHandler = bufferHandler;
         this.isAcceptor = isAcceptor;
     }
 
@@ -62,7 +59,7 @@ final class SslEngineStateMachine implements EventHandler {
     public boolean action() throws InvalidEventHandlerException, InterruptedException {
         final int read;
         boolean busy = false;
-        applicationDataPopulator.accept(outboundApplicationData);
+        bufferHandler.handleDecryptedData(inboundApplicationData, outboundApplicationData);
         try {
             if (outboundApplicationData.position() != 0) {
 
@@ -77,12 +74,12 @@ final class SslEngineStateMachine implements EventHandler {
             }
             if (outboundEncodedData.position() != 0) {
                 outboundEncodedData.flip();
-                channel.write(outboundEncodedData);
+                bufferHandler.writeData(outboundEncodedData);
                 busy |= outboundEncodedData.hasRemaining();
                 outboundEncodedData.compact();
             }
 
-            read = channel.read(inboundEncodedData);
+            read = bufferHandler.readData(inboundEncodedData);
             if (read == -1) {
                 throw new InvalidEventHandlerException("Socket closed");
             }
@@ -97,7 +94,7 @@ final class SslEngineStateMachine implements EventHandler {
 
             if (inboundApplicationData.position() != 0) {
                 inboundApplicationData.flip();
-                decodedMessageReceiver.accept(inboundApplicationData);
+                bufferHandler.handleDecryptedData(inboundApplicationData, outboundApplicationData);
                 busy |= inboundApplicationData.hasRemaining();
                 inboundApplicationData.compact();
             }
