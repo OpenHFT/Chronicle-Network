@@ -1,26 +1,12 @@
 package net.openhft.chronicle.network.ssl;
 
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,7 +15,6 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertTrue;
 
 public final class NioSslIntegrationTest {
-    private static final File KEYSTORE_FILE = new File("src/test/resources", "test.jks");
 
     @Test
     public void shouldEncryptAndDecryptTraffic() throws Exception {
@@ -46,7 +31,7 @@ public final class NioSslIntegrationTest {
         final Client client = new Client(channel);
 
         final StateMachineProcessor clientProcessor = new StateMachineProcessor(channel, false,
-                getInitialisedContext(), client);
+                SSLContextLoader.getInitialisedContext(), client);
         threadPool.submit(clientProcessor);
 
         final SocketChannel serverConnection = serverChannel.accept();
@@ -54,7 +39,7 @@ public final class NioSslIntegrationTest {
 
         final Server server = new Server(serverConnection);
         final StateMachineProcessor serverProcessor = new StateMachineProcessor(serverConnection, true,
-                getInitialisedContext(), server);
+                SSLContextLoader.getInitialisedContext(), server);
         threadPool.submit(serverProcessor);
 
         client.waitForResponse(10, TimeUnit.SECONDS);
@@ -115,26 +100,5 @@ public final class NioSslIntegrationTest {
                 output.put(lastReceivedMessage);
             }
         }
-    }
-
-
-    @NotNull
-    private static SSLContext getInitialisedContext() throws NoSuchAlgorithmException, KeyStoreException, IOException, CertificateException, UnrecoverableKeyException, KeyManagementException {
-        final SSLContext context = SSLContext.getInstance("TLS");
-        KeyManagerFactory kmf =
-                KeyManagerFactory.getInstance("SunX509");
-        final KeyStore keyStore = KeyStore.getInstance("JKS");
-        final char[] password = "password".toCharArray();
-        keyStore.load(new FileInputStream(KEYSTORE_FILE), password);
-        kmf.init(keyStore, password);
-
-        final KeyStore trustStore = KeyStore.getInstance("JKS");
-        trustStore.load(new FileInputStream(KEYSTORE_FILE), password);
-
-        TrustManagerFactory tmf =
-                TrustManagerFactory.getInstance("SunX509");
-        tmf.init(trustStore);
-        context.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
-        return context;
     }
 }

@@ -1,8 +1,5 @@
 package net.openhft.chronicle.network.ssl;
 
-import net.openhft.chronicle.core.threads.EventHandler;
-import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -10,9 +7,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.function.Consumer;
 
-final class SslEngineStateMachine implements EventHandler {
+final class SslEngineStateMachine {
     private final SocketChannel channel;
     private final BufferHandler bufferHandler;
     private final boolean isAcceptor;
@@ -55,8 +51,7 @@ final class SslEngineStateMachine implements EventHandler {
         }
     }
 
-    @Override
-    public boolean action() throws InvalidEventHandlerException, InterruptedException {
+    public boolean action() {
         final int read;
         boolean busy = false;
         bufferHandler.handleDecryptedData(inboundApplicationData, outboundApplicationData);
@@ -67,7 +62,7 @@ final class SslEngineStateMachine implements EventHandler {
 
                 if (engine.wrap(precomputedWrapArray, outboundEncodedData).
                         getStatus() == SSLEngineResult.Status.CLOSED) {
-                    throw new InvalidEventHandlerException("Socket closed");
+                    throw new RuntimeException("Socket closed");
                 }
                 busy = outboundApplicationData.hasRemaining();
                 outboundApplicationData.compact();
@@ -81,7 +76,7 @@ final class SslEngineStateMachine implements EventHandler {
 
             read = bufferHandler.readData(inboundEncodedData);
             if (read == -1) {
-                throw new InvalidEventHandlerException("Socket closed");
+                throw new RuntimeException("Socket closed");
             }
             busy |= read != 0;
 

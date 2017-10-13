@@ -7,26 +7,72 @@ import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.net.ssl.SSLContext;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public final class SslTcpHandler<N extends SslNetworkContext> implements TcpHandler<N> {
     private final TcpHandler<N> delegate;
+    private final SSLContext sslContext;
+    private final CopyingBufferHandler bufferHandler = new CopyingBufferHandler();
+
     private ByteBuffer decryptedInput;
     private ByteBuffer plainTextOutput;
     private boolean handshakeRequired = true;
+    private SslEngineStateMachine stateMachine;
 
-    public SslTcpHandler(final TcpHandler<N> delegate) {
+    public SslTcpHandler(final TcpHandler<N> delegate, final SSLContext sslContext) {
         this.delegate = delegate;
+        this.sslContext = sslContext;
     }
 
     @Override
     public void process(@NotNull final Bytes in, @NotNull final Bytes out, final N nc) {
         if (handshakeRequired) {
+            stateMachine = new SslEngineStateMachine(nc.socketChannel(), bufferHandler, nc.isAcceptor());
+            stateMachine.initialise(sslContext);
+            handshakeRequired = false;
+        }
+
+        bufferHandler.set(in, out);
+
+        stateMachine.action();
+        delegate.process(Bytes.wrapForRead(decryptedInput), Bytes.wrapForWrite(plainTextOutput), nc);
+        stateMachine.action();
+    }
+
+    private static final class CopyingBufferHandler implements BufferHandler {
+        private Bytes in;
+        private Bytes out;
+        private final byte[] wrapper = new byte[1];
+
+        void set(final Bytes in, final Bytes out) {
+            this.in = in;
+            this.out = out;
+        }
+
+        @Override
+        public int readData(final ByteBuffer target) throws IOException {
+            final long startPosition = in.readPosition();
+            in.read(target);
+
+            return (int) (in.readPosition() - startPosition);
+        }
+
+        @Override
+        public void handleDecryptedData(final ByteBuffer input, final ByteBuffer output) {
 
         }
-        // TODO hook into ssl engine here to decrypt
-        delegate.process(Bytes.wrapForRead(decryptedInput), Bytes.wrapForWrite(plainTextOutput), nc);
-        // TODO hook into ssl engine here to encrypt
+
+        @Override
+        public int writeData(final ByteBuffer encrypted) throws IOException {
+            final long written = Math.min(encrypted.remaining(), out.writeRemaining());
+            for (int i = 0; i < written; i++) {
+                wrapper[0] = encrypted.get();
+                out.write(wrapper);
+            }
+            return (int) written;
+        }
     }
 
     @Override

@@ -15,7 +15,7 @@ import java.util.concurrent.RejectedExecutionException;
 
 final class PingTcpHandler extends AbstractSubHandler<SslTestClusteredNetworkContext> implements Marshallable {
     @NotNull
-    public static WriteMarshallable newPingHandler(final String csp, final long cid) {
+    static WriteMarshallable newPingHandler(final String csp, final long cid) {
         @NotNull final PingTcpHandler handler = new PingTcpHandler();
 
         return w -> w.writeDocument(true, d -> d.writeEventName(CoreFields.csp).text(csp)
@@ -33,6 +33,7 @@ final class PingTcpHandler extends AbstractSubHandler<SslTestClusteredNetworkCon
         @NotNull final ValueIn valueIn = inWire.readEventName(eventName);
         if ("ping".contentEquals(eventName)) {
             final long id = valueIn.int64();
+            System.out.printf("%d received ping %d from %d%n", localIdentifier(), id, remoteIdentifier());
 
             nc().wireOutPublisher().put(null, wireOut -> {
                 wireOut.writeDocument(true, d -> d.write(CoreFields.cid).int64(cid()));
@@ -42,6 +43,7 @@ final class PingTcpHandler extends AbstractSubHandler<SslTestClusteredNetworkCon
         } else
             if ("pong".contentEquals(eventName)) {
                 final long id = valueIn.int64();
+                System.out.printf("%d received pong %d from %d%n", localIdentifier(), id, remoteIdentifier());
             }
     }
 

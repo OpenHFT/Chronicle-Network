@@ -21,6 +21,9 @@ final class Handshaker {
     }
 
     void performHandshake(final SSLEngine engine, final SocketChannel channel) throws IOException {
+        while (!channel.finishConnect()) {
+            Thread.yield();
+        }
         engine.beginHandshake();
 
         SSLEngineResult.HandshakeStatus status = engine.getHandshakeStatus();
