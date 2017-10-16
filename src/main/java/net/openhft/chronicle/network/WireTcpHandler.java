@@ -245,19 +245,19 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     protected void checkWires(Bytes in, Bytes out, @NotNull WireType wireType) {
         if (recreateWire) {
             recreateWire = false;
-            inWire = wireType.apply(in);
-            outWire = wireType.apply(out);
+            initialiseInWire(wireType, in);
+            initialiseOutWire(out, wireType);
             return;
         }
 
         if (inWire == null) {
-            inWire = wireType.apply(in);
+            initialiseInWire(wireType, in);
             recreateWire = false;
         }
 
         assert inWire.startUse();
         if (inWire.bytes() != in) {
-            inWire = wireType.apply(in);
+            initialiseInWire(wireType, in);
             recreateWire = false;
         }
         assert inWire.endUse();
@@ -269,9 +269,17 @@ public abstract class WireTcpHandler<T extends NetworkContext>
             assert outWire.endUse();
         }
         if (replace) {
-            outWire = wireType.apply(out);
+            initialiseOutWire(out, wireType);
             recreateWire = false;
         }
+    }
+
+    protected Wire initialiseOutWire(Bytes out, @NotNull WireType wireType) {
+        return outWire = wireType.apply(out);
+    }
+
+    protected Wire initialiseInWire(@NotNull WireType wireType, Bytes in) {
+        return inWire = wireType.apply(in);
     }
 
     /**

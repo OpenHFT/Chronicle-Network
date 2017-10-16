@@ -21,6 +21,7 @@ import net.openhft.chronicle.network.NetworkContext;
 /**
  * @author Rob Austin.
  */
+@FunctionalInterface
 public interface TerminationEventHandler {
     void onTerminate(final NetworkContext nc);
 

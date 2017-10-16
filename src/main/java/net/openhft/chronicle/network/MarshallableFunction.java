@@ -26,6 +26,7 @@ import java.util.function.Function;
 /**
  * @author Rob Austin.
  */
+@FunctionalInterface
 public interface MarshallableFunction<T, R> extends Demarshallable, WriteMarshallable,
         Function<T, R> {
 

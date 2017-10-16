@@ -21,6 +21,7 @@ import net.openhft.chronicle.network.NetworkContext;
 /**
  * @author Rob Austin.
  */
+@FunctionalInterface
 public interface ConnectionChangedNotifier {
     void onConnectionChanged(boolean isConnected, final NetworkContext nc);
 }

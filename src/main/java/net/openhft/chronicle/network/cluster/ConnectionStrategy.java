@@ -22,6 +22,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * @author Rob Austin.
  */
+@FunctionalInterface
 public interface ConnectionStrategy {
     boolean notifyConnected(@NotNull WireTcpHandler nc,
                             int localIdentifier,

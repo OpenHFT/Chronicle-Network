@@ -18,6 +18,7 @@ import java.nio.channels.SocketChannel;
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
 
+@FunctionalInterface
 public interface ConnectionStrategy extends Marshallable {
 
 
