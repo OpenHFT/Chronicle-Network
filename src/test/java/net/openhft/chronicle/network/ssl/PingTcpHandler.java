@@ -13,7 +13,15 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.RejectedExecutionException;
 
+import static java.lang.Integer.toHexString;
+import static java.lang.System.identityHashCode;
+
 final class PingTcpHandler extends AbstractSubHandler<SslTestClusteredNetworkContext> implements Marshallable {
+
+    PingTcpHandler() {
+        System.out.printf("0x%s constructed%n", toHexString(identityHashCode(this)));
+    }
+
     @NotNull
     static WriteMarshallable newPingHandler(final String csp, final long cid) {
         @NotNull final PingTcpHandler handler = new PingTcpHandler();
@@ -49,6 +57,7 @@ final class PingTcpHandler extends AbstractSubHandler<SslTestClusteredNetworkCon
 
     @Override
     public void onInitialize(final WireOut outWire) throws RejectedExecutionException {
+        System.out.printf("0x%s initialised%n", toHexString(identityHashCode(this)));
         if (nc().isAcceptor()) {
             @NotNull WriteMarshallable writeMarshallable = newPingHandler(csp(), cid());
             publish(writeMarshallable);

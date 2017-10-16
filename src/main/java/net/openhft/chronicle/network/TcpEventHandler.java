@@ -65,6 +65,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     @NotNull
     private final Bytes<ByteBuffer> outBBB;
+    @NotNull
+    private final BufferModel bufferModel;
     private int oneInTen;
     private volatile boolean isCleaned;
     @Nullable
@@ -97,6 +99,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
         inBBB = Bytes.elasticByteBuffer(TCP_BUFFER + OS.pageSize());
         outBBB = Bytes.elasticByteBuffer(TCP_BUFFER);
+        this.bufferModel = new StandardBufferModel(inBBB, outBBB);
 
         // TODO FIX, these are not being released on close.
         assert BytesUtil.unregister(inBBB);
@@ -169,7 +172,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             @Nullable ByteBuffer inBB = inBBB.underlyingObject();
             int start = inBB.position();
 
-            int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
+            int read = inBB.remaining() > 0 ? sc.read(bufferModel.getBufferForReading()) : Integer.MAX_VALUE;
+            bufferModel.postRead(inBB, read);
 //            if (read < Integer.MAX_VALUE && read != 0)
 //                System.out.println("read " + read);
 
@@ -343,7 +347,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         long writeTickTime = Time.tickTime();
         long writeTime = System.nanoTime();
         assert !sc.isBlocking();
-        int wrote = sc.write(outBBB.underlyingObject());
+        bufferModel.preWrite(outBBB.underlyingObject());
+        int wrote = sc.write(bufferModel.getBufferForWriting());
 //        if (wrote > 200)
 //        System.out.println("w "+wrote);
         tcpHandler.onWriteTime(writeTime);

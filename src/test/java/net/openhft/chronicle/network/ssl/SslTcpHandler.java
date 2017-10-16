@@ -10,6 +10,9 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import static java.lang.Integer.toHexString;
+import static java.lang.System.identityHashCode;
+
 public final class SslTcpHandler<N extends SslNetworkContext> implements TcpHandler<N> {
     private final TcpHandler<N> delegate;
     private final CopyingBufferHandler bufferHandler = new CopyingBufferHandler();
@@ -27,6 +30,8 @@ public final class SslTcpHandler<N extends SslNetworkContext> implements TcpHand
     public void process(@NotNull final Bytes in, @NotNull final Bytes out, final N nc) {
         if (handshakeRequired) {
             stateMachine = new SslEngineStateMachine(nc.socketChannel(), bufferHandler, nc.isAcceptor());
+            System.out.printf("0x%s delegate handler: %s%n", toHexString(identityHashCode(this)), delegate);
+            System.out.printf("0x%s initialising state machine%n", toHexString(identityHashCode(this)));
             stateMachine.initialise(nc.sslContext());
             handshakeRequired = false;
         }

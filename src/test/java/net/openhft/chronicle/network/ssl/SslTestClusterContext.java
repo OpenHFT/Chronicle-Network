@@ -99,7 +99,8 @@ public final class SslTestClusterContext extends ClusterContext {
     }
 
     private static TcpHandler wrapForSsl(final TcpHandler delegate) {
-        return new SslTcpHandler(delegate);
+        return delegate;
+//        return new SslTcpHandler(delegate);
     }
 
     private static class StubConnectionManager implements ConnectionManager {
