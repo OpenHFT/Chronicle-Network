@@ -84,7 +84,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
                         bytes.readPosition(bytes.readLimit());
                         return;
                     }
-                    LOG.info("Server Sends aync event:\n" + Wires.fromSizePrefixedBlobs(dc));
+                    LOG.info("Server Sends async event:\n" + Wires.fromSizePrefixedBlobs(dc));
                     bytes.readPosition(bytes.readLimit());
                 }
             }
