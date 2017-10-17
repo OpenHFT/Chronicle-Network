@@ -2,6 +2,7 @@ package net.openhft.chronicle.network.ssl;
 
 import org.junit.Test;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
@@ -17,6 +18,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public final class NioSslIntegrationTest {
+    private static final boolean SEND_DATA_BEFORE_SSL_HANDSHAKE = Boolean.getBoolean("ssl.test.payload");
 
     @Test
     public void shouldEncryptAndDecryptTraffic() throws Exception {
@@ -46,6 +48,22 @@ public final class NioSslIntegrationTest {
             Thread.yield();
         }
 
+        if (SEND_DATA_BEFORE_SSL_HANDSHAKE) {
+            testDataConnection(channel, serverConnection);
+        }
+
+        threadPool.submit(clientProcessor);
+        threadPool.submit(serverProcessor);
+
+        client.waitForResponse(10, TimeUnit.SECONDS);
+
+        serverProcessor.stop();
+        clientProcessor.stop();
+        threadPool.shutdown();
+        assertTrue(threadPool.awaitTermination(10, TimeUnit.SECONDS));
+    }
+
+    private void testDataConnection(final SocketChannel channel, final SocketChannel serverConnection) throws IOException {
         final ByteBuffer message = ByteBuffer.wrap("test message".getBytes(StandardCharsets.US_ASCII));
 
         while (message.hasRemaining()) {
@@ -59,19 +77,9 @@ public final class NioSslIntegrationTest {
 
         message.flip();
         assertThat(new String(message.array()), is("test message"));
-
-        threadPool.submit(clientProcessor);
-        threadPool.submit(serverProcessor);
-
-        client.waitForResponse(10, TimeUnit.SECONDS);
-
-        serverProcessor.stop();
-        clientProcessor.stop();
-        threadPool.shutdown();
-        assertTrue(threadPool.awaitTermination(10, TimeUnit.SECONDS));
     }
-
     private static final class Client extends AbstractSocketBufferHandler {
+
         private final CountDownLatch latch = new CountDownLatch(1);
         private int counter = 0;
         private int responseCount = 0;

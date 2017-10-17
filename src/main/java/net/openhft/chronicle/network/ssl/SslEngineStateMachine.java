@@ -9,7 +9,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 final class SslEngineStateMachine {
-    private final SocketChannel channel;
     private final BufferHandler bufferHandler;
     private final boolean isAcceptor;
 
@@ -22,16 +21,14 @@ final class SslEngineStateMachine {
     private ByteBuffer[] precomputedUnwrapArray;
 
     SslEngineStateMachine(
-            final SocketChannel channel,
             final BufferHandler bufferHandler, final boolean isAcceptor) {
-        this.channel = channel;
         this.bufferHandler = bufferHandler;
         this.isAcceptor = isAcceptor;
     }
 
-    void initialise(SSLContext ctx) {
+    void initialise(SSLContext ctx, SocketChannel channel) {
         try {
-
+            channel.configureBlocking(false);
             engine = ctx.createSSLEngine();
             engine.setUseClientMode(!isAcceptor);
             if (isAcceptor) {

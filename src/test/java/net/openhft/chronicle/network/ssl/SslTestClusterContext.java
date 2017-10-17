@@ -99,8 +99,13 @@ public final class SslTestClusterContext extends ClusterContext {
     }
 
     private static TcpHandler wrapForSsl(final TcpHandler delegate) {
-        return delegate;
-//        return new SslTcpHandler(delegate);
+        new RuntimeException(String.format("%s/0x%s created",
+                delegate.getClass().getSimpleName(), Integer.toHexString(System.identityHashCode(delegate)))).
+                printStackTrace(System.out);
+
+//        return delegate;
+
+        return new SslDelegatingTcpHandler(delegate);
     }
 
     private static class StubConnectionManager implements ConnectionManager {

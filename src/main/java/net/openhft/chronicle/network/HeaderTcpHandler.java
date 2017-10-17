@@ -81,6 +81,8 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
                 o = toSessionDetails(inWire);
             }
 
+            System.out.printf("Header handler %s creating handler%n", this);
+
             handler = handlerFunction.apply(o);
 
             if (handler instanceof NetworkContextManager)
