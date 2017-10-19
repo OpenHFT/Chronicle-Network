@@ -14,7 +14,6 @@ import net.openhft.chronicle.threads.Pauser;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.net.ssl.SSLContext;
@@ -30,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertTrue;
 
-@Ignore
 public final class NonClusteredSslIntegrationTest {
     private final EventGroup client = new EventGroup(true, Pauser.millis(1), false, "client");
     private final EventGroup server = new EventGroup(true, Pauser.millis(1), false, "server");
@@ -47,41 +45,41 @@ public final class NonClusteredSslIntegrationTest {
 
         client.addHandler(new AcceptorEventHandler("client", nc -> {
             final TcpEventHandler eventHandler = new TcpEventHandler(nc);
-            eventHandler.tcpHandler(new SslDelegatingTcpHandler<>(clientAcceptor));
+            eventHandler.tcpHandler(getTcpHandler(clientAcceptor));
             return eventHandler;
         }, StubNetworkContext::new));
 
         server.addHandler(new AcceptorEventHandler("server", nc -> {
             final TcpEventHandler eventHandler = new TcpEventHandler(nc);
-            eventHandler.tcpHandler(new SslDelegatingTcpHandler<>(serverAcceptor));
+            eventHandler.tcpHandler(getTcpHandler(serverAcceptor));
             return eventHandler;
         }, StubNetworkContext::new));
 
         new RemoteConnector(nc -> {
             final TcpEventHandler eventHandler = new TcpEventHandler(nc);
-            eventHandler.tcpHandler(new SslDelegatingTcpHandler<>(clientInitiator));
+            eventHandler.tcpHandler(getTcpHandler(clientInitiator));
             return eventHandler;
         }).connect("server", client, new StubNetworkContext(), 1000L);
 
-        new RemoteConnector(nc -> {
-            final TcpEventHandler eventHandler = new TcpEventHandler(nc);
-            eventHandler.tcpHandler(new SslDelegatingTcpHandler<>(serverInitiator));
-            return eventHandler;
-        }).connect("client", server, new StubNetworkContext(), 1000L);
+//        new RemoteConnector(nc -> {
+//            final TcpEventHandler eventHandler = new TcpEventHandler(nc);
+//            eventHandler.tcpHandler(getTcpHandler(serverInitiator));
+//            return eventHandler;
+//        }).connect("client", server, new StubNetworkContext(), 1000L);
     }
 
     @Test
     public void shouldCommunicate() throws Exception {
-        waitForLatch(clientAcceptor);
+//        waitForLatch(clientAcceptor);
         waitForLatch(serverAcceptor);
         waitForLatch(clientInitiator);
-        waitForLatch(serverInitiator);
+//        waitForLatch(serverInitiator);
 
-        while (clientAcceptor.operationCount < 10 && serverAcceptor.operationCount < 10) {
+        while (clientInitiator.operationCount < 10 || serverAcceptor.operationCount < 10) {
             Thread.sleep(100);
         }
 
-        assertTrue(clientAcceptor.operationCount > 9);
+        assertTrue(clientInitiator.operationCount > 9);
         assertTrue(serverAcceptor.operationCount > 9);
     }
 
@@ -89,6 +87,11 @@ public final class NonClusteredSslIntegrationTest {
     public void tearDown() throws Exception {
         client.stop();
         server.stop();
+    }
+
+    @NotNull
+    private TcpHandler<StubNetworkContext> getTcpHandler(final CountingTcpHandler delegate) {
+        return new SslDelegatingTcpHandler<>(delegate);
     }
 
     private static void waitForLatch(final CountingTcpHandler handler) throws InterruptedException {
