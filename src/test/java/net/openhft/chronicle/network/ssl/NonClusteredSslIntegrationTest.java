@@ -37,6 +37,17 @@ import java.util.concurrent.TimeUnit;
 import static java.util.Arrays.stream;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * IMPORTANT - each event handler MUST run in its own thread, as the handshake is a
+ * blocking operation. Spinning the work out to a separate thread does not work,
+ * as subsequent invocations of the TcpEventHandler may consume socket data during the
+ * handshake.
+ *
+ * public ServerThreadingStrategy serverThreadingStrategy() {
+ *   return ServerThreadingStrategy.MULTI_THREADED_BUSY_WAITING;
+ * }
+ *
+ */
 @RunWith(Parameterized.class)
 public final class NonClusteredSslIntegrationTest {
 
