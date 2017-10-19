@@ -7,6 +7,14 @@ import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 public final class SslDelegatingTcpHandler<N extends SslNetworkContext> implements TcpHandler<N> {
     private final TcpHandler<N> delegate;
     private final BytesBufferHandler<N> bufferHandler = new BytesBufferHandler<>();
@@ -20,14 +28,30 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext> implemen
     @Override
     public void process(@NotNull final Bytes in, @NotNull final Bytes out, final N nc) {
         if (!handshakeComplete) {
-            System.out.printf("%s starting handshake with %s%n", String.format("%s/0x%s",
-                    getClass().getSimpleName(), Integer.toHexString(System.identityHashCode(this))),
-                    nc.socketChannel());
-            doHandshake(nc);
-            handshakeComplete = true;
-            System.out.printf("%s handshake complete%n", String.format("%s/0x%s",
-                    getClass().getSimpleName(), Integer.toHexString(System.identityHashCode(this))));
+            final Future<Boolean> handshakeResult =
+                    Executors.newSingleThreadExecutor().submit(() -> {
+                        System.out.printf("%s starting handshake with %s%n", String.format("%s/0x%s",
+                                getClass().getSimpleName(), Integer.toHexString(System.identityHashCode(this))),
+                                nc.socketChannel());
+                        try {
+                            doHandshake(nc);
+                        } catch (Throwable t) {
+                            t.printStackTrace();
+                            return false;
+                        }
+                        System.out.printf("%s handshake complete%n", String.format("%s/0x%s",
+                                getClass().getSimpleName(), Integer.toHexString(System.identityHashCode(this))));
+                        return true;
+                    });
+            try {
+                if (handshakeResult.get(20L, TimeUnit.SECONDS)) {
+                    handshakeComplete = true;
+                }
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                throw new IllegalStateException("Unable to perform SSL handshake", e);
+            }
         }
+
         bufferHandler.set(delegate, in, out, nc);
 
         stateMachine.action();
@@ -36,8 +60,16 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext> implemen
     }
 
     private void doHandshake(final N nc) {
+        System.out.printf("%s starting handshake; acceptor: %s%n",
+                socketToString(nc.socketChannel()), nc.isAcceptor());
         stateMachine = new SslEngineStateMachine(bufferHandler, nc.isAcceptor());
         stateMachine.initialise(nc.sslContext(), nc.socketChannel());
+    }
+
+
+    private static String socketToString(final SocketChannel channel) {
+        return channel.socket().getLocalPort() + "->" +
+                ((InetSocketAddress) channel.socket().getRemoteSocketAddress()).getPort();
     }
 
     @Override

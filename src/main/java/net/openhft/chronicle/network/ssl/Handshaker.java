@@ -26,6 +26,7 @@ final class Handshaker {
             Thread.yield();
         }
 
+        System.out.printf("%s is client: %s%n", socketToString(channel), engine.getUseClientMode());
         engine.beginHandshake();
 
         SSLEngineResult.HandshakeStatus status = engine.getHandshakeStatus();
