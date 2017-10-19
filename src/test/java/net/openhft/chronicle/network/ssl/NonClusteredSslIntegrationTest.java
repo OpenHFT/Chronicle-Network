@@ -1,11 +1,11 @@
 package net.openhft.chronicle.network.ssl;
 
-import com.sun.org.apache.xerces.internal.xs.datatypes.ObjectList;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.NetworkStatsListener;
 import net.openhft.chronicle.network.RemoteConnector;
+import net.openhft.chronicle.network.ServerThreadingStrategy;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.TcpEventHandler;
 import net.openhft.chronicle.network.VanillaNetworkContext;
@@ -21,6 +21,8 @@ import org.junit.runners.Parameterized;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
@@ -28,7 +30,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -54,9 +55,9 @@ public final class NonClusteredSslIntegrationTest {
     @Parameterized.Parameters(name = "{0}")
     public static List<Object[]> params() {
         final List<Object[]> params = new ArrayList<>();
-//        stream(Mode.values()).forEach(m -> params.add(new Object[]{m.name(), m}));
+        stream(Mode.values()).forEach(m -> params.add(new Object[]{m.name(), m}));
 
-        params.add(new Object[] {Mode.BI_DIRECTIONAL.name(), Mode.BI_DIRECTIONAL});
+//        params.add(new Object[] {Mode.BI_DIRECTIONAL.name(), Mode.BI_DIRECTIONAL});
 
         return params;
     }
@@ -127,7 +128,10 @@ public final class NonClusteredSslIntegrationTest {
 
     @NotNull
     private TcpHandler<StubNetworkContext> getTcpHandler(final CountingTcpHandler delegate) {
-        return new SslDelegatingTcpHandler<>(delegate);
+        final SslDelegatingTcpHandler<StubNetworkContext> handler = new SslDelegatingTcpHandler<>(delegate);
+        System.out.printf("%s/installing handler: %s%n", Thread.currentThread().getName(),
+                handler);
+        return handler;
     }
 
     private static void waitForLatch(final CountingTcpHandler handler) throws InterruptedException {
@@ -197,6 +201,11 @@ public final class NonClusteredSslIntegrationTest {
         }
     }
 
+    private static String socketToString(final SocketChannel channel) {
+        return channel.socket().getLocalPort() + "->" +
+                ((InetSocketAddress) channel.socket().getRemoteSocketAddress()).getPort();
+    }
+
     private static final class StubNetworkContext extends VanillaNetworkContext
             implements SslNetworkContext {
         @Override
@@ -207,6 +216,19 @@ public final class NonClusteredSslIntegrationTest {
                     CertificateException | UnrecoverableKeyException | KeyManagementException e) {
                 throw new RuntimeException("Failed to initialise ssl context", e);
             }
+        }
+
+        @NotNull
+        @Override
+        public VanillaNetworkContext socketChannel(final SocketChannel socketChannel) {
+            System.out.printf("%s/accepted socket %s%n", Thread.currentThread().getName(),
+                    socketToString(socketChannel));
+            return super.socketChannel(socketChannel);
+        }
+
+        @Override
+        public ServerThreadingStrategy serverThreadingStrategy() {
+            return ServerThreadingStrategy.MULTI_THREADED_BUSY_WAITING;
         }
 
         @Override

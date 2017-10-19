@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 final class Handshaker {
+    private static final boolean LOG_DEBUG = Boolean.getBoolean("handshake.debug");
     private static final int HANDSHAKE_BUFFER_CAPACITY = 32768;
     private final ByteBuffer applicationData;
     private final ByteBuffer networkData;
@@ -26,7 +27,9 @@ final class Handshaker {
             Thread.yield();
         }
 
-        System.out.printf("%s is client: %s%n", socketToString(channel), engine.getUseClientMode());
+        if (LOG_DEBUG) {
+            System.out.printf("%s is client: %s%n", socketToString(channel), engine.getUseClientMode());
+        }
         engine.beginHandshake();
 
         SSLEngineResult.HandshakeStatus status = engine.getHandshakeStatus();
@@ -40,11 +43,15 @@ final class Handshaker {
         while (status != SSLEngineResult.HandshakeStatus.FINISHED &&
                 status != SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) {
             if (!reportedInitialStatus) {
-                System.out.printf("%s initial status %s%n", socketToString(channel), status);
+                if (LOG_DEBUG) {
+                    System.out.printf("%s initial status %s%n", socketToString(channel), status);
+                }
                 reportedInitialStatus = true;
             }
             if (status != lastStatus) {
-                System.out.printf("%s status change to %s%n", socketToString(channel), status);
+                if (LOG_DEBUG) {
+                    System.out.printf("%s status change to %s%n", socketToString(channel), status);
+                }
                 lastStatus = status;
             }
             switch (status) {
@@ -61,7 +68,9 @@ final class Handshaker {
                     }
                     peerNetworkData.flip();
                     final int dataReceived = peerNetworkData.remaining();
-                    System.out.printf("%s Received %d from handshake peer%n", socketToString(channel), dataReceived);
+                    if (LOG_DEBUG) {
+                        System.out.printf("%s Received %d from handshake peer%n", socketToString(channel), dataReceived);
+                    }
                     result = engine.unwrap(peerNetworkData, peerApplicationData);
                     peerNetworkData.compact();
                     switch (result.getStatus()) {
@@ -92,7 +101,9 @@ final class Handshaker {
                                     throw new IOException("Channel closed");
                                 }
                             }
-                            System.out.printf("%s Wrote %d to handshake peer%n", socketToString(channel), remaining);
+                            if (LOG_DEBUG) {
+                                System.out.printf("%s Wrote %d to handshake peer%n", socketToString(channel), remaining);
+                            }
                             break;
                         default:
                             throw new UnsupportedOperationException(result.getStatus().toString());
@@ -103,7 +114,9 @@ final class Handshaker {
                     while ((delegatedTask = engine.getDelegatedTask()) != null) {
                         try {
                             delegatedTask.run();
-                            System.out.printf("Ran task %s%n", delegatedTask);
+                            if (LOG_DEBUG) {
+                                System.out.printf("Ran task %s%n", delegatedTask);
+                            }
                         }
                         catch (RuntimeException e) {
                             e.printStackTrace();
