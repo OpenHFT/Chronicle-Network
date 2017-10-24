@@ -7,9 +7,6 @@ import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.net.InetSocketAddress;
-import java.nio.channels.SocketChannel;
-
 public final class SslDelegatingTcpHandler<N extends SslNetworkContext> implements TcpHandler<N> {
     private final TcpHandler<N> delegate;
     private final BytesBufferHandler<N> bufferHandler = new BytesBufferHandler<>();
@@ -23,39 +20,22 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext> implemen
     @Override
     public void process(@NotNull final Bytes in, @NotNull final Bytes out, final N nc) {
         if (!handshakeComplete) {
-            System.out.printf("%s/%s starting handshake with %s%n",
-                    Thread.currentThread().getName(),
-                    String.format("%s/0x%s",
-                            getClass().getSimpleName(), Integer.toHexString(System.identityHashCode(this))),
-                    nc.socketChannel());
             try {
                 doHandshake(nc);
             } catch (Throwable t) {
                 t.printStackTrace();
+                throw new IllegalStateException("Unable to perform handshake", t);
             }
-            System.out.printf("%s handshake complete%n", String.format("%s/0x%s",
-                    getClass().getSimpleName(), Integer.toHexString(System.identityHashCode(this))));
             handshakeComplete = true;
         }
 
         bufferHandler.set(delegate, in, out, nc);
-
         stateMachine.action();
-
-        delegate.process(in, out, nc);
     }
 
     private void doHandshake(final N nc) {
-        System.out.printf("%s starting handshake; acceptor: %s%n",
-                socketToString(nc.socketChannel()), nc.isAcceptor());
         stateMachine = new SslEngineStateMachine(bufferHandler, nc.isAcceptor());
         stateMachine.initialise(nc.sslContext(), nc.socketChannel());
-    }
-
-
-    private static String socketToString(final SocketChannel channel) {
-        return channel.socket().getLocalPort() + "->" +
-                ((InetSocketAddress) channel.socket().getRemoteSocketAddress()).getPort();
     }
 
     @Override
@@ -70,6 +50,9 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext> implemen
 
     @Override
     public void close() {
+        if (stateMachine != null) {
+            stateMachine.close();
+        }
         delegate.close();
     }
 

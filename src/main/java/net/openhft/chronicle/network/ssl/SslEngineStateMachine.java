@@ -1,5 +1,8 @@
 package net.openhft.chronicle.network.ssl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -9,6 +12,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 final class SslEngineStateMachine {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SslEngineStateMachine.class);
+
     private final BufferHandler bufferHandler;
     private final boolean isAcceptor;
 
@@ -59,7 +64,8 @@ final class SslEngineStateMachine {
 
                 if (engine.wrap(precomputedWrapArray, outboundEncodedData).
                         getStatus() == SSLEngineResult.Status.CLOSED) {
-                    throw new RuntimeException("Socket closed");
+                    LOGGER.warn("Socket closed");
+                    return false;
                 }
                 busy = outboundApplicationData.hasRemaining();
                 outboundApplicationData.compact();
@@ -95,5 +101,9 @@ final class SslEngineStateMachine {
         }
 
         return busy;
+    }
+
+    void close() {
+        engine.closeOutbound();
     }
 }

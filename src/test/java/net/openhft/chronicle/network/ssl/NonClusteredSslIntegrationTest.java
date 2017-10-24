@@ -21,7 +21,6 @@ import org.junit.runners.Parameterized;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
@@ -67,8 +66,6 @@ public final class NonClusteredSslIntegrationTest {
     public static List<Object[]> params() {
         final List<Object[]> params = new ArrayList<>();
         stream(Mode.values()).forEach(m -> params.add(new Object[]{m.name(), m}));
-
-//        params.add(new Object[] {Mode.BI_DIRECTIONAL.name(), Mode.BI_DIRECTIONAL});
 
         return params;
     }
@@ -139,16 +136,12 @@ public final class NonClusteredSslIntegrationTest {
 
     @NotNull
     private TcpHandler<StubNetworkContext> getTcpHandler(final CountingTcpHandler delegate) {
-        final SslDelegatingTcpHandler<StubNetworkContext> handler = new SslDelegatingTcpHandler<>(delegate);
-        System.out.printf("%s/installing handler: %s%n", Thread.currentThread().getName(),
-                handler);
-        return handler;
+        return new SslDelegatingTcpHandler<>(delegate);
     }
 
     private static void waitForLatch(final CountingTcpHandler handler) throws InterruptedException {
         assertTrue(handler.label, handler.latch.await(5, TimeUnit.SECONDS));
     }
-
 
     private void assertThatServerConnectsToClient() throws InterruptedException {
         waitForLatch(clientAcceptor);
@@ -187,14 +180,12 @@ public final class NonClusteredSslIntegrationTest {
 
         @Override
         public void process(@NotNull final Bytes in, @NotNull final Bytes out, final StubNetworkContext nc) {
+
             if (nc.isAcceptor() && in.readRemaining() != 0) {
                 final long received = in.readLong();
                 final int len = in.readInt();
                 final byte[] tmp = new byte[len];
                 in.read(tmp);
-                System.out.printf("%s/0x%s received %d/%s%n", getClass().getSimpleName(),
-                        Integer.toHexString(System.identityHashCode(this)), received,
-                        new String(tmp));
                 operationCount++;
             } else
                 if (!nc.isAcceptor()) {
@@ -212,11 +203,6 @@ public final class NonClusteredSslIntegrationTest {
         }
     }
 
-    private static String socketToString(final SocketChannel channel) {
-        return channel.socket().getLocalPort() + "->" +
-                ((InetSocketAddress) channel.socket().getRemoteSocketAddress()).getPort();
-    }
-
     private static final class StubNetworkContext extends VanillaNetworkContext
             implements SslNetworkContext {
         @Override
@@ -232,8 +218,6 @@ public final class NonClusteredSslIntegrationTest {
         @NotNull
         @Override
         public VanillaNetworkContext socketChannel(final SocketChannel socketChannel) {
-            System.out.printf("%s/accepted socket %s%n", Thread.currentThread().getName(),
-                    socketToString(socketChannel));
             return super.socketChannel(socketChannel);
         }
 
