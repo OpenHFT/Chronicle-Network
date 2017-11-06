@@ -1,6 +1,8 @@
 package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.core.threads.EventLoop;
+import net.openhft.chronicle.network.NetworkContext;
+import net.openhft.chronicle.network.NetworkStatsListener;
 import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.cluster.Cluster;
 import net.openhft.chronicle.network.cluster.ClusteredNetworkContext;
@@ -53,5 +55,35 @@ public final class SslTestClusteredNetworkContext
                 IOException | KeyManagementException | UnrecoverableKeyException e) {
             throw new RuntimeException("Failed to load ssl context", e);
         }
+    }
+
+    @Override
+    public NetworkStatsListener<? extends NetworkContext> networkStatsListener() {
+        return new NetworkStatsListener<NetworkContext>() {
+            @Override
+            public void networkContext(final NetworkContext networkContext) {
+
+            }
+
+            @Override
+            public void onNetworkStats(final long writeBps, final long readBps, final long socketPollCountPerSecond) {
+
+            }
+
+            @Override
+            public void onHostPort(final String hostName, final int port) {
+
+            }
+
+            @Override
+            public void onRoundTripLatency(final long nanosecondLatency) {
+
+            }
+
+            @Override
+            public void close() {
+
+            }
+        };
     }
 }

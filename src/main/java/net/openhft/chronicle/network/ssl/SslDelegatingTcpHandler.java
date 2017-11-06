@@ -2,16 +2,19 @@ package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.network.NetworkContextManager;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public final class SslDelegatingTcpHandler<N extends SslNetworkContext> implements TcpHandler<N> {
+public final class SslDelegatingTcpHandler<N extends SslNetworkContext>
+        implements TcpHandler<N>, NetworkContextManager<N> {
     private final TcpHandler<N> delegate;
     private final BytesBufferHandler<N> bufferHandler = new BytesBufferHandler<>();
     private SslEngineStateMachine stateMachine;
     private boolean handshakeComplete;
+    private boolean readyToHandshake = false;
 
     SslDelegatingTcpHandler(final TcpHandler<N> delegate) {
         this.delegate = delegate;
@@ -19,6 +22,11 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext> implemen
 
     @Override
     public void process(@NotNull final Bytes in, @NotNull final Bytes out, final N nc) {
+        if (!readyToHandshake) {
+            delegate.process(in, out, nc);
+        }
+
+
         if (!handshakeComplete) {
             try {
                 doHandshake(nc);
@@ -92,5 +100,17 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext> implemen
     @Override
     public boolean isClosed() {
         return delegate.isClosed();
+    }
+
+    @Override
+    public N nc() {
+        return (delegate instanceof NetworkContextManager) ? ((NetworkContextManager<N>) delegate).nc() : null;
+    }
+
+    @Override
+    public void nc(final N nc) {
+        if (delegate instanceof NetworkContextManager) {
+            ((NetworkContextManager<N>) delegate).nc(nc);
+        }
     }
 }

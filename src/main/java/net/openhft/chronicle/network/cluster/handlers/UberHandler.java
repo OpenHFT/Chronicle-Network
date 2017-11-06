@@ -124,9 +124,10 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
 
             // note : we have to publish the uber handler, even if we send a termination event
             // this is so the termination event can be processed by the receiver
-            if (nc().isAcceptor())
+            if (nc().isAcceptor()) {
                 // reflect the uber handler
                 publish(uberHandler());
+            }
 
             nc.terminationEventHandler(engineCluster.findTerminationEventHandler(remoteIdentifier));
 
