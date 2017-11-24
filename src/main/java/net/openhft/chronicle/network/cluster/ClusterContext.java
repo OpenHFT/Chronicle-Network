@@ -37,7 +37,7 @@ import java.util.function.Supplier;
 /**
  * @author Rob Austin.
  */
-public class ClusterContext implements Demarshallable, WriteMarshallable, Consumer<HostDetails> {
+public abstract class ClusterContext implements Demarshallable, WriteMarshallable, Consumer<HostDetails> {
 
     private ConnectionStrategy connectionStrategy;
     private WireType wireType;
@@ -81,9 +81,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
     }
 
     @Nullable
-    public ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpEventHandlerFactory() {
-        throw new UnsupportedOperationException();
-    }
+    public abstract ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpEventHandlerFactory();
 
     @NotNull
     private WireParser<Void> wireParser() {
@@ -271,7 +269,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
                 .handlerFactory();
         final Function<ClusterContext, WriteMarshallable> heartbeat = this.heartbeatFactory();
 
-        @NotNull ArrayList<WriteMarshallable> result = new ArrayList<WriteMarshallable>();
+        @NotNull ArrayList<WriteMarshallable> result = new ArrayList<>();
         result.add(handler.apply(this, hd));
         result.add(heartbeat.apply(this));
         return result;
