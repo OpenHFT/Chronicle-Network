@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 abstract public class Cluster<E extends HostDetails, C extends ClusterContext> implements Marshallable, Closeable {
 
     @NotNull
-    private final Map<String, E> hostDetails;
+    protected final Map<String, E> hostDetails;
     private final String clusterName;
 
     @Nullable
@@ -56,6 +56,7 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
 
     public void clusterContext(@NotNull C clusterContext) {
         this.clusterContext = clusterContext;
+        clusterContext.clusterName(clusterName);
     }
 
     @Override
