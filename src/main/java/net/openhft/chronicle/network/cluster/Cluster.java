@@ -35,7 +35,7 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
         Closeable {
 
     @NotNull
-    private final Map<String, E> hostDetails;
+    public final Map<String, E> hostDetails;
     private final String clusterName;
 
     @org.jetbrains.annotations.Nullable
