@@ -84,7 +84,7 @@ public abstract class ClusterContext implements Demarshallable, WriteMarshallabl
     public abstract ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpEventHandlerFactory();
 
     @NotNull
-    private WireParser<Void> wireParser() {
+    protected WireParser<Void> wireParser() {
         @NotNull WireParser<Void> parser = new VanillaWireParser<>((s, v, $) -> {
         });
         parser.register(() -> "wireType", (s, v, $) -> v.text(this, (o, x) -> this.wireType(WireType.valueOf(x))));
