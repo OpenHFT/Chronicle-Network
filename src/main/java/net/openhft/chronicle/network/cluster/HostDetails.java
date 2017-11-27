@@ -61,6 +61,7 @@ public class HostDetails implements Marshallable {
         wire.write(() -> "hostId").int32(hostId)
                 .write(() -> "tcpBufferSize").int32(tcpBufferSize)
                 .write(() -> "connectUri").text(connectUri)
+                .write(() -> "timeoutMs").int32(timeoutMs)
                 .write(() -> "region").text(region);
     }
 
@@ -104,7 +105,7 @@ public class HostDetails implements Marshallable {
         return terminationEventHandler;
     }
 
-    public void connectionStrategy(@NotNull ConnectionStrategy connectionStrategy) {
+    public void connectionStrategy(ConnectionStrategy connectionStrategy) {
         this.connectionStrategy = connectionStrategy;
     }
 
