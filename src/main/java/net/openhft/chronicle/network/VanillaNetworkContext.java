@@ -160,7 +160,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
         for (; ; ) {
             long value = cid.get();
             if (time <= value) {
-                time++;
+                time = value + 1;
                 continue;
             }
 
