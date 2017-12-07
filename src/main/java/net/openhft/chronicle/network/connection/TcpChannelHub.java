@@ -1277,7 +1277,10 @@ public class TcpChannelHub implements Closeable {
                             else
                                 Jvm.warn().on(getClass(), "reconnecting due to unexpected exception", e);
                             closeSocket();
-                            Jvm.pause(500);
+
+                            long pauseMs = connectionStrategy == null ? 500 : connectionStrategy.pauseMillisBeforeReconnect();
+                            Jvm.pause(pauseMs);
+
                         }
                     } finally {
                         start = Long.MAX_VALUE;

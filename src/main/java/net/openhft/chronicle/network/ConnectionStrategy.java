@@ -111,4 +111,11 @@ public interface ConnectionStrategy extends Marshallable {
     }
 
 
+    /**
+     * allows control of a backoff strategy
+     * @return how long in milliseconds to pause before attempting a reconnect
+     */
+    default long pauseMillisBeforeReconnect() {
+        return 500;
+    }
 }
