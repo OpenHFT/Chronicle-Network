@@ -4,8 +4,7 @@ import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
-import net.openhft.chronicle.wire.WireIn;
-import net.openhft.chronicle.wire.Wires;
+import net.openhft.chronicle.wire.AbstractMarshallable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -25,17 +24,13 @@ import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
  * If all the host:ports have been attempted since the last connection was established, no successful connection can be found,
  * then null is returned, and the fatalFailureMonitor.onFatalFailure() is triggered
  */
-public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrategy {
+public class AlwaysStartOnPrimaryConnectionStrategy  extends AbstractMarshallable implements ConnectionStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(AlwaysStartOnPrimaryConnectionStrategy.class);
 
     private int tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
     private int pausePeriodMs = Integer.getInteger("client.timeout", 500);
-
-    @Override
-    public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
-        Wires.readMarshallable(this, wire, false);
-    }
+    private int socketConnectionTimeoutMs = Integer.getInteger("connectionStrategy.socketConnectionTimeoutMs", 1);
 
     @Nullable
     @Override
@@ -68,7 +63,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy implements ConnectionStrateg
                     continue;
                 }
 
-                socketChannel = openSocketChannel(socketAddress, tcpBufferSize, 500);
+                socketChannel = openSocketChannel(socketAddress, tcpBufferSize, 500, socketConnectionTimeoutMs);
 
                 if (socketChannel == null) {
                     Jvm.debug().on(getClass(), "unable to connected to " + socketAddressSupplier.toString());
