@@ -1,6 +1,9 @@
 High Performance Network library
 ===
 
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/net.openhft/chronicle-network/badge.svg)](https://maven-badges.herokuapp.com/maven-central/net.openhft/chronicle-network)
+
+
 # Purpose
 The Netty library is a benchmark for high performance libraries. 
     Netty is designed for scalability in particular, horizontal scalability is
