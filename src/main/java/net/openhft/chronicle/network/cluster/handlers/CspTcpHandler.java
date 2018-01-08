@@ -1,5 +1,6 @@
 package net.openhft.chronicle.network.cluster.handlers;
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.WireTcpHandler;
@@ -31,7 +32,7 @@ public abstract class CspTcpHandler<T extends NetworkContext> extends WireTcpHan
     @Nullable
     private HeartbeatEventHandler heartbeatEventHandler;
     private long lastCid;
-
+    private final Map<Object, SubHandler> registry = new HashMap<>();
     @Nullable
     protected SubHandler handler() {
         return handler;
@@ -75,6 +76,17 @@ public abstract class CspTcpHandler<T extends NetworkContext> extends WireTcpHan
                 handler = valueIn.typedMarshallable();
                 handler.nc(nc());
                 handler.closeable(this);
+
+                try {
+                    if (handler instanceof Registerable) {
+                        Registerable registerable = (Registerable) this.handler;
+                        registry.put(registerable.registryKey(), this.handler);
+                        registerable.registry(registry);
+                    }
+                } catch (Exception e) {
+                    Jvm.warn().on(getClass(), e);
+                }
+
                 if (handler() instanceof HeartbeatEventHandler) {
                     assert heartbeatEventHandler == null : "its assumed that you will only have a " +
                             "single heartbeatReceiver per connection";

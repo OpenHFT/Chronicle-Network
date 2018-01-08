@@ -217,7 +217,7 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
 
             SubHandler handler = handler();
             if (handler == null)
-                throw new IllegalStateException("handler == null, check that the " +
+               throw new IllegalStateException("handler == null, check that the " +
                         "Csp/Cid has been sent, failed to " +
                         "fully " +
                         "process the following " +
