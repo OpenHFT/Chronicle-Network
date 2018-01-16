@@ -1,9 +1,10 @@
 Chronicle-Network
 ===
-A High Performance Network library
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/net.openhft/chronicle-network/badge.svg)](https://maven-badges.herokuapp.com/maven-central/net.openhft/chronicle-network)
 
+# About
+A High Performance Network library
 
 # Purpose
 The Netty library is a benchmark for high performance libraries. 
