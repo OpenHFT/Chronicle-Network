@@ -1,5 +1,6 @@
-High Performance Network library
+Chronicle-Network
 ===
+A High Performance Network library
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/net.openhft/chronicle-network/badge.svg)](https://maven-badges.herokuapp.com/maven-central/net.openhft/chronicle-network)
 
