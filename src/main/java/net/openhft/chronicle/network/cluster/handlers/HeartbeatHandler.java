@@ -141,7 +141,7 @@ public final class HeartbeatHandler <T extends ClusteredNetworkContext> extends 
 
         return () -> {
 
-            if (HeartbeatHandler.this.closable().isClosed())
+            if (this.closable().isClosed())
                 throw new InvalidEventHandlerException("closed");
 
             boolean hasHeartbeats = hasReceivedHeartbeat();
@@ -149,10 +149,10 @@ public final class HeartbeatHandler <T extends ClusteredNetworkContext> extends 
 
             if (hasHeartbeats != prev) {
                 if (!hasHeartbeats) {
-                    connectionMonitor.onDisconnected(HeartbeatHandler.this.localIdentifier(),
-                            HeartbeatHandler.this.remoteIdentifier(), nc().isAcceptor());
+                    connectionMonitor.onDisconnected(this.localIdentifier(),
+                            this.remoteIdentifier(), nc().isAcceptor());
 
-                    HeartbeatHandler.this.close();
+                    this.close();
 
                     final Runnable socketReconnector = nc().socketReconnector();
 
@@ -162,8 +162,8 @@ public final class HeartbeatHandler <T extends ClusteredNetworkContext> extends 
 
                     throw new InvalidEventHandlerException("closed");
                 } else
-                    connectionMonitor.onConnected(HeartbeatHandler.this.localIdentifier(),
-                            HeartbeatHandler.this.remoteIdentifier(), nc().isAcceptor());
+                    connectionMonitor.onConnected(this.localIdentifier(),
+                            this.remoteIdentifier(), nc().isAcceptor());
             }
 
             return true;

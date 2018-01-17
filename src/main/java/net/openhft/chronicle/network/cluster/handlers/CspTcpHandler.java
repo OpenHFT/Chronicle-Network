@@ -2,6 +2,7 @@ package net.openhft.chronicle.network.cluster.handlers;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.network.ConnectionListener;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.WireTcpHandler;
 import net.openhft.chronicle.network.api.session.SubHandler;
@@ -15,10 +16,7 @@ import net.openhft.chronicle.wire.WriteMarshallable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static net.openhft.chronicle.network.connection.CoreFields.csp;
 
@@ -86,6 +84,9 @@ public abstract class CspTcpHandler<T extends NetworkContext> extends WireTcpHan
                 } catch (Exception e) {
                     Jvm.warn().on(getClass(), e);
                 }
+
+                if (handler instanceof ConnectionListener)
+                    nc().addConnectionListener((ConnectionListener) handler);
 
                 if (handler() instanceof HeartbeatEventHandler) {
                     assert heartbeatEventHandler == null : "its assumed that you will only have a " +
