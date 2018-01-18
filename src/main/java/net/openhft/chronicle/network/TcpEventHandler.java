@@ -72,12 +72,18 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private long lastTickReadTime = Time.tickTime();
 
     private volatile boolean closed;
+    private final boolean fair;
 
     public TcpEventHandler(@NotNull NetworkContext nc) {
+        this(nc, false);
+    }
+
+    public TcpEventHandler(@NotNull NetworkContext nc, boolean fair) {
 
         this.writeEventHandler = new WriteEventHandler();
         this.sc = ISocketChannel.wrap(nc.socketChannel());
         this.nc = nc;
+        this.fair = fair;
 
         try {
             sc.configureBlocking(false);
@@ -157,7 +163,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         }
 
         boolean busy = false;
-        if (oneInTen++ >= 8) {
+        if (fair || oneInTen++ >= 8) {
             oneInTen = 0;
             try {
                 busy |= writeEventHandler.action();
@@ -340,7 +346,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         if (outBBB.underlyingObject().remaining() <= 0)
             return false;
         int start = outBBB.underlyingObject().position();
-        long writeTickTime = Time.tickTime();
         long writeTime = System.nanoTime();
         assert !sc.isBlocking();
         int wrote = sc.write(outBBB.underlyingObject());
