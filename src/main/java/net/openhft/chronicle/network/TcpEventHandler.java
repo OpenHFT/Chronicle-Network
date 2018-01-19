@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
@@ -87,10 +88,16 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
         try {
             sc.configureBlocking(false);
-            sc.socket().setTcpNoDelay(true);
+            Socket sock = sc.socket();
+            sock.setTcpNoDelay(true);
             if (TCP_BUFFER >= 64 << 10) {
-                sc.socket().setReceiveBufferSize(TCP_BUFFER);
-                sc.socket().setSendBufferSize(TCP_BUFFER);
+                sock.setReceiveBufferSize(TCP_BUFFER);
+                sock.setSendBufferSize(TCP_BUFFER);
+
+                int rcv = sock.getReceiveBufferSize();
+                int snd = sock.getSendBufferSize();
+                checkBufSize(rcv, TCP_BUFFER, "recv");
+                checkBufSize(snd, TCP_BUFFER, "send");
             }
         } catch (IOException e) {
             Jvm.warn().on(getClass(), e);
@@ -112,6 +119,12 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         outBBB.underlyingObject().limit(0);
         readLog = new NetworkLog(this.sc, "read");
         writeLog = new NetworkLog(this.sc, "write");
+    }
+
+    private void checkBufSize(int bufSize, int requested, String name) {
+        if (bufSize < requested) {
+            LOG.warn("Attempted to set " + name + " tcp buffer to " + requested + " but kernel only allowed " + bufSize);
+        }
     }
 
     @Override
