@@ -73,7 +73,7 @@ import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
  */
 public class TcpChannelHub implements Closeable {
 
-    public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 64 << 10);
+    public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 64 << 15);
 
     private static final int HEATBEAT_PING_PERIOD =
             getInteger("heartbeat.ping.period",

@@ -3,23 +3,12 @@ package net.openhft.chronicle.network.cluster.handlers;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.core.threads.EventLoop;
+import net.openhft.chronicle.network.ConnectionListener;
 import net.openhft.chronicle.network.api.session.SubHandler;
-import net.openhft.chronicle.network.cluster.Cluster;
-import net.openhft.chronicle.network.cluster.ClusterContext;
-import net.openhft.chronicle.network.cluster.ClusteredNetworkContext;
-import net.openhft.chronicle.network.cluster.ConnectionChangedNotifier;
-import net.openhft.chronicle.network.cluster.ConnectionStrategy;
-import net.openhft.chronicle.network.cluster.HeartbeatEventHandler;
-import net.openhft.chronicle.network.cluster.HostDetails;
+import net.openhft.chronicle.network.cluster.*;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.threads.NamedThreadFactory;
-import net.openhft.chronicle.wire.Demarshallable;
-import net.openhft.chronicle.wire.DocumentContext;
-import net.openhft.chronicle.wire.Wire;
-import net.openhft.chronicle.wire.WireIn;
-import net.openhft.chronicle.wire.WireOut;
-import net.openhft.chronicle.wire.WireType;
-import net.openhft.chronicle.wire.WriteMarshallable;
+import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,6 +21,7 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static net.openhft.chronicle.network.HeaderTcpHandler.HANDLER;
 import static net.openhft.chronicle.network.cluster.TerminatorHandler.terminationHandler;
+
 
 public final class UberHandler <T extends ClusteredNetworkContext> extends CspTcpHandler<T>
         implements Demarshallable, WriteMarshallable {
@@ -101,7 +91,6 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
         ClusteredNetworkContext nc = nc();
         nc.wireType(wireType());
         isAcceptor(nc.isAcceptor());
-
 
         assert checkIdentifierEqualsHostId();
         assert remoteIdentifier != localIdentifier :
@@ -217,7 +206,7 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
 
             SubHandler handler = handler();
             if (handler == null)
-                throw new IllegalStateException("handler == null, check that the " +
+               throw new IllegalStateException("handler == null, check that the " +
                         "Csp/Cid has been sent, failed to " +
                         "fully " +
                         "process the following " +
@@ -270,6 +259,7 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
     }
 
     private void onMessageReceivedOrWritten() {
+
         final HeartbeatEventHandler heartbeatEventHandler = heartbeatEventHandler();
 
         if (heartbeatEventHandler != null)

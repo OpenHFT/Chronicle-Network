@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
@@ -72,19 +73,31 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private long lastTickReadTime = Time.tickTime();
 
     private volatile boolean closed;
+    private final boolean fair;
 
     public TcpEventHandler(@NotNull NetworkContext nc) {
+        this(nc, false);
+    }
+
+    public TcpEventHandler(@NotNull NetworkContext nc, boolean fair) {
 
         this.writeEventHandler = new WriteEventHandler();
         this.sc = ISocketChannel.wrap(nc.socketChannel());
         this.nc = nc;
+        this.fair = fair;
 
         try {
             sc.configureBlocking(false);
-            sc.socket().setTcpNoDelay(true);
+            Socket sock = sc.socket();
+            sock.setTcpNoDelay(true);
             if (TCP_BUFFER >= 64 << 10) {
-                sc.socket().setReceiveBufferSize(TCP_BUFFER);
-                sc.socket().setSendBufferSize(TCP_BUFFER);
+                sock.setReceiveBufferSize(TCP_BUFFER);
+                sock.setSendBufferSize(TCP_BUFFER);
+
+                int rcv = sock.getReceiveBufferSize();
+                int snd = sock.getSendBufferSize();
+                checkBufSize(rcv, TCP_BUFFER, "recv");
+                checkBufSize(snd, TCP_BUFFER, "send");
             }
         } catch (IOException e) {
             Jvm.warn().on(getClass(), e);
@@ -106,6 +119,12 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         outBBB.underlyingObject().limit(0);
         readLog = new NetworkLog(this.sc, "read");
         writeLog = new NetworkLog(this.sc, "write");
+    }
+
+    private void checkBufSize(int bufSize, int requested, String name) {
+        if (bufSize < requested) {
+            LOG.warn("Attempted to set " + name + " tcp buffer to " + requested + " but kernel only allowed " + bufSize);
+        }
     }
 
     @Override
@@ -157,7 +176,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         }
 
         boolean busy = false;
-        if (oneInTen++ >= 8) {
+        if (fair || oneInTen++ >= 8) {
             oneInTen = 0;
             try {
                 busy |= writeEventHandler.action();
@@ -340,7 +359,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         if (outBBB.underlyingObject().remaining() <= 0)
             return false;
         int start = outBBB.underlyingObject().position();
-        long writeTickTime = Time.tickTime();
         long writeTime = System.nanoTime();
         assert !sc.isBlocking();
         int wrote = sc.write(outBBB.underlyingObject());

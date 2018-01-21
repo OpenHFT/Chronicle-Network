@@ -17,7 +17,6 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.io.Closeable;
-import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.cluster.TerminationEventHandler;
@@ -27,7 +26,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.channels.SocketChannel;
-import java.util.function.Supplier;
 
 public interface NetworkContext<T extends NetworkContext> extends Closeable {
 
@@ -103,5 +101,9 @@ public interface NetworkContext<T extends NetworkContext> extends Closeable {
     NetworkStatsListener networkStatsListener();
 
     void serverThreadingStrategy(ServerThreadingStrategy singleThreaded);
+
+    default void addConnectionListener(ConnectionListener connectionListener) {
+        // do nothing
+    }
 }
 
