@@ -100,15 +100,16 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
         final WireOutPublisher publisher = nc.wireOutPublisher();
         publisher(publisher);
 
-        @Nullable EventLoop eventLoop = nc.eventLoop();
+        if (!nc.isValidCluster(clusterName)) {
+            Jvm.warn().on(getClass(), "cluster=" + clusterName, new RuntimeException("cluster  not " +
+                    "found, cluster=" + clusterName));
+            return;
+        }
+
+        @NotNull EventLoop eventLoop = nc.eventLoop();
         if (!eventLoop.isClosed()) {
             eventLoop.start();
 
-            if (!nc.isValidCluster(clusterName)) {
-                Jvm.warn().on(getClass(), "cluster=" + clusterName, new RuntimeException("cluster  not " +
-                        "found, cluster=" + clusterName));
-                return;
-            }
             final Cluster engineCluster = nc.getCluster(clusterName);
 
             // note : we have to publish the uber handler, even if we send a termination event

@@ -80,7 +80,7 @@ public abstract class ClusterContext implements Demarshallable, WriteMarshallabl
         return heartbeatIntervalMs;
     }
 
-    @Nullable
+    @NotNull
     public abstract ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpEventHandlerFactory();
 
     @NotNull

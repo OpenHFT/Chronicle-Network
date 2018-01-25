@@ -83,8 +83,10 @@ public class HostConnector implements Closeable {
     public synchronized void bootstrap(WriteMarshallable subscription) {
         bootstraps.add(subscription);
         WireOutPublisher wp = wireOutPublisher.get();
-        if (wp != null)
-            wp.put("", subscription);
+        if (wp != null) {
+            wp.publish(subscription);
+            wp.wireType(this.wireType);
+        }
     }
 
     public synchronized void connect() {
@@ -112,13 +114,9 @@ public class HostConnector implements Closeable {
             networkStatsListener.networkContext(nc);
         }
 
-        boolean firstTime = true;
         for (WriteMarshallable bootstrap : bootstraps) {
             wireOutPublisher.publish(bootstrap);
-
-            // its only the uber-handler that we want to publish using TEXT_WIRE
-            if (firstTime)
-                wireOutPublisher.wireType(this.wireType);
+            wireOutPublisher.wireType(this.wireType);
         }
 
         nc.wireType(this.wireType);
