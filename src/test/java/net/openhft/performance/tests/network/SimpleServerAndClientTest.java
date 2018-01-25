@@ -50,7 +50,6 @@ import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri
  * Created by rob on 26/08/2015.
  */
 public class SimpleServerAndClientTest {
-    private static final Logger LOG = LoggerFactory.getLogger(SimpleServerAndClientTest.class);
     private ThreadDump threadDump;
 
     @Before

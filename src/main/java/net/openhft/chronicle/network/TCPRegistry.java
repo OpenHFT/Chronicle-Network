@@ -114,7 +114,7 @@ public enum TCPRegistry {
             return ssc;
         InetSocketAddress address = lookup(description);
         ssc = ServerSocketChannel.open();
-        ssc.socket().setReuseAddress(true);
+        ssc.socket().setReuseAddress(false);
         ssc.bind(address);
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.put(description, ssc);
         return ssc;

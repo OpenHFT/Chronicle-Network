@@ -3,7 +3,6 @@ package net.openhft.chronicle.network.cluster.handlers;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.core.threads.EventLoop;
-import net.openhft.chronicle.network.ConnectionListener;
 import net.openhft.chronicle.network.api.session.SubHandler;
 import net.openhft.chronicle.network.cluster.*;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
@@ -22,7 +21,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static net.openhft.chronicle.network.HeaderTcpHandler.HANDLER;
 import static net.openhft.chronicle.network.cluster.TerminatorHandler.terminationHandler;
 
-
 public final class UberHandler <T extends ClusteredNetworkContext> extends CspTcpHandler<T>
         implements Demarshallable, WriteMarshallable {
 
@@ -34,7 +32,6 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
     private ConnectionChangedNotifier connectionChangedNotifier;
     @NotNull
     private String clusterName;
-    private int writerIndex;
 
     @UsedViaReflection
     private UberHandler(@NotNull WireIn wire) {
@@ -236,27 +233,12 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
         if (handler != null)
             handler.onWrite(outWire);
 
-        for (int i = 0; i < writers.size(); i++) {
-
-            if (isClosing.get())
+        for (WriteMarshallable w : writers) {
+            if (isClosing.get() || w == null)
                 return;
 
-            WriteMarshallable w = next();
-            if (w != null)
-                w.writeMarshallable(outWire);
+            w.writeMarshallable(outWire);
         }
-    }
-
-    /**
-     * round robbins - the writers, we should only write when the buffer is empty, as // we can't
-     * guarantee that we will have enough space to add more data to the out wire.
-     *
-     * @return the  Marshallable that you are writing to
-     */
-    private WriteMarshallable next() {
-        if (writerIndex >= writers.size())
-            writerIndex = 0;
-        return writers.get(writerIndex++);
     }
 
     private void onMessageReceivedOrWritten() {
