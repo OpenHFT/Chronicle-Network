@@ -278,10 +278,12 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             lastInBBBReadPosition = inBBB.readPosition();
             tcpHandler.process(inBBB, outBBB, nc);
 
+            // process method might change the underlying ByteBuffer by resizing it.
+            ByteBuffer outBB = outBBB.underlyingObject();
             // did it write something?
-            if (outBBB.writePosition() > outBBB.underlyingObject().limit() || outBBB.writePosition() >= 4) {
-                outBBB.underlyingObject().limit(Maths.toInt32(outBBB.writePosition()));
-                busy |= tryWrite();
+            if (outBBB.writePosition() > outBB.limit() || outBBB.writePosition() >= 4) {
+                outBB.limit(Maths.toInt32(outBBB.writePosition()));
+                busy |= tryWrite(outBB);
                 break;
             }
         } while (lastInBBBReadPosition != inBBB.readPosition());
@@ -355,25 +357,25 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     }
 
     @PackageLocal
-    boolean tryWrite() throws IOException {
-        if (outBBB.underlyingObject().remaining() <= 0)
+    boolean tryWrite(ByteBuffer outBB) throws IOException {
+        if (outBB.remaining() <= 0)
             return false;
-        int start = outBBB.underlyingObject().position();
+        int start = outBB.position();
         long writeTime = System.nanoTime();
         assert !sc.isBlocking();
-        int wrote = sc.write(outBBB.underlyingObject());
+        int wrote = sc.write(outBB);
 //        if (wrote > 200)
 //        System.out.println("w "+wrote);
         tcpHandler.onWriteTime(writeTime);
 
-        writeLog.log(outBBB.underlyingObject(), start, outBBB.underlyingObject().position());
+        writeLog.log(outBB, start, outBB.position());
 
         if (wrote < 0) {
             closeSC();
         } else if (wrote > 0) {
             // lastTickReadTime = writeTickTime;
-            outBBB.underlyingObject().compact().flip();
-            outBBB.writePosition(outBBB.underlyingObject().limit());
+            outBB.compact().flip();
+            outBBB.writePosition(outBB.limit());
             return true;
         }
         return false;
@@ -400,17 +402,17 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             try {
                 // get more data to write if the buffer was empty
                 // or we can write some of what is there
-                ByteBuffer byteBuffer = outBBB.underlyingObject();
-                int remaining = byteBuffer.remaining();
+                ByteBuffer outBB = outBBB.underlyingObject();
+                int remaining = outBB.remaining();
                 busy = remaining > 0;
                 if (busy)
-                    tryWrite();
+                    tryWrite(outBB);
 
                 // has the remaining changed, i.e. did it write anything?
-                if (byteBuffer.remaining() == remaining) {
+                if (outBB.remaining() == remaining) {
                     busy |= invokeHandler();
                     if (!busy)
-                        busy = tryWrite();
+                        busy = tryWrite(outBB);
                 }
             } catch (ClosedChannelException cce) {
                 closeSC();
