@@ -174,7 +174,11 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
         if (!isClosing.getAndSet(true) && connectionChangedNotifier != null)
             connectionChangedNotifier.onConnectionChanged(false, nc());
 
-        nc().acquireConnectionListener().onDisconnected(localIdentifier, remoteIdentifier(), nc().isAcceptor());
+        try {
+            nc().acquireConnectionListener().onDisconnected(localIdentifier, remoteIdentifier(), nc().isAcceptor());
+        } catch (Exception e) {
+            Jvm.fatal().on(this.getClass(), e);
+        }
         super.close();
     }
 
