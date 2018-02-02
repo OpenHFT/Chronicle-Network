@@ -252,7 +252,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         return busy;
     }
 
-    private synchronized void clean() {
+    private void clean() {
 
         if (isCleaned)
             return;
