@@ -26,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 /**
@@ -41,6 +42,7 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
     private final Function<Object, TcpHandler> handlerFunction;
     @NotNull
     private final NetworkContext nc;
+    private AtomicBoolean isClosed = new AtomicBoolean();
 
     public HeaderTcpHandler(@NotNull final TcpEventHandler handlerManager,
                             @NotNull final Function<Object, TcpHandler> handlerFunction,
@@ -91,7 +93,7 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
         } catch (Exception e) {
             if (isClosed())
                 return;
-            
+
             Jvm.warn().on(getClass(), "wirein=" + Wires.fromSizePrefixedBlobs(inWire), e);
         }
     }
@@ -101,5 +103,15 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
         @NotNull VanillaSessionDetails sd = new VanillaSessionDetails();
         sd.readMarshallable(inWire);
         return sd;
+    }
+
+    @Override
+    public boolean isClosed() {
+        return isClosed.get();
+    }
+
+    @Override
+    public void close() {
+        isClosed.set(true);
     }
 }
