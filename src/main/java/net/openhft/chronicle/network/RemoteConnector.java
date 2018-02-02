@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
-import static net.openhft.chronicle.network.NetworkStatsListener.*;
+import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
 public class RemoteConnector implements Closeable {
 
@@ -161,6 +161,8 @@ public class RemoteConnector implements Closeable {
                 nc.socketChannel(sc);
                 nc.isAcceptor(false);
                 notifyHostPort(sc, nc.networkStatsListener());
+                if (!nc.socketChannel().isOpen())
+                    throw new InvalidEventHandlerException();
                 eventHandler = tcpHandlerSupplier.apply(nc);
 
             } catch (AlreadyConnectedException e) {
