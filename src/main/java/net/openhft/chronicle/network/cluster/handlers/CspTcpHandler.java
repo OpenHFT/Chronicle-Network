@@ -68,9 +68,13 @@ public abstract class CspTcpHandler<T extends NetworkContext> extends WireTcpHan
             valueIn = wireIn.readEventName(event);
 
             if (CoreFields.handler.contentEquals(event)) {
-                if (cidToHandle.containsKey(cid))
+                if (cidToHandle.containsKey(cid)) {
+                    String registeredCsp = cidToHandle.get(cid).csp();
+                    if (!csp.equals(registeredCsp))
+                        Jvm.warn().on(getClass(), "cid: " + cid + " already has handler registered with different csp, registered csp:" + registeredCsp + ", received csp: " + csp);
                     // already has it registered
                     return false;
+                }
                 handler = valueIn.typedMarshallable();
                 handler.nc(nc());
                 handler.closeable(this);
