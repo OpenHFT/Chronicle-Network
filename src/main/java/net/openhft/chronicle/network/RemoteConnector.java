@@ -129,7 +129,7 @@ public class RemoteConnector implements Closeable {
 
 
         @Override
-        public boolean action() throws InvalidEventHandlerException, InterruptedException {
+        public boolean action() throws InvalidEventHandlerException {
             if (closed)
                 throw new InvalidEventHandlerException();
             final long time = System.currentTimeMillis();
