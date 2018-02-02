@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.channels.AsynchronousCloseException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.function.Function;
@@ -87,13 +87,15 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
                 eventLoop.addHandler(apply);
             }
 
-        } catch (AsynchronousCloseException e) {
+        } catch (ClosedChannelException e) {
             closeSocket();
+            throw new InvalidEventHandlerException(e);
         } catch (Exception e) {
             if (!closed) {
                 Jvm.fatal().on(getClass(), e);
                 closeSocket();
             }
+            throw new InvalidEventHandlerException(e);
         }
         return false;
     }
