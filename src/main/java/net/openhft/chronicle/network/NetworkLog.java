@@ -36,9 +36,12 @@ class NetworkLog {
     private long lastOut = System.currentTimeMillis();
 
     public NetworkLog(@NotNull ISocketChannel channel, String op) {
-        this.desc = op
-                + " " + channel.getLocalAddress().getPort()
-                + " " + channel.getRemoteAddress().getPort();
+        if (channel.isOpen())
+            this.desc = op
+                    + " " + channel.getLocalAddress().getPort()
+                    + " " + channel.getRemoteAddress().getPort();
+        else
+            this.desc = "";
     }
 
     public void idle() {
