@@ -350,8 +350,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     @PackageLocal
     void closeSC() {
-        Closeable.closeQuietly(this.nc.networkStatsListener());
         Closeable.closeQuietly(tcpHandler);
+        Closeable.closeQuietly(this.nc.networkStatsListener());
         Closeable.closeQuietly(sc);
         Closeable.closeQuietly(nc);
     }
