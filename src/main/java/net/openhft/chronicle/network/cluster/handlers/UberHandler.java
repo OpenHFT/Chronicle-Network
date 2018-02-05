@@ -238,10 +238,15 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
             handler.onWrite(outWire);
 
         for (WriteMarshallable w : writers) {
-            if (isClosing.get() || w == null)
+            if (w == null)
+                continue;
+            if (isClosing.get())
                 return;
-
-            w.writeMarshallable(outWire);
+            try {
+                w.writeMarshallable(outWire);
+            } catch (Exception e) {
+                Jvm.fatal().on(getClass(), e);
+            }
         }
     }
 
