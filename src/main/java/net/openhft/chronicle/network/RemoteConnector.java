@@ -18,6 +18,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -136,8 +137,7 @@ public class RemoteConnector implements Closeable {
 
             if (time > nextPeriod.get()) {
                 nextPeriod.set(time + retryInterval);
-            }
-            else {
+            } else {
                 // this is called in a loop from BlockingEventHandler,
                 // so just wait until the end of the retryInterval
                 if (priority() == HandlerPriority.BLOCKING) {
@@ -168,7 +168,7 @@ public class RemoteConnector implements Closeable {
             } catch (AlreadyConnectedException e) {
                 Jvm.debug().on(getClass(), e);
                 throw new InvalidEventHandlerException();
-            } catch (IOException e) {
+            } catch (IOException | IORuntimeException e) {
                 nextPeriod.set(System.currentTimeMillis() + retryInterval);
                 return false;
             }

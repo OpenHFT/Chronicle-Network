@@ -43,9 +43,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 
-/*
- * Created by peter.lawrey on 22/01/15.
- */
 public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandlerManager {
 
     public static final int TCP_BUFFER = TcpChannelHub.TCP_BUFFER;
@@ -165,14 +162,16 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         if (tcpHandler == null)
             return false;
 
+        if (closed) {
+            Closeable.closeQuietly(nc);
+            throw new InvalidEventHandlerException();
+        }
+
         if (!sc.isOpen()) {
             tcpHandler.onEndOfConnection(false);
             Closeable.closeQuietly(nc);
             // clear these to free up memory.
             throw new InvalidEventHandlerException("socket is closed");
-        } else if (closed) {
-            Closeable.closeQuietly(nc);
-            throw new InvalidEventHandlerException();
         }
 
         boolean busy = false;
@@ -189,24 +188,17 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             int start = inBB.position();
 
             int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
-//            if (read < Integer.MAX_VALUE && read != 0)
-//                System.out.println("read " + read);
 
             if (read > 0) {
                 WanSimulator.dataRead(read);
                 tcpHandler.onReadTime(System.nanoTime());
                 lastTickReadTime = Time.tickTime();
-                //    if (Jvm.isDebug())
-                //        System.out.println("Read: " + read + " start: " + start + " pos: " + inBB
-                //       .position());
                 readLog.log(inBB, start, inBB.position());
-                // inBB.position() where the data has been read() up to.
                 if (invokeHandler())
                     oneInTen++;
                 return true;
             } else if (read == 0) {
                 if (outBBB.readRemaining() > 0) {
-                //    System.out.println("w " + outBBB.readRemaining());
                     if (invokeHandler())
                         return true;
                 }
@@ -222,17 +214,17 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
 
         } catch (ClosedChannelException e) {
-            closeSC();
+            close();
             throw new InvalidEventHandlerException(e);
         } catch (IOException e) {
-            closeSC();
+            close();
             handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
             throw new InvalidEventHandlerException();
         } catch (InvalidEventHandlerException e) {
-            closeSC();
+            close();
             throw e;
         } catch (Exception e) {
-            closeSC();
+            close();
             Jvm.warn().on(getClass(), "", e);
             throw new InvalidEventHandlerException(e);
         } finally {
@@ -302,8 +294,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             inBBB.readPosition(0);
             inBBB.readLimit(inBB.remaining());
 
-//            System.out.println("Compact " + inBBB.readPosition() + " rem " + inBBB.readRemaining() + " " + Wires.lengthOf(inBBB.readInt(inBBB.readPosition())));
-
             busy = true;
 
         } else if (inBBB.readPosition() > 0) {
@@ -364,8 +354,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         long writeTime = System.nanoTime();
         assert !sc.isBlocking();
         int wrote = sc.write(outBB);
-//        if (wrote > 200)
-//        System.out.println("w "+wrote);
         tcpHandler.onWriteTime(writeTime);
 
         writeLog.log(outBB, start, outBB.position());
@@ -373,7 +361,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         if (wrote < 0) {
             closeSC();
         } else if (wrote > 0) {
-            // lastTickReadTime = writeTickTime;
             outBB.compact().flip();
             outBBB.writePosition(outBB.limit());
             return true;
@@ -424,8 +411,5 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             return busy;
         }
 
-        // public HandlerPriority priority() {
-        //   return HandlerPriority.CONCURRENT;
-        //}
     }
 }
