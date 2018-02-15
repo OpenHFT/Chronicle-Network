@@ -114,7 +114,7 @@ public enum TCPRegistry {
             return ssc;
         InetSocketAddress address = lookup(description);
         ssc = ServerSocketChannel.open();
-        ssc.socket().setReuseAddress(true);
+        ssc.socket().setReuseAddress(false);
         ssc.bind(address);
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.put(description, ssc);
         return ssc;
@@ -173,5 +173,9 @@ public enum TCPRegistry {
 
     public static ISocketChannel createISocketChannel(@NotNull String description) throws IOException {
         return ISocketChannel.wrap(SocketChannel.open(lookup(description)));
+    }
+
+    public static void dumpAllSocketChannels() {
+        HOSTNAME_PORT_ALIAS.forEach((s, inetSocketAddress) -> System.out.println(s + ": " + inetSocketAddress.toString()));
     }
 }

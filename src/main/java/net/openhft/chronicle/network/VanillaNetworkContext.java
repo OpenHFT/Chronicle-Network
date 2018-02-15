@@ -155,12 +155,12 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     @Override
     public long newCid() {
 
-        long time = System.currentTimeMillis();
+        long time = System.nanoTime();
 
         for (; ; ) {
             long value = cid.get();
             if (time <= value) {
-                time++;
+                time = value + 1;
                 continue;
             }
 

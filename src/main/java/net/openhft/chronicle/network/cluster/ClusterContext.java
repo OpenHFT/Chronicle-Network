@@ -37,7 +37,7 @@ import java.util.function.Supplier;
 /**
  * @author Rob Austin.
  */
-public class ClusterContext implements Demarshallable, WriteMarshallable, Consumer<HostDetails> {
+public abstract class ClusterContext implements Demarshallable, WriteMarshallable, Consumer<HostDetails> {
 
     private ConnectionStrategy connectionStrategy;
     private WireType wireType;
@@ -80,13 +80,11 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
         return heartbeatIntervalMs;
     }
 
-    @Nullable
-    public ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpEventHandlerFactory() {
-        throw new UnsupportedOperationException();
-    }
+    @NotNull
+    public abstract ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpEventHandlerFactory();
 
     @NotNull
-    private WireParser<Void> wireParser() {
+    protected WireParser<Void> wireParser() {
         @NotNull WireParser<Void> parser = new VanillaWireParser<>((s, v, $) -> {
         });
         parser.register(() -> "wireType", (s, v, $) -> v.text(this, (o, x) -> this.wireType(WireType.valueOf(x))));
@@ -271,7 +269,7 @@ public class ClusterContext implements Demarshallable, WriteMarshallable, Consum
                 .handlerFactory();
         final Function<ClusterContext, WriteMarshallable> heartbeat = this.heartbeatFactory();
 
-        @NotNull ArrayList<WriteMarshallable> result = new ArrayList<WriteMarshallable>();
+        @NotNull ArrayList<WriteMarshallable> result = new ArrayList<>();
         result.add(handler.apply(this, hd));
         result.add(heartbeat.apply(this));
         return result;

@@ -18,6 +18,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -38,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
-import static net.openhft.chronicle.network.NetworkStatsListener.*;
+import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
 public class RemoteConnector implements Closeable {
 
@@ -129,15 +130,14 @@ public class RemoteConnector implements Closeable {
 
 
         @Override
-        public boolean action() throws InvalidEventHandlerException, InterruptedException {
+        public boolean action() throws InvalidEventHandlerException {
             if (closed)
                 throw new InvalidEventHandlerException();
             final long time = System.currentTimeMillis();
 
             if (time > nextPeriod.get()) {
                 nextPeriod.set(time + retryInterval);
-            }
-            else {
+            } else {
                 // this is called in a loop from BlockingEventHandler,
                 // so just wait until the end of the retryInterval
                 if (priority() == HandlerPriority.BLOCKING) {
@@ -161,12 +161,14 @@ public class RemoteConnector implements Closeable {
                 nc.socketChannel(sc);
                 nc.isAcceptor(false);
                 notifyHostPort(sc, nc.networkStatsListener());
+                if (!nc.socketChannel().isOpen())
+                    throw new InvalidEventHandlerException();
                 eventHandler = tcpHandlerSupplier.apply(nc);
 
             } catch (AlreadyConnectedException e) {
                 Jvm.debug().on(getClass(), e);
                 throw new InvalidEventHandlerException();
-            } catch (IOException e) {
+            } catch (IOException | IORuntimeException e) {
                 nextPeriod.set(System.currentTimeMillis() + retryInterval);
                 return false;
             }

@@ -4,22 +4,10 @@ import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.api.session.SubHandler;
-import net.openhft.chronicle.network.cluster.Cluster;
-import net.openhft.chronicle.network.cluster.ClusterContext;
-import net.openhft.chronicle.network.cluster.ClusteredNetworkContext;
-import net.openhft.chronicle.network.cluster.ConnectionChangedNotifier;
-import net.openhft.chronicle.network.cluster.ConnectionStrategy;
-import net.openhft.chronicle.network.cluster.HeartbeatEventHandler;
-import net.openhft.chronicle.network.cluster.HostDetails;
+import net.openhft.chronicle.network.cluster.*;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.threads.NamedThreadFactory;
-import net.openhft.chronicle.wire.Demarshallable;
-import net.openhft.chronicle.wire.DocumentContext;
-import net.openhft.chronicle.wire.Wire;
-import net.openhft.chronicle.wire.WireIn;
-import net.openhft.chronicle.wire.WireOut;
-import net.openhft.chronicle.wire.WireType;
-import net.openhft.chronicle.wire.WriteMarshallable;
+import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,7 +32,6 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
     private ConnectionChangedNotifier connectionChangedNotifier;
     @NotNull
     private String clusterName;
-    private int writerIndex;
 
     @UsedViaReflection
     private UberHandler(@NotNull WireIn wire) {
@@ -102,7 +89,6 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
         nc.wireType(wireType());
         isAcceptor(nc.isAcceptor());
 
-
         assert checkIdentifierEqualsHostId();
         assert remoteIdentifier != localIdentifier :
                 "remoteIdentifier=" + remoteIdentifier + ", " +
@@ -111,15 +97,16 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
         final WireOutPublisher publisher = nc.wireOutPublisher();
         publisher(publisher);
 
-        @Nullable EventLoop eventLoop = nc.eventLoop();
+        if (!nc.isValidCluster(clusterName)) {
+            Jvm.warn().on(getClass(), "cluster=" + clusterName, new RuntimeException("cluster  not " +
+                    "found, cluster=" + clusterName));
+            return;
+        }
+
+        @NotNull EventLoop eventLoop = nc.eventLoop();
         if (!eventLoop.isClosed()) {
             eventLoop.start();
 
-            if (!nc.isValidCluster(clusterName)) {
-                Jvm.warn().on(getClass(), "cluster=" + clusterName, new RuntimeException("cluster  not " +
-                        "found, cluster=" + clusterName));
-                return;
-            }
             final Cluster engineCluster = nc.getCluster(clusterName);
 
             // note : we have to publish the uber handler, even if we send a termination event
@@ -188,7 +175,11 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
         if (!isClosing.getAndSet(true) && connectionChangedNotifier != null)
             connectionChangedNotifier.onConnectionChanged(false, nc());
 
-        nc().acquireConnectionListener().onDisconnected(localIdentifier, remoteIdentifier(), nc().isAcceptor());
+        try {
+            nc().acquireConnectionListener().onDisconnected(localIdentifier, remoteIdentifier(), nc().isAcceptor());
+        } catch (Exception e) {
+            Jvm.fatal().on(this.getClass(), e);
+        }
         super.close();
     }
 
@@ -218,7 +209,7 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
 
             SubHandler handler = handler();
             if (handler == null)
-                throw new IllegalStateException("handler == null, check that the " +
+               throw new IllegalStateException("handler == null, check that the " +
                         "Csp/Cid has been sent, failed to " +
                         "fully " +
                         "process the following " +
@@ -247,30 +238,21 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
         if (handler != null)
             handler.onWrite(outWire);
 
-        for (int i = 0; i < writers.size(); i++) {
-
+        for (WriteMarshallable w : writers) {
+            if (w == null)
+                continue;
             if (isClosing.get())
                 return;
-
-            WriteMarshallable w = next();
-            if (w != null)
+            try {
                 w.writeMarshallable(outWire);
+            } catch (Exception e) {
+                Jvm.fatal().on(getClass(), e);
+            }
         }
     }
 
-    /**
-     * round robbins - the writers, we should only write when the buffer is empty, as // we can't
-     * guarantee that we will have enough space to add more data to the out wire.
-     *
-     * @return the  Marshallable that you are writing to
-     */
-    private WriteMarshallable next() {
-        if (writerIndex >= writers.size())
-            writerIndex = 0;
-        return writers.get(writerIndex++);
-    }
-
     private void onMessageReceivedOrWritten() {
+
         final HeartbeatEventHandler heartbeatEventHandler = heartbeatEventHandler();
 
         if (heartbeatEventHandler != null)

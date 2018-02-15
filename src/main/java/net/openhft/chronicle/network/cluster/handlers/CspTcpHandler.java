@@ -1,6 +1,8 @@
 package net.openhft.chronicle.network.cluster.handlers;
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.network.ConnectionListener;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.WireTcpHandler;
 import net.openhft.chronicle.network.api.session.SubHandler;
@@ -14,10 +16,7 @@ import net.openhft.chronicle.wire.WriteMarshallable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static net.openhft.chronicle.network.connection.CoreFields.csp;
 
@@ -31,7 +30,7 @@ public abstract class CspTcpHandler<T extends NetworkContext> extends WireTcpHan
     @Nullable
     private HeartbeatEventHandler heartbeatEventHandler;
     private long lastCid;
-
+    private final Map<Object, SubHandler> registry = new HashMap<>();
     @Nullable
     protected SubHandler handler() {
         return handler;
@@ -69,12 +68,30 @@ public abstract class CspTcpHandler<T extends NetworkContext> extends WireTcpHan
             valueIn = wireIn.readEventName(event);
 
             if (CoreFields.handler.contentEquals(event)) {
-                if (cidToHandle.containsKey(cid))
+                if (cidToHandle.containsKey(cid)) {
+                    String registeredCsp = cidToHandle.get(cid).csp();
+                    if (!csp.equals(registeredCsp))
+                        Jvm.warn().on(getClass(), "cid: " + cid + " already has handler registered with different csp, registered csp:" + registeredCsp + ", received csp: " + csp);
                     // already has it registered
                     return false;
+                }
                 handler = valueIn.typedMarshallable();
                 handler.nc(nc());
                 handler.closeable(this);
+
+                try {
+                    if (handler instanceof Registerable) {
+                        Registerable registerable = (Registerable) this.handler;
+                        registry.put(registerable.registryKey(), this.handler);
+                        registerable.registry(registry);
+                    }
+                } catch (Exception e) {
+                    Jvm.warn().on(getClass(), e);
+                }
+
+                if (handler instanceof ConnectionListener)
+                    nc().addConnectionListener((ConnectionListener) handler);
+
                 if (handler() instanceof HeartbeatEventHandler) {
                     assert heartbeatEventHandler == null : "its assumed that you will only have a " +
                             "single heartbeatReceiver per connection";

@@ -37,16 +37,30 @@ public interface ConnectionStrategy extends Marshallable {
                           boolean didLogIn,
                           @NotNull FatalFailureMonitor fatalFailureMonitor) throws InterruptedException;
 
+
+    @Nullable
+    default SocketChannel openSocketChannel(@NotNull InetSocketAddress socketAddress,
+                                            int tcpBufferSize,
+                                            long timeoutMs) throws IOException, InterruptedException {
+
+        return openSocketChannel(socketAddress,
+                tcpBufferSize,
+                timeoutMs,
+                1);
+    }
+
+
     /**
      * the reason for this method is that unlike the selector it uses tick time
      */
     @Nullable
     default SocketChannel openSocketChannel(@NotNull InetSocketAddress socketAddress,
                                             int tcpBufferSize,
-                                            long timeoutMs) throws IOException, InterruptedException {
+                                            long timeoutMs,
+                                            int socketConnectionTimeoutMs) throws IOException, InterruptedException {
         assert timeoutMs > 0;
         long start = Time.tickTime();
-        SocketChannel sc = socketChannel(socketAddress, tcpBufferSize);
+        SocketChannel sc = socketChannel(socketAddress, tcpBufferSize, socketConnectionTimeoutMs);
         if (sc != null)
             return sc;
 
@@ -57,7 +71,7 @@ public interface ConnectionStrategy extends Marshallable {
                 Jvm.warn().on(ConnectionStrategy.class, "Timed out attempting to connect to " + socketAddress);
                 return null;
             }
-            sc = socketChannel(socketAddress, tcpBufferSize);
+            sc = socketChannel(socketAddress, tcpBufferSize, socketConnectionTimeoutMs);
             if (sc != null)
                 return sc;
             Thread.yield();
@@ -65,7 +79,7 @@ public interface ConnectionStrategy extends Marshallable {
     }
 
     @Nullable
-    static SocketChannel socketChannel(@NotNull InetSocketAddress socketAddress, int tcpBufferSize) throws IOException {
+    static SocketChannel socketChannel(@NotNull InetSocketAddress socketAddress, int tcpBufferSize, int socketConnectionTimeoutMs) throws IOException {
 
         final SocketChannel result = SocketChannel.open();
         @Nullable Selector selector = null;
@@ -83,7 +97,7 @@ public interface ConnectionStrategy extends Marshallable {
             selector = Selector.open();
             result.register(selector, SelectionKey.OP_CONNECT);
 
-            int select = selector.select(1);
+            int select = selector.select(socketConnectionTimeoutMs);
             if (select == 0) {
                 Jvm.debug().on(ConnectionStrategy.class, "Timed out attempting to connect to " + socketAddress);
                 return null;
@@ -111,4 +125,11 @@ public interface ConnectionStrategy extends Marshallable {
     }
 
 
+    /**
+     * allows control of a backoff strategy
+     * @return how long in milliseconds to pause before attempting a reconnect
+     */
+    default long pauseMillisBeforeReconnect() {
+        return 500;
+    }
 }

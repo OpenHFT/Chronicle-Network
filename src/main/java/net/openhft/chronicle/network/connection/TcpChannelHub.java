@@ -73,7 +73,7 @@ import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
  */
 public class TcpChannelHub implements Closeable {
 
-    public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 64 << 10);
+    public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 64 << 15);
 
     private static final int HEATBEAT_PING_PERIOD =
             getInteger("heartbeat.ping.period",
@@ -1277,7 +1277,10 @@ public class TcpChannelHub implements Closeable {
                             else
                                 Jvm.warn().on(getClass(), "reconnecting due to unexpected exception", e);
                             closeSocket();
-                            Jvm.pause(500);
+
+                            long pauseMs = connectionStrategy == null ? 500 : connectionStrategy.pauseMillisBeforeReconnect();
+                            Jvm.pause(pauseMs);
+
                         }
                     } finally {
                         start = Long.MAX_VALUE;

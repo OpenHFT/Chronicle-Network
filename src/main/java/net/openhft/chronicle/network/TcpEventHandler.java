@@ -38,13 +38,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 
-/*
- * Created by peter.lawrey on 22/01/15.
- */
 public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandlerManager {
 
     public static final int TCP_BUFFER = TcpChannelHub.TCP_BUFFER;
@@ -72,19 +70,31 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private long lastTickReadTime = Time.tickTime();
 
     private volatile boolean closed;
+    private final boolean fair;
 
     public TcpEventHandler(@NotNull NetworkContext nc) {
+        this(nc, false);
+    }
+
+    public TcpEventHandler(@NotNull NetworkContext nc, boolean fair) {
 
         this.writeEventHandler = new WriteEventHandler();
         this.sc = ISocketChannel.wrap(nc.socketChannel());
         this.nc = nc;
+        this.fair = fair;
 
         try {
             sc.configureBlocking(false);
-            sc.socket().setTcpNoDelay(true);
+            Socket sock = sc.socket();
+            sock.setTcpNoDelay(true);
             if (TCP_BUFFER >= 64 << 10) {
-                sc.socket().setReceiveBufferSize(TCP_BUFFER);
-                sc.socket().setSendBufferSize(TCP_BUFFER);
+                sock.setReceiveBufferSize(TCP_BUFFER);
+                sock.setSendBufferSize(TCP_BUFFER);
+
+                int rcv = sock.getReceiveBufferSize();
+                int snd = sock.getSendBufferSize();
+                checkBufSize(rcv, TCP_BUFFER, "recv");
+                checkBufSize(snd, TCP_BUFFER, "send");
             }
         } catch (IOException e) {
             Jvm.warn().on(getClass(), e);
@@ -106,6 +116,12 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         outBBB.underlyingObject().limit(0);
         readLog = new NetworkLog(this.sc, "read");
         writeLog = new NetworkLog(this.sc, "write");
+    }
+
+    private void checkBufSize(int bufSize, int requested, String name) {
+        if (bufSize < requested) {
+            LOG.warn("Attempted to set " + name + " tcp buffer to " + requested + " but kernel only allowed " + bufSize);
+        }
     }
 
     @Override
@@ -146,18 +162,20 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         if (tcpHandler == null)
             return false;
 
+        if (closed) {
+            Closeable.closeQuietly(nc);
+            throw new InvalidEventHandlerException();
+        }
+
         if (!sc.isOpen()) {
             tcpHandler.onEndOfConnection(false);
             Closeable.closeQuietly(nc);
             // clear these to free up memory.
             throw new InvalidEventHandlerException("socket is closed");
-        } else if (closed) {
-            Closeable.closeQuietly(nc);
-            throw new InvalidEventHandlerException();
         }
 
         boolean busy = false;
-        if (oneInTen++ >= 8) {
+        if (fair || oneInTen++ >= 8) {
             oneInTen = 0;
             try {
                 busy |= writeEventHandler.action();
@@ -170,24 +188,17 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             int start = inBB.position();
 
             int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
-//            if (read < Integer.MAX_VALUE && read != 0)
-//                System.out.println("read " + read);
 
             if (read > 0) {
                 WanSimulator.dataRead(read);
                 tcpHandler.onReadTime(System.nanoTime());
                 lastTickReadTime = Time.tickTime();
-                //    if (Jvm.isDebug())
-                //        System.out.println("Read: " + read + " start: " + start + " pos: " + inBB
-                //       .position());
                 readLog.log(inBB, start, inBB.position());
-                // inBB.position() where the data has been read() up to.
                 if (invokeHandler())
                     oneInTen++;
                 return true;
             } else if (read == 0) {
                 if (outBBB.readRemaining() > 0) {
-                //    System.out.println("w " + outBBB.readRemaining());
                     if (invokeHandler())
                         return true;
                 }
@@ -203,17 +214,17 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
 
         } catch (ClosedChannelException e) {
-            closeSC();
+            close();
             throw new InvalidEventHandlerException(e);
         } catch (IOException e) {
-            closeSC();
+            close();
             handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
             throw new InvalidEventHandlerException();
         } catch (InvalidEventHandlerException e) {
-            closeSC();
+            close();
             throw e;
         } catch (Exception e) {
-            closeSC();
+            close();
             Jvm.warn().on(getClass(), "", e);
             throw new InvalidEventHandlerException(e);
         } finally {
@@ -259,10 +270,12 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             lastInBBBReadPosition = inBBB.readPosition();
             tcpHandler.process(inBBB, outBBB, nc);
 
+            // process method might change the underlying ByteBuffer by resizing it.
+            ByteBuffer outBB = outBBB.underlyingObject();
             // did it write something?
-            if (outBBB.writePosition() > outBBB.underlyingObject().limit() || outBBB.writePosition() >= 4) {
-                outBBB.underlyingObject().limit(Maths.toInt32(outBBB.writePosition()));
-                busy |= tryWrite();
+            if (outBBB.writePosition() > outBB.limit() || outBBB.writePosition() >= 4) {
+                outBB.limit(Maths.toInt32(outBBB.writePosition()));
+                busy |= tryWrite(outBB);
                 break;
             }
         } while (lastInBBBReadPosition != inBBB.readPosition());
@@ -280,8 +293,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             inBB.compact();
             inBBB.readPosition(0);
             inBBB.readLimit(inBB.remaining());
-
-//            System.out.println("Compact " + inBBB.readPosition() + " rem " + inBBB.readRemaining() + " " + Wires.lengthOf(inBBB.readInt(inBBB.readPosition())));
 
             busy = true;
 
@@ -329,33 +340,29 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     @PackageLocal
     void closeSC() {
-        Closeable.closeQuietly(this.nc.networkStatsListener());
         Closeable.closeQuietly(tcpHandler);
+        Closeable.closeQuietly(this.nc.networkStatsListener());
         Closeable.closeQuietly(sc);
         Closeable.closeQuietly(nc);
     }
 
     @PackageLocal
-    boolean tryWrite() throws IOException {
-        if (outBBB.underlyingObject().remaining() <= 0)
+    boolean tryWrite(ByteBuffer outBB) throws IOException {
+        if (outBB.remaining() <= 0)
             return false;
-        int start = outBBB.underlyingObject().position();
-        long writeTickTime = Time.tickTime();
+        int start = outBB.position();
         long writeTime = System.nanoTime();
         assert !sc.isBlocking();
-        int wrote = sc.write(outBBB.underlyingObject());
-//        if (wrote > 200)
-//        System.out.println("w "+wrote);
+        int wrote = sc.write(outBB);
         tcpHandler.onWriteTime(writeTime);
 
-        writeLog.log(outBBB.underlyingObject(), start, outBBB.underlyingObject().position());
+        writeLog.log(outBB, start, outBB.position());
 
         if (wrote < 0) {
             closeSC();
         } else if (wrote > 0) {
-            // lastTickReadTime = writeTickTime;
-            outBBB.underlyingObject().compact().flip();
-            outBBB.writePosition(outBBB.underlyingObject().limit());
+            outBB.compact().flip();
+            outBBB.writePosition(outBB.limit());
             return true;
         }
         return false;
@@ -382,17 +389,17 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             try {
                 // get more data to write if the buffer was empty
                 // or we can write some of what is there
-                ByteBuffer byteBuffer = outBBB.underlyingObject();
-                int remaining = byteBuffer.remaining();
+                ByteBuffer outBB = outBBB.underlyingObject();
+                int remaining = outBB.remaining();
                 busy = remaining > 0;
                 if (busy)
-                    tryWrite();
+                    tryWrite(outBB);
 
                 // has the remaining changed, i.e. did it write anything?
-                if (byteBuffer.remaining() == remaining) {
+                if (outBB.remaining() == remaining) {
                     busy |= invokeHandler();
                     if (!busy)
-                        busy = tryWrite();
+                        busy = tryWrite(outBB);
                 }
             } catch (ClosedChannelException cce) {
                 closeSC();
@@ -404,8 +411,5 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             return busy;
         }
 
-        // public HandlerPriority priority() {
-        //   return HandlerPriority.CONCURRENT;
-        //}
     }
 }

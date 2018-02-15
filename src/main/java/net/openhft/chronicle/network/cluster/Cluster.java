@@ -17,10 +17,10 @@
 package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.annotation.Nullable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Map;
@@ -31,14 +31,13 @@ import java.util.stream.Collectors;
 /**
  * @author Rob Austin.
  */
-abstract public class Cluster<E extends HostDetails, C extends ClusterContext> implements Marshallable,
-        Closeable {
+abstract public class Cluster<E extends HostDetails, C extends ClusterContext> implements Marshallable, Closeable {
 
     @NotNull
-    private final Map<String, E> hostDetails;
+    public final Map<String, E> hostDetails;
     private final String clusterName;
 
-    @org.jetbrains.annotations.Nullable
+    @Nullable
     private C clusterContext;
 
     public Cluster(String clusterName) {
@@ -50,9 +49,14 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
         return clusterName;
     }
 
-    @org.jetbrains.annotations.Nullable
+    @Nullable
     public C clusterContext() {
-        return (C) clusterContext;
+        return clusterContext;
+    }
+
+    public void clusterContext(@NotNull C clusterContext) {
+        this.clusterContext = clusterContext;
+        clusterContext.clusterName(clusterName);
     }
 
     @Override
@@ -67,7 +71,8 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
             @NotNull final ValueIn valueIn = wire.readEventName(sb);
 
             if ("context".contentEquals(sb)) {
-                clusterContext = (C) valueIn.typedMarshallable();
+                clusterContext = valueIn.typedMarshallable();
+                assert clusterContext != null;
                 clusterContext.clusterName(clusterName);
                 continue;
             }
@@ -86,44 +91,42 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
 
     }
 
-    @org.jetbrains.annotations.Nullable
     @Nullable
-    public HostDetails findHostDetails(int id) {
+    public E findHostDetails(int id) {
 
-        for (@NotNull HostDetails hd : hostDetails.values()) {
+        for (@NotNull E hd : hostDetails.values()) {
             if (hd.hostId() == id)
                 return hd;
         }
         return null;
     }
 
-    @org.jetbrains.annotations.Nullable
-    public <H extends HostDetails, C extends ClusterContext> ConnectionStrategy
-    findConnectionStrategy(int remoteIdentifier) {
+    @Nullable
+    public ConnectionStrategy findConnectionStrategy(int remoteIdentifier) {
 
-        @org.jetbrains.annotations.Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
+        @Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.connectionStrategy();
     }
 
-    @org.jetbrains.annotations.Nullable
+    @Nullable
     public ConnectionManager findConnectionManager(int remoteIdentifier) {
-        @org.jetbrains.annotations.Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
+        @Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.connectionManager();
     }
 
-    @org.jetbrains.annotations.Nullable
+    @Nullable
     public TerminationEventHandler findTerminationEventHandler(int remoteIdentifier) {
-        @org.jetbrains.annotations.Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
+        @Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.terminationEventHandler();
 
     }
 
-    @org.jetbrains.annotations.Nullable
+    @Nullable
     public ConnectionChangedNotifier findClusterNotifier(int remoteIdentifier) {
-        @org.jetbrains.annotations.Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
+        @Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.clusterNotifier();
     }
@@ -149,15 +152,15 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
     }
 
     public void install() {
-        Set<Integer> hostIds = hostDetails.values().stream().map(hd -> hd.hostId()).collect(Collectors.toSet());
+        Set<Integer> hostIds = hostDetails.values().stream().map(HostDetails::hostId).collect(Collectors.toSet());
 
-        Integer local = (Integer) (int) clusterContext.localIdentifier();
+        int local = (int) clusterContext.localIdentifier();
         if (!hostIds.contains(local)) {
             Jvm.debug().on(getClass(), "cluster='" + clusterContext.clusterName() + "' ignored as localIdentifier=" + clusterContext.localIdentifier() + " is in this cluster");
             return;
         }
 
-        if (clusterContext != null && hostDetails != null && hostDetails.values() != null)
+        if (clusterContext != null)
             hostDetails.values().forEach(clusterContext::accept);
     }
 }
