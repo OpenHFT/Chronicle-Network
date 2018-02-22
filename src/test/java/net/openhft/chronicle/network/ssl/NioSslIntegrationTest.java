@@ -1,9 +1,11 @@
 package net.openhft.chronicle.network.ssl;
 
+import net.openhft.chronicle.core.io.Closeable;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -26,39 +28,45 @@ public final class NioSslIntegrationTest {
 
         final ServerSocketChannel serverChannel = ServerSocketChannel.open();
         serverChannel.bind(new InetSocketAddress("0.0.0.0", 13337));
+        serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         serverChannel.configureBlocking(true);
 
         final SocketChannel channel = SocketChannel.open();
         channel.configureBlocking(false);
         channel.connect(new InetSocketAddress("127.0.0.1", serverChannel.socket().getLocalPort()));
 
-        final Client client = new Client(channel);
+        try {
 
-        final StateMachineProcessor clientProcessor = new StateMachineProcessor(channel, false,
-                SSLContextLoader.getInitialisedContext(), client);
+            final Client client = new Client(channel);
 
-        final SocketChannel serverConnection = serverChannel.accept();
-        serverConnection.configureBlocking(false);
+            final StateMachineProcessor clientProcessor = new StateMachineProcessor(channel, false,
+                    SSLContextLoader.getInitialisedContext(), client);
 
-        final Server server = new Server(serverConnection);
-        final StateMachineProcessor serverProcessor = new StateMachineProcessor(serverConnection, true,
-                SSLContextLoader.getInitialisedContext(), server);
+            final SocketChannel serverConnection = serverChannel.accept();
+            serverConnection.configureBlocking(false);
 
-        while (!(channel.finishConnect() && serverConnection.finishConnect())) {
-            Thread.yield();
+            final Server server = new Server(serverConnection);
+            final StateMachineProcessor serverProcessor = new StateMachineProcessor(serverConnection, true,
+                    SSLContextLoader.getInitialisedContext(), server);
+
+            while (!(channel.finishConnect() && serverConnection.finishConnect())) {
+                Thread.yield();
+            }
+
+            if (SEND_DATA_BEFORE_SSL_HANDSHAKE) {
+                testDataConnection(channel, serverConnection);
+            }
+
+            threadPool.submit(clientProcessor);
+            threadPool.submit(serverProcessor);
+
+            client.waitForResponse(10, TimeUnit.SECONDS);
+            serverProcessor.stop();
+            clientProcessor.stop();
+        } finally {
+            Closeable.closeQuietly(channel, serverChannel);
         }
 
-        if (SEND_DATA_BEFORE_SSL_HANDSHAKE) {
-            testDataConnection(channel, serverConnection);
-        }
-
-        threadPool.submit(clientProcessor);
-        threadPool.submit(serverProcessor);
-
-        client.waitForResponse(10, TimeUnit.SECONDS);
-
-        serverProcessor.stop();
-        clientProcessor.stop();
         threadPool.shutdown();
         assertTrue(threadPool.awaitTermination(10, TimeUnit.SECONDS));
     }
