@@ -15,6 +15,7 @@ import net.openhft.chronicle.threads.Pauser;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -47,6 +48,7 @@ import static org.junit.Assert.assertTrue;
  * }
  *
  */
+@Ignore
 @RunWith(Parameterized.class)
 public final class NonClusteredSslIntegrationTest {
 
@@ -106,7 +108,7 @@ public final class NonClusteredSslIntegrationTest {
         }
     }
 
-    @Test
+    @Test(timeout = 30_000L)
     public void shouldCommunicate() throws Exception {
 
         switch (mode) {
