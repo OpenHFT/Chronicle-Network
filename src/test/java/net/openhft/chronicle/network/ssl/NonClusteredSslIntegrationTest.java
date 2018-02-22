@@ -107,7 +107,7 @@ public final class NonClusteredSslIntegrationTest {
         }
     }
 
-    @Test(timeout = 25_000L)
+    @Test(timeout = 40_000L)
     public void shouldCommunicate() throws Exception {
 
         switch (mode) {
@@ -141,7 +141,8 @@ public final class NonClusteredSslIntegrationTest {
     }
 
     private static void waitForLatch(final CountingTcpHandler handler) throws InterruptedException {
-        assertTrue(handler.label, handler.latch.await(15, TimeUnit.SECONDS));
+        assertTrue("Handler for " + handler.label + " did not startup within timeout",
+                handler.latch.await(25, TimeUnit.SECONDS));
     }
 
     private void assertThatServerConnectsToClient() throws InterruptedException {
@@ -181,7 +182,7 @@ public final class NonClusteredSslIntegrationTest {
 
         @Override
         public void process(@NotNull final Bytes in, @NotNull final Bytes out, final StubNetworkContext nc) {
-
+            latch.countDown();
             try {
                 if (nc.isAcceptor() && in.readRemaining() != 0) {
                     final long received = in.readLong();
@@ -216,7 +217,6 @@ public final class NonClusteredSslIntegrationTest {
                 System.err.printf("Exception in %s: %s/%s%n", label, e.getClass().getSimpleName(), e.getMessage());
                 e.printStackTrace();
             }
-            latch.countDown();
         }
     }
 
