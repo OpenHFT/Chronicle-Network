@@ -4,10 +4,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-public abstract class AbstractSocketBufferHandler implements BufferHandler {
+abstract class AbstractSocketBufferHandler implements BufferHandler {
     private final SocketChannel channel;
 
-    protected AbstractSocketBufferHandler(final SocketChannel socketChannel) {
+    AbstractSocketBufferHandler(final SocketChannel socketChannel) {
         this.channel = socketChannel;
     }
 

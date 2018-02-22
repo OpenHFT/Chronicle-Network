@@ -110,7 +110,7 @@ final class Handshaker {
                             LOGGER.debug("Ran task {}", delegatedTask);
                         }
                         catch (RuntimeException e) {
-                            LOGGER.error("Delegated tasks threw exception", e);
+                            LOGGER.error("Delegated task threw exception", e);
                         }
                     }
                     break;
