@@ -4,9 +4,18 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.api.TcpHandler;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
+/**
+ * This class handles the bridge between two sets of buffers:
+ *  - socket-side data - encrypted, handled by <code>readData</code>, <code>writeData</code>
+ *  - application-side data - decrypted, handled by <code>handleDecryptedData</code>
+ *
+ * The delegate {@see TcpHandler} will be invoked with decrypted input data, and its
+ * output will be encrypted read for transmission over a socket.
+ *
+ * @param <N> the type of {@see NetworkContext}
+ */
 public final class BytesBufferHandler<N extends NetworkContext> implements BufferHandler {
     private static final Bytes<ByteBuffer> EMPTY_APPLICATION_INPUT = Bytes.wrapForRead(ByteBuffer.allocate(0));
     private TcpHandler<N> delegateHandler;
@@ -25,8 +34,11 @@ public final class BytesBufferHandler<N extends NetworkContext> implements Buffe
         this.networkContext = networkContext;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int readData(final ByteBuffer target) throws IOException {
+    public int readData(final ByteBuffer target) {
         final int toRead = Math.min(target.remaining(), (int) input.readRemaining());
         for (int i = 0; i < toRead; i++) {
             target.put(input.readByte());
@@ -34,6 +46,9 @@ public final class BytesBufferHandler<N extends NetworkContext> implements Buffe
         return toRead;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void handleDecryptedData(final ByteBuffer input, final ByteBuffer output) {
         final Bytes<ByteBuffer> applicationInput;
@@ -54,8 +69,11 @@ public final class BytesBufferHandler<N extends NetworkContext> implements Buffe
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public int writeData(final ByteBuffer encrypted) throws IOException {
+    public int writeData(final ByteBuffer encrypted) {
         if (output.readPosition() != 0) {
             output.compact();
         }
