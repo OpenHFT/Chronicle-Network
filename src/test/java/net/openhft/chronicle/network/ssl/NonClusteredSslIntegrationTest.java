@@ -14,8 +14,8 @@ import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.threads.Pauser;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -49,7 +49,6 @@ import static org.junit.Assert.assertTrue;
  * }
  *
  */
-@Ignore("wip")
 @RunWith(Parameterized.class)
 public final class NonClusteredSslIntegrationTest {
 
@@ -78,8 +77,6 @@ public final class NonClusteredSslIntegrationTest {
     public void setUp() throws Exception {
         TCPRegistry.reset();
         TCPRegistry.createServerSocketChannelFor("client", "server");
-        client.start();
-        server.start();
 
         client.addHandler(new AcceptorEventHandler("client", nc -> {
             final TcpEventHandler eventHandler = new TcpEventHandler(nc);
@@ -93,25 +90,15 @@ public final class NonClusteredSslIntegrationTest {
             return eventHandler;
         }, StubNetworkContext::new));
 
-        if (mode == Mode.CLIENT_TO_SERVER || mode == Mode.BI_DIRECTIONAL) {
-            new RemoteConnector(nc -> {
-                final TcpEventHandler eventHandler = new TcpEventHandler(nc);
-                eventHandler.tcpHandler(getTcpHandler(clientInitiator));
-                return eventHandler;
-            }).connect("server", client, new StubNetworkContext(), 1000L);
-        }
 
-        if (mode == Mode.SERVER_TO_CLIENT || mode == Mode.BI_DIRECTIONAL) {
-            new RemoteConnector(nc -> {
-                final TcpEventHandler eventHandler = new TcpEventHandler(nc);
-                eventHandler.tcpHandler(getTcpHandler(serverInitiator));
-                return eventHandler;
-            }).connect("client", server, new StubNetworkContext(), 1000L);
-        }
     }
 
     @Test(timeout = 40_000L)
     public void shouldCommunicate() throws Exception {
+        Assume.assumeFalse("BI_DIRECTIONAL mode sometimes hangs during handshake", mode == Mode.BI_DIRECTIONAL);
+        client.start();
+        server.start();
+        doConnect();
 
         switch (mode) {
             case CLIENT_TO_SERVER:
@@ -136,6 +123,24 @@ public final class NonClusteredSslIntegrationTest {
         server.stop();
         TCPRegistry.reset();
         TCPRegistry.assertAllServersStopped();
+    }
+
+    private void doConnect() {
+        if (mode == Mode.CLIENT_TO_SERVER || mode == Mode.BI_DIRECTIONAL) {
+            new RemoteConnector(nc -> {
+                final TcpEventHandler eventHandler = new TcpEventHandler(nc);
+                eventHandler.tcpHandler(getTcpHandler(clientInitiator));
+                return eventHandler;
+            }).connect("server", client, new StubNetworkContext(), 1000L);
+        }
+
+        if (mode == Mode.SERVER_TO_CLIENT || mode == Mode.BI_DIRECTIONAL) {
+            new RemoteConnector(nc -> {
+                final TcpEventHandler eventHandler = new TcpEventHandler(nc);
+                eventHandler.tcpHandler(getTcpHandler(serverInitiator));
+                return eventHandler;
+            }).connect("client", server, new StubNetworkContext(), 1000L);
+        }
     }
 
     @NotNull
