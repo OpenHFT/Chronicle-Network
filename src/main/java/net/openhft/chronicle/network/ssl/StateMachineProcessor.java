@@ -1,11 +1,15 @@
 package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.threads.Pauser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLContext;
 import java.nio.channels.SocketChannel;
 
 public final class StateMachineProcessor implements Runnable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StateMachineProcessor.class);
+
     private final SSLContext context;
     private final SslEngineStateMachine stateMachine;
     private final Pauser pauser = Pauser.balanced();
@@ -26,14 +30,13 @@ public final class StateMachineProcessor implements Runnable {
 
             while (!Thread.currentThread().isInterrupted() && running) {
                 while (running && stateMachine.action()) {
-                    // process loop
                     pauser.reset();
                 }
                 pauser.pause();
             }
 
         } catch (Throwable e) {
-            e.printStackTrace();
+            LOGGER.error("Exception caught while processing SSL state machine. Exiting.", e);
         }
     }
 

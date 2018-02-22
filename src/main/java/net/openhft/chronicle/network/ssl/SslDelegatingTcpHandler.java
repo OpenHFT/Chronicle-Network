@@ -7,14 +7,17 @@ import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class SslDelegatingTcpHandler<N extends SslNetworkContext>
         implements TcpHandler<N>, NetworkContextManager<N> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SslDelegatingTcpHandler.class);
+
     private final TcpHandler<N> delegate;
     private final BytesBufferHandler<N> bufferHandler = new BytesBufferHandler<>();
     private SslEngineStateMachine stateMachine;
     private boolean handshakeComplete;
-    private boolean readyToHandshake = false;
 
     SslDelegatingTcpHandler(final TcpHandler<N> delegate) {
         this.delegate = delegate;
@@ -22,16 +25,11 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext>
 
     @Override
     public void process(@NotNull final Bytes in, @NotNull final Bytes out, final N nc) {
-//        if (!readyToHandshake) {
-//            delegate.process(in, out, nc);
-//        }
-
-
         if (!handshakeComplete) {
             try {
                 doHandshake(nc);
             } catch (Throwable t) {
-                t.printStackTrace();
+                LOGGER.error("Failed to complete SSL handshake", t);
                 throw new IllegalStateException("Unable to perform handshake", t);
             }
             handshakeComplete = true;
