@@ -141,7 +141,7 @@ public final class NonClusteredSslIntegrationTest {
     }
 
     private static void waitForLatch(final CountingTcpHandler handler) throws InterruptedException {
-        assertTrue(handler.label, handler.latch.await(5, TimeUnit.SECONDS));
+        assertTrue(handler.label, handler.latch.await(15, TimeUnit.SECONDS));
     }
 
     private void assertThatServerConnectsToClient() throws InterruptedException {
