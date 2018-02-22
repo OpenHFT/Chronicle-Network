@@ -10,6 +10,21 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This class is designed to wrap a standard {@see TcpHandler}, providing
+ * symmetric encryption/decryption transparently to the underlying handler.
+ *
+ * When <code>process</code> is called by the {@see TcpEventHandler},
+ * this class will first attempt to perform an SSL handshake with the remote
+ * connection. This is a blocking operation, and the <code>process</code>
+ * call will not return until the handshake is successful, or fails.
+ *
+ * Further operation is delegated to the {@see SslEngineStateMachine} class,
+ * which manages the conversion of data between plain-text and cipher-text
+ * either end of the network connection.
+ *
+ * @param <N> the type of NetworkContext
+ */
 public final class SslDelegatingTcpHandler<N extends SslNetworkContext>
         implements TcpHandler<N>, NetworkContextManager<N> {
     private static final Logger LOGGER = LoggerFactory.getLogger(SslDelegatingTcpHandler.class);
