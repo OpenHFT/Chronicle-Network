@@ -4,4 +4,3 @@ net.openhft.chronicle.network.api.session
 net.openhft.chronicle.network.cluster
 net.openhft.chronicle.network.cluster.handlers
 net.openhft.chronicle.network.connection
-net.openhft.chronicle.network.ssl
