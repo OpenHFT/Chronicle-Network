@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 import javax.net.ssl.SSLContext;
 import java.nio.channels.SocketChannel;
 
-public final class StateMachineProcessor implements Runnable {
+final class StateMachineProcessor implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(StateMachineProcessor.class);
 
     private final SSLContext context;
@@ -16,7 +16,7 @@ public final class StateMachineProcessor implements Runnable {
     private final SocketChannel channel;
     private volatile boolean running = true;
 
-    public StateMachineProcessor(final SocketChannel channel, final boolean isAcceptor,
+    StateMachineProcessor(final SocketChannel channel, final boolean isAcceptor,
                                  final SSLContext context, final BufferHandler bufferHandler) {
         this.context = context;
         this.channel = channel;
