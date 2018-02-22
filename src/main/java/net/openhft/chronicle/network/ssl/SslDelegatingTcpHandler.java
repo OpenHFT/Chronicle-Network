@@ -34,10 +34,13 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext>
     private SslEngineStateMachine stateMachine;
     private boolean handshakeComplete;
 
-    SslDelegatingTcpHandler(final TcpHandler<N> delegate) {
+    public SslDelegatingTcpHandler(final TcpHandler<N> delegate) {
         this.delegate = delegate;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void process(@NotNull final Bytes in, @NotNull final Bytes out, final N nc) {
         if (!handshakeComplete) {
@@ -54,21 +57,25 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext>
         stateMachine.action();
     }
 
-    private void doHandshake(final N nc) {
-        stateMachine = new SslEngineStateMachine(bufferHandler, nc.isAcceptor());
-        stateMachine.initialise(nc.sslContext(), nc.socketChannel());
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void sendHeartBeat(final Bytes out, final SessionDetailsProvider sessionDetails) {
         delegate.sendHeartBeat(out, sessionDetails);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void onEndOfConnection(final boolean heartbeatTimeOut) {
         delegate.onEndOfConnection(heartbeatTimeOut);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void close() {
         if (stateMachine != null) {
@@ -77,53 +84,74 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext>
         delegate.close();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void onReadTime(final long readTimeNS) {
         delegate.onReadTime(readTimeNS);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void onWriteTime(final long writeTimeNS) {
         delegate.onWriteTime(writeTimeNS);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void onReadComplete() {
         delegate.onReadComplete();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean hasClientClosed() {
         return delegate.hasClientClosed();
     }
 
-    public static void closeQuietly(@NotNull final Object... closables) {
-        Closeable.closeQuietly(closables);
-    }
-
-    public static void closeQuietly(@Nullable final Object o) {
-        Closeable.closeQuietly(o);
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void notifyClosing() {
         delegate.notifyClosing();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isClosed() {
         return delegate.isClosed();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public N nc() {
         return (delegate instanceof NetworkContextManager) ? ((NetworkContextManager<N>) delegate).nc() : null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void nc(final N nc) {
         if (delegate instanceof NetworkContextManager) {
             ((NetworkContextManager<N>) delegate).nc(nc);
         }
+    }
+
+    private void doHandshake(final N nc) {
+        stateMachine = new SslEngineStateMachine(bufferHandler, nc.isAcceptor());
+        stateMachine.initialise(nc.sslContext(), nc.socketChannel());
     }
 }
