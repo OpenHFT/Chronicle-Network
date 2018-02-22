@@ -10,6 +10,8 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
+
 /**
  * This class is designed to wrap a standard {@see TcpHandler}, providing
  * symmetric encryption/decryption transparently to the underlying handler.
@@ -47,7 +49,7 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext>
             try {
                 doHandshake(nc);
             } catch (Throwable t) {
-                LOGGER.error("Failed to complete SSL handshake", t);
+                LOGGER.error("Failed to complete SSL handshake at " + Instant.now(), t);
                 throw new IllegalStateException("Unable to perform handshake", t);
             }
             handshakeComplete = true;

@@ -28,6 +28,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -141,7 +142,7 @@ public final class NonClusteredSslIntegrationTest {
     }
 
     private static void waitForLatch(final CountingTcpHandler handler) throws InterruptedException {
-        assertTrue("Handler for " + handler.label + " did not startup within timeout",
+        assertTrue("Handler for " + handler.label + " did not startup within timeout at " + Instant.now(),
                 handler.latch.await(25, TimeUnit.SECONDS));
     }
 

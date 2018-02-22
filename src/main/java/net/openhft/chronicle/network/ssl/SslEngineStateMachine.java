@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.time.Instant;
 
 /**
  * This class is responsible for the following:
@@ -59,7 +60,7 @@ final class SslEngineStateMachine {
 
             new Handshaker().performHandshake(engine, channel);
         } catch (IOException e) {
-            throw new RuntimeException("Unable to perform handshake", e);
+            throw new RuntimeException("Unable to perform handshake at " + Instant.now(), e);
         }
     }
 
