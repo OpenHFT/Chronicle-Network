@@ -107,7 +107,7 @@ public final class NonClusteredSslIntegrationTest {
         }
     }
 
-    @Test(timeout = 10_000L)
+    @Test(timeout = 25_000L)
     public void shouldCommunicate() throws Exception {
 
         switch (mode) {
