@@ -15,7 +15,6 @@ import net.openhft.chronicle.threads.Pauser;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -48,10 +47,10 @@ import static org.junit.Assert.assertTrue;
  * }
  *
  */
-@Ignore
 @RunWith(Parameterized.class)
 public final class NonClusteredSslIntegrationTest {
 
+    private static final boolean DEBUG = Boolean.getBoolean("NonClusteredSslIntegrationTest.debug");
     private final EventGroup client = new EventGroup(true, Pauser.millis(1), false, "client");
     private final EventGroup server = new EventGroup(true, Pauser.millis(1), false, "server");
     private final CountingTcpHandler clientAcceptor = new CountingTcpHandler("client-acceptor");
@@ -108,7 +107,7 @@ public final class NonClusteredSslIntegrationTest {
         }
     }
 
-    @Test(timeout = 30_000L)
+    @Test(timeout = 10_000L)
     public void shouldCommunicate() throws Exception {
 
         switch (mode) {
@@ -183,24 +182,40 @@ public final class NonClusteredSslIntegrationTest {
         @Override
         public void process(@NotNull final Bytes in, @NotNull final Bytes out, final StubNetworkContext nc) {
 
-            if (nc.isAcceptor() && in.readRemaining() != 0) {
-                final long received = in.readLong();
-                final int len = in.readInt();
-                final byte[] tmp = new byte[len];
-                in.read(tmp);
-                operationCount++;
-            } else
-                if (!nc.isAcceptor()) {
-                    if (System.currentTimeMillis() > lastSent + 100L) {
-                        out.writeLong((counter++));
-                        final String payload = "ping-" + (counter - 1);
-                        out.writeInt(payload.length());
-                        out.write(payload.getBytes(StandardCharsets.US_ASCII));
-                        operationCount++;
-                        lastSent = System.currentTimeMillis();
+            try {
+                if (nc.isAcceptor() && in.readRemaining() != 0) {
+                    final long received = in.readLong();
+                    final int len = in.readInt();
+                    final byte[] tmp = new byte[len];
+                    in.read(tmp);
+                    if (DEBUG) {
+                        if (len > 10) {
+                            System.out.printf("%s received payload of length %d%n", label, len);
+                            System.out.println(in);
+                        } else {
+                            System.out.printf("%s received [%d] %d/%s%n", label, tmp.length, received, new String(tmp, StandardCharsets.US_ASCII));
+                        }
                     }
-                }
+                    operationCount++;
+                } else
+                    if (!nc.isAcceptor()) {
+                        if (System.currentTimeMillis() > lastSent + 100L) {
+                            out.writeLong((counter++));
+                            final String payload = "ping-" + (counter - 1);
+                            out.writeInt(payload.length());
+                            out.write(payload.getBytes(StandardCharsets.US_ASCII));
+                            if (DEBUG) {
+                                System.out.printf("%s sent [%d] %d/%s%n", label, payload.length(), counter - 1, payload);
+                            }
+                            operationCount++;
+                            lastSent = System.currentTimeMillis();
+                        }
+                    }
 
+            } catch (RuntimeException e) {
+                System.err.printf("Exception in %s: %s/%s%n", label, e.getClass().getSimpleName(), e.getMessage());
+                e.printStackTrace();
+            }
             latch.countDown();
         }
     }

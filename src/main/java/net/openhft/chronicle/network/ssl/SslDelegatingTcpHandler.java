@@ -22,9 +22,9 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext>
 
     @Override
     public void process(@NotNull final Bytes in, @NotNull final Bytes out, final N nc) {
-        if (!readyToHandshake) {
-            delegate.process(in, out, nc);
-        }
+//        if (!readyToHandshake) {
+//            delegate.process(in, out, nc);
+//        }
 
 
         if (!handshakeComplete) {

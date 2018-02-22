@@ -78,6 +78,7 @@ public final class NioSslIntegrationTest {
         message.flip();
         assertThat(new String(message.array()), is("test message"));
     }
+
     private static final class Client extends AbstractSocketBufferHandler {
 
         private final CountDownLatch latch = new CountDownLatch(1);
@@ -102,8 +103,6 @@ public final class NioSslIntegrationTest {
                 if (responseCount++ == 5) {
                     latch.countDown();
                 }
-
-                System.out.println(response);
             }
             output.put(("hello " + (counter++)).getBytes(StandardCharsets.US_ASCII));
         }
