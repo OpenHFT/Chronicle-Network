@@ -1328,7 +1328,7 @@ public class TcpChannelHub implements Closeable {
                                     final boolean isReady,
                                     final int header,
                                     final int messageSize,
-                                    @NotNull Wire inWire) throws IOException, InterruptedException {
+                                    @NotNull Wire inWire) throws IOException {
             assert tid != -1;
             boolean isLastMessageForThisTid = false;
             long startTime = 0;
@@ -1676,7 +1676,7 @@ public class TcpChannelHub implements Closeable {
             return true;
         }
 
-        private void checkConnectionState() throws IOException {
+        private void checkConnectionState() {
             if (clientChannel != null)
                 return;
 

@@ -46,6 +46,7 @@ import java.nio.channels.ClosedChannelException;
 public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandlerManager {
 
     public static final int TCP_BUFFER = TcpChannelHub.TCP_BUFFER;
+    private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
     @NotNull
     private final ISocketChannel sc;
@@ -71,6 +72,11 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     private volatile boolean closed;
     private final boolean fair;
+    // monitoring
+    private int socketPollCount;
+    private long bytesReadCount;
+    private long bytesWriteCount;
+    private long lastMonitor;
 
     public TcpEventHandler(@NotNull NetworkContext nc) {
         this(nc, false);
@@ -174,6 +180,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             throw new InvalidEventHandlerException("socket is closed");
         }
 
+        socketPollCount++;
+
         boolean busy = false;
         if (fair || oneInTen++ >= 8) {
             oneInTen = 0;
@@ -202,6 +210,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                     if (invokeHandler())
                         return true;
                 }
+                if (!busy)
+                    monitorStats();
                 return busy;
             }
 
@@ -244,6 +254,26 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         return busy;
     }
 
+    private void monitorStats() {
+        // TODO: consider installing this on EventLoop using Timer
+        long now = System.currentTimeMillis();
+        if (now > lastMonitor + (MONITOR_POLL_EVERY_SEC * 1000)) {
+            final NetworkStatsListener networkStatsListener = nc.networkStatsListener();
+            if (networkStatsListener != null) {
+                if (lastMonitor == 0) {
+                    networkStatsListener.onNetworkStats(0, 0, 0);
+                } else {
+                    networkStatsListener.onNetworkStats(
+                            bytesWriteCount / MONITOR_POLL_EVERY_SEC,
+                            bytesReadCount / MONITOR_POLL_EVERY_SEC,
+                            socketPollCount / MONITOR_POLL_EVERY_SEC);
+                    bytesWriteCount = bytesReadCount = socketPollCount = 0;
+                }
+            }
+            lastMonitor = now;
+        }
+    }
+
     private synchronized void clean() {
 
         if (isCleaned)
@@ -269,6 +299,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         do {
             lastInBBBReadPosition = inBBB.readPosition();
             tcpHandler.process(inBBB, outBBB, nc);
+            bytesReadCount += (inBBB.readPosition() - lastInBBBReadPosition);
 
             // process method might change the underlying ByteBuffer by resizing it.
             ByteBuffer outBB = outBBB.underlyingObject();
@@ -297,7 +328,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             busy = true;
 
         } else if (inBBB.readPosition() > 0) {
-            System.out.println("pos " + inBBB.readPosition());
+            Jvm.debug().on(getClass(), "pos " + inBBB.readPosition());
         }
 
         return busy;
@@ -356,6 +387,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         int wrote = sc.write(outBB);
         tcpHandler.onWriteTime(writeTime);
 
+        bytesWriteCount += (outBB.position() - start);
         writeLog.log(outBB, start, outBB.position());
 
         if (wrote < 0) {

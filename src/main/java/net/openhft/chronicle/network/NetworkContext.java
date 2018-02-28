@@ -98,6 +98,7 @@ public interface NetworkContext<T extends NetworkContext> extends Closeable {
 
     void networkStatsListener(NetworkStatsListener NetworkStatsListener);
 
+    @Nullable
     NetworkStatsListener networkStatsListener();
 
     void serverThreadingStrategy(ServerThreadingStrategy singleThreaded);
