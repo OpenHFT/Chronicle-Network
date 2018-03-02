@@ -24,7 +24,6 @@ import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -86,7 +85,7 @@ public abstract class ClusterContext implements Demarshallable, WriteMarshallabl
     @NotNull
     protected WireParser<Void> wireParser() {
         @NotNull WireParser<Void> parser = new VanillaWireParser<>((s, v, $) -> {
-        });
+        }, null);
         parser.register(() -> "wireType", (s, v, $) -> v.text(this, (o, x) -> this.wireType(WireType.valueOf(x))));
         parser.register(() -> "handlerFactory", (s, v, $) -> this.handlerFactory(v.typedMarshallable()));
         parser.register(() -> "heartbeatTimeoutMs", (s, v, $) -> this.heartbeatTimeoutMs(v.int64()));
