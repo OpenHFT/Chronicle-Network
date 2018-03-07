@@ -114,7 +114,10 @@ public enum TCPRegistry {
             return ssc;
         InetSocketAddress address = lookup(description);
         ssc = ServerSocketChannel.open();
-        ssc.socket().setReuseAddress(false);
+
+        // PLEASE DON'T CHANGE THIS TO FALSE AS IT CAUSES RESTART ISSUES ON TCP/IP TIMED_WAIT
+        ssc.socket().setReuseAddress(true);
+
         ssc.bind(address);
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.put(description, ssc);
         return ssc;
