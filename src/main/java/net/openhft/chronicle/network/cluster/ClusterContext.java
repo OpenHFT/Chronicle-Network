@@ -86,7 +86,7 @@ public abstract class ClusterContext implements Demarshallable, WriteMarshallabl
     @NotNull
     protected WireParser<Void> wireParser() {
         @NotNull VanillaWireParser parser = new VanillaWireParser<>((s, v, $) -> {
-        }, WireParser.NO_OP);
+        }, WireParser.SKIP_READABLE_BYTES);
         parser.register(() -> "wireType", (s, v, $) -> v.text(this, (o, x) -> this.wireType(WireType.valueOf(x))));
         parser.register(() -> "handlerFactory", (s, v, $) -> this.handlerFactory(v.typedMarshallable()));
         parser.register(() -> "heartbeatTimeoutMs", (s, v, $) -> this.heartbeatTimeoutMs(v.int64()));
