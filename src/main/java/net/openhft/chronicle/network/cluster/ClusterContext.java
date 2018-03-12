@@ -22,6 +22,7 @@ import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.cluster.handlers.UberHandler;
+import net.openhft.chronicle.network.cluster.handlers.UberHandler.Factory;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
@@ -40,7 +41,7 @@ public abstract class ClusterContext implements Demarshallable, WriteMarshallabl
 
     private ConnectionStrategy connectionStrategy;
     private WireType wireType;
-    private UberHandler.Factory handlerFactory;
+    private Factory handlerFactory;
     private Function<WireType, WireOutPublisher> wireOutPublisherFactory;
     private Function<ClusterContext, NetworkContext> networkContextFactory;
     private Supplier<ConnectionManager> connectionEventHandler;
@@ -279,6 +280,10 @@ public abstract class ClusterContext implements Demarshallable, WriteMarshallabl
         result.add(handler.apply(this, hd, config));
         result.add(heartbeat.apply(this));
         return result;
+    }
+
+    public Marshallable config() {
+        return config;
     }
 }
 

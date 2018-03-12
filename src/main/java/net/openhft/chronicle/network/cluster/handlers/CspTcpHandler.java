@@ -88,7 +88,7 @@ public abstract class CspTcpHandler<T extends NetworkContext> extends WireTcpHan
                         registerable.registry(registry);
                     }
 
-                    if (handler instanceof Configurable)
+                    if (config != null && handler instanceof Configurable)
                         ((Configurable) handler).configurable(config);
 
                 } catch (Exception e) {

@@ -44,8 +44,7 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
     private UberHandler(int localIdentifier,
                         int remoteIdentifier,
                         @NotNull WireType wireType,
-                        @NotNull String clusterName,
-                        @Nullable Marshallable config) {
+                        @NotNull String clusterName) {
 
         this.localIdentifier = localIdentifier;
         this.remoteIdentifier = remoteIdentifier;
@@ -110,6 +109,10 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
 
             final Cluster engineCluster = nc.getCluster(clusterName);
 
+            ClusterContext clusterContext = engineCluster.clusterContext();
+            if (clusterContext != null)
+                config = clusterContext.config();
+
             // note : we have to publish the uber handler, even if we send a termination event
             // this is so the termination event can be processed by the receiver
             if (nc().isAcceptor()) {
@@ -133,7 +136,6 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
     }
 
     private boolean checkIdentifierEqualsHostId() {
-
         return localIdentifier == nc().getLocalHostIdentifier() || 0 == nc().getLocalHostIdentifier();
     }
 
@@ -154,8 +156,7 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
                 localIdentifier,
                 remoteIdentifier,
                 wireType(),
-                clusterName,
-                config);
+                clusterName);
 
         return uberHandler(handler);
     }
@@ -280,7 +281,7 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
             final WireType wireType = clusterContext.wireType();
             final String name = clusterContext.clusterName();
             return uberHandler(new UberHandler(localIdentifier, remoteIdentifier,
-                    wireType, name, config));
+                    wireType, name));
         }
     }
 
