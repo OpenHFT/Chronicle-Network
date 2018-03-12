@@ -14,7 +14,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiFunction;
 
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -45,10 +44,12 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
     private UberHandler(int localIdentifier,
                         int remoteIdentifier,
                         @NotNull WireType wireType,
-                        @NotNull String clusterName) {
+                        @NotNull String clusterName,
+                        @Nullable Marshallable config) {
 
         this.localIdentifier = localIdentifier;
         this.remoteIdentifier = remoteIdentifier;
+        this.config = config;
 
         assert remoteIdentifier != localIdentifier :
                 "remoteIdentifier=" + remoteIdentifier + ", " +
@@ -153,7 +154,9 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
                 localIdentifier,
                 remoteIdentifier,
                 wireType(),
-                clusterName);
+                clusterName,
+                config);
+
         return uberHandler(handler);
     }
 
@@ -259,8 +262,7 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
             heartbeatEventHandler.onMessageReceived();
     }
 
-    public static class Factory implements BiFunction<ClusterContext, HostDetails,
-            WriteMarshallable>, Demarshallable {
+    public static class Factory implements Demarshallable {
 
         @UsedViaReflection
         private Factory(@NotNull WireIn wireIn) {
@@ -270,14 +272,15 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
         }
 
         @NotNull
-        @Override
         public WriteMarshallable apply(@NotNull final ClusterContext clusterContext,
-                                       @NotNull final HostDetails hostdetails) {
+                                       @NotNull final HostDetails hostdetails,
+                                       @NotNull final Marshallable config) {
             final byte localIdentifier = clusterContext.localIdentifier();
             final int remoteIdentifier = hostdetails.hostId();
             final WireType wireType = clusterContext.wireType();
             final String name = clusterContext.clusterName();
-            return uberHandler(new UberHandler(localIdentifier, remoteIdentifier, wireType, name));
+            return uberHandler(new UberHandler(localIdentifier, remoteIdentifier,
+                    wireType, name, config));
         }
     }
 
