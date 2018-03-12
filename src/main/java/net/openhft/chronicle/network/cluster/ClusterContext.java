@@ -277,7 +277,7 @@ public abstract class ClusterContext implements Demarshallable, WriteMarshallabl
         final Function<ClusterContext, WriteMarshallable> heartbeat = this.heartbeatFactory();
 
         @NotNull ArrayList<WriteMarshallable> result = new ArrayList<>();
-        result.add(handler.apply(this, hd, config));
+        result.add(handler.apply(this, hd));
         result.add(heartbeat.apply(this));
         return result;
     }

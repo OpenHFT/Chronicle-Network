@@ -14,6 +14,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
 
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -263,7 +264,8 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
             heartbeatEventHandler.onMessageReceived();
     }
 
-    public static class Factory implements Demarshallable {
+    public static class Factory implements BiFunction<ClusterContext, HostDetails,
+            WriteMarshallable>, Demarshallable {
 
         @UsedViaReflection
         private Factory(@NotNull WireIn wireIn) {
@@ -274,14 +276,15 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
 
         @NotNull
         public WriteMarshallable apply(@NotNull final ClusterContext clusterContext,
-                                       @NotNull final HostDetails hostdetails,
-                                       @NotNull final Marshallable config) {
+                                       @NotNull final HostDetails hostdetails) {
             final byte localIdentifier = clusterContext.localIdentifier();
             final int remoteIdentifier = hostdetails.hostId();
             final WireType wireType = clusterContext.wireType();
             final String name = clusterContext.clusterName();
-            return uberHandler(new UberHandler(localIdentifier, remoteIdentifier,
-                    wireType, name));
+            return uberHandler(new UberHandler(localIdentifier,
+                    remoteIdentifier,
+                    wireType,
+                    name));
         }
     }
 
