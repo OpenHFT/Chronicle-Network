@@ -21,6 +21,8 @@ import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.*;
+import net.openhft.chronicle.network.cluster.handlers.UberHandler;
+import net.openhft.chronicle.network.cluster.handlers.UberHandler.Factory;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
@@ -28,7 +30,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -40,12 +41,13 @@ public abstract class ClusterContext implements Demarshallable, WriteMarshallabl
 
     private ConnectionStrategy connectionStrategy;
     private WireType wireType;
-    private BiFunction<ClusterContext, HostDetails, WriteMarshallable> handlerFactory;
+    private Factory handlerFactory;
     private Function<WireType, WireOutPublisher> wireOutPublisherFactory;
     private Function<ClusterContext, NetworkContext> networkContextFactory;
     private Supplier<ConnectionManager> connectionEventHandler;
     private long heartbeatTimeoutMs = 40_000;
     private long heartbeatIntervalMs = 20_000;
+    private Marshallable config;
     private String clusterName;
     private EventLoop eventLoop;
     private Function<ClusterContext, WriteMarshallable> heartbeatFactory;
@@ -85,7 +87,7 @@ public abstract class ClusterContext implements Demarshallable, WriteMarshallabl
     @NotNull
     protected WireParser<Void> wireParser() {
         @NotNull VanillaWireParser parser = new VanillaWireParser<>((s, v, $) -> {
-        }, WireParser.NO_OP);
+        }, WireParser.SKIP_READABLE_BYTES);
         parser.register(() -> "wireType", (s, v, $) -> v.text(this, (o, x) -> this.wireType(WireType.valueOf(x))));
         parser.register(() -> "handlerFactory", (s, v, $) -> this.handlerFactory(v.typedMarshallable()));
         parser.register(() -> "heartbeatTimeoutMs", (s, v, $) -> this.heartbeatTimeoutMs(v.int64()));
@@ -104,7 +106,14 @@ public abstract class ClusterContext implements Demarshallable, WriteMarshallabl
                 (s, v, $) -> this.networkStatsListenerFactory(v.typedMarshallable()));
         parser.register(() -> "serverThreadingStrategy",
                 (s, v, $) -> this.serverThreadingStrategy(v.asEnum(ServerThreadingStrategy.class)));
+        parser.register(() -> "config",
+                (s, v, $) -> this.config(v.typedMarshallable()));
         return parser;
+    }
+
+    public ClusterContext config(final Marshallable config) {
+        this.config = config;
+        return this;
     }
 
     public void serverThreadingStrategy(ServerThreadingStrategy serverThreadingStrategy) {
@@ -115,11 +124,11 @@ public abstract class ClusterContext implements Demarshallable, WriteMarshallabl
         return serverThreadingStrategy;
     }
 
-    private BiFunction<ClusterContext, HostDetails, WriteMarshallable> handlerFactory() {
+    private UberHandler.Factory handlerFactory() {
         return handlerFactory;
     }
 
-    public void handlerFactory(BiFunction<ClusterContext, HostDetails, WriteMarshallable> handlerFactory) {
+    public void handlerFactory(UberHandler.Factory handlerFactory) {
         this.handlerFactory = handlerFactory;
     }
 
@@ -264,14 +273,17 @@ public abstract class ClusterContext implements Demarshallable, WriteMarshallabl
 
     @NotNull
     private List<WriteMarshallable> bootstraps(HostDetails hd) {
-        final BiFunction<ClusterContext, HostDetails, WriteMarshallable> handler = this
-                .handlerFactory();
+        final UberHandler.Factory handler = this.handlerFactory();
         final Function<ClusterContext, WriteMarshallable> heartbeat = this.heartbeatFactory();
 
         @NotNull ArrayList<WriteMarshallable> result = new ArrayList<>();
         result.add(handler.apply(this, hd));
         result.add(heartbeat.apply(this));
         return result;
+    }
+
+    public Marshallable config() {
+        return config;
     }
 }
 
