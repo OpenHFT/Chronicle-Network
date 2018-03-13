@@ -50,7 +50,6 @@
             </dependency>
 
         </dependencies>
-
     </dependencyManagement>
 
     <dependencies>
