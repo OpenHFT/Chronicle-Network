@@ -34,9 +34,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-/**
- * @author Rob Austin.
- */
 public abstract class ClusterContext implements Demarshallable, WriteMarshallable, Consumer<HostDetails> {
 
     private ConnectionStrategy connectionStrategy;
@@ -60,7 +57,7 @@ public abstract class ClusterContext implements Demarshallable, WriteMarshallabl
     protected ClusterContext(@NotNull WireIn wire) throws IORuntimeException {
         defaults();
         while (wire.bytes().readRemaining() > 0)
-            wireParser().parseOne(wire, null);
+            wireParser().parseOne(wire);
     }
 
     protected ClusterContext() {
@@ -85,29 +82,20 @@ public abstract class ClusterContext implements Demarshallable, WriteMarshallabl
     public abstract ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpEventHandlerFactory();
 
     @NotNull
-    protected WireParser<Void> wireParser() {
-        @NotNull VanillaWireParser parser = new VanillaWireParser<>((s, v, $) -> {
-        }, WireParser.SKIP_READABLE_BYTES);
-        parser.register(() -> "wireType", (s, v, $) -> v.text(this, (o, x) -> this.wireType(WireType.valueOf(x))));
-        parser.register(() -> "handlerFactory", (s, v, $) -> this.handlerFactory(v.typedMarshallable()));
-        parser.register(() -> "heartbeatTimeoutMs", (s, v, $) -> this.heartbeatTimeoutMs(v.int64()));
-        parser.register(() -> "heartbeatIntervalMs", (s, v, $) -> this.heartbeatIntervalMs(v.int64()));
-        parser.register(() -> "wireOutPublisherFactory",
-                (s, v, $) -> this.wireOutPublisherFactory(v.typedMarshallable()));
-        parser.register(() -> "networkContextFactory",
-                (s, v, $) -> this.networkContextFactory(v.typedMarshallable()));
-        parser.register(() -> "connectionStrategy",
-                (s, v, $) -> this.connectionStrategy(v.typedMarshallable()));
-        parser.register(() -> "connectionEventHandler",
-                (s, v, $) -> this.connectionEventHandler(v.typedMarshallable()));
-        parser.register(() -> "heartbeatFactory",
-                (s, v, $) -> this.heartbeatFactory(v.typedMarshallable()));
-        parser.register(() -> "networkStatsListenerFactory",
-                (s, v, $) -> this.networkStatsListenerFactory(v.typedMarshallable()));
-        parser.register(() -> "serverThreadingStrategy",
-                (s, v, $) -> this.serverThreadingStrategy(v.asEnum(ServerThreadingStrategy.class)));
-        parser.register(() -> "config",
-                (s, v, $) -> this.config(v.typedMarshallable()));
+    protected WireParser wireParser() {
+        @NotNull VanillaWireParser parser = new VanillaWireParser((s, v) -> {}, WireParser.SKIP_READABLE_BYTES);
+        parser.register(() -> "wireType", (s, v) -> v.text(this, (o, x) -> this.wireType(WireType.valueOf(x))));
+        parser.register(() -> "handlerFactory", (s, v) -> this.handlerFactory(v.typedMarshallable()));
+        parser.register(() -> "heartbeatTimeoutMs", (s, v) -> this.heartbeatTimeoutMs(v.int64()));
+        parser.register(() -> "heartbeatIntervalMs", (s, v) -> this.heartbeatIntervalMs(v.int64()));
+        parser.register(() -> "wireOutPublisherFactory", (s, v) -> this.wireOutPublisherFactory(v.typedMarshallable()));
+        parser.register(() -> "networkContextFactory", (s, v) -> this.networkContextFactory(v.typedMarshallable()));
+        parser.register(() -> "connectionStrategy", (s, v) -> this.connectionStrategy(v.typedMarshallable()));
+        parser.register(() -> "connectionEventHandler", (s, v) -> this.connectionEventHandler(v.typedMarshallable()));
+        parser.register(() -> "heartbeatFactory", (s, v) -> this.heartbeatFactory(v.typedMarshallable()));
+        parser.register(() -> "networkStatsListenerFactory", (s, v) -> this.networkStatsListenerFactory(v.typedMarshallable()));
+        parser.register(() -> "serverThreadingStrategy", (s, v) -> this.serverThreadingStrategy(v.asEnum(ServerThreadingStrategy.class)));
+        parser.register(() -> "config", (s, v) -> this.config(v.typedMarshallable()));
         return parser;
     }
 

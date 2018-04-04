@@ -54,7 +54,7 @@ public final class SslTestClusterContext extends ClusterContext {
         return new SslTestClusteredNetworkContext(localIdentifier(), this.cluster, eventLoop());
     }
 
-    @Nullable
+    @NotNull
     @Override
     public ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpEventHandlerFactory() {
         return new BootstrapHandlerFactory()::createHandler;
