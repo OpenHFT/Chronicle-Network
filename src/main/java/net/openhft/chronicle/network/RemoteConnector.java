@@ -93,7 +93,7 @@ public class RemoteConnector implements Closeable {
         final SocketChannel result = SocketChannel.open(socketAddress);
         result.configureBlocking(false);
         Socket socket = result.socket();
-        socket.setTcpNoDelay(true);
+        if (! TcpEventHandler.DISABLE_TCP_NODELAY) socket.setTcpNoDelay(true);
         socket.setReceiveBufferSize(tcpBufferSize);
         socket.setSendBufferSize(tcpBufferSize);
         socket.setSoTimeout(0);

@@ -87,7 +87,7 @@ public interface ConnectionStrategy extends Marshallable {
         try {
             result.configureBlocking(false);
             Socket socket = result.socket();
-            socket.setTcpNoDelay(true);
+            if (! TcpEventHandler.DISABLE_TCP_NODELAY) socket.setTcpNoDelay(true);
             socket.setReceiveBufferSize(tcpBufferSize);
             socket.setSendBufferSize(tcpBufferSize);
             socket.setSoTimeout(0);

@@ -45,6 +45,7 @@ import java.nio.channels.ClosedChannelException;
 
 public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandlerManager {
 
+    public static boolean DISABLE_TCP_NODELAY = Boolean.getBoolean("disable.tcp_nodelay");
     public static final int TCP_BUFFER = TcpChannelHub.TCP_BUFFER;
     private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
@@ -92,7 +93,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         try {
             sc.configureBlocking(false);
             Socket sock = sc.socket();
-            sock.setTcpNoDelay(true);
+            if (! DISABLE_TCP_NODELAY) sock.setTcpNoDelay(true);
             if (TCP_BUFFER >= 64 << 10) {
                 sock.setReceiveBufferSize(TCP_BUFFER);
                 sock.setSendBufferSize(TCP_BUFFER);
