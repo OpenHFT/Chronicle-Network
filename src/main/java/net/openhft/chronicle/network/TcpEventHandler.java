@@ -30,7 +30,6 @@ import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.api.TcpHandler;
-import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -52,8 +51,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private final ISocketChannel sc;
     @NotNull
     private final NetworkContext nc;
-    @NotNull
-    private final SessionDetailsProvider sessionDetails;
     @NotNull
     private final WriteEventHandler writeEventHandler;
     @NotNull
@@ -105,9 +102,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         } catch (IOException e) {
             Jvm.warn().on(getClass(), e);
         }
-        // there is nothing which needs to be written by default.
-        this.sessionDetails = new VanillaSessionDetails();
-        sessionDetails.clientAddress(sc.getRemoteAddress());
         // allow these to be used by another thread.
         // todo check that this can be commented out
 
@@ -186,7 +180,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         if (fair || oneInTen++ >= 8) {
             oneInTen = 0;
             try {
-                busy |= writeEventHandler.action();
+                busy = writeEventHandler.action();
             } catch (Exception e) {
                 Jvm.warn().on(getClass(), e);
             }
@@ -213,15 +207,10 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 if (!busy)
                     monitorStats();
                 return busy;
-            }
-
-            if (read < 0) {
+            } else {
                 close();
                 throw new InvalidEventHandlerException("socket closed " + sc);
             }
-
-            readLog.idle();
-
 
         } catch (ClosedChannelException e) {
             close();
@@ -250,8 +239,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 }
             }
         }
-
-        return busy;
     }
 
     private void monitorStats() {
