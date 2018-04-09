@@ -19,13 +19,13 @@
     <parent>
         <groupId>net.openhft</groupId>
         <artifactId>java-parent-pom</artifactId>
-        <version>1.1.13</version>
+        <version>1.1.15</version>
         <relativePath />
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>chronicle-network</artifactId>
-    <version>1.11.7-SNAPSHOT</version>
+    <version>1.11.8-SNAPSHOT</version>
     <name>OpenHFT/Chronicle-Network</name>
     <description>Chronicle-Network</description>
     <packaging>bundle</packaging>
