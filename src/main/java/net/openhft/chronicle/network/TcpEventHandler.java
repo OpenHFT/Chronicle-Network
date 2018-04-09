@@ -45,7 +45,7 @@ import java.nio.channels.ClosedChannelException;
 
 public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandlerManager {
 
-    public static boolean DISABLE_TCP_NODELAY = Boolean.getBoolean("disable.tcp_nodelay");
+    public static boolean DISABLE_TCP_NODELAY;
     public static final int TCP_BUFFER = TcpChannelHub.TCP_BUFFER;
     private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
@@ -79,6 +79,11 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private long bytesWriteCount;
     private long lastMonitor;
 
+    static {
+        DISABLE_TCP_NODELAY = Boolean.getBoolean("disable.tcp_nodelay");
+        if (DISABLE_TCP_NODELAY) System.out.println("tcpNoDelay disabled");
+    }
+
     public TcpEventHandler(@NotNull NetworkContext nc) {
         this(nc, false);
     }
@@ -93,6 +98,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         try {
             sc.configureBlocking(false);
             Socket sock = sc.socket();
+            // TODO: should have a strategy for this like ConnectionStrategy
             if (! DISABLE_TCP_NODELAY) sock.setTcpNoDelay(true);
             if (TCP_BUFFER >= 64 << 10) {
                 sock.setReceiveBufferSize(TCP_BUFFER);
@@ -198,6 +204,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
             int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
 
+            if (read == Integer.MAX_VALUE)
+                System.out.println();
             if (read > 0) {
                 WanSimulator.dataRead(read);
                 tcpHandler.onReadTime(System.nanoTime());
@@ -329,6 +337,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             busy = true;
 
         } else if (inBBB.readPosition() > 0) {
+            // TODO: why? same condition as above
             Jvm.debug().on(getClass(), "pos " + inBBB.readPosition());
         }
 

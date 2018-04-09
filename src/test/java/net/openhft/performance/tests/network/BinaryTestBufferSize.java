@@ -84,7 +84,7 @@ public class BinaryTestBufferSize {
     @Test
     public void test() throws IOException {
 
-        sendAndReceive(1024);
+        sendAndReceive(64 << 10);
     }
 
     private void sendAndReceive(int tcpBufferSize) throws IOException {
