@@ -28,7 +28,6 @@ import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
-import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import org.jetbrains.annotations.NotNull;
@@ -66,7 +65,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private volatile boolean isCleaned;
     @Nullable
     private volatile TcpHandler tcpHandler;
-    private long lastTickReadTime = Time.tickTime();
+    private long lastTickReadTime = System.currentTimeMillis();
 
     private volatile boolean closed;
     private final boolean fair;
@@ -101,10 +100,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 sock.setReceiveBufferSize(TCP_BUFFER);
                 sock.setSendBufferSize(TCP_BUFFER);
 
-                int rcv = sock.getReceiveBufferSize();
-                int snd = sock.getSendBufferSize();
-                checkBufSize(rcv, TCP_BUFFER, "recv");
-                checkBufSize(snd, TCP_BUFFER, "send");
+                checkBufSize(sock.getReceiveBufferSize(), TCP_BUFFER, "recv");
+                checkBufSize(sock.getSendBufferSize(), TCP_BUFFER, "send");
             }
         } catch (IOException e) {
             Jvm.warn().on(getClass(), e);
@@ -164,8 +161,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     @Override
     public synchronized boolean action() throws InvalidEventHandlerException {
-        final HeartbeatListener heartbeatListener = nc.heartbeatListener();
-
         if (tcpHandler == null)
             return false;
 
@@ -203,7 +198,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             if (read > 0) {
                 WanSimulator.dataRead(read);
                 tcpHandler.onReadTime(System.nanoTime());
-                lastTickReadTime = Time.tickTime();
+                lastTickReadTime = System.currentTimeMillis();
                 readLog.log(inBB, start, inBB.position());
                 if (invokeHandler())
                     oneInTen++;
@@ -238,11 +233,11 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         } finally {
 
             if (nc.heartbeatTimeoutMs() > 0) {
-                long tickTime = Time.tickTime();
+                long tickTime = System.currentTimeMillis();
                 if (tickTime > lastTickReadTime + nc.heartbeatTimeoutMs()) {
-
+                    final HeartbeatListener heartbeatListener = nc.heartbeatListener();
                     if (heartbeatListener != null)
-                        nc.heartbeatListener().onMissedHeartbeat();
+                        heartbeatListener.onMissedHeartbeat();
                     closeSC();
                     throw new InvalidEventHandlerException("heartbeat timeout");
                 }
@@ -322,10 +317,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             inBBB.readLimit(inBB.remaining());
 
             busy = true;
-
-        } else if (inBBB.readPosition() > 0) {
-            // TODO: why? same condition as above
-            Jvm.debug().on(getClass(), "pos " + inBBB.readPosition());
         }
 
         return busy;
