@@ -58,9 +58,9 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     @NotNull
     private final Bytes<ByteBuffer> inBBB;
-
     @NotNull
     private final Bytes<ByteBuffer> outBBB;
+
     private int oneInTen;
     private volatile boolean isCleaned;
     @Nullable
@@ -95,13 +95,15 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             sc.configureBlocking(false);
             Socket sock = sc.socket();
             // TODO: should have a strategy for this like ConnectionStrategy
-            if (! DISABLE_TCP_NODELAY) sock.setTcpNoDelay(true);
+            if (!DISABLE_TCP_NODELAY)
+                sock.setTcpNoDelay(true);
+
             if (TCP_BUFFER >= 64 << 10) {
                 sock.setReceiveBufferSize(TCP_BUFFER);
                 sock.setSendBufferSize(TCP_BUFFER);
 
-                checkBufSize(sock.getReceiveBufferSize(), TCP_BUFFER, "recv");
-                checkBufSize(sock.getSendBufferSize(), TCP_BUFFER, "send");
+                checkBufSize(sock.getReceiveBufferSize(), "recv");
+                checkBufSize(sock.getSendBufferSize(), "send");
             }
         } catch (IOException e) {
             Jvm.warn().on(getClass(), e);
@@ -122,9 +124,9 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         writeLog = new NetworkLog(this.sc, "write");
     }
 
-    private void checkBufSize(int bufSize, int requested, String name) {
-        if (bufSize < requested) {
-            LOG.warn("Attempted to set " + name + " tcp buffer to " + requested + " but kernel only allowed " + bufSize);
+    private void checkBufSize(int bufSize, String name) {
+        if (bufSize < TcpEventHandler.TCP_BUFFER) {
+            LOG.warn("Attempted to set " + name + " tcp buffer to " + TcpEventHandler.TCP_BUFFER + " but kernel only allowed " + bufSize);
         }
     }
 
@@ -188,7 +190,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             }
         }
         try {
-            @Nullable ByteBuffer inBB = inBBB.underlyingObject();
+            ByteBuffer inBB = inBBB.underlyingObject();
             int start = inBB.position();
 
             int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
@@ -202,19 +204,36 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 readLog.log(inBB, start, inBB.position());
                 if (invokeHandler())
                     oneInTen++;
-                return true;
+                busy = true;
             } else if (read == 0) {
                 if (outBBB.readRemaining() > 0) {
-                    if (invokeHandler())
-                        return true;
+                    busy |= invokeHandler();
                 }
+
+                // check for timeout only here - in other branches we either just read something or are about to close socket anyway
+                if (nc.heartbeatTimeoutMs() > 0) {
+                    long tickTime = System.currentTimeMillis();
+                    if (tickTime > lastTickReadTime + nc.heartbeatTimeoutMs()) {
+                        final HeartbeatListener heartbeatListener = nc.heartbeatListener();
+                        if (heartbeatListener != null && heartbeatListener.onMissedHeartbeat()) {
+                            // implementater tries to recover - do not disconnect for some time
+                            lastTickReadTime += heartbeatListener.lingerTimeBeforeDisconnect();
+                        } else {
+                            tcpHandler.onEndOfConnection(true);
+                            closeSC();
+                            throw new InvalidEventHandlerException("heartbeat timeout");
+                        }
+                    }
+                }
+
                 if (!busy)
                     monitorStats();
-                return busy;
             } else {
                 close();
                 throw new InvalidEventHandlerException("socket closed " + sc);
             }
+
+            return busy;
 
         } catch (ClosedChannelException e) {
             close();
@@ -230,18 +249,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             close();
             Jvm.warn().on(getClass(), "", e);
             throw new InvalidEventHandlerException(e);
-        } finally {
-
-            if (nc.heartbeatTimeoutMs() > 0) {
-                long tickTime = System.currentTimeMillis();
-                if (tickTime > lastTickReadTime + nc.heartbeatTimeoutMs()) {
-                    final HeartbeatListener heartbeatListener = nc.heartbeatListener();
-                    if (heartbeatListener != null)
-                        heartbeatListener.onMissedHeartbeat();
-                    closeSC();
-                    throw new InvalidEventHandlerException("heartbeat timeout");
-                }
-            }
         }
     }
 
