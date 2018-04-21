@@ -16,10 +16,6 @@
 
 package net.openhft.chronicle.network.cluster;
 
-/**
- * @author Rob Austin.
- */
-
 import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.network.WireTcpHandler;
 import net.openhft.chronicle.wire.Demarshallable;
