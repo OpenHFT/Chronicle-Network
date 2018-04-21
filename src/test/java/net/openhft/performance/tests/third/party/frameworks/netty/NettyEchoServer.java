@@ -35,6 +35,17 @@ public class NettyEchoServer {
         this.port = port;
     }
 
+    public static void main(@NotNull String[] args) throws InterruptedException {
+        int port;
+        if (args.length > 0) {
+            port = Integer.parseInt(args[0]);
+
+        } else {
+            port = EchoClientMain.PORT;
+        }
+        new NettyEchoServer(port).run();
+    }
+
     public void run() throws InterruptedException {
         @NotNull EventLoopGroup bossGroup = new NioEventLoopGroup(); // (1)
         @NotNull EventLoopGroup workerGroup = new NioEventLoopGroup();
@@ -76,16 +87,5 @@ public class NettyEchoServer {
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();
         }
-    }
-
-    public static void main(@NotNull String[] args) throws InterruptedException {
-        int port;
-        if (args.length > 0) {
-            port = Integer.parseInt(args[0]);
-
-        } else {
-            port = EchoClientMain.PORT;
-        }
-        new NettyEchoServer(port).run();
     }
 }

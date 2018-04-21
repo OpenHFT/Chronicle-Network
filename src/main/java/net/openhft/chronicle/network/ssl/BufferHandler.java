@@ -5,8 +5,8 @@ import java.nio.ByteBuffer;
 
 /**
  * This class handles the bridge between two sets of buffers:
- *  - socket-side data - encrypted, handled by <code>readData</code>, <code>writeData</code>
- *  - application-side data - decrypted, handled by <code>handleDecryptedData</code>
+ * - socket-side data - encrypted, handled by <code>readData</code>, <code>writeData</code>
+ * - application-side data - decrypted, handled by <code>handleDecryptedData</code>
  */
 public interface BufferHandler {
     /**
@@ -22,7 +22,7 @@ public interface BufferHandler {
      * Accept decrypted input data, previous collected by an invocation of <code>readData</code>.
      * Any plain-text output should be written to the output buffer for encryption.
      *
-     * @param input a buffer containing decrypted input data
+     * @param input  a buffer containing decrypted input data
      * @param output a buffer that can be used for writing plain-text output
      */
     void handleDecryptedData(final ByteBuffer input, final ByteBuffer output);

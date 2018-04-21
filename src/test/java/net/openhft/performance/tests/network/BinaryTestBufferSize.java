@@ -52,7 +52,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public class BinaryTestBufferSize {
-    private static final @NotNull String desc = "host.port";
+    private static final @NotNull
+    String desc = "host.port";
     private EventLoop eg;
     private ThreadDump threadDump;
 
@@ -88,14 +89,14 @@ public class BinaryTestBufferSize {
     }
 
     private void sendAndReceive(int tcpBufferSize) throws IOException {
-        for (int length=1; length<2000; length++)
+        for (int length = 1; length < 2000; length++)
             sendAndReceive(length, tcpBufferSize);
     }
 
     private void sendAndReceive(int length, int tcpBufferSize) throws IOException {
         String expectedMessage = "";
-        for (int i = 0; i<length; i++)
-            expectedMessage += (char)(32 + (i % (126 - 32)));//(char)('0' + i % 10);
+        for (int i = 0; i < length; i++)
+            expectedMessage += (char) (32 + (i % (126 - 32)));//(char)('0' + i % 10);
 
         sendAndReceive(expectedMessage, tcpBufferSize);
     }
@@ -130,8 +131,8 @@ public class BinaryTestBufferSize {
                 totalRead += read;
                 ++count;
             }
-            if (count >1)
-                System.out.println("count="+count);
+            if (count > 1)
+                System.out.println("count=" + count);
 
             inBytes.readLimit(totalRead);
             Assert.assertEquals(expectedMessage, inBytes.readUtf8());

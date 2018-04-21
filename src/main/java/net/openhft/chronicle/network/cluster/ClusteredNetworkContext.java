@@ -9,6 +9,8 @@ public interface ClusteredNetworkContext<T extends NetworkContext> extends Netwo
     }
 
     byte getLocalHostIdentifier();
+
     boolean isValidCluster(final String clusterName);
+
     Cluster getCluster(final String clusterName);
 }

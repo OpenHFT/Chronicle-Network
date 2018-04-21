@@ -126,5 +126,4 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
         closeSocket();
     }
 
-
 }

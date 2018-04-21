@@ -45,11 +45,49 @@ public final class NettyClientThroughPutTest {
     static final int PORT = Integer.parseInt(System.getProperty("port", Integer.toString(EchoClientMain
             .PORT)));
 
+    public static void main(String[] args) throws SSLException, InterruptedException {
+        // Configure SSL.git
+        @Nullable final SslContext sslCtx;
+        if (SSL) {
+            sslCtx = SslContext.newClientContext(InsecureTrustManagerFactory.INSTANCE);
+
+        } else {
+            sslCtx = null;
+        }
+
+        // Configure the client.
+        @NotNull EventLoopGroup group = new NioEventLoopGroup();
+        try {
+            @NotNull Bootstrap b = new Bootstrap();
+            b.group(group)
+                    .channel(NioSocketChannel.class)
+                    .option(ChannelOption.TCP_NODELAY, true)
+                    .handler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        public void initChannel(@NotNull SocketChannel ch) {
+                            ChannelPipeline p = ch.pipeline();
+                            if (sslCtx != null) {
+                                p.addLast(sslCtx.newHandler(ch.alloc(), HOST, PORT));
+                            }
+                            //p.addLast(new LoggingHandler(LogLevel.INFO));
+                            p.addLast(new MyChannelInboundHandler());
+                        }
+                    });
+
+            // Start the client.
+            ChannelFuture f = b.connect(HOST, PORT).sync();
+
+            // Wait until the connection is closed.
+            f.channel().closeFuture().sync();
+        } finally {
+            // Shut down the event loop to terminate all threads.
+            group.shutdownGracefully();
+        }
+    }
+
     static class MyChannelInboundHandler extends ChannelInboundHandlerAdapter {
-        private final ByteBuf firstMessage;
-
         final int bufferSize = 32 * 1024;
-
+        private final ByteBuf firstMessage;
         @NotNull
         byte[] payload = new byte[bufferSize];
         long bytesReceived = 0;
@@ -106,46 +144,6 @@ public final class NettyClientThroughPutTest {
             // Close the connection when an exception is raised.
             cause.printStackTrace();
             ctx.close();
-        }
-    }
-
-    public static void main(String[] args) throws SSLException, InterruptedException {
-        // Configure SSL.git
-        @Nullable final SslContext sslCtx;
-        if (SSL) {
-            sslCtx = SslContext.newClientContext(InsecureTrustManagerFactory.INSTANCE);
-
-        } else {
-            sslCtx = null;
-        }
-
-        // Configure the client.
-        @NotNull EventLoopGroup group = new NioEventLoopGroup();
-        try {
-            @NotNull Bootstrap b = new Bootstrap();
-            b.group(group)
-                    .channel(NioSocketChannel.class)
-                    .option(ChannelOption.TCP_NODELAY, true)
-                    .handler(new ChannelInitializer<SocketChannel>() {
-                        @Override
-                        public void initChannel(@NotNull SocketChannel ch) {
-                            ChannelPipeline p = ch.pipeline();
-                            if (sslCtx != null) {
-                                p.addLast(sslCtx.newHandler(ch.alloc(), HOST, PORT));
-                            }
-                            //p.addLast(new LoggingHandler(LogLevel.INFO));
-                            p.addLast(new MyChannelInboundHandler());
-                        }
-                    });
-
-            // Start the client.
-            ChannelFuture f = b.connect(HOST, PORT).sync();
-
-            // Wait until the connection is closed.
-            f.channel().closeFuture().sync();
-        } finally {
-            // Shut down the event loop to terminate all threads.
-            group.shutdownGracefully();
         }
     }
 }

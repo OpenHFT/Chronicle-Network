@@ -45,9 +45,9 @@ class TestData implements DoubleConsumer, LongConsumer, IntConsumer {
 
     public void read(@NotNull WireIn wire) {
         wire.readDocument(null, data ->
-                        data.read(Field.key1).int32(this, (o, i) -> value1 = i)
-                                .read(Field.key2).int64(this, (o, i) -> value2 = i)
-                                .read(Field.key3).float64(this, (o, i) -> value3 = i)
+                data.read(Field.key1).int32(this, (o, i) -> value1 = i)
+                        .read(Field.key2).int64(this, (o, i) -> value2 = i)
+                        .read(Field.key3).float64(this, (o, i) -> value3 = i)
         );
     }
 

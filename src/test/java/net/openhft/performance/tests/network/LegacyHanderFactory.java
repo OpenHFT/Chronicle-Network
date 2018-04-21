@@ -52,7 +52,6 @@ public enum LegacyHanderFactory {
 
                 throw new UnsupportedOperationException("");
             };
- 
 
             @NotNull final HeaderTcpHandler<T> headerTcpHandler = new HeaderTcpHandler<>(handler,
                     consumer,
@@ -84,7 +83,6 @@ public enum LegacyHanderFactory {
 
         };
     }
-
 
     public static <T extends NetworkContext> Function<T, TcpEventHandler>
     defaultTcpEventHandlerFactory(@NotNull final Function<T, TcpHandler> defaultHandedFactory) {

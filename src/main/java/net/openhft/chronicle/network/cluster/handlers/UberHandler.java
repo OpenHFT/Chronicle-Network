@@ -21,7 +21,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static net.openhft.chronicle.network.HeaderTcpHandler.HANDLER;
 import static net.openhft.chronicle.network.cluster.TerminatorHandler.terminationHandler;
 
-public final class UberHandler <T extends ClusteredNetworkContext> extends CspTcpHandler<T>
+public final class UberHandler<T extends ClusteredNetworkContext> extends CspTcpHandler<T>
         implements Demarshallable, WriteMarshallable {
 
     private final int remoteIdentifier;
@@ -64,6 +64,14 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
                 wire.write(() -> HANDLER).typedMarshallable(m);
             }
         };
+    }
+
+    private static String peekContents(final @NotNull DocumentContext dc) {
+        try {
+            return dc.wire().readingPeekYaml();
+        } catch (RuntimeException e) {
+            return "Failed to peek at contents due to: " + e.getMessage();
+        }
     }
 
     public int remoteIdentifier() {
@@ -214,7 +222,7 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
 
             SubHandler handler = handler();
             if (handler == null)
-               throw new IllegalStateException("handler == null, check that the " +
+                throw new IllegalStateException("handler == null, check that the " +
                         "Csp/Cid has been sent, failed to " +
                         "fully " +
                         "process the following " +
@@ -285,14 +293,6 @@ public final class UberHandler <T extends ClusteredNetworkContext> extends CspTc
                     remoteIdentifier,
                     wireType,
                     name));
-        }
-    }
-
-    private static String peekContents(final @NotNull DocumentContext dc) {
-        try {
-            return dc.wire().readingPeekYaml();
-        } catch (RuntimeException e) {
-            return "Failed to peek at contents due to: " + e.getMessage();
         }
     }
 }

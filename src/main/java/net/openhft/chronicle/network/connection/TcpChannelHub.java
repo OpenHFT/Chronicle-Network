@@ -1748,7 +1748,6 @@ public class TcpChannelHub implements Closeable {
                         assert !outBytesLock.isHeldByCurrentThread();
                     }
 
-
                     return;
                 } catch (Exception e) {
                     if (isShutdown || prepareToShutdown) {

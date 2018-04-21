@@ -43,10 +43,16 @@ import java.nio.channels.ClosedChannelException;
 
 public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandlerManager {
 
-    public static boolean DISABLE_TCP_NODELAY;
     public static final int TCP_BUFFER = TcpChannelHub.TCP_BUFFER;
     private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
+    public static boolean DISABLE_TCP_NODELAY;
+
+    static {
+        DISABLE_TCP_NODELAY = Boolean.getBoolean("disable.tcp_nodelay");
+        if (DISABLE_TCP_NODELAY) System.out.println("tcpNoDelay disabled");
+    }
+
     @NotNull
     private final ISocketChannel sc;
     @NotNull
@@ -55,30 +61,22 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private final WriteEventHandler writeEventHandler;
     @NotNull
     private final NetworkLog readLog, writeLog;
-
     @NotNull
     private final Bytes<ByteBuffer> inBBB;
     @NotNull
     private final Bytes<ByteBuffer> outBBB;
-
+    private final boolean fair;
     private int oneInTen;
     private volatile boolean isCleaned;
     @Nullable
     private volatile TcpHandler tcpHandler;
     private long lastTickReadTime = System.currentTimeMillis();
-
     private volatile boolean closed;
-    private final boolean fair;
     // monitoring
     private int socketPollCount;
     private long bytesReadCount;
     private long bytesWriteCount;
     private long lastMonitor;
-
-    static {
-        DISABLE_TCP_NODELAY = Boolean.getBoolean("disable.tcp_nodelay");
-        if (DISABLE_TCP_NODELAY) System.out.println("tcpNoDelay disabled");
-    }
 
     public TcpEventHandler(@NotNull NetworkContext nc) {
         this(nc, false);

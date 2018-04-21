@@ -19,7 +19,6 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import org.jetbrains.annotations.NotNull;
 
-
 public class ConnectionDetails extends VanillaNetworkContext {
     private boolean isConnected;
     private String id;
@@ -30,6 +29,13 @@ public class ConnectionDetails extends VanillaNetworkContext {
         this(id, new SocketAddressSupplier(new String[]{hostPort}, id));
     }
 
+    public ConnectionDetails(String id, SocketAddressSupplier socketAddressSupplier) {
+        this.id = id;
+        this.socketAddressSupplier = socketAddressSupplier;
+        sessionDetails(new VanillaSessionDetails());
+        sessionDetails().userId(id);
+    }
+
     public SocketAddressSupplier sessionProvider() {
         return socketAddressSupplier;
     }
@@ -38,13 +44,6 @@ public class ConnectionDetails extends VanillaNetworkContext {
     public ConnectionDetails sessionProvider(SocketAddressSupplier sessionProvider) {
         this.socketAddressSupplier = sessionProvider;
         return this;
-    }
-
-    public ConnectionDetails(String id, SocketAddressSupplier socketAddressSupplier) {
-        this.id = id;
-        this.socketAddressSupplier = socketAddressSupplier;
-        sessionDetails(new VanillaSessionDetails());
-        sessionDetails().userId(id);
     }
 
     public String getID() {

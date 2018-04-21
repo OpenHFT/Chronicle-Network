@@ -25,6 +25,7 @@ public interface HeartbeatListener {
 
     /**
      * called when we don't receive a heartbeat ( or in some cases any message )
+     *
      * @return false if TcpHandler is allowed to drop the connection, true if the implementer tries to recover
      */
     boolean onMissedHeartbeat();

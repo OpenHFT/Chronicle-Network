@@ -1,14 +1,7 @@
 package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.network.AcceptorEventHandler;
-import net.openhft.chronicle.network.NetworkContext;
-import net.openhft.chronicle.network.NetworkStatsListener;
-import net.openhft.chronicle.network.RemoteConnector;
-import net.openhft.chronicle.network.ServerThreadingStrategy;
-import net.openhft.chronicle.network.TCPRegistry;
-import net.openhft.chronicle.network.TcpEventHandler;
-import net.openhft.chronicle.network.VanillaNetworkContext;
+import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.threads.Pauser;
@@ -43,11 +36,10 @@ import static org.junit.Assert.assertTrue;
  * blocking operation. Spinning the work out to a separate thread does not work,
  * as subsequent invocations of the TcpEventHandler may consume socket data during the
  * handshake.
- *
+ * <p>
  * public ServerThreadingStrategy serverThreadingStrategy() {
- *   return ServerThreadingStrategy.MULTI_THREADED_BUSY_WAITING;
+ * return ServerThreadingStrategy.MULTI_THREADED_BUSY_WAITING;
  * }
- *
  */
 @RunWith(Parameterized.class)
 public final class NonClusteredSslIntegrationTest {
@@ -73,6 +65,11 @@ public final class NonClusteredSslIntegrationTest {
         return params;
     }
 
+    private static void waitForLatch(final CountingTcpHandler handler) throws InterruptedException {
+        assertTrue("Handler for " + handler.label + " did not startup within timeout at " + Instant.now(),
+                handler.latch.await(25, TimeUnit.SECONDS));
+    }
+
     @Before
     public void setUp() throws Exception {
         TCPRegistry.reset();
@@ -89,7 +86,6 @@ public final class NonClusteredSslIntegrationTest {
             eventHandler.tcpHandler(getTcpHandler(serverAcceptor));
             return eventHandler;
         }, StubNetworkContext::new));
-
 
     }
 
@@ -148,11 +144,6 @@ public final class NonClusteredSslIntegrationTest {
         return new SslDelegatingTcpHandler<>(delegate);
     }
 
-    private static void waitForLatch(final CountingTcpHandler handler) throws InterruptedException {
-        assertTrue("Handler for " + handler.label + " did not startup within timeout at " + Instant.now(),
-                handler.latch.await(25, TimeUnit.SECONDS));
-    }
-
     private void assertThatServerConnectsToClient() throws InterruptedException {
         waitForLatch(clientAcceptor);
         waitForLatch(serverInitiator);
@@ -175,6 +166,12 @@ public final class NonClusteredSslIntegrationTest {
 
         assertTrue(clientInitiator.operationCount > 9);
         assertTrue(serverAcceptor.operationCount > 9);
+    }
+
+    private enum Mode {
+        CLIENT_TO_SERVER,
+        SERVER_TO_CLIENT,
+        BI_DIRECTIONAL
     }
 
     private static final class CountingTcpHandler implements TcpHandler<StubNetworkContext> {
@@ -206,20 +203,19 @@ public final class NonClusteredSslIntegrationTest {
                         }
                     }
                     operationCount++;
-                } else
-                    if (!nc.isAcceptor()) {
-                        if (System.currentTimeMillis() > lastSent + 100L) {
-                            out.writeLong((counter++));
-                            final String payload = "ping-" + (counter - 1);
-                            out.writeInt(payload.length());
-                            out.write(payload.getBytes(StandardCharsets.US_ASCII));
-                            if (DEBUG) {
-                                System.out.printf("%s sent [%d] %d/%s%n", label, payload.length(), counter - 1, payload);
-                            }
-                            operationCount++;
-                            lastSent = System.currentTimeMillis();
+                } else if (!nc.isAcceptor()) {
+                    if (System.currentTimeMillis() > lastSent + 100L) {
+                        out.writeLong((counter++));
+                        final String payload = "ping-" + (counter - 1);
+                        out.writeInt(payload.length());
+                        out.write(payload.getBytes(StandardCharsets.US_ASCII));
+                        if (DEBUG) {
+                            System.out.printf("%s sent [%d] %d/%s%n", label, payload.length(), counter - 1, payload);
                         }
+                        operationCount++;
+                        lastSent = System.currentTimeMillis();
                     }
+                }
 
             } catch (RuntimeException e) {
                 System.err.printf("Exception in %s: %s/%s%n", label, e.getClass().getSimpleName(), e.getMessage());
@@ -280,11 +276,5 @@ public final class NonClusteredSslIntegrationTest {
                 }
             };
         }
-    }
-
-    private enum Mode {
-        CLIENT_TO_SERVER,
-        SERVER_TO_CLIENT,
-        BI_DIRECTIONAL
     }
 }

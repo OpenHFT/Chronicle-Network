@@ -3,12 +3,7 @@ package net.openhft.chronicle.network.ssl;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.network.cluster.AbstractSubHandler;
 import net.openhft.chronicle.network.connection.CoreFields;
-import net.openhft.chronicle.wire.Marshallable;
-import net.openhft.chronicle.wire.ValueIn;
-import net.openhft.chronicle.wire.WireIn;
-import net.openhft.chronicle.wire.WireOut;
-import net.openhft.chronicle.wire.Wires;
-import net.openhft.chronicle.wire.WriteMarshallable;
+import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.RejectedExecutionException;
@@ -48,11 +43,10 @@ final class PingTcpHandler extends AbstractSubHandler<SslTestClusteredNetworkCon
                 wireOut.writeDocument(false,
                         d -> d.writeEventName("pong").int64(id));
             });
-        } else
-            if ("pong".contentEquals(eventName)) {
-                final long id = valueIn.int64();
-                System.out.printf("%d received pong %d from %d%n", localIdentifier(), id, remoteIdentifier());
-            }
+        } else if ("pong".contentEquals(eventName)) {
+            final long id = valueIn.int64();
+            System.out.printf("%d received pong %d from %d%n", localIdentifier(), id, remoteIdentifier());
+        }
     }
 
     @Override

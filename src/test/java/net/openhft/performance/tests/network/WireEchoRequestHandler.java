@@ -35,7 +35,7 @@ public class WireEchoRequestHandler extends WireTcpHandler {
     /**
      * simply reads the csp,tid and payload and sends back the tid and payload
      *
-     * @param in  the DocumentContext from the client
+     * @param in      the DocumentContext from the client
      * @param outWire the wire to be sent back to the server
      */
     @Override

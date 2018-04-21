@@ -1,12 +1,10 @@
 package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.NetworkContextManager;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,12 +13,12 @@ import java.time.Instant;
 /**
  * This class is designed to wrap a standard {@see TcpHandler}, providing
  * symmetric encryption/decryption transparently to the underlying handler.
- *
+ * <p>
  * When <code>process</code> is called by the {@see TcpEventHandler},
  * this class will first attempt to perform an SSL handshake with the remote
  * connection. This is a blocking operation, and the <code>process</code>
  * call will not return until the handshake is successful, or fails.
- *
+ * <p>
  * Further operation is delegated to the {@see SslEngineStateMachine} class,
  * which manages the conversion of data between plain-text and cipher-text
  * either end of the network connection.

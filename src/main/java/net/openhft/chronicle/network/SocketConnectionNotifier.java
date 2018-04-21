@@ -11,14 +11,14 @@ import static net.openhft.chronicle.core.Mocker.intercepting;
 @FunctionalInterface
 public interface SocketConnectionNotifier<T extends NetworkContext> extends Marshallable {
 
-    void onConnected(String host, long port, T nc);
-
-    default void onDisconnected(String host, long port) {
-    }
-
     static SocketConnectionNotifier newDefaultConnectionNotifier() {
         return intercepting(SocketConnectionNotifier.class,
                 "connection ",
                 msg -> Jvm.debug().on(SocketConnectionNotifier.class, msg));
+    }
+
+    void onConnected(String host, long port, T nc);
+
+    default void onDisconnected(String host, long port) {
     }
 }

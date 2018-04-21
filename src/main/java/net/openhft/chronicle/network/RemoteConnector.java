@@ -93,7 +93,7 @@ public class RemoteConnector implements Closeable {
         final SocketChannel result = SocketChannel.open(socketAddress);
         result.configureBlocking(false);
         Socket socket = result.socket();
-        if (! TcpEventHandler.DISABLE_TCP_NODELAY) socket.setTcpNoDelay(true);
+        if (!TcpEventHandler.DISABLE_TCP_NODELAY) socket.setTcpNoDelay(true);
         socket.setReceiveBufferSize(tcpBufferSize);
         socket.setSendBufferSize(tcpBufferSize);
         socket.setSoTimeout(0);
@@ -103,12 +103,6 @@ public class RemoteConnector implements Closeable {
 
     private class RCEventHandler implements EventHandler, Closeable {
 
-        @NotNull
-        @Override
-        public HandlerPriority priority() {
-            return HandlerPriority.BLOCKING;
-        }
-
         private final InetSocketAddress address;
         private final AtomicLong nextPeriod = new AtomicLong();
         private final String remoteHostPort;
@@ -116,7 +110,6 @@ public class RemoteConnector implements Closeable {
         private final EventLoop eventLoop;
         private final long retryInterval;
         private volatile boolean closed;
-
         RCEventHandler(String remoteHostPort,
                        NetworkContext nc,
                        EventLoop eventLoop,
@@ -128,6 +121,11 @@ public class RemoteConnector implements Closeable {
             this.retryInterval = retryInterval;
         }
 
+        @NotNull
+        @Override
+        public HandlerPriority priority() {
+            return HandlerPriority.BLOCKING;
+        }
 
         @Override
         public boolean action() throws InvalidEventHandlerException {

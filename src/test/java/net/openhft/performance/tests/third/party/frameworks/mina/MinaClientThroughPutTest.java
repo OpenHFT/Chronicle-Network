@@ -91,6 +91,7 @@ public class MinaClientThroughPutTest {
                     session.close(true);
                 }
             }
+
             @Override
             public void messageSent(IoSession session, Object message) {
             }

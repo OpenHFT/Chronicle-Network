@@ -105,7 +105,6 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
         return remoteAddresses.size();
     }
 
-
     /**
      * @return index ( primary has index of ZERO )
      */
@@ -139,7 +138,6 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
     public String toString() {
         return log(this.current);
     }
-
 
     public String remoteAddresses() {
         List<String> result = new ArrayList<>();

@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class VanillaNetworkContext<T extends VanillaNetworkContext> implements NetworkContext<T>, Closeable {
 
     private final AtomicLong cid = new AtomicLong();
+    private final AtomicBoolean isClosed = new AtomicBoolean(false);
     private SocketChannel socketChannel;
     private boolean isAcceptor = true;
     private HeartbeatListener heartbeatListener;
@@ -48,8 +49,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     @Nullable
     private NetworkStatsListener<? extends NetworkContext> networkStatsListener;
     private ServerThreadingStrategy serverThreadingStrategy = ServerThreadingStrategy.SINGLE_THREADED;
-
-    private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
     @Override
     public SocketChannel socketChannel() {
@@ -178,14 +177,14 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
 
     /**
      * Close the connection atomically.
+     *
      * @return true if state changed to closed; false if nothing changed.
      */
     protected boolean closeAtomically() {
         if (isClosed.compareAndSet(false, true)) {
             Closeable.closeQuietly(networkStatsListener);
             return true;
-        }
-        else {
+        } else {
             //was already closed.
             return false;
         }

@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
-public final class HeartbeatHandler <T extends ClusteredNetworkContext> extends AbstractSubHandler<T> implements
+public final class HeartbeatHandler<T extends ClusteredNetworkContext> extends AbstractSubHandler<T> implements
         Demarshallable, WriteMarshallable, HeartbeatEventHandler {
 
     private final long heartbeatIntervalMs;

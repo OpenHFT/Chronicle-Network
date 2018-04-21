@@ -2,12 +2,7 @@ package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.util.ThrowingFunction;
-import net.openhft.chronicle.network.HeaderTcpHandler;
-import net.openhft.chronicle.network.NetworkContext;
-import net.openhft.chronicle.network.NetworkStatsListener;
-import net.openhft.chronicle.network.ServerThreadingStrategy;
-import net.openhft.chronicle.network.TcpEventHandler;
-import net.openhft.chronicle.network.WireTypeSniffingTcpHandler;
+import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.cluster.ClusterContext;
 import net.openhft.chronicle.network.cluster.ConnectionManager;
@@ -34,6 +29,16 @@ public final class SslTestClusterContext extends ClusterContext {
 
     SslTestClusterContext(@NotNull final WireIn wire) throws IORuntimeException {
         super(wire);
+    }
+
+    private static TcpHandler wrapForSsl(final TcpHandler delegate) {
+        new RuntimeException(String.format("%s/0x%s created",
+                delegate.getClass().getSimpleName(), Integer.toHexString(System.identityHashCode(delegate)))).
+                printStackTrace(System.out);
+
+//        return delegate;
+
+        return new SslDelegatingTcpHandler(delegate);
     }
 
     @Override
@@ -96,16 +101,6 @@ public final class SslTestClusterContext extends ClusterContext {
             return handler;
         }
 
-    }
-
-    private static TcpHandler wrapForSsl(final TcpHandler delegate) {
-        new RuntimeException(String.format("%s/0x%s created",
-                delegate.getClass().getSimpleName(), Integer.toHexString(System.identityHashCode(delegate)))).
-                printStackTrace(System.out);
-
-//        return delegate;
-
-        return new SslDelegatingTcpHandler(delegate);
     }
 
     private static class StubConnectionManager implements ConnectionManager {

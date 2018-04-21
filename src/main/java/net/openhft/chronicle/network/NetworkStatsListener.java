@@ -28,14 +28,6 @@ import java.nio.channels.SocketChannel;
  * @author Rob Austin.
  */
 public interface NetworkStatsListener<N extends NetworkContext> extends Closeable {
-    void networkContext(N networkContext);
-
-    void onNetworkStats(long writeBps, long readBps, long socketPollCountPerSecond);
-
-    void onHostPort(String hostName, int port);
-
-    void onRoundTripLatency(long nanosecondLatency);
-
     /**
      * notifies the NetworkStatsListener of the host and port based on the SocketChannel
      *
@@ -50,5 +42,13 @@ public interface NetworkStatsListener<N extends NetworkContext> extends Closeabl
             nl.onHostPort(remoteSocketAddress.getHostName(), remoteSocketAddress.getPort());
         }
     }
+
+    void networkContext(N networkContext);
+
+    void onNetworkStats(long writeBps, long readBps, long socketPollCountPerSecond);
+
+    void onHostPort(String hostName, int port);
+
+    void onRoundTripLatency(long nanosecondLatency);
 
 }

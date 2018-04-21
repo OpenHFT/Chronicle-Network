@@ -25,18 +25,18 @@ public abstract class CspTcpHandler<T extends NetworkContext> extends WireTcpHan
     protected final List<WriteMarshallable> writers = new ArrayList<>();
     @NotNull
     private final Map<Long, SubHandler> cidToHandle = new HashMap<>();
+    private final Map<Object, SubHandler> registry = new HashMap<>();
+    protected Marshallable config;
     @Nullable
     private SubHandler handler;
     @Nullable
     private HeartbeatEventHandler heartbeatEventHandler;
     private long lastCid;
-    private final Map<Object, SubHandler> registry = new HashMap<>();
+
     @Nullable
     protected SubHandler handler() {
         return handler;
     }
-
-    protected Marshallable config;
 
     @Override
     public void close() {

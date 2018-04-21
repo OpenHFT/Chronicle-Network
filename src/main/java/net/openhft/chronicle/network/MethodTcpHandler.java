@@ -3,7 +3,10 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.bytes.MethodReader;
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.wire.*;
+import net.openhft.chronicle.wire.DocumentContext;
+import net.openhft.chronicle.wire.Wire;
+import net.openhft.chronicle.wire.WireOut;
+import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;

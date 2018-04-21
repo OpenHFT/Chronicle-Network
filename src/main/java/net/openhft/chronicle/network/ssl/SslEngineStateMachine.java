@@ -14,11 +14,11 @@ import java.time.Instant;
 
 /**
  * This class is responsible for the following:
- *
- *   1. Pass decrypted input data to an underlying TcpHandler, accepting decrypted output data
- *   2. Read encrypted input data from the input buffer and decrypt it for the underlying TcpHandler
- *   3. Encrypt output data from the underlying TcpHandler, and write it to the output buffer
- *
+ * <p>
+ * 1. Pass decrypted input data to an underlying TcpHandler, accepting decrypted output data
+ * 2. Read encrypted input data from the input buffer and decrypt it for the underlying TcpHandler
+ * 3. Encrypt output data from the underlying TcpHandler, and write it to the output buffer
+ * <p>
  * <code>initialise</code> is a blocking operation that will only return when a successful
  * SSL handshake has occurred, or if an exception occurred.
  */
@@ -55,8 +55,8 @@ final class SslEngineStateMachine {
             inboundApplicationData = ByteBuffer.allocateDirect(engine.getSession().getApplicationBufferSize());
             inboundEncodedData = ByteBuffer.allocateDirect(engine.getSession().getPacketBufferSize());
             // eliminates array creation on each call to SSLEngine.wrap()
-            precomputedWrapArray = new ByteBuffer[] {outboundApplicationData};
-            precomputedUnwrapArray = new ByteBuffer[] {inboundApplicationData};
+            precomputedWrapArray = new ByteBuffer[]{outboundApplicationData};
+            precomputedUnwrapArray = new ByteBuffer[]{inboundApplicationData};
 
             new Handshaker().performHandshake(engine, channel);
         } catch (IOException e) {

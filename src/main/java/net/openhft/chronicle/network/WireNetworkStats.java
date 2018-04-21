@@ -41,6 +41,13 @@ public class WireNetworkStats extends AbstractMarshallable implements
 
     private long percentile99_9th;
 
+    public WireNetworkStats(int localIdentifier) {
+        this.localIdentifier = localIdentifier;
+    }
+
+    public WireNetworkStats() {
+    }
+
     public long percentile90th() {
         return percentile90th;
     }
@@ -65,13 +72,6 @@ public class WireNetworkStats extends AbstractMarshallable implements
     public WireNetworkStats wireType(Enum wireType) {
         this.wireType = wireType;
         return this;
-    }
-
-    public WireNetworkStats(int localIdentifier) {
-        this.localIdentifier = localIdentifier;
-    }
-
-    public WireNetworkStats() {
     }
 
     @Override

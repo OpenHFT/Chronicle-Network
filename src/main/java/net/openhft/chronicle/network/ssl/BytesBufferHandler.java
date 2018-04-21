@@ -8,9 +8,9 @@ import java.nio.ByteBuffer;
 
 /**
  * This class handles the bridge between two sets of buffers:
- *  - socket-side data - encrypted, handled by <code>readData</code>, <code>writeData</code>
- *  - application-side data - decrypted, handled by <code>handleDecryptedData</code>
- *
+ * - socket-side data - encrypted, handled by <code>readData</code>, <code>writeData</code>
+ * - application-side data - decrypted, handled by <code>handleDecryptedData</code>
+ * <p>
  * The delegate {@see TcpHandler} will be invoked with decrypted input data, and its
  * output will be encrypted read for transmission over a socket.
  *

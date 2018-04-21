@@ -14,13 +14,14 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
         <groupId>net.openhft</groupId>
         <artifactId>java-parent-pom</artifactId>
         <version>1.1.16</version>
-        <relativePath />
+        <relativePath/>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -35,7 +36,8 @@
 
             <dependency>
                 <groupId>net.openhft</groupId>
-                  <artifactId>third-party-bom</artifactId> <!-- PLEASE DON'T LEAVE THIS ON A SNAPSHOT because they get missed in a release  -->
+                <artifactId>third-party-bom
+                </artifactId> <!-- PLEASE DON'T LEAVE THIS ON A SNAPSHOT because they get missed in a release  -->
                 <type>pom</type>
                 <version>3.6.2</version>
                 <scope>import</scope>
@@ -53,7 +55,6 @@
     </dependencyManagement>
 
     <dependencies>
-
 
         <dependency>
             <groupId>net.openhft</groupId>
@@ -241,7 +242,6 @@
 
         </plugins>
     </build>
-
 
     <scm>
         <url>scm:git:git@github.com:OpenHFT/Chronicle-Network.git</url>

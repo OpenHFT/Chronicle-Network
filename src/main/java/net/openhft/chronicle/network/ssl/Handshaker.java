@@ -25,6 +25,11 @@ final class Handshaker {
         this.peerNetworkData = ByteBuffer.allocateDirect(HANDSHAKE_BUFFER_CAPACITY);
     }
 
+    private static String socketToString(final SocketChannel channel) {
+        return channel.socket().getLocalPort() + "->" +
+                ((InetSocketAddress) channel.socket().getRemoteSocketAddress()).getPort();
+    }
+
     void performHandshake(final SSLEngine engine, final SocketChannel channel) throws IOException {
         while (!channel.finishConnect()) {
             Thread.yield();
@@ -39,7 +44,6 @@ final class Handshaker {
         long underflowCount = 0;
         boolean reportedInitialStatus = false;
         SSLEngineResult.HandshakeStatus lastStatus = status;
-
 
         while (status != SSLEngineResult.HandshakeStatus.FINISHED &&
                 status != SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) {
@@ -108,8 +112,7 @@ final class Handshaker {
                         try {
                             delegatedTask.run();
                             LOGGER.debug("Ran task {}", delegatedTask);
-                        }
-                        catch (RuntimeException e) {
+                        } catch (RuntimeException e) {
                             LOGGER.error("Delegated task threw exception", e);
                         }
                     }
@@ -118,10 +121,5 @@ final class Handshaker {
 
             status = engine.getHandshakeStatus();
         }
-    }
-
-    private static String socketToString(final SocketChannel channel) {
-        return channel.socket().getLocalPort() + "->" +
-                ((InetSocketAddress) channel.socket().getRemoteSocketAddress()).getPort();
     }
 }

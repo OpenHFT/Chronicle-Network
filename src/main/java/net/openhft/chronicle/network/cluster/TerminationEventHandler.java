@@ -25,7 +25,7 @@ import net.openhft.chronicle.network.NetworkContext;
 public interface TerminationEventHandler {
     void onTerminate(final NetworkContext nc);
 
-   default boolean isTerminated(){
-       throw new UnsupportedOperationException();
-   }
+    default boolean isTerminated() {
+        throw new UnsupportedOperationException();
+    }
 }
