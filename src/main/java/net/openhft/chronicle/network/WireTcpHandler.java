@@ -234,14 +234,6 @@ public abstract class WireTcpHandler<T extends NetworkContext>
         }
     }
 
-    private void logYaml(long start) {
-        if (YamlLogging.showServerReads() && !inWire.bytes().isEmpty()) {
-            String s = Wires.fromSizePrefixedBlobs(inWire.bytes(), start, inWire.bytes()
-                    .readLimit());
-            LOG.info("handler=" + this.getClass().getSimpleName() + ", read:\n" + s);
-        }
-    }
-
     protected void checkWires(Bytes in, Bytes out, @NotNull WireType wireType) {
         if (recreateWire) {
             recreateWire = false;
