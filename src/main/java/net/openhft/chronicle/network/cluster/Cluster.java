@@ -156,7 +156,8 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
 
         int local = (int) clusterContext.localIdentifier();
         if (!hostIds.contains(local)) {
-            Jvm.debug().on(getClass(), "cluster='" + clusterContext.clusterName() + "' ignored as localIdentifier=" + clusterContext.localIdentifier() + " is in this cluster");
+            if (Jvm.isDebugEnabled(getClass()))
+                Jvm.debug().on(getClass(), "cluster='" + clusterContext.clusterName() + "' ignored as localIdentifier=" + clusterContext.localIdentifier() + " is in this cluster");
             return;
         }
 

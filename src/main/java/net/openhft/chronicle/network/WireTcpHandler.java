@@ -229,7 +229,8 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     private void resizeInWire(long size) {
         @NotNull final Bytes<?> bytes = inWire.bytes();
         if (size > bytes.realCapacity()) {
-            Jvm.debug().on(getClass(), Integer.toHexString(System.identityHashCode(bytes)) + " resized to: " + size);
+            if (Jvm.isDebugEnabled(getClass()))
+                Jvm.debug().on(getClass(), Integer.toHexString(System.identityHashCode(bytes)) + " resized to: " + size);
             bytes.ensureCapacity(size);
         }
     }

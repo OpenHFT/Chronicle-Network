@@ -177,7 +177,8 @@ public class TcpChannelHub implements Closeable {
             if (hub.isClosed())
                 continue;
 
-            Jvm.debug().on(TcpChannelHub.class, "Closing " + hub);
+            if (Jvm.isDebugEnabled(TcpChannelHub.class))
+                Jvm.debug().on(TcpChannelHub.class, "Closing " + hub);
             hub.close();
         }
         hubs.clear();
@@ -280,7 +281,8 @@ public class TcpChannelHub implements Closeable {
                         return null;
 
                 } catch (IOException e) {
-                    Jvm.debug().on(getClass(), "Failed to connect to " + socketAddress + " " + e);
+                    if (Jvm.isDebugEnabled(getClass()))
+                        Jvm.debug().on(getClass(), "Failed to connect to " + socketAddress + " " + e);
                     return null;
                 }
             }
@@ -520,7 +522,8 @@ public class TcpChannelHub implements Closeable {
         try {
             final boolean await = receivedClosedAcknowledgement.await(1, TimeUnit.SECONDS);
             if (!await)
-                Jvm.debug().on(getClass(), "SERVER IGNORED CLOSE REQUEST: shutting down the client anyway as the " +
+                if (Jvm.isDebugEnabled(getClass()))
+                    Jvm.debug().on(getClass(), "SERVER IGNORED CLOSE REQUEST: shutting down the client anyway as the " +
                         "server did not respond to the close() request.");
         } catch (InterruptedException ignore) {
             Thread.currentThread().interrupt();
@@ -875,7 +878,8 @@ public class TcpChannelHub implements Closeable {
             } else {
                 if (!lock.tryLock()) {
                     if (tryLock.equals(TryLock.TRY_LOCK_WARN))
-                        Jvm.debug().on(getClass(), "FAILED TO OBTAIN LOCK thread=" + Thread.currentThread() + " on " +
+                        if (Jvm.isDebugEnabled(getClass()))
+                            Jvm.debug().on(getClass(), "FAILED TO OBTAIN LOCK thread=" + Thread.currentThread() + " on " +
                                 lock, new IllegalStateException());
                     return false;
                 }
@@ -1270,12 +1274,14 @@ public class TcpChannelHub implements Closeable {
 
                         } else {
                             String message = e.getMessage();
-                            if (e instanceof ConnectionDroppedException)
-                                Jvm.debug().on(getClass(), "reconnecting due to dropped connection " + ((message == null) ? "" : message));
-                            else if (e instanceof IOException && "Connection reset by peer".equals(message))
+                            if (e instanceof ConnectionDroppedException) {
+                                if (Jvm.isDebugEnabled(getClass()))
+                                    Jvm.debug().on(getClass(), "reconnecting due to dropped connection " + ((message == null) ? "" : message));
+                            } else if (e instanceof IOException && "Connection reset by peer".equals(message)) {
                                 Jvm.warn().on(getClass(), "reconnecting due to \"Connection reset by peer\" " + message);
-                            else
+                            } else {
                                 Jvm.warn().on(getClass(), "reconnecting due to unexpected exception", e);
+                            }
                             closeSocket();
 
                             long pauseMs = connectionStrategy == null ? 500 : connectionStrategy.pauseMillisBeforeReconnect();
@@ -1380,7 +1386,8 @@ public class TcpChannelHub implements Closeable {
                         blockingRead(inWire, messageSize);
                         logToStandardOutMessageReceived(inWire);
 
-                        Jvm.debug().on(getClass(), "unable to respond to tid=" + tid + ", given that we have " +
+                        if (Jvm.isDebugEnabled(getClass()))
+                            Jvm.debug().on(getClass(), "unable to respond to tid=" + tid + ", given that we have " +
                                 "received a message we a tid which is unknown, this can occur " +
                                 "sometime if " +
                                 "the subscription has just become unregistered ( an the server " +

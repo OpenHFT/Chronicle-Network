@@ -41,7 +41,8 @@ public interface ConnectionStrategy extends Marshallable {
 
             int select = selector.select(socketConnectionTimeoutMs);
             if (select == 0) {
-                Jvm.debug().on(ConnectionStrategy.class, "Timed out attempting to connect to " + socketAddress);
+                if (Jvm.isDebugEnabled(ConnectionStrategy.class))
+                    Jvm.debug().on(ConnectionStrategy.class, "Timed out attempting to connect to " + socketAddress);
                 return null;
             } else {
                 try {
@@ -49,7 +50,8 @@ public interface ConnectionStrategy extends Marshallable {
                         return null;
 
                 } catch (IOException e) {
-                    Jvm.debug().on(ConnectionStrategy.class, "Failed to connect to " + socketAddress + " " + e);
+                    if (Jvm.isDebugEnabled(ConnectionStrategy.class))
+                        Jvm.debug().on(ConnectionStrategy.class, "Failed to connect to " + socketAddress + " " + e);
                     return null;
                 }
             }

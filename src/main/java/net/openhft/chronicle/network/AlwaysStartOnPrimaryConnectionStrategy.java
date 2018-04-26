@@ -64,7 +64,8 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
                 socketChannel = openSocketChannel(socketAddress, tcpBufferSize, 500, socketConnectionTimeoutMs);
 
                 if (socketChannel == null) {
-                    Jvm.debug().on(getClass(), "unable to connected to " + socketAddressSupplier.toString());
+                    if (Jvm.isDebugEnabled(getClass()))
+                        Jvm.debug().on(getClass(), "unable to connected to " + socketAddressSupplier.toString());
 
                     // at end
                     if (isAtEnd(socketAddressSupplier)) {
@@ -76,7 +77,8 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
                     continue;
                 }
 
-                Jvm.debug().on(getClass(), "successfully connected to " + socketAddressSupplier.toString());
+                if (Jvm.isDebugEnabled(getClass()))
+                    Jvm.debug().on(getClass(), "successfully connected to " + socketAddressSupplier);
 
                 if (networkStatsListener != null)
                     networkStatsListener.onHostPort(socketAddress.getHostString(), socketAddress.getPort());

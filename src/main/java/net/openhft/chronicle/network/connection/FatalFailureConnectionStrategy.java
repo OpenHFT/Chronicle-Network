@@ -107,7 +107,8 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
                     continue;
                 }
 
-                Jvm.debug().on(getClass(), "successfully connected to " + socketAddressSupplier.toString());
+                if (Jvm.isDebugEnabled(getClass()))
+                    Jvm.debug().on(getClass(), "successfully connected to " + socketAddressSupplier);
 
                 if (networkStatsListener != null)
                     networkStatsListener.onHostPort(socketAddress.getHostString(), socketAddress.getPort());
