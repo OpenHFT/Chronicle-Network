@@ -61,7 +61,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
                     continue;
                 }
 
-                socketChannel = openSocketChannel(socketAddress, tcpBufferSize, 500, socketConnectionTimeoutMs);
+                socketChannel = openSocketChannel(socketAddress, tcpBufferSize, pausePeriodMs, socketConnectionTimeoutMs);
 
                 if (socketChannel == null) {
                     if (Jvm.isDebugEnabled(getClass()))
