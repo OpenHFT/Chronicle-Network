@@ -118,7 +118,13 @@ public enum TCPRegistry {
         // PLEASE DON'T CHANGE THIS TO FALSE AS IT CAUSES RESTART ISSUES ON TCP/IP TIMED_WAIT
         ssc.socket().setReuseAddress(true);
 
-        ssc.bind(address);
+        try {
+            ssc.bind(address);
+        } catch (Exception e){
+            Jvm.warn().on(TCPRegistry.class, "Error when attempting to bind to address " + address, e);
+            Jvm.rethrow(e);
+        }
+
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.put(description, ssc);
         return ssc;
     }
