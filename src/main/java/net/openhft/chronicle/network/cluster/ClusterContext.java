@@ -57,8 +57,6 @@ public abstract class ClusterContext implements Demarshallable, WriteMarshallabl
     protected ClusterContext(@NotNull WireIn wire) throws IORuntimeException {
         defaults();
         while (wire.bytes().readRemaining() > 0) {
-            wire.consumePadding();
-            if (wire.bytes().readRemaining() > 0)
                 wireParser().parseOne(wire);
         }
     }
