@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.function.Function;
@@ -74,8 +73,8 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
             throw new InvalidEventHandlerException();
 
         try {
-            if (LOG.isDebugEnabled())
-                LOG.debug(Thread.currentThread() + " accepting " + ssc);
+            if (Jvm.isDebugEnabled(getClass()))
+                Jvm.debug().on(getClass(), Thread.currentThread() + " accepting " + ssc);
 
             SocketChannel sc = ssc.accept();
 
