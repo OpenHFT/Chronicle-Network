@@ -85,7 +85,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     public TcpEventHandler(@NotNull NetworkContext nc, boolean fair) {
 
         this.writeEventHandler = new WriteEventHandler();
-        this.sc = ISocketChannel.wrap(nc.socketChannel());
+        this.sc = ISocketChannel.wrapUnsafe(nc.socketChannel());
         this.nc = nc;
         this.fair = fair;
 
