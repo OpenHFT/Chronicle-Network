@@ -20,7 +20,6 @@ package net.openhft.chronicle.network;
 /**
  * @author Rob Austin.
  */
-@FunctionalInterface
 public interface HeartbeatListener {
 
     /**
@@ -36,4 +35,9 @@ public interface HeartbeatListener {
     default long lingerTimeBeforeDisconnect() {
         return 0;
     }
+
+    /**
+     * signals that some bytes where read of the tcp/ip socket
+     */
+    void onReadBytes();
 }
