@@ -69,7 +69,9 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
 
     @Override
     public void onReadBytes() {
-        heartbeatListener.onReadBytes();
+        HeartbeatListener heartbeatListener = this.heartbeatListener;
+        if (heartbeatListener != null)
+            heartbeatListener.onReadBytes();
     }
 
     /**
