@@ -197,13 +197,11 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 LOG.trace("inBB is full, can't read from socketChannel");
             if (read > 0) {
                 WanSimulator.dataRead(read);
-
                 tcpHandler.onReadTime(System.nanoTime());
                 lastTickReadTime = System.currentTimeMillis();
                 readLog.log(inBB, start, inBB.position());
                 if (invokeHandler())
                     oneInTen++;
-                nc.onReadBytes();
                 busy = true;
             } else if (read == 0) {
                 if (outBBB.readRemaining() > 0) {

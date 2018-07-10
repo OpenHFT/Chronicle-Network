@@ -31,11 +31,6 @@ public interface NetworkContext<T extends NetworkContext> extends Closeable {
 
     void onHandlerChanged(TcpHandler handler);
 
-    /**
-     * signals that some bytes where read of the tcp/ip socket
-     */
-    void onReadBytes();
-
     @NotNull
     T isAcceptor(boolean serverSocket);
 
