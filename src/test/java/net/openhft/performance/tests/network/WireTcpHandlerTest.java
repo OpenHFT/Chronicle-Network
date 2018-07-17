@@ -18,15 +18,11 @@ package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.threads.EventLoop;
-import net.openhft.chronicle.core.threads.ThreadDump;
 import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -54,14 +50,13 @@ public class WireTcpHandlerTest {
 
     private final String desc;
     private final WireType wireType;
-    private ThreadDump threadDump;
 
     public WireTcpHandlerTest(String desc, WireType wireWrapper) {
         this.desc = desc;
         this.wireType = wireWrapper;
     }
 
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name = "{0}")
     public static Collection<Object[]> combinations() {
         return Arrays.asList(
                 new Object[]{"TextWire", WireType.TEXT},
@@ -72,7 +67,6 @@ public class WireTcpHandlerTest {
     }
 
     private static void testLatency(String desc, @NotNull Function<Bytes, Wire> wireWrapper, @NotNull SocketChannel... sockets) throws IOException {
-//        System.out.println("Starting latency test");
         int tests = 40000;
         @NotNull long[] times = new long[tests * sockets.length];
         int count = 0;
@@ -91,7 +85,9 @@ public class WireTcpHandlerTest {
                 out.clear();
                 outBytes.clear();
                 td.value3 = td.value2 = td.value1 = i;
-                td.write(outWire);
+                try (DocumentContext ignored = outWire.writingDocument(false)) {
+                    td.write(outWire);
+                }
                 out.limit((int) outBytes.writePosition());
                 socket.write(out);
                 if (out.remaining() > 0)
@@ -132,17 +128,6 @@ public class WireTcpHandlerTest {
         );
     }
 
-    @Before
-    public void threadDump() {
-        threadDump = new ThreadDump();
-    }
-
-    @After
-    public void checkThreadDump() {
-        threadDump.assertNoNewThreads();
-    }
-
-    @Ignore("todo fix")
     @Test
     public void testProcess() throws IOException {
         @NotNull EventLoop eg = new EventGroup(true);
@@ -180,7 +165,6 @@ public class WireTcpHandlerTest {
 
         @Override
         protected void onInitialize() {
-            throw new UnsupportedOperationException("todo");
         }
     }
 }

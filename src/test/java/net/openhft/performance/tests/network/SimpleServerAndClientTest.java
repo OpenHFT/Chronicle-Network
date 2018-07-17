@@ -62,8 +62,8 @@ public class SimpleServerAndClientTest {
     }
 
     @Test
-    public void test() throws IOException, TimeoutException, InterruptedException {
-        YamlLogging.setAll(true);
+    public void test() throws IOException {
+        YamlLogging.setAll(false);
 
         for (; ; ) {
             // this the name of a reference to the host name and port,

@@ -37,18 +37,15 @@ class TestData implements DoubleConsumer, LongConsumer, IntConsumer {
     }
 
     public void write(@NotNull WireOut wire) {
-        wire.writeDocument(false, d ->
-                d.write(Field.key1).int32(value1)
-                        .write(Field.key2).int64(value2)
-                        .write(Field.key3).float64(value3));
+        wire.write(Field.key1).int32(value1)
+                .write(Field.key2).int64(value2)
+                .write(Field.key3).float64(value3);
     }
 
     public void read(@NotNull WireIn wire) {
-        wire.readDocument(null, data ->
-                data.read(Field.key1).int32(this, (o, i) -> value1 = i)
-                        .read(Field.key2).int64(this, (o, i) -> value2 = i)
-                        .read(Field.key3).float64(this, (o, i) -> value3 = i)
-        );
+        wire.read(Field.key1).int32(this, (o, i) -> value1 = i)
+                .read(Field.key2).int64(this, (o, i) -> value2 = i)
+                .read(Field.key3).float64(this, (o, i) -> value3 = i);
     }
 
     @Override
