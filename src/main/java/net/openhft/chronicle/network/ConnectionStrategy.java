@@ -1,7 +1,6 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.wire.Marshallable;
@@ -103,7 +102,7 @@ public interface ConnectionStrategy extends Marshallable {
                                             long timeoutMs,
                                             int socketConnectionTimeoutMs) throws IOException, InterruptedException {
         assert timeoutMs > 0;
-        long start = Time.tickTime();
+        long start = System.currentTimeMillis();
         SocketChannel sc = socketChannel(socketAddress, tcpBufferSize, socketConnectionTimeoutMs);
         if (sc != null)
             return sc;
@@ -111,7 +110,7 @@ public interface ConnectionStrategy extends Marshallable {
         for (; ; ) {
             if (Thread.currentThread().isInterrupted())
                 throw new InterruptedException();
-            if (start + timeoutMs < Time.tickTime()) {
+            if (start + timeoutMs < System.currentTimeMillis()) {
                 Jvm.warn().on(ConnectionStrategy.class, "Timed out attempting to connect to " + socketAddress);
                 return null;
             }
