@@ -128,6 +128,10 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         }
     }
 
+    public ISocketChannel socketChannel(){
+        return sc;
+    }
+
     @Override
     public boolean isClosed() {
         return closed;
