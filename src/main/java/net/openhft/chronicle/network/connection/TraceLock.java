@@ -17,6 +17,7 @@
 package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.StackTrace;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,14 +41,14 @@ class TraceLock extends ReentrantLock {
     @Override
     public void lockInterruptibly() throws InterruptedException {
         super.lockInterruptibly();
-        here = new Throwable();
+        here = new StackTrace();
     }
 
     @Override
     public void lock() {
 
         super.lock();
-        here = new Throwable();
+        here = new StackTrace();
     }
 
     @Override
@@ -78,7 +79,7 @@ class TraceLock extends ReentrantLock {
     public boolean tryLock() {
         final boolean b = super.tryLock();
         if (b)
-            here = new Throwable();
+            here = new StackTrace();
         return b;
     }
 
@@ -87,7 +88,7 @@ class TraceLock extends ReentrantLock {
 
         final boolean b = super.tryLock(timeout, unit);
         if (b)
-            here = new Throwable();
+            here = new StackTrace();
         return b;
     }
 }

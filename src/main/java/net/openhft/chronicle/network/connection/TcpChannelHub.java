@@ -19,6 +19,7 @@ package net.openhft.chronicle.network.connection;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.bytes.ConnectionDroppedException;
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.StackTrace;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.threads.EventHandler;
@@ -432,7 +433,7 @@ public class TcpChannelHub implements Closeable {
             this.clientChannel = null;
 
             if (LOG.isDebugEnabled())
-                Jvm.debug().on(getClass(), "closing", new Throwable("only added for logging - please ignore !"));
+                Jvm.debug().on(getClass(), "closing", new StackTrace("only added for logging - please ignore !"));
 
             @NotNull final TcpSocketConsumer tcpSocketConsumer = this.tcpSocketConsumer;
 
@@ -1641,7 +1642,7 @@ public class TcpChannelHub implements Closeable {
                 return;
 
             if (shutdownHere == null)
-                shutdownHere = new Throwable(Thread.currentThread() + " Shutdown here");
+                shutdownHere = new StackTrace(Thread.currentThread() + " Shutdown here");
 
             isShutdown = true;
             service.shutdown();
