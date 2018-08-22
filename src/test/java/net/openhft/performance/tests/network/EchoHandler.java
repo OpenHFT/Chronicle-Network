@@ -17,36 +17,21 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.core.threads.EventLoop;
-import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.NetworkContext;
-import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.api.TcpHandler;
-import net.openhft.chronicle.threads.EventGroup;
-import net.openhft.performance.tests.vanilla.tcp.EchoClientMain;
 import org.jetbrains.annotations.NotNull;
-
-import java.io.IOException;
 
 /*
  * Created by peter.lawrey on 22/01/15.
  */
-class EchoHandler implements TcpHandler<NetworkContext> {
+public class EchoHandler implements TcpHandler<NetworkContext> {
 
     public EchoHandler() {
     }
 
-    public static <T extends NetworkContext> void main(String[] args) throws IOException {
-        @NotNull EventLoop eg = new EventGroup(false);
-        eg.start();
-        @NotNull AcceptorEventHandler eah = new AcceptorEventHandler("*:" + EchoClientMain.PORT,
-                LegacyHanderFactory.legacyTcpEventHandlerFactory(nc -> new EchoHandler()),
-                VanillaNetworkContext::new);
-        eg.addHandler(eah);
-    }
-
     @Override
     public void process(@NotNull final Bytes in, @NotNull final Bytes out, NetworkContext nc) {
+//        System.out.println(in.readRemaining());
         if (in.readRemaining() == 0)
             return;
 //        System.out.println("P start " + in.toDebugString());

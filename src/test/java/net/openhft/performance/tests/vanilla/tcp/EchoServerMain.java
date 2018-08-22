@@ -42,7 +42,8 @@ public class EchoServerMain {
         @NotNull AtomicReference<SocketChannel> nextSocket = new AtomicReference<>();
 
         new Thread(() -> {
-            Affinity.setAffinity(7);
+            Affinity.acquireCore();
+            System.out.println("Running on CPU " + Affinity.getCpu());
 
             ByteBuffer bb = ByteBuffer.allocateDirect(32 * 1024);
             ByteBuffer bb2 = ByteBuffer.allocateDirect(32 * 1024);
