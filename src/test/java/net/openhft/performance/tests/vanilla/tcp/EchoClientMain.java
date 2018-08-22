@@ -25,6 +25,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
@@ -126,11 +127,15 @@ public class EchoClientMain {
     public static final int PORT = Integer.getInteger("port", 8007);
     public static final int CLIENTS = Integer.getInteger("clients", 1);
     public static final int TARGET_THROUGHPUT = Integer.getInteger("throughput", 20_000);
-    public static final int CPU = Integer.getInteger("cpu", 3);
+    public static final int CPU = Integer.getInteger("cpu", 0);
 
-    public static void main(@NotNull String... args) throws IOException, InterruptedException {
-        System.out.println("Binding to CPU " + CPU);
-        Affinity.setAffinity(CPU);
+    public static void main(@NotNull String... args) throws IOException {
+        if (CPU == 0) {
+            Affinity.acquireCore();
+        } else {
+            System.out.println("Binding to CPU " + CPU);
+            Affinity.setAffinity(CPU);
+        }
         @NotNull String[] hostnames = args.length > 0 ? args : "localhost".split(",");
 
         @NotNull ISocketChannel[] sockets = new ISocketChannel[CLIENTS];
@@ -139,8 +144,8 @@ public class EchoClientMain {
         closeConnections(sockets);
         openConnections(hostnames, PORT, sockets);
 //        for (int i : new int[]{100_000, 110_000, 120_000, 130_000, 140_000, 150_000})
-        for (int i : new int[]{20000, 20, 10, 5, 2, 1, 20, 10, 5, 2, 1, 10, 5, 2, 1, 10, 5, 2, 1,})
-//        for (int i : new int[]{50000,40000, 30000, 20000, 15000,10000, 5000})
+//        for (int i : new int[]{20000, 20, 10, 5, 2, 1, 20, 10, 5, 2, 1, 10, 5, 2, 1, 10, 5, 2, 1,})
+        for (int i : new int[]{50000, 40000, 30000, 20000, 15000, 10000, 5000})
             testByteLatency(i, sockets);
         closeConnections(sockets);
     }
@@ -161,12 +166,13 @@ public class EchoClientMain {
     private static void testThroughput(@NotNull ISocketChannel... sockets) throws IOException {
         System.out.println("Starting throughput test, clients=" + CLIENTS);
         int bufferSize = 16 * 1024;
-        ByteBuffer bb = ByteBuffer.allocateDirect(bufferSize);
-        int count = 0, window = 5;
+        ByteBuffer bb = ByteBuffer.allocateDirect(bufferSize).order(ByteOrder.LITTLE_ENDIAN);
+        int count = 0, window = 8;
         long start = System.nanoTime();
         while (System.nanoTime() - start < 10e9) {
             for (@NotNull ISocketChannel socket : sockets) {
                 bb.clear();
+                bb.putInt(0, bb.limit());
                 if (socket.write(bb) < 0)
                     throw new AssertionError("Socket " + socket + " unable to write in one go.");
             }
@@ -192,14 +198,15 @@ public class EchoClientMain {
 
     private static void testByteLatency(int targetThroughput, @NotNull ISocketChannel... sockets) throws IOException {
         System.out.println("Starting latency test rate: " + targetThroughput);
-        int tests = Math.max(1000, Math.min(18 * targetThroughput, 1000000));
+        int tests = Math.max(1000, Math.min(300 * targetThroughput, 5_000_000));
         @NotNull long[] times = new long[tests * sockets.length];
         int count = 0;
         long now = System.nanoTime();
         int interval = (int) (1e9 * sockets.length / targetThroughput);
 
-        ByteBuffer bb = ByteBuffer.allocateDirect(40);
-        bb.putInt(0, 0x12345678);
+        ByteBuffer bb = ByteBuffer.allocateDirect(40).order(ByteOrder.LITTLE_ENDIAN);
+        bb.putInt(0, bb.limit());
+        bb.putInt(4, 0x12345678);
         @NotNull Random rand = new Random();
         @NotNull long[] start = new long[sockets.length];
         for (int i = Math.max(-20000, -targetThroughput); i < tests; i += sockets.length) {
@@ -225,7 +232,7 @@ public class EchoClientMain {
                     if (socket.read(bb) < 0)
                         throw new EOFException();
 
-                if (bb.getInt(0) != 0x12345678)
+                if (bb.getInt(4) != 0x12345678)
                     throw new AssertionError("read error");
 
                 if (i >= 0)
