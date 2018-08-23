@@ -20,7 +20,6 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.bytes.BytesUtil;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
-import net.openhft.chronicle.network.TcpEventHandler;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -109,7 +108,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
             for (int i = 0; i < consumers.size(); i++) {
 
-                if (outWire.bytes().writePosition() > TcpEventHandler.TCP_BUFFER)
+                if (outWire.bytes().writePosition() > TcpChannelHub.SAFE_TCP_SIZE)
                     return;
 
                 if (isClosed())
@@ -213,7 +212,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         synchronized (lock()) {
             assert wire.startUse();
             try {
-                return wire.bytes().writePosition() < TcpChannelHub.TCP_BUFFER / 2; // don't attempt
+                return wire.bytes().writePosition() < TcpChannelHub.SAFE_TCP_SIZE; // don't attempt
                 // to fill the buffer completely.
             } finally {
                 assert wire.endUse();

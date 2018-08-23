@@ -29,7 +29,6 @@ import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.network.api.TcpHandler;
-import net.openhft.chronicle.network.connection.TcpChannelHub;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -41,9 +40,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 
+import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
+
 public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandlerManager {
 
-    public static final int TCP_BUFFER = TcpChannelHub.TCP_BUFFER;
     private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
     public static boolean DISABLE_TCP_NODELAY;
@@ -123,8 +123,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     }
 
     private void checkBufSize(int bufSize, String name) {
-        if (bufSize < TcpEventHandler.TCP_BUFFER) {
-            LOG.warn("Attempted to set " + name + " tcp buffer to " + TcpEventHandler.TCP_BUFFER + " but kernel only allowed " + bufSize);
+        if (bufSize < TCP_BUFFER) {
+            LOG.warn("Attempted to set " + name + " tcp buffer to " + TCP_BUFFER + " but kernel only allowed " + bufSize);
         }
     }
 

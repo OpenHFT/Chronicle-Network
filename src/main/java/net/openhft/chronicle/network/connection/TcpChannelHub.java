@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -74,7 +75,34 @@ import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
  */
 public class TcpChannelHub implements Closeable {
 
-    public static final int TCP_BUFFER = Integer.getInteger("TcpEventHandler.tcpBufferSize", 64 << 15);
+    public static final int TCP_BUFFER = getTcpBufferSize();
+    public static final int SAFE_TCP_SIZE = TCP_BUFFER * 3 / 4;
+
+    private static int getTcpBufferSize() {
+        String sizeStr = System.getProperty("TcpEventHandler.tcpBufferSize");
+        if (sizeStr != null && !sizeStr.isEmpty())
+            try {
+                int size = Integer.parseInt(sizeStr);
+                if (size >= 64 << 10)
+                    return size;
+            } catch (Exception e) {
+                Jvm.warn().on(TcpChannelHub.class, "Unable to parse tcpBufferSize=" + sizeStr, e);
+            }
+        try {
+            try (ServerSocket ss = new ServerSocket(0)) {
+                try (Socket s = new Socket("localhost", ss.getLocalPort())) {
+                    s.setReceiveBufferSize(4 << 20);
+                    s.setSendBufferSize(4 << 20);
+                    int size = Math.min(s.getReceiveBufferSize(), s.getSendBufferSize());
+                    (size >= 128 << 10 ? Jvm.debug() : Jvm.warn())
+                            .on(TcpChannelHub.class, "tcpBufferSize = " + size / 1024.0 + " KiB");
+                    return size;
+                }
+            }
+        } catch (Exception e) {
+            throw new IORuntimeException(e); // problem with networking subsystem.
+        }
+    }
 
     private static final int HEATBEAT_PING_PERIOD =
             getInteger("heartbeat.ping.period",
