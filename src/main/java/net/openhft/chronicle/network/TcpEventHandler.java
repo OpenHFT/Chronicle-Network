@@ -169,7 +169,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             return false;
 
         if (closed) {
-            Closeable.closeQuietly(nc);
+            // close();
             throw new InvalidEventHandlerException();
         }
 

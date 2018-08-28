@@ -53,7 +53,7 @@ public class EchoServerMain {
                     Thread.yield();
                 SocketChannel sc = nextSocket.getAndSet(null);
                 if (sc != null) {
-                    System.out.println("Connected " + sc);
+//                    System.out.println("Connected " + sc);
                     sockets.add(ISocketChannel.wrap(sc));
                 }
                 for (int i = 0; i < sockets.size(); i++) {

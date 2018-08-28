@@ -7,6 +7,7 @@ import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.TcpEventHandler;
 import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.threads.EventGroup;
+import net.openhft.chronicle.threads.Pauser;
 import net.openhft.performance.tests.network.EchoHandler;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,7 +17,7 @@ public class EchoServer2Main {
     public static <T extends NetworkContext> void main(String[] args) throws IOException {
         System.setProperty("pauser.minProcessors", "1");
         Affinity.acquireCore();
-        @NotNull EventLoop eg = new EventGroup(false);
+        @NotNull EventLoop eg = new EventGroup(false, Pauser.busy(), true);
         eg.start();
         @NotNull AcceptorEventHandler eah = new AcceptorEventHandler("*:" + EchoClientMain.PORT,
 
