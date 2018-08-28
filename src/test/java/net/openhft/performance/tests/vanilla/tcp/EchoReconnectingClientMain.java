@@ -16,7 +16,7 @@
 
 package net.openhft.performance.tests.vanilla.tcp;
 
-import net.openhft.affinity.Affinity;
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.Random;
@@ -123,29 +122,16 @@ Loop back echo latency was 20.8/21.8 29/34 38/2286 us for 50/90 99/99.9 99.99/wo
 
 */
 
-public class EchoClientMain {
+public class EchoReconnectingClientMain {
     public static final int PORT = Integer.getInteger("port", 8007);
     public static final int CLIENTS = Integer.getInteger("clients", 1);
-    public static final int TARGET_THROUGHPUT = Integer.getInteger("throughput", 20_000);
-    public static final int CPU = Integer.getInteger("cpu", 0);
 
     public static void main(@NotNull String... args) throws IOException {
-        if (CPU == 0) {
-            Affinity.acquireCore();
-        } else {
-            System.out.println("Binding to CPU " + CPU);
-            Affinity.setAffinity(CPU);
-        }
         @NotNull String[] hostnames = args.length > 0 ? args : "localhost".split(",");
 
         @NotNull ISocketChannel[] sockets = new ISocketChannel[CLIENTS];
-        openConnections(hostnames, PORT, sockets);
-        testThroughput(sockets);
-        closeConnections(sockets);
-        openConnections(hostnames, PORT, sockets);
-        for (int i : new int[]{200_000, 150_000, 120_000, 100_000, 80_000, 60_000, 50_000, 40_000, 30_000, 20_000})
-            testByteLatency(i, sockets);
-        closeConnections(sockets);
+        for (int i : new int[]{200,/* 200, 500, 1000, */2000, 3500, 5000})
+            testByteLatency(hostnames, i, sockets);
     }
 
     private static void openConnections(@NotNull String[] hostname, int port, @NotNull ISocketChannel... sockets) throws IOException {
@@ -161,42 +147,9 @@ public class EchoClientMain {
             socket.close();
     }
 
-    private static void testThroughput(@NotNull ISocketChannel... sockets) throws IOException {
-        System.out.println("Starting throughput test, clients=" + CLIENTS);
-        int bufferSize = 16 * 1024;
-        ByteBuffer bb = ByteBuffer.allocateDirect(bufferSize).order(ByteOrder.LITTLE_ENDIAN);
-        int count = 0, window = 8;
-        long start = System.nanoTime();
-        while (System.nanoTime() - start < 10e9) {
-            for (@NotNull ISocketChannel socket : sockets) {
-                bb.clear();
-                bb.putInt(0, bb.limit());
-                if (socket.write(bb) < 0)
-                    throw new AssertionError("Socket " + socket + " unable to write in one go.");
-            }
-            if (count >= window)
-                for (@NotNull ISocketChannel socket : sockets) {
-                    bb.clear();
-                    while (socket.read(bb) >= 0 && bb.remaining() > 0) ;
-                }
-            count++;
-        }
-        for (@NotNull ISocketChannel socket : sockets) {
-            try {
-                do {
-                    bb.clear();
-                } while (socket.read(bb) > 0);
-            } catch (ClosedChannelException expected) {
-            }
-        }
-        long time = System.nanoTime() - start;
-        System.out.printf("Throughput was %.1f MB/s, clients=%d%n",
-                1e3 * count * bufferSize * sockets.length / time, CLIENTS);
-    }
-
-    private static void testByteLatency(int targetThroughput, @NotNull ISocketChannel... sockets) throws IOException {
+    private static void testByteLatency(String[] hostnames, int targetThroughput, @NotNull ISocketChannel... sockets) throws IOException {
         System.out.println("Starting latency test rate: " + targetThroughput);
-        int tests = Math.max(1000, Math.min(300 * targetThroughput, 5_000_000));
+        int tests = Math.max(1000, Math.min(10 * targetThroughput, 20_000));
         @NotNull long[] times = new long[tests * sockets.length];
         int count = 0;
         long now = System.nanoTime();
@@ -213,10 +166,14 @@ public class EchoClientMain {
                 ;
             long next = now;
             for (int j = 0; j < sockets.length; j++) {
-                ISocketChannel socket = sockets[j];
+                String hostname = hostnames[j % hostnames.length];
+                sockets[j] = ISocketChannel.wrap(SocketChannel.open(new InetSocketAddress(hostname, PORT)));
+                sockets[j].socket().setTcpNoDelay(true);
+                sockets[j].configureBlocking(false);
                 start[j] = next;
                 long start0 = System.nanoTime();
                 bb.position(0);
+                ISocketChannel socket = sockets[j];
                 while (bb.remaining() > 0)
                     if (socket.write(bb) < 0)
                         throw new EOFException();
@@ -232,10 +189,16 @@ public class EchoClientMain {
 
                 if (bb.getInt(4) != 0x12345678)
                     throw new AssertionError("read error");
-
-                if (i >= 0)
-                    times[count++] = System.nanoTime() - start[j];
+                if (i == 0)
+                    System.out.println("Sampling...");
+                if (i >= 0) {
+                    long l = System.nanoTime() - start[j];
+//                    System.out.println("took " + l/1e6);
+                    times[count++] = l;
+                }
             }
+//            System.out.println("Close connections");
+            closeConnections();
         }
         System.out.println("Average time " + (Arrays.stream(times).sum() / times.length) / 1000);
         Arrays.sort(times);
@@ -249,5 +212,7 @@ public class EchoClientMain {
                 times[times.length - times.length / 100000 - 1] / 1000,
                 times[times.length - 1] / 1000
         );
+        System.gc();
+        Jvm.pause(1000);
     }
 }
