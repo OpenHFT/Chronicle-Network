@@ -12,6 +12,7 @@ import java.nio.channels.SocketChannel;
  *
  * Created by Jerry Shea on 29/08/18.
  */
+@FunctionalInterface
 public interface AcceptStrategy extends Marshallable {
 
     AcceptStrategy ACCEPT_ALL = ssc -> ssc.accept();
