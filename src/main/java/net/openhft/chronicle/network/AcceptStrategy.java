@@ -1,5 +1,7 @@
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.wire.Marshallable;
+
 import java.io.IOException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -10,7 +12,7 @@ import java.nio.channels.SocketChannel;
  *
  * Created by Jerry Shea on 29/08/18.
  */
-public interface AcceptStrategy {
+public interface AcceptStrategy extends Marshallable {
 
     AcceptStrategy ACCEPT_ALL = ssc -> ssc.accept();
 
