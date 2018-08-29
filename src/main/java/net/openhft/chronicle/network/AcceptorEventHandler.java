@@ -23,8 +23,6 @@ import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -39,7 +37,6 @@ import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
  * Created by peter.lawrey on 22/01/15.
  */
 public class AcceptorEventHandler implements EventHandler, Closeable {
-    private static final Logger LOG = LoggerFactory.getLogger(AcceptorEventHandler.class);
     @NotNull
     private final Function<NetworkContext, TcpEventHandler> handlerFactory;
     @NotNull
@@ -48,6 +45,7 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
     @NotNull
     private final Supplier<? extends NetworkContext> ncFactory;
     private final String hostPort;
+    private final AcceptStrategy acceptStrategy;
 
     private EventLoop eventLoop;
 
@@ -56,10 +54,18 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
     public AcceptorEventHandler(@NotNull final String hostPort,
                                 @NotNull final Function<NetworkContext, TcpEventHandler> handlerFactory,
                                 @NotNull final Supplier<? extends NetworkContext> ncFactory) throws IOException {
+        this(hostPort, handlerFactory, ncFactory, AcceptStrategy.ACCEPT_ALL);
+    }
+
+    public AcceptorEventHandler(@NotNull final String hostPort,
+                                @NotNull final Function<NetworkContext, TcpEventHandler> handlerFactory,
+                                @NotNull final Supplier<? extends NetworkContext> ncFactory,
+                                @NotNull final AcceptStrategy acceptStrategy) throws IOException {
         this.handlerFactory = handlerFactory;
         this.hostPort = hostPort;
         this.ssc = TCPRegistry.acquireServerSocketChannel(this.hostPort);
         this.ncFactory = ncFactory;
+        this.acceptStrategy = acceptStrategy;
     }
 
     @Override
@@ -76,7 +82,7 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
             if (Jvm.isDebugEnabled(getClass()))
                 Jvm.debug().on(getClass(), Thread.currentThread() + " accepting " + ssc);
 
-            SocketChannel sc = ssc.accept();
+            SocketChannel sc = acceptStrategy.accept(ssc);
 
             if (sc != null) {
                 final NetworkContext nc = ncFactory.get();
