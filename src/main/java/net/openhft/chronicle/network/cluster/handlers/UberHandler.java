@@ -49,7 +49,6 @@ public final class UberHandler<T extends ClusteredNetworkContext> extends CspTcp
 
         this.localIdentifier = localIdentifier;
         this.remoteIdentifier = remoteIdentifier;
-        this.config = config;
 
         assert remoteIdentifier != localIdentifier :
                 "remoteIdentifier=" + remoteIdentifier + ", " +
@@ -60,7 +59,7 @@ public final class UberHandler<T extends ClusteredNetworkContext> extends CspTcp
 
     private static WriteMarshallable uberHandler(final WriteMarshallable m) {
         return wire -> {
-            try (final DocumentContext dc = wire.writingDocument(true)) {
+            try (final DocumentContext ignored = wire.writingDocument(true)) {
                 wire.write(() -> HANDLER).typedMarshallable(m);
             }
         };
@@ -117,10 +116,6 @@ public final class UberHandler<T extends ClusteredNetworkContext> extends CspTcp
             eventLoop.start();
 
             final Cluster engineCluster = nc.getCluster(clusterName);
-
-            ClusterContext clusterContext = engineCluster.clusterContext();
-            if (clusterContext != null)
-                config = clusterContext.config();
 
             // note : we have to publish the uber handler, even if we send a termination event
             // this is so the termination event can be processed by the receiver

@@ -26,7 +26,6 @@ public abstract class CspTcpHandler<T extends NetworkContext> extends WireTcpHan
     @NotNull
     private final Map<Long, SubHandler> cidToHandle = new HashMap<>();
     private final Map<Object, SubHandler> registry = new HashMap<>();
-    protected Marshallable config;
     @Nullable
     private SubHandler handler;
     @Nullable
@@ -88,9 +87,6 @@ public abstract class CspTcpHandler<T extends NetworkContext> extends WireTcpHan
                         registerable.registry(registry);
                     }
 
-                    if (config != null && handler instanceof Configurable)
-                        ((Configurable) handler).configurable(config);
-
                 } catch (Exception e) {
                     Jvm.warn().on(getClass(), e);
                 }
@@ -130,10 +126,6 @@ public abstract class CspTcpHandler<T extends NetworkContext> extends WireTcpHan
         }
 
         return false;
-    }
-
-    public void config(Marshallable config) {
-        this.config = config;
     }
 
     @Nullable

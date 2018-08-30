@@ -34,27 +34,30 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public abstract class ClusterContext implements Demarshallable, WriteMarshallable, Consumer<HostDetails> {
+public abstract class ClusterContext implements Demarshallable, Marshallable, Consumer<HostDetails> {
 
-    private ConnectionStrategy connectionStrategy;
-    private WireType wireType;
-    private Factory handlerFactory;
-    private Function<WireType, WireOutPublisher> wireOutPublisherFactory;
-    private Function<ClusterContext, NetworkContext> networkContextFactory;
-    private Supplier<ConnectionManager> connectionEventHandler;
+    private transient Factory handlerFactory;
+    private transient Function<WireType, WireOutPublisher> wireOutPublisherFactory;
+    private transient Function<ClusterContext, NetworkContext> networkContextFactory;
+    private transient Function<ClusterContext, WriteMarshallable> heartbeatFactory;
+    private transient Function<ClusterContext, NetworkStatsListener> networkStatsListenerFactory;
+    private transient Supplier<ConnectionManager> connectionEventHandler;
+    private transient EventLoop eventLoop;
     private long heartbeatTimeoutMs = 40_000;
     private long heartbeatIntervalMs = 20_000;
-    private Marshallable config;
+    private ConnectionStrategy connectionStrategy;
+    private WireType wireType;
     private String clusterName;
-    private EventLoop eventLoop;
-    private Function<ClusterContext, WriteMarshallable> heartbeatFactory;
     private byte localIdentifier;
-    private Function<ClusterContext, NetworkStatsListener>
-            networkStatsListenerFactory;
     private ServerThreadingStrategy serverThreadingStrategy;
 
     @UsedViaReflection
     protected ClusterContext(@NotNull WireIn wire) throws IORuntimeException {
+        readMarshallable(wire);
+    }
+
+    @Override
+    public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
         defaults();
         while (wire.bytes().readRemaining() > 0) {
             wire.consumePadding();
@@ -99,13 +102,7 @@ public abstract class ClusterContext implements Demarshallable, WriteMarshallabl
         parser.register(() -> "heartbeatFactory", (s, v) -> this.heartbeatFactory(v.typedMarshallable()));
         parser.register(() -> "networkStatsListenerFactory", (s, v) -> this.networkStatsListenerFactory(v.typedMarshallable()));
         parser.register(() -> "serverThreadingStrategy", (s, v) -> this.serverThreadingStrategy(v.asEnum(ServerThreadingStrategy.class)));
-        parser.register(() -> "config", (s, v) -> this.config(v.typedMarshallable()));
         return parser;
-    }
-
-    public ClusterContext config(final Marshallable config) {
-        this.config = config;
-        return this;
     }
 
     public void serverThreadingStrategy(ServerThreadingStrategy serverThreadingStrategy) {
@@ -233,11 +230,6 @@ public abstract class ClusterContext implements Demarshallable, WriteMarshallabl
     }
 
     @Override
-    public void writeMarshallable(@NotNull WireOut wireOut) {
-        throw new UnsupportedOperationException("todo");
-    }
-
-    @Override
     public void accept(@NotNull HostDetails hd) {
         if (this.localIdentifier == hd.hostId())
             return;
@@ -272,10 +264,6 @@ public abstract class ClusterContext implements Demarshallable, WriteMarshallabl
         result.add(handler.apply(this, hd));
         result.add(heartbeat.apply(this));
         return result;
-    }
-
-    public Marshallable config() {
-        return config;
     }
 }
 

@@ -38,7 +38,7 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
     private final String clusterName;
 
     @Nullable
-    private C clusterContext;
+    private C context;
 
     public Cluster(String clusterName) {
         hostDetails = new ConcurrentSkipListMap<>();
@@ -51,11 +51,11 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
 
     @Nullable
     public C clusterContext() {
-        return clusterContext;
+        return context;
     }
 
     public void clusterContext(@NotNull C clusterContext) {
-        this.clusterContext = clusterContext;
+        this.context = clusterContext;
         clusterContext.clusterName(clusterName);
     }
 
@@ -71,9 +71,9 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
             @NotNull final ValueIn valueIn = wire.readEventName(sb);
 
             if ("context".contentEquals(sb)) {
-                clusterContext = valueIn.typedMarshallable();
-                assert clusterContext != null;
-                clusterContext.clusterName(clusterName);
+                context = valueIn.typedMarshallable();
+                assert context != null;
+                context.clusterName(clusterName);
                 continue;
             }
 
@@ -86,7 +86,7 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
         }
 
         // commented out as this causes issues with the chronicle-engine gui
-        //  if (clusterContext == null)
+        //  if (context == null)
         //       throw new IllegalStateException("required field 'context' is missing.");
 
     }
@@ -154,14 +154,14 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
     public void install() {
         Set<Integer> hostIds = hostDetails.values().stream().map(HostDetails::hostId).collect(Collectors.toSet());
 
-        int local = (int) clusterContext.localIdentifier();
+        int local = (int) context.localIdentifier();
         if (!hostIds.contains(local)) {
             if (Jvm.isDebugEnabled(getClass()))
-                Jvm.debug().on(getClass(), "cluster='" + clusterContext.clusterName() + "' ignored as localIdentifier=" + clusterContext.localIdentifier() + " is in this cluster");
+                Jvm.debug().on(getClass(), "cluster='" + context.clusterName() + "' ignored as localIdentifier=" + context.localIdentifier() + " is in this cluster");
             return;
         }
 
-        if (clusterContext != null)
-            hostDetails.values().forEach(clusterContext::accept);
+        if (context != null)
+            hostDetails.values().forEach(context::accept);
     }
 }
