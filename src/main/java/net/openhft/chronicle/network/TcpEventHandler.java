@@ -181,7 +181,13 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     }
 
     @Override
-    public synchronized boolean action() throws InvalidEventHandlerException {
+    public boolean action() throws InvalidEventHandlerException {
+        Jvm.optionalSafepoint();
+        return action0();
+    }
+
+    public synchronized boolean action0() throws InvalidEventHandlerException {
+        Jvm.optionalSafepoint();
         if (tcpHandler == null)
             return false;
 
@@ -307,7 +313,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     @PackageLocal
     boolean invokeHandler() throws IOException {
-        Jvm.safepoint();
+        Jvm.optionalSafepoint();
         boolean busy = false;
         final int position = inBBB.underlyingObject().position();
         inBBB.readLimit(position);
@@ -329,7 +335,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             }
         } while (lastInBBBReadPosition != inBBB.readPosition());
 
-        Jvm.safepoint();
+        Jvm.optionalSafepoint();
 
         if (inBBB.readRemaining() == 0) {
             clearBuffer();
@@ -354,10 +360,10 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         @Nullable ByteBuffer inBB = inBBB.underlyingObject();
         inBB.position((int) inBBB.readPosition());
         inBB.limit((int) inBBB.readLimit());
-        Jvm.safepoint();
+        Jvm.optionalSafepoint();
 
         inBB.compact();
-        Jvm.safepoint();
+        Jvm.optionalSafepoint();
         inBBB.readPosition(0);
         inBBB.readLimit(inBB.remaining());
     }
@@ -443,6 +449,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
         @Override
         public boolean action() throws InvalidEventHandlerException {
+            Jvm.optionalSafepoint();
             if (!sc.isOpen()) throw new InvalidEventHandlerException("socket is closed");
 
             boolean busy = false;
