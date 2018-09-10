@@ -17,6 +17,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.annotation.PackageLocal;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.threads.EventHandler;
@@ -89,7 +90,8 @@ public class RemoteConnector implements Closeable {
         closeables.forEach(Closeable::closeQuietly);
     }
 
-    private SocketChannel openSocketChannel(InetSocketAddress socketAddress) throws IOException {
+    @PackageLocal
+    SocketChannel openSocketChannel(InetSocketAddress socketAddress) throws IOException {
         final SocketChannel result = SocketChannel.open(socketAddress);
         result.configureBlocking(false);
         Socket socket = result.socket();

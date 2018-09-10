@@ -39,6 +39,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 
@@ -46,6 +47,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
+    private static final AtomicBoolean FIRST_HANDLER = new AtomicBoolean();
     public static boolean DISABLE_TCP_NODELAY;
 
     static {
@@ -120,6 +122,21 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         outBBB.underlyingObject().limit(0);
         readLog = new NetworkLog(this.sc, "read");
         writeLog = new NetworkLog(this.sc, "write");
+        if (FIRST_HANDLER.compareAndSet(false, true))
+            warmUp();
+    }
+
+    public void warmUp() {
+        System.out.println(TcpEventHandler.class.getSimpleName() + " - Warming up...");
+        int runs = 12000;
+        long start = System.nanoTime();
+        for (int i = 0; i < runs; i++) {
+            inBBB.readPositionRemaining(8, 1024);
+            compactBuffer();
+            clearBuffer();
+        }
+        long time = System.nanoTime() - start;
+        System.out.println(TcpEventHandler.class.getSimpleName() + " - ... warmed up - took " + (time / runs / 1e3) + " us avg");
     }
 
     private void checkBufSize(int bufSize, String name) {
@@ -128,7 +145,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         }
     }
 
-    public ISocketChannel socketChannel(){
+    public ISocketChannel socketChannel() {
         return sc;
     }
 
@@ -290,6 +307,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     @PackageLocal
     boolean invokeHandler() throws IOException {
+        Jvm.safepoint();
         boolean busy = false;
         final int position = inBBB.underlyingObject().position();
         inBBB.readLimit(position);
@@ -311,24 +329,37 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             }
         } while (lastInBBBReadPosition != inBBB.readPosition());
 
-        if (inBBB.readRemaining() == 0) {
-            inBBB.clear();
-            @Nullable ByteBuffer inBB = inBBB.underlyingObject();
-            inBB.clear();
+        Jvm.safepoint();
 
-        } else if (inBBB.readPosition() > 0) {
-            // if it read some data compact();
-            @Nullable ByteBuffer inBB = inBBB.underlyingObject();
-            inBB.position((int) inBBB.readPosition());
-            inBB.limit((int) inBBB.readLimit());
-            inBB.compact();
-            inBBB.readPosition(0);
-            inBBB.readLimit(inBB.remaining());
+        if (inBBB.readRemaining() == 0) {
+            clearBuffer();
+
+        } else if (inBBB.readPosition() > TCP_BUFFER / 4) {
+            compactBuffer();
 
             busy = true;
         }
 
         return busy;
+    }
+
+    private void clearBuffer() {
+        inBBB.clear();
+        @Nullable ByteBuffer inBB = inBBB.underlyingObject();
+        inBB.clear();
+    }
+
+    private void compactBuffer() {
+        // if it read some data compact();
+        @Nullable ByteBuffer inBB = inBBB.underlyingObject();
+        inBB.position((int) inBBB.readPosition());
+        inBB.limit((int) inBBB.readLimit());
+        Jvm.safepoint();
+
+        inBB.compact();
+        Jvm.safepoint();
+        inBBB.readPosition(0);
+        inBBB.readLimit(inBB.remaining());
     }
 
     private void handleIOE(@NotNull IOException e, final boolean clientIntentionallyClosed,
