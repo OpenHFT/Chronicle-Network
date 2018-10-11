@@ -1739,7 +1739,7 @@ public class TcpChannelHub implements Closeable {
                     if (isShuttingdown())
                         continue;
 
-                    socketChannel = connectionStrategy.connect(name, socketAddressSupplier, null, false, clientConnectionMonitor);
+                    socketChannel = connectionStrategy.connect(name, socketAddressSupplier, false, clientConnectionMonitor);
 
                     if (isShuttingdown())
                         continue;

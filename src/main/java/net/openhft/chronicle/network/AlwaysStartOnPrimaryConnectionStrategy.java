@@ -35,7 +35,6 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
     @Override
     public SocketChannel connect(@NotNull String name,
                                  @NotNull SocketAddressSupplier socketAddressSupplier,
-                                 @Nullable NetworkStatsListener<? extends NetworkContext> networkStatsListener,
                                  boolean didLogIn,
                                  @Nullable FatalFailureMonitor fatalFailureMonitor) throws InterruptedException {
 
@@ -78,9 +77,6 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
                 }
 
                 Jvm.warn().on(getClass(), "successfully connected to " + socketAddressSupplier);
-
-                if (networkStatsListener != null)
-                    networkStatsListener.onHostPort(socketAddress.getHostString(), socketAddress.getPort());
 
                 // success
                 return socketChannel;

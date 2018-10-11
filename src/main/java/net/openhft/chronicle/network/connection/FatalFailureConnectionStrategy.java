@@ -2,8 +2,6 @@ package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.network.ConnectionStrategy;
-import net.openhft.chronicle.network.NetworkContext;
-import net.openhft.chronicle.network.NetworkStatsListener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,7 +55,6 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
     @Override
     public SocketChannel connect(@NotNull String name,
                                  @NotNull SocketAddressSupplier socketAddressSupplier,
-                                 @Nullable NetworkStatsListener<? extends NetworkContext> networkStatsListener,
                                  boolean didLogIn,
                                  @Nullable FatalFailureMonitor fatalFailureMonitor) throws InterruptedException {
 
@@ -109,9 +106,6 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
 
                 if (Jvm.isDebugEnabled(getClass()))
                     Jvm.debug().on(getClass(), "successfully connected to " + socketAddressSupplier);
-
-                if (networkStatsListener != null)
-                    networkStatsListener.onHostPort(socketAddress.getHostString(), socketAddress.getPort());
 
                 hasSentFatalFailure = false;
                 failures = 0;

@@ -70,7 +70,6 @@ public interface ConnectionStrategy extends Marshallable {
     /**
      * @param name                  the name of the connection, only used for logging
      * @param socketAddressSupplier
-     * @param networkStatsListener
      * @param didLogIn              was the last attempt successfull, was a login established
      * @param fatalFailureMonitor
      * @return
@@ -78,7 +77,6 @@ public interface ConnectionStrategy extends Marshallable {
      */
     SocketChannel connect(@NotNull String name,
                           @NotNull SocketAddressSupplier socketAddressSupplier,
-                          @Nullable NetworkStatsListener<? extends NetworkContext> networkStatsListener,
                           boolean didLogIn,
                           @NotNull FatalFailureMonitor fatalFailureMonitor) throws InterruptedException;
 
