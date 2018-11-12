@@ -182,7 +182,7 @@ By default the Chronicle-Network server uses a single thread, to process all mes
 However, if you wish to dedicate each client connection to its own thread.
 Then you can change the server threading strategy, to :
 ```
--DServerThreadingStrategy= MULTI_THREADED_BUSY_WAITING
+-DServerThreadingStrategy= CONCURRENT
 ```
 
 see the following enum for more details net.openhft.chronicle.network.ServerThreadingStrategy

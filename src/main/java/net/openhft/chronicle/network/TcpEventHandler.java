@@ -162,13 +162,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
             case SINGLE_THREADED:
                 return HandlerPriority.MEDIUM;
-
             case CONCURRENT:
                 return HandlerPriority.CONCURRENT;
-
-            case MULTI_THREADED_BUSY_WAITING:
-                return HandlerPriority.BLOCKING;
-
             default:
                 throw new UnsupportedOperationException("todo");
         }

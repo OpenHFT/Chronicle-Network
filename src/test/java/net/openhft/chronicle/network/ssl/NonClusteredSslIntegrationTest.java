@@ -244,7 +244,7 @@ public final class NonClusteredSslIntegrationTest {
 
         @Override
         public ServerThreadingStrategy serverThreadingStrategy() {
-            return ServerThreadingStrategy.MULTI_THREADED_BUSY_WAITING;
+            return ServerThreadingStrategy.CONCURRENT;
         }
 
         @Override

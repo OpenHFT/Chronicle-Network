@@ -24,8 +24,6 @@ public enum ServerThreadingStrategy {
     SINGLE_THREADED("uses a single threaded prioritised event loop," +
             " where the reads take priority over the asynchronous writes"),
     CONCURRENT("each client connection is partitioned to a limit number of threads, " +
-            "This is ideal when you have a small number of client connections on a server with a large number of free cores"),
-    MULTI_THREADED_BUSY_WAITING("each client connection is devoted to its own busy waiting thread, " +
             "This is ideal when you have a small number of client connections on a server with a large number of free cores");
 
     private final String description;
