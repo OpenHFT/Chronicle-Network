@@ -30,6 +30,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
     private int tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
     private int pausePeriodMs = Integer.getInteger("client.timeout", 500);
     private int socketConnectionTimeoutMs = Integer.getInteger("connectionStrategy.socketConnectionTimeoutMs", 1);
+    private long pauseMillisBeforeReconnect = Integer.getInteger("connectionStrategy.pauseMillisBeforeReconnect", 500);
 
     @Nullable
     @Override
@@ -101,4 +102,8 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
         return socketAddressSupplier.size() - 1 == socketAddressSupplier.index();
     }
 
+    @Override
+    public long pauseMillisBeforeReconnect() {
+        return pauseMillisBeforeReconnect;
+    }
 }
