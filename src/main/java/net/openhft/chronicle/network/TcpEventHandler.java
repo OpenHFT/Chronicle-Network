@@ -169,6 +169,11 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         }
     }
 
+    @Nullable
+    public TcpHandler tcpHandler() {
+        return tcpHandler;
+    }
+
     @Override
     public void tcpHandler(TcpHandler tcpHandler) {
         nc.onHandlerChanged(tcpHandler);
