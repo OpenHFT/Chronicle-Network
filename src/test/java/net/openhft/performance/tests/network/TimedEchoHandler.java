@@ -51,11 +51,9 @@ class TimedEchoHandler implements TcpHandler<NetworkContext> {
     public void process(@NotNull final Bytes in, @NotNull final Bytes out, NetworkContext nc) {
         if (in.readRemaining() == 0)
             return;
-//        System.out.println("P start " + in.toDebugString());
         long toWrite = Math.min(in.readRemaining(), out.writeRemaining());
         out.write(in, in.readPosition(), toWrite);
         out.writeLong(System.nanoTime());
         in.readSkip(toWrite);
-//        System.out.println("... P End " + in.toDebugString());
     }
 }
