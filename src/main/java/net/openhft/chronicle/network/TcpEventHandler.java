@@ -419,7 +419,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         long writeTime = System.nanoTime();
         assert !sc.isBlocking();
         int wrote = sc.write(outBB);
-        tcpHandler.onWriteTime(writeTime);
+        tcpHandler.onWriteTime(writeTime, outBB,start,outBB.position());
 
         bytesWriteCount += (outBB.position() - start);
         writeLog.log(outBB, start, outBB.position());
