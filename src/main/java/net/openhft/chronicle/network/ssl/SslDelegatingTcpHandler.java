@@ -89,8 +89,8 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext>
      * {@inheritDoc}
      */
     @Override
-    public void onReadTime(final long readTimeNS) {
-        delegate.onReadTime(readTimeNS);
+    public void onReadTime(final long readTimeNS, final ByteBuffer inBB, final int position, final int limit) {
+        delegate.onReadTime(readTimeNS, inBB, position, limit);
     }
 
     /**

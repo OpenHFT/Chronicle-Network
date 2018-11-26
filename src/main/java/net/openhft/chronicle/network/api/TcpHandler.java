@@ -50,7 +50,7 @@ public interface TcpHandler<N extends NetworkContext> extends ClientClosedProvid
     default void close() {
     }
 
-    default void onReadTime(long readTimeNS) {
+    default void onReadTime(long readTimeNS, final ByteBuffer inBB, final int position, final int limit) {
     }
 
     default void onWriteTime(long writeTimeNS,
