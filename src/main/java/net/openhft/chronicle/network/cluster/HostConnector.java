@@ -121,7 +121,7 @@ public class HostConnector implements Closeable {
 
         nc.wireType(this.wireType);
 
-        remoteConnector.connect(connectUri, eventLoop, nc, 1_000L);
+        remoteConnector.connect(connectUri, eventLoop, nc, clusterContext.retryInterval());
     }
 
     synchronized void reconnect() {
