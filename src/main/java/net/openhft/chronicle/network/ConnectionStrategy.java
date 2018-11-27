@@ -72,7 +72,7 @@ public interface ConnectionStrategy extends Marshallable {
     /**
      * @param name                  the name of the connection, only used for logging
      * @param socketAddressSupplier
-     * @param didLogIn              was the last attempt successfull, was a login established
+     * @param didLogIn              was the last attempt successful, was a login established
      * @param fatalFailureMonitor
      * @return
      * @throws InterruptedException
