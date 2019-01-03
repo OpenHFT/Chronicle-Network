@@ -126,9 +126,7 @@ public class GrizzlyClientThroughPutTest {
             long time = System.nanoTime() - startTime;
             System.out.printf("\nThroughput was %.1f MB/s%n", 1e3 *
                     bytesReceived.get() / time);
-        } finally
-
-        {
+        } finally {
             // close the client connection
             if (connection != null) {
                 connection.close();

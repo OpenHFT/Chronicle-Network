@@ -127,7 +127,7 @@ public interface ConnectionStrategy extends Marshallable {
     default void pauseBeforeReconnect(long startMs) {
         long pauseMillis = (startMs + pauseMillisBeforeReconnect()) - System.currentTimeMillis();
         if (Jvm.isDebugEnabled(this.getClass()))
-            Jvm.debug().on(this.getClass(), "Waiting for reconnect "+pauseMillis+" ms");
+            Jvm.debug().on(this.getClass(), "Waiting for reconnect " + pauseMillis + " ms");
         LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(pauseMillis));
     }
 

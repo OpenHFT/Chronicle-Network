@@ -112,6 +112,7 @@ public class RemoteConnector implements Closeable {
         private final EventLoop eventLoop;
         private final long retryInterval;
         private volatile boolean closed;
+
         RCEventHandler(String remoteHostPort,
                        NetworkContext nc,
                        EventLoop eventLoop,
