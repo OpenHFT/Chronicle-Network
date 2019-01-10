@@ -77,33 +77,6 @@ public class TcpChannelHub implements Closeable {
 
     public static final int TCP_BUFFER = getTcpBufferSize();
     public static final int SAFE_TCP_SIZE = TCP_BUFFER * 3 / 4;
-
-    private static int getTcpBufferSize() {
-        String sizeStr = System.getProperty("TcpEventHandler.tcpBufferSize");
-        if (sizeStr != null && !sizeStr.isEmpty())
-            try {
-                int size = Integer.parseInt(sizeStr);
-                if (size >= 64 << 10)
-                    return size;
-            } catch (Exception e) {
-                Jvm.warn().on(TcpChannelHub.class, "Unable to parse tcpBufferSize=" + sizeStr, e);
-            }
-        try {
-            try (ServerSocket ss = new ServerSocket(0)) {
-                try (Socket s = new Socket("localhost", ss.getLocalPort())) {
-                    s.setReceiveBufferSize(4 << 20);
-                    s.setSendBufferSize(4 << 20);
-                    int size = Math.min(s.getReceiveBufferSize(), s.getSendBufferSize());
-                    (size >= 128 << 10 ? Jvm.debug() : Jvm.warn())
-                            .on(TcpChannelHub.class, "tcpBufferSize = " + size / 1024.0 + " KiB");
-                    return size;
-                }
-            }
-        } catch (Exception e) {
-            throw new IORuntimeException(e); // problem with networking subsystem.
-        }
-    }
-
     private static final int HEATBEAT_PING_PERIOD =
             getInteger("heartbeat.ping.period",
                     Jvm.isDebug() ? 30_000 : 5_000);
@@ -118,7 +91,6 @@ public class TcpChannelHub implements Closeable {
     private final String name;
     private final int tcpBufferSize;
     private final Wire outWire;
-
     @NotNull
     private final SocketAddressSupplier socketAddressSupplier;
     private final Set<Long> preventSubscribeUponReconnect = new ConcurrentSkipListSet<>();
@@ -138,7 +110,6 @@ public class TcpChannelHub implements Closeable {
     @Nullable
     private final ClientConnectionMonitor clientConnectionMonitor;
     private final ConnectionStrategy connectionStrategy;
-
     @NotNull
     private Pauser pauser = new LongPauser(100, 100, 500, 20_000, TimeUnit.MICROSECONDS);
     // private final String description;
@@ -152,7 +123,6 @@ public class TcpChannelHub implements Closeable {
     private long limitOfLast = 0;
     private boolean shouldSendCloseMessage;
     private HandlerPriority priority;
-
     public TcpChannelHub(@Nullable final SessionProvider sessionProvider,
                          @NotNull final EventLoop eventLoop,
                          @NotNull final WireType wireType,
@@ -186,6 +156,32 @@ public class TcpChannelHub implements Closeable {
 
         // has to be done last as it starts a thread which uses this class.
         this.tcpSocketConsumer = new TcpSocketConsumer();
+    }
+
+    private static int getTcpBufferSize() {
+        String sizeStr = System.getProperty("TcpEventHandler.tcpBufferSize");
+        if (sizeStr != null && !sizeStr.isEmpty())
+            try {
+                int size = Integer.parseInt(sizeStr);
+                if (size >= 64 << 10)
+                    return size;
+            } catch (Exception e) {
+                Jvm.warn().on(TcpChannelHub.class, "Unable to parse tcpBufferSize=" + sizeStr, e);
+            }
+        try {
+            try (ServerSocket ss = new ServerSocket(0)) {
+                try (Socket s = new Socket("localhost", ss.getLocalPort())) {
+                    s.setReceiveBufferSize(4 << 20);
+                    s.setSendBufferSize(4 << 20);
+                    int size = Math.min(s.getReceiveBufferSize(), s.getSendBufferSize());
+                    (size >= 128 << 10 ? Jvm.debug() : Jvm.warn())
+                            .on(TcpChannelHub.class, "tcpBufferSize = " + size / 1024.0 + " KiB");
+                    return size;
+                }
+            }
+        } catch (Exception e) {
+            throw new IORuntimeException(e); // problem with networking subsystem.
+        }
     }
 
     public static void assertAllHubsClosed() {
@@ -553,7 +549,7 @@ public class TcpChannelHub implements Closeable {
             if (!await)
                 if (Jvm.isDebugEnabled(getClass()))
                     Jvm.debug().on(getClass(), "SERVER IGNORED CLOSE REQUEST: shutting down the client anyway as the " +
-                        "server did not respond to the close() request.");
+                            "server did not respond to the close() request.");
         } catch (InterruptedException ignore) {
             Thread.currentThread().interrupt();
         }
@@ -909,7 +905,7 @@ public class TcpChannelHub implements Closeable {
                     if (tryLock.equals(TryLock.TRY_LOCK_WARN))
                         if (Jvm.isDebugEnabled(getClass()))
                             Jvm.debug().on(getClass(), "FAILED TO OBTAIN LOCK thread=" + Thread.currentThread() + " on " +
-                                lock, new IllegalStateException());
+                                    lock, new IllegalStateException());
                     return false;
                 }
             }
@@ -1417,10 +1413,10 @@ public class TcpChannelHub implements Closeable {
 
                         if (Jvm.isDebugEnabled(getClass()))
                             Jvm.debug().on(getClass(), "unable to respond to tid=" + tid + ", given that we have " +
-                                "received a message we a tid which is unknown, this can occur " +
-                                "sometime if " +
-                                "the subscription has just become unregistered ( an the server " +
-                                "has not yet processed the unregister event ) ");
+                                    "received a message we a tid which is unknown, this can occur " +
+                                    "sometime if " +
+                                    "the subscription has just become unregistered ( an the server " +
+                                    "has not yet processed the unregister event ) ");
                         return isLastMessageForThisTid;
                     }
                 }

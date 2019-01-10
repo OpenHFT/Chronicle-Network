@@ -104,7 +104,7 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
             if (!closed) {
                 ServerSocket socket = ssc.socket();
                 if (socket != null)
-                    Jvm.warn().on(getClass(), hostPort+", port=" + socket.getLocalPort(), e);
+                    Jvm.warn().on(getClass(), hostPort + ", port=" + socket.getLocalPort(), e);
                 else
                     Jvm.warn().on(getClass(), hostPort, e);
             }

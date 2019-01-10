@@ -17,6 +17,7 @@ public interface AcceptStrategy extends Marshallable {
 
     /**
      * Determine whether to accept the incoming connection
+     *
      * @param ssc
      * @return null to reject the connection, otherwise return the accepted SocketChannel
      * @throws IOException

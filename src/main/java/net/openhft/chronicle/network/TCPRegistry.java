@@ -120,7 +120,7 @@ public enum TCPRegistry {
 
         try {
             ssc.bind(address);
-        } catch (Exception e){
+        } catch (Exception e) {
             Jvm.warn().on(TCPRegistry.class, "Error when attempting to bind to address " + address, e);
             Jvm.rethrow(e);
         }

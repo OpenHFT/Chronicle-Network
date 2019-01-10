@@ -57,6 +57,10 @@ public abstract class ClusterContext implements Demarshallable, Marshallable, Co
         readMarshallable(wire);
     }
 
+    protected ClusterContext() {
+        defaults();
+    }
+
     @Override
     public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
         defaults();
@@ -65,10 +69,6 @@ public abstract class ClusterContext implements Demarshallable, Marshallable, Co
             if (wire.bytes().readRemaining() > 0)
                 wireParser().parseOne(wire);
         }
-    }
-
-    protected ClusterContext() {
-        defaults();
     }
 
     public Function<ClusterContext, NetworkStatsListener> networkStatsListenerFactory() {

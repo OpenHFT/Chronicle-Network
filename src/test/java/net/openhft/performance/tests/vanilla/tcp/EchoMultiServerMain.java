@@ -44,7 +44,6 @@ public class EchoMultiServerMain {
                 new NamedThreadFactory("connections", true));
         ((ThreadPoolExecutor) service).setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
-
         while (true) {
             final SocketChannel socket = ssc.accept();
             socket.socket().setTcpNoDelay(true);
