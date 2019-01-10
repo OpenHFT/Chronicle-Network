@@ -271,11 +271,6 @@ public final class NonClusteredSslIntegrationTest {
                 }
 
                 @Override
-                public void procPrefix(final String procPrefix) {
-
-                }
-
-                @Override
                 public void close() {
 
                 }
