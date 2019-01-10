@@ -28,6 +28,7 @@ import java.nio.channels.SocketChannel;
  * @author Rob Austin.
  */
 public interface NetworkStatsListener<N extends NetworkContext> extends Closeable {
+
     /**
      * notifies the NetworkStatsListener of the host and port based on the SocketChannel
      *
