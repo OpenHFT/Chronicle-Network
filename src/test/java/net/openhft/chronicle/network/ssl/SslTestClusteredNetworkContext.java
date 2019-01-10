@@ -81,6 +81,11 @@ public final class SslTestClusteredNetworkContext
             }
 
             @Override
+            public void procPrefix(final String procPrefix) {
+
+            }
+
+            @Override
             public void close() {
 
             }
