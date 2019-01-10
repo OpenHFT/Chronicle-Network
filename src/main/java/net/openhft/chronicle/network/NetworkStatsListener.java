@@ -53,4 +53,5 @@ public interface NetworkStatsListener<N extends NetworkContext> extends Closeabl
     void onRoundTripLatency(long nanosecondLatency);
 
     void procPrefix(String procPrefix);
+
 }
