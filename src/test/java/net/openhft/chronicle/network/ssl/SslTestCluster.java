@@ -1,6 +1,5 @@
 package net.openhft.chronicle.network.ssl;
 
-import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.cluster.Cluster;
 import net.openhft.chronicle.network.cluster.ConnectionManager;
 import net.openhft.chronicle.network.cluster.HostDetails;
@@ -22,15 +21,12 @@ public final class SslTestCluster extends Cluster<HostDetails, SslTestClusterCon
             }
 
             final ConnectionManager connectionManager = findConnectionManager(hostDetail.hostId());
-            connectionManager.addListener(new ConnectionManager.ConnectionListener() {
-                @Override
-                public void onConnectionChange(final NetworkContext nc, final boolean isConnected) {
-                    if (nc.isAcceptor() || !isConnected || nc.isClosed()) {
-                        return;
-                    }
-
-                    nc.wireOutPublisher().publish(PingTcpHandler.newPingHandler(clusterName(), nc.newCid()));
+            connectionManager.addListener((nc, isConnected) -> {
+                if (nc.isAcceptor() || !isConnected || nc.isClosed()) {
+                    return;
                 }
+
+                nc.wireOutPublisher().publish(PingTcpHandler.newPingHandler(clusterName(), nc.newCid()));
             });
         }
     }

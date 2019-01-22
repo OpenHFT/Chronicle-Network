@@ -51,6 +51,7 @@ public abstract class ClusterContext implements Demarshallable, Marshallable, Co
     private byte localIdentifier;
     private ServerThreadingStrategy serverThreadingStrategy;
     private long retryInterval = 1_000L;
+    private String procPrefix;
 
     @UsedViaReflection
     protected ClusterContext(@NotNull WireIn wire) throws IORuntimeException {
@@ -60,6 +61,15 @@ public abstract class ClusterContext implements Demarshallable, Marshallable, Co
     protected ClusterContext() {
         defaults();
     }
+
+    public String procPrefix() {
+        return procPrefix;
+    }
+
+    public void procPrefix(String procPrefix) {
+        this.procPrefix = procPrefix;
+    }
+
 
     @Override
     public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
