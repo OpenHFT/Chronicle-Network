@@ -16,7 +16,7 @@
 
 package net.openhft.chronicle.network;
 
-import net.openhft.chronicle.core.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @author Rob Austin.
