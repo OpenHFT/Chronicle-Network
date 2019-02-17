@@ -16,7 +16,7 @@
 
 package net.openhft.chronicle.network.connection;
 
-import net.openhft.chronicle.core.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.SocketAddress;

@@ -18,7 +18,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
