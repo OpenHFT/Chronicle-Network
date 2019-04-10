@@ -106,4 +106,24 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
     public long pauseMillisBeforeReconnect() {
         return pauseMillisBeforeReconnect;
     }
+
+    public AlwaysStartOnPrimaryConnectionStrategy tcpBufferSize(int tcpBufferSize) {
+        this.tcpBufferSize = tcpBufferSize;
+        return this;
+    }
+
+    public AlwaysStartOnPrimaryConnectionStrategy pausePeriodMs(int pausePeriodMs) {
+        this.pausePeriodMs = pausePeriodMs;
+        return this;
+    }
+
+    public AlwaysStartOnPrimaryConnectionStrategy socketConnectionTimeoutMs(int socketConnectionTimeoutMs) {
+        this.socketConnectionTimeoutMs = socketConnectionTimeoutMs;
+        return this;
+    }
+
+    public AlwaysStartOnPrimaryConnectionStrategy pauseMillisBeforeReconnect(long pauseMillisBeforeReconnect) {
+        this.pauseMillisBeforeReconnect = pauseMillisBeforeReconnect;
+        return this;
+    }
 }
