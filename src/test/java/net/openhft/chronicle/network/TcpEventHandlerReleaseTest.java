@@ -22,6 +22,11 @@ public class TcpEventHandlerReleaseTest {
 
     @Test
     public void testRelease() throws IOException {
+        try {
+            BytesUtil.checkRegisteredBytes();
+        } catch (Throwable t) {
+            // just doing this to reset BytesUtil. TODO: fix other tests to not leak Bytes
+        }
         NetworkContext nc = new VanillaNetworkContext();
         nc.socketChannel(TCPRegistry.createSocketChannel(hostPort));
         TcpEventHandler t = new TcpEventHandler(nc);

@@ -39,6 +39,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.TimeoutException;
 
@@ -71,6 +72,7 @@ public class SimpleServerAndClientTest {
             @NotNull final String desc = "host.port";
             TCPRegistry.createServerSocketChannelFor(desc);
 
+            Bytes<ByteBuffer> bytes = Bytes.elasticByteBuffer();
             // we use an event loop rather than lots of threads
             try (@NotNull EventLoop eg = new EventGroup(true)) {
                 eg.start();
@@ -89,7 +91,7 @@ public class SimpleServerAndClientTest {
                     final long tid = tcpChannelHub.nextUniqueTransaction(System.currentTimeMillis());
 
                     // we will use a text wire backed by a elasticByteBuffer
-                    @NotNull final Wire wire = new TextWire(Bytes.elasticByteBuffer()).useTextDocuments();
+                    @NotNull final Wire wire = new TextWire(bytes).useTextDocuments();
 
                     wire.writeDocument(true, w -> w.write(() -> "tid").int64(tid));
                     wire.writeDocument(false, w -> w.write(() -> "payload").text(expectedMessage));
@@ -125,6 +127,7 @@ public class SimpleServerAndClientTest {
             } finally {
                 TcpChannelHub.closeAllHubs();
                 TCPRegistry.reset();
+                bytes.release();
             }
         }
 
