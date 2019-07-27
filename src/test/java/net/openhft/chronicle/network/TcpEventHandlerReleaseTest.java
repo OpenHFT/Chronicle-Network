@@ -11,8 +11,7 @@ public class TcpEventHandlerReleaseTest {
     private static final String hostPort = "host.port";
 
     @After
-    public void checkThreadDump() {
-        BytesUtil.checkRegisteredBytes();
+    public void teardown() {
         TCPRegistry.reset();
     }
 
@@ -27,6 +26,8 @@ public class TcpEventHandlerReleaseTest {
         nc.socketChannel(TCPRegistry.createSocketChannel(hostPort));
         TcpEventHandler t = new TcpEventHandler(nc);
         t.close();
+        // check second close OK
         t.close();
+        BytesUtil.checkRegisteredBytes();
     }
 }
