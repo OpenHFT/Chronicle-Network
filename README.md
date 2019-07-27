@@ -15,7 +15,8 @@ Network current support TCP only.
  
 Planned support for
 * Shared Memory
-* Unreliable UDP
+
+UDP support can be found in Chronicle Network Enterprise (commercial product - contact sales@chronicle.software)
 
 # Example
 ## TCP Client/Server : Echo Example

@@ -108,15 +108,9 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         } catch (IOException e) {
             Jvm.warn().on(getClass(), e);
         }
-        // allow these to be used by another thread.
-        // todo check that this can be commented out
 
         inBBB = Bytes.elasticByteBuffer(TCP_BUFFER + OS.pageSize());
         outBBB = Bytes.elasticByteBuffer(TCP_BUFFER);
-
-        // TODO FIX, these are not being released on close.
-        assert BytesUtil.unregister(inBBB);
-        assert BytesUtil.unregister(outBBB);
 
         // must be set after we take a slice();
         outBBB.underlyingObject().limit(0);
@@ -161,12 +155,17 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         switch (sts) {
 
             case SINGLE_THREADED:
-                return HandlerPriority.MEDIUM;
+                return singleThreadedPriority();
             case CONCURRENT:
                 return HandlerPriority.CONCURRENT;
             default:
                 throw new UnsupportedOperationException("todo");
         }
+    }
+
+    @NotNull
+    public HandlerPriority singleThreadedPriority() {
+        return HandlerPriority.MEDIUM;
     }
 
     @Nullable
@@ -221,7 +220,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
 
             if (read == Integer.MAX_VALUE)
-                LOG.trace("inBB is full, can't read from socketChannel");
+                onInBBFul();
             if (read > 0) {
                 WanSimulator.dataRead(read);
                 tcpHandler.onReadTime(System.nanoTime(), inBB, start, inBB.position());
@@ -275,6 +274,10 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             Jvm.warn().on(getClass(), "", e);
             throw new InvalidEventHandlerException(e);
         }
+    }
+
+    public void onInBBFul() {
+        LOG.trace("inBB is full, can't read from socketChannel");
     }
 
     private void monitorStats() {
@@ -398,9 +401,13 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     @Override
     public void close() {
+        if (closed)
+            return;
         closed = true;
         closeSC();
         clean();
+        inBBB.release();
+        outBBB.release();
     }
 
     @PackageLocal
