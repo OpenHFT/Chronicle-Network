@@ -36,7 +36,8 @@ final class StateMachineProcessor implements Runnable {
             }
 
         } catch (Throwable e) {
-            LOGGER.error("Exception caught while processing SSL state machine. Exiting.", e);
+            if (running)
+                LOGGER.error("Exception caught while processing SSL state machine. Exiting.", e);
         }
     }
 

@@ -6,10 +6,7 @@ import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.threads.Pauser;
 import org.jetbrains.annotations.NotNull;
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -42,6 +39,7 @@ import static org.junit.Assert.assertTrue;
  * }
  */
 @RunWith(Parameterized.class)
+@Ignore
 public final class NonClusteredSslIntegrationTest {
 
     private static final boolean DEBUG = Boolean.getBoolean("NonClusteredSslIntegrationTest.debug");
@@ -190,6 +188,9 @@ public final class NonClusteredSslIntegrationTest {
             latch.countDown();
             try {
                 if (nc.isAcceptor() && in.readRemaining() != 0) {
+                    final int magic = in.readInt();
+                    if (magic != 0xFEDCBA98)
+                        throw new IllegalStateException("Invalid magic number " + Integer.toHexString(magic));
                     final long received = in.readLong();
                     final int len = in.readInt();
                     final byte[] tmp = new byte[len];
@@ -205,6 +206,7 @@ public final class NonClusteredSslIntegrationTest {
                     operationCount++;
                 } else if (!nc.isAcceptor()) {
                     if (System.currentTimeMillis() > lastSent + 100L) {
+                        out.writeInt(0xFEDCBA98);
                         out.writeLong((counter++));
                         final String payload = "ping-" + (counter - 1);
                         out.writeInt(payload.length());

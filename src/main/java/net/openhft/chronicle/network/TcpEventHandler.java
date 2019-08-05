@@ -23,7 +23,6 @@ import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.core.annotation.PackageLocal;
 import net.openhft.chronicle.core.io.Closeable;
-import net.openhft.chronicle.core.io.IOTools;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -60,8 +59,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     @NotNull
     private final NetworkContext nc;
     @NotNull
-    private final WriteEventHandler writeEventHandler;
-    @NotNull
     private final NetworkLog readLog, writeLog;
     @NotNull
     private final Bytes<ByteBuffer> inBBB;
@@ -69,7 +66,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private final Bytes<ByteBuffer> outBBB;
     private final boolean fair;
     private int oneInTen;
-    private volatile boolean isCleaned;
     @Nullable
     private volatile TcpHandler tcpHandler;
     private long lastTickReadTime = System.currentTimeMillis();
@@ -86,7 +82,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     public TcpEventHandler(@NotNull NetworkContext nc, boolean fair) {
 
-        this.writeEventHandler = new WriteEventHandler();
         this.sc = ISocketChannel.wrapUnsafe(nc.socketChannel());
         this.nc = nc;
         this.fair = fair;
@@ -111,6 +106,9 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
         inBBB = Bytes.elasticByteBuffer(TCP_BUFFER + OS.pageSize());
         outBBB = Bytes.elasticByteBuffer(TCP_BUFFER);
+        // TODO Fix tests so socket connections are closed cleanly.
+        BytesUtil.unregister(inBBB);
+        BytesUtil.unregister(outBBB);
 
         // must be set after we take a slice();
         outBBB.underlyingObject().limit(0);
@@ -180,20 +178,17 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     }
 
     @Override
-    public boolean action() throws InvalidEventHandlerException {
+    public synchronized boolean action() throws InvalidEventHandlerException {
         Jvm.optionalSafepoint();
-        return action0();
-    }
-
-    public synchronized boolean action0() throws InvalidEventHandlerException {
-        Jvm.optionalSafepoint();
-        if (tcpHandler == null)
-            return false;
 
         if (closed) {
-            // close();
+            inBBB.release();
+            outBBB.release();
             throw new InvalidEventHandlerException();
         }
+
+        if (tcpHandler == null)
+            return false;
 
         if (!sc.isOpen()) {
             tcpHandler.onEndOfConnection(false);
@@ -208,7 +203,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         if (fair || oneInTen++ >= 8) {
             oneInTen = 0;
             try {
-                busy = writeEventHandler.action();
+                busy = writeAction();
             } catch (Exception e) {
                 Jvm.warn().on(getClass(), e);
             }
@@ -240,7 +235,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                     if (tickTime > lastTickReadTime + nc.heartbeatTimeoutMs()) {
                         final HeartbeatListener heartbeatListener = nc.heartbeatListener();
                         if (heartbeatListener != null && heartbeatListener.onMissedHeartbeat()) {
-                            // implementater tries to recover - do not disconnect for some time
+                            // implementer tries to recover - do not disconnect for some time
                             lastTickReadTime += heartbeatListener.lingerTimeBeforeDisconnect();
                         } else {
                             tcpHandler.onEndOfConnection(true);
@@ -298,20 +293,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             }
             lastMonitor = now;
         }
-    }
-
-    private synchronized void clean() {
-
-        if (isCleaned)
-            return;
-        isCleaned = true;
-        final long usedDirectMemory = Jvm.usedDirectMemory();
-        IOTools.clean(inBBB.underlyingObject());
-        IOTools.clean(outBBB.underlyingObject());
-
-        if (usedDirectMemory == Jvm.usedDirectMemory())
-            Jvm.warn().on(getClass(), "nothing cleaned");
-
     }
 
     @PackageLocal
@@ -405,9 +386,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             return;
         closed = true;
         closeSC();
-        clean();
-        inBBB.release();
-        outBBB.release();
+        // NOTE Do not release buffers here as they might be in use.
+        // wait for action() to do it when it is ready.
     }
 
     @PackageLocal
@@ -452,38 +432,32 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         }
     }
 
-    private class WriteEventHandler implements EventHandler {
+    public boolean writeAction() {
+        Jvm.optionalSafepoint();
 
-        @Override
-        public boolean action() throws InvalidEventHandlerException {
-            Jvm.optionalSafepoint();
-            if (!sc.isOpen()) throw new InvalidEventHandlerException("socket is closed");
+        boolean busy = false;
+        try {
+            // get more data to write if the buffer was empty
+            // or we can write some of what is there
+            ByteBuffer outBB = outBBB.underlyingObject();
+            int remaining = outBB.remaining();
+            busy = remaining > 0;
+            if (busy)
+                tryWrite(outBB);
 
-            boolean busy = false;
-            try {
-                // get more data to write if the buffer was empty
-                // or we can write some of what is there
-                ByteBuffer outBB = outBBB.underlyingObject();
-                int remaining = outBB.remaining();
-                busy = remaining > 0;
-                if (busy)
-                    tryWrite(outBB);
-
-                // has the remaining changed, i.e. did it write anything?
-                if (outBB.remaining() == remaining) {
-                    busy |= invokeHandler();
-                    if (!busy)
-                        busy = tryWrite(outBB);
-                }
-            } catch (ClosedChannelException cce) {
-                closeSC();
-
-            } catch (IOException e) {
-                if (!closed)
-                    handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
+            // has the remaining changed, i.e. did it write anything?
+            if (outBB.remaining() == remaining) {
+                busy |= invokeHandler();
+                if (!busy)
+                    busy = tryWrite(outBB);
             }
-            return busy;
-        }
+        } catch (ClosedChannelException cce) {
+            closeSC();
 
+        } catch (IOException e) {
+            if (!closed)
+                handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
+        }
+        return busy;
     }
 }

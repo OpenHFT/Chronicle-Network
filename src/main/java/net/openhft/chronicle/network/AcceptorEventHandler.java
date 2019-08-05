@@ -26,7 +26,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.function.Function;
@@ -86,6 +86,10 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
             SocketChannel sc = acceptStrategy.accept(ssc);
 
             if (sc != null) {
+                if (closed) {
+                    Closeable.closeQuietly(sc);
+                    throw new InvalidEventHandlerException("closed");
+                }
                 final NetworkContext nc = ncFactory.get();
                 nc.socketChannel(sc);
                 nc.isAcceptor(true);
@@ -96,7 +100,7 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
                 eventLoop.addHandler(apply);
             }
 
-        } catch (ClosedByInterruptException e) {
+        } catch (AsynchronousCloseException e) {
             closeSocket();
             throw new InvalidEventHandlerException(e);
         } catch (Exception e) {

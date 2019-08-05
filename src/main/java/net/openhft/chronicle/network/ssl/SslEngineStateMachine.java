@@ -1,5 +1,6 @@
 package net.openhft.chronicle.network.ssl;
 
+import net.openhft.chronicle.core.io.IORuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +91,7 @@ final class SslEngineStateMachine {
 
             read = bufferHandler.readData(inboundEncodedData);
             if (read == -1) {
-                throw new RuntimeException("Socket closed");
+                throw new IORuntimeException("Socket closed");
             }
             busy |= read != 0;
 

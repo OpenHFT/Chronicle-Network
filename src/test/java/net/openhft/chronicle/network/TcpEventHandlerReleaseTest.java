@@ -1,11 +1,14 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.BytesUtil;
+import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+
+import static junit.framework.TestCase.fail;
 
 public class TcpEventHandlerReleaseTest {
     private static final String hostPort = "host.port";
@@ -31,6 +34,13 @@ public class TcpEventHandlerReleaseTest {
         nc.socketChannel(TCPRegistry.createSocketChannel(hostPort));
         TcpEventHandler t = new TcpEventHandler(nc);
         t.close();
+        // assume the handle has been added to an EventLoop.
+        try {
+            t.action();
+            fail();
+        } catch (InvalidEventHandlerException e) {
+            // expected.
+        }
         // check second close OK
         t.close();
         BytesUtil.checkRegisteredBytes();

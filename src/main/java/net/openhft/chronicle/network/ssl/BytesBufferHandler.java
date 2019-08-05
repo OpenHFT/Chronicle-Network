@@ -1,6 +1,7 @@
 package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.bytes.BytesUtil;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.api.TcpHandler;
 
@@ -55,13 +56,19 @@ public final class BytesBufferHandler<N extends NetworkContext> implements Buffe
         if (input.position() != 0) {
             input.flip();
             applicationInput = Bytes.wrapForRead(input);
+            BytesUtil.unregister(applicationInput); // temporary wrapper
         } else {
             applicationInput = EMPTY_APPLICATION_INPUT;
         }
 
         final Bytes<ByteBuffer> applicationOutput = Bytes.wrapForWrite(output);
-        delegateHandler.process(applicationInput, applicationOutput, networkContext);
-        output.position((int) applicationOutput.writePosition());
+        BytesUtil.unregister(applicationOutput);// temporary wrapper
+        try {
+            delegateHandler.process(applicationInput, applicationOutput, networkContext);
+            output.position((int) applicationOutput.writePosition());
+        } finally {
+            applicationOutput.release();
+        }
 
         input.position((int) applicationInput.readPosition());
         if (applicationInput.readPosition() != 0) {
