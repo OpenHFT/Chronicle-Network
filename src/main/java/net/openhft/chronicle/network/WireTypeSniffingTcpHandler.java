@@ -88,4 +88,9 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements Tcp
 
         handlerManager.tcpHandler(handler);
     }
+
+    @Override
+    public String toString() {
+        return "WireTypeSniffingTcpHandler@" + Integer.toHexString(hashCode());
+    }
 }

@@ -56,6 +56,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
     @NotNull
     private final ISocketChannel sc;
+    private final String scToString;
     @NotNull
     private final NetworkContext nc;
     @NotNull
@@ -83,6 +84,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     public TcpEventHandler(@NotNull NetworkContext nc, boolean fair) {
 
         this.sc = ISocketChannel.wrapUnsafe(nc.socketChannel());
+        this.scToString = sc.toString();
         this.nc = nc;
         this.fair = fair;
 
@@ -116,6 +118,15 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         writeLog = new NetworkLog(this.sc, "write");
         if (FIRST_HANDLER.compareAndSet(false, true))
             warmUp();
+    }
+
+    @Override
+    public String toString() {
+        return "TcpEventHandler{" +
+                "sc=" + scToString + ", " +
+                "tcpHandler=" + tcpHandler + ", " +
+                "closed=" + closed +
+                '}';
     }
 
     public void warmUp() {

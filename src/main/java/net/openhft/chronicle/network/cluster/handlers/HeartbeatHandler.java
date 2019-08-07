@@ -1,5 +1,6 @@
 package net.openhft.chronicle.network.cluster.handlers;
 
+import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.core.io.Closeable;
@@ -7,6 +8,7 @@ import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.core.threads.Timer;
 import net.openhft.chronicle.core.threads.VanillaEventHandler;
 import net.openhft.chronicle.network.ConnectionListener;
+import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.cluster.AbstractSubHandler;
 import net.openhft.chronicle.network.cluster.ClusterContext;
 import net.openhft.chronicle.network.cluster.ClusteredNetworkContext;
@@ -24,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 public final class HeartbeatHandler<T extends ClusteredNetworkContext> extends AbstractSubHandler<T> implements
-        Demarshallable, WriteMarshallable, HeartbeatEventHandler {
+        Demarshallable, WriteMarshallable, HeartbeatEventHandler, TcpHandler<T> {
 
     private final long heartbeatIntervalMs;
     private final long heartbeatTimeoutMs;
@@ -123,13 +125,21 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext> extends A
     }
 
     @Override
+    public void process(@NotNull Bytes in, @NotNull Bytes out, T nc) {
+        if (in.readRemaining() == 0)
+            return;
+        throw new UnsupportedOperationException("Unexpected call to process()");
+    }
+
+    @Override
     public void close() {
         if (connectionMonitor != null)
             connectionMonitor.onDisconnected(localIdentifier(), remoteIdentifier(), nc().isAcceptor());
-        if (closable().isClosed())
-            return;
         lastTimeMessageReceived = Long.MAX_VALUE;
-        Closeable.closeQuietly(closable());
+        Closeable closable = closable();
+        if (closable != null && !closable.isClosed()) {
+            Closeable.closeQuietly(closable);
+        }
     }
 
     @Override

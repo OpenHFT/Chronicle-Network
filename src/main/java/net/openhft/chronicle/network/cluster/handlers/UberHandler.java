@@ -57,6 +57,16 @@ public final class UberHandler<T extends ClusteredNetworkContext> extends CspTcp
         wireType(wireType);
     }
 
+    @Override
+    public String toString() {
+        return "UberHandler{" +
+                "clusterName='" + clusterName + '\'' +
+                ", remoteIdentifier=" + remoteIdentifier +
+                ", localIdentifier=" + localIdentifier +
+                ", isClosing=" + isClosing +
+                '}';
+    }
+
     private static WriteMarshallable uberHandler(final WriteMarshallable m) {
         return wire -> {
             try (final DocumentContext ignored = wire.writingDocument(true)) {
