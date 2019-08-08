@@ -7,10 +7,7 @@ import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.core.threads.Timer;
 import net.openhft.chronicle.core.threads.VanillaEventHandler;
 import net.openhft.chronicle.network.ConnectionListener;
-import net.openhft.chronicle.network.cluster.AbstractSubHandler;
-import net.openhft.chronicle.network.cluster.ClusterContext;
-import net.openhft.chronicle.network.cluster.ClusteredNetworkContext;
-import net.openhft.chronicle.network.cluster.HeartbeatEventHandler;
+import net.openhft.chronicle.network.cluster.*;
 import net.openhft.chronicle.network.connection.CoreFields;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.Demarshallable;
@@ -158,7 +155,8 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext> extends A
                     final Runnable socketReconnector = nc().socketReconnector();
 
                     // if we have been terminated then we should not attempt to reconnect
-                    if (nc().terminationEventHandler().isTerminated() && socketReconnector != null)
+                    TerminationEventHandler teHandler = nc().terminationEventHandler();
+                    if (teHandler != null && teHandler.isTerminated() && socketReconnector != null)
                         socketReconnector.run();
 
                     throw new InvalidEventHandlerException("closed");

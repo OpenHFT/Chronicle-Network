@@ -20,9 +20,9 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
+import net.openhft.chronicle.network.api.session.SubHandler;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +62,7 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
 
         long start = in.readPosition();
 
+        Object o = null;
         try (final DocumentContext dc = inWire.readingDocument()) {
 
             if (!dc.isPresent())
@@ -74,7 +75,6 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
             final long readPosition = inWire.bytes().readPosition();
             @NotNull final ValueIn read = inWire.read(() -> HANDLER);
 
-            @Nullable final Object o;
 
             if (dc.isMetaData() && read.isTyped())
                 o = read.typedMarshallable();
@@ -93,8 +93,13 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
         } catch (Exception e) {
             if (isClosed())
                 return;
+            if (o instanceof SubHandler) {
+                Jvm.warn().on(getClass(), "SubHandler " + o + " sent before UberHandler, closing.");
+                close();
 
-            Jvm.warn().on(getClass(), "wirein=" + Wires.fromSizePrefixedBlobs(inWire), e);
+            } else {
+                Jvm.warn().on(getClass(), "wirein=" + Wires.fromSizePrefixedBlobs(inWire), e);
+            }
         }
     }
 

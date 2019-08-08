@@ -23,6 +23,7 @@ import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.core.annotation.PackageLocal;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -103,6 +104,8 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 checkBufSize(sock.getSendBufferSize(), "send");
             }
         } catch (IOException e) {
+            if (closed || !sc.isOpen())
+                throw new IORuntimeException(e);
             Jvm.warn().on(getClass(), e);
         }
 
