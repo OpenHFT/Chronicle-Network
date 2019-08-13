@@ -70,7 +70,6 @@ public abstract class ClusterContext implements Demarshallable, Marshallable, Co
         this.procPrefix = procPrefix;
     }
 
-
     @Override
     public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
         defaults();

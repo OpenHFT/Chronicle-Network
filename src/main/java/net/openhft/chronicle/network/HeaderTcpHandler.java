@@ -75,7 +75,6 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
             final long readPosition = inWire.bytes().readPosition();
             @NotNull final ValueIn read = inWire.read(() -> HANDLER);
 
-
             if (dc.isMetaData() && read.isTyped())
                 o = read.typedMarshallable();
             else {
