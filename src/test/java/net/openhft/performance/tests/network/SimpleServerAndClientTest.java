@@ -123,14 +123,12 @@ public class SimpleServerAndClientTest {
                     }
                     break;
                 }
-
             } finally {
                 TcpChannelHub.closeAllHubs();
                 TCPRegistry.reset();
                 bytes.release();
             }
         }
-
     }
 
     @NotNull

@@ -101,7 +101,6 @@ public class MinaClientThroughPutTest {
                 cause.printStackTrace();
                 session.close(true);
             }
-
         });
 
         IoSession session;

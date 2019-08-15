@@ -100,7 +100,6 @@ public final class SslTestClusterContext extends ClusterContext {
             handler.tcpHandler(sniffer);
             return handler;
         }
-
     }
 
     private static class StubConnectionManager implements ConnectionManager {

@@ -1286,7 +1286,6 @@ public class TcpChannelHub implements Closeable {
                             this.tid = -1;
                             inWire.readDocument((WireIn w) -> this.tid = CoreFields.tid(w), null);
                         }
-
                     } catch (@NotNull Exception e) {
                         start = Long.MAX_VALUE;
 
@@ -1318,7 +1317,6 @@ public class TcpChannelHub implements Closeable {
                         clear(inWire);
                     }
                 }
-
             } catch (Throwable e) {
                 if (!isShuttingdown())
                     Jvm.warn().on(getClass(), e);

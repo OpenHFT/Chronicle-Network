@@ -106,7 +106,6 @@ public final class NonClusteredSslIntegrationTest {
                 assertThatServerConnectsToClient();
                 break;
         }
-
     }
 
     @After
@@ -218,7 +217,6 @@ public final class NonClusteredSslIntegrationTest {
                         lastSent = System.currentTimeMillis();
                     }
                 }
-
             } catch (RuntimeException e) {
                 System.err.printf("Exception in %s: %s/%s%n", label, e.getClass().getSimpleName(), e.getMessage());
                 e.printStackTrace();

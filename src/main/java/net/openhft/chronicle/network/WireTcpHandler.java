@@ -208,7 +208,6 @@ public abstract class WireTcpHandler<T extends NetworkContext>
                     }
                 }
             }
-
         } finally {
             assert inWire.endUse();
         }

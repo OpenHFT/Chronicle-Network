@@ -127,7 +127,6 @@ public class MinaClientLatencyTest {
                     pause(500);
                 }
             }
-
         } finally {
             if (session != null)
                 // wait until the summation is done

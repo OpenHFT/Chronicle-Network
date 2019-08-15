@@ -122,7 +122,6 @@ public final class NettyClientThroughPutTest {
                             bytesReceived / time);
                     return;
                 }
-
             } finally {
                 ReferenceCountUtil.release(msg); // (2)
             }

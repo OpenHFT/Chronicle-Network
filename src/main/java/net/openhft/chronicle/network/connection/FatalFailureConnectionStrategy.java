@@ -125,7 +125,6 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
                 socketAddressSupplier.failoverToNextAddress();
                 LockSupport.parkNanos(PAUSE);
             }
-
         }
 
     }

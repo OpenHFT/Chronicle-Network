@@ -89,7 +89,6 @@ public abstract class CspTcpHandler<T extends NetworkContext> extends WireTcpHan
                         registry.put(registerable.registryKey(), this.handler);
                         registerable.registry(registry);
                     }
-
                 } catch (Exception e) {
                     Jvm.warn().on(getClass(), e);
                 }

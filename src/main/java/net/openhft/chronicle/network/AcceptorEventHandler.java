@@ -99,7 +99,6 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
                 TcpEventHandler apply = handlerFactory.apply(nc);
                 eventLoop.addHandler(apply);
             }
-
         } catch (AsynchronousCloseException e) {
             closeSocket();
             throw new InvalidEventHandlerException(e);
