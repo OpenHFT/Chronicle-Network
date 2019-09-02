@@ -84,6 +84,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                return null;
             } catch (Throwable e) {
                 //noinspection ConstantConditions
                 if (socketChannel != null)
