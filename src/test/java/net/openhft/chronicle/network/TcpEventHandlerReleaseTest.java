@@ -23,18 +23,16 @@ public class TcpEventHandlerReleaseTest {
         TCPRegistry.createServerSocketChannelFor(hostPort);
     }
 
+    @After
+    public void checkRegisteredBytes() {
+        BytesUtil.checkRegisteredBytes();
+    }
+
     @Test
     public void testRelease() throws IOException {
-        try {
-            BytesUtil.checkRegisteredBytes();
-        } catch (Throwable t) {
-            // just doing this to reset BytesUtil. TODO: fix other tests to not leak Bytes
-        }
-        NetworkContext nc = new VanillaNetworkContext();
-        nc.socketChannel(TCPRegistry.createSocketChannel(hostPort));
-        TcpEventHandler t = new TcpEventHandler(nc);
+        TcpEventHandler t = createTcpEventHandler();
         t.close();
-        // assume the handle has been added to an EventLoop.
+        // assume the handler has been added to an EventLoop.
         try {
             t.action();
             fail();
@@ -43,6 +41,26 @@ public class TcpEventHandlerReleaseTest {
         }
         // check second close OK
         t.close();
-        BytesUtil.checkRegisteredBytes();
+    }
+
+    @Test
+    public void testBuffersReleasedWhenSocketChannelClosed() throws IOException {
+        TcpEventHandler t = createTcpEventHandler();
+        t.socketChannel().close();
+        try {
+            t.action();
+            fail();
+        } catch (InvalidEventHandlerException e) {
+            // expected.
+        }
+        t.close();
+    }
+
+    public TcpEventHandler createTcpEventHandler() throws IOException {
+        NetworkContext nc = new VanillaNetworkContext();
+        nc.socketChannel(TCPRegistry.createSocketChannel(hostPort));
+        TcpEventHandler tcpEventHandler = new TcpEventHandler(nc);
+        tcpEventHandler.tcpHandler((in, out, nc1) -> { });
+        return tcpEventHandler;
     }
 }

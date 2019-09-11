@@ -17,7 +17,6 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.bytes.BytesUtil;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.core.OS;
@@ -71,6 +70,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     @Nullable
     private volatile TcpHandler tcpHandler;
     private long lastTickReadTime = System.currentTimeMillis();
+    private final AtomicBoolean bbbReleased = new AtomicBoolean();
     private volatile boolean closed;
     // monitoring
     private int socketPollCount;
@@ -111,9 +111,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
         inBBB = Bytes.elasticByteBuffer(TCP_BUFFER + OS.pageSize());
         outBBB = Bytes.elasticByteBuffer(TCP_BUFFER);
-        // TODO Fix tests so socket connections are closed cleanly.
-        BytesUtil.unregister(inBBB);
-        BytesUtil.unregister(outBBB);
 
         // must be set after we take a slice();
         outBBB.underlyingObject().limit(0);
@@ -196,8 +193,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         Jvm.optionalSafepoint();
 
         if (closed) {
-            inBBB.release();
-            outBBB.release();
+            closeAndNfyTerminated();
             throw new InvalidEventHandlerException();
         }
 
@@ -206,8 +202,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
         if (!sc.isOpen()) {
             tcpHandler.onEndOfConnection(false);
-            Closeable.closeQuietly(nc);
-            // clear these to free up memory.
+            closeAndNfyTerminated();
             throw new InvalidEventHandlerException("socket is closed");
         }
 
@@ -253,7 +248,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                             lastTickReadTime += heartbeatListener.lingerTimeBeforeDisconnect();
                         } else {
                             tcpHandler.onEndOfConnection(true);
-                            closeSC();
+                            closeAndNfyTerminated();
                             throw new InvalidEventHandlerException("heartbeat timeout");
                         }
                     }
@@ -262,26 +257,40 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                 if (!busy)
                     monitorStats();
             } else {
-                close();
+                // read == -1, socketChannel has reached end-of-stream
+                closeAndNfyTerminated();
                 throw new InvalidEventHandlerException("socket closed " + sc);
             }
 
             return busy;
 
         } catch (ClosedChannelException e) {
-            close();
+            closeAndNfyTerminated();
             throw new InvalidEventHandlerException(e);
         } catch (IOException e) {
-            close();
+            closeAndNfyTerminated();
             handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
             throw new InvalidEventHandlerException();
         } catch (InvalidEventHandlerException e) {
-            close();
+            closeAndNfyTerminated();
             throw e;
         } catch (Exception e) {
-            close();
+            closeAndNfyTerminated();
             Jvm.warn().on(getClass(), "", e);
             throw new InvalidEventHandlerException(e);
+        }
+    }
+
+    /**
+     * action can be called from BlockingEventLoop, VanillaEventLoop, or from anywhere. If we are
+     * about to throw an InvalidEventHandlerException then we know we are finished from the action method
+     */
+    private void closeAndNfyTerminated() {
+        close();
+        // can only release BBs when we are sure that action has terminated
+        if (bbbReleased.compareAndSet(false, true)) {
+            inBBB.release();
+            outBBB.release();
         }
     }
 
