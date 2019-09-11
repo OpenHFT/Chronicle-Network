@@ -93,7 +93,7 @@ public class VerySimpleClientTest {
 
     @After
     public void tearDown() {
-        eg.stop();
+        eg.close();
         TcpChannelHub.closeAllHubs();
         TCPRegistry.reset();
         inWire.bytes().release();
