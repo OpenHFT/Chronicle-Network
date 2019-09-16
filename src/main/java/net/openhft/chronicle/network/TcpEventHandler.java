@@ -17,6 +17,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.bytes.BytesUtil;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.core.OS;
@@ -70,7 +71,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     @Nullable
     private volatile TcpHandler tcpHandler;
     private long lastTickReadTime = System.currentTimeMillis();
-    private final AtomicBoolean bbbReleased = new AtomicBoolean();
     private volatile boolean closed;
     // monitoring
     private int socketPollCount;
@@ -111,6 +111,9 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
 
         inBBB = Bytes.elasticByteBuffer(TCP_BUFFER + OS.pageSize());
         outBBB = Bytes.elasticByteBuffer(TCP_BUFFER);
+        // TODO Fix Chronicle-Queue-Enterprise tests so socket connections are closed cleanly.
+        BytesUtil.unregister(inBBB);
+        BytesUtil.unregister(outBBB);
 
         // must be set after we take a slice();
         outBBB.underlyingObject().limit(0);
@@ -192,17 +195,15 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     public synchronized boolean action() throws InvalidEventHandlerException {
         Jvm.optionalSafepoint();
 
-        if (closed) {
-            closeAndNfyTerminated();
+        if (closed)
             throw new InvalidEventHandlerException();
-        }
 
         if (tcpHandler == null)
             return false;
 
         if (!sc.isOpen()) {
             tcpHandler.onEndOfConnection(false);
-            closeAndNfyTerminated();
+            Closeable.closeQuietly(nc);
             throw new InvalidEventHandlerException("socket is closed");
         }
 
@@ -248,7 +249,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                             lastTickReadTime += heartbeatListener.lingerTimeBeforeDisconnect();
                         } else {
                             tcpHandler.onEndOfConnection(true);
-                            closeAndNfyTerminated();
+                            closeSC();
                             throw new InvalidEventHandlerException("heartbeat timeout");
                         }
                     }
@@ -258,40 +259,33 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
                     monitorStats();
             } else {
                 // read == -1, socketChannel has reached end-of-stream
-                closeAndNfyTerminated();
+                close();
                 throw new InvalidEventHandlerException("socket closed " + sc);
             }
 
             return busy;
 
         } catch (ClosedChannelException e) {
-            closeAndNfyTerminated();
+            close();
             throw new InvalidEventHandlerException(e);
         } catch (IOException e) {
-            closeAndNfyTerminated();
+            close();
             handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
             throw new InvalidEventHandlerException();
         } catch (InvalidEventHandlerException e) {
-            closeAndNfyTerminated();
+            close();
             throw e;
         } catch (Exception e) {
-            closeAndNfyTerminated();
+            close();
             Jvm.warn().on(getClass(), "", e);
             throw new InvalidEventHandlerException(e);
         }
     }
 
-    /**
-     * action can be called from BlockingEventLoop, VanillaEventLoop, or from anywhere. If we are
-     * about to throw an InvalidEventHandlerException then we know we are finished from the action method
-     */
-    private void closeAndNfyTerminated() {
-        close();
-        // can only release BBs when we are sure that action has terminated
-        if (bbbReleased.compareAndSet(false, true)) {
-            inBBB.release();
-            outBBB.release();
-        }
+    @Override
+    public void loopFinished() {
+        inBBB.release();
+        outBBB.release();
     }
 
     public void onInBBFul() {

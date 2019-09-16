@@ -16,6 +16,7 @@ public class TcpEventHandlerReleaseTest {
     @After
     public void teardown() {
         TCPRegistry.reset();
+        BytesUtil.checkRegisteredBytes();
     }
 
     @Before
@@ -37,14 +38,8 @@ public class TcpEventHandlerReleaseTest {
     @Test
     public void testRelease() throws IOException {
         TcpEventHandler t = createTcpEventHandler();
+        t.loopFinished();
         t.close();
-        // assume the handler has been added to an EventLoop.
-        try {
-            t.action();
-            fail();
-        } catch (InvalidEventHandlerException e) {
-            // expected.
-        }
         // check second close OK
         t.close();
     }
@@ -59,6 +54,7 @@ public class TcpEventHandlerReleaseTest {
         } catch (InvalidEventHandlerException e) {
             // expected.
         }
+        t.loopFinished();
         t.close();
     }
 
