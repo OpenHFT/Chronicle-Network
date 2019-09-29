@@ -17,6 +17,7 @@
 package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.bytes.BytesUtil;
 import net.openhft.chronicle.bytes.ConnectionDroppedException;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.StackTrace;
@@ -31,10 +32,7 @@ import net.openhft.chronicle.network.ConnectionStrategy;
 import net.openhft.chronicle.network.WanSimulator;
 import net.openhft.chronicle.network.api.session.SessionDetails;
 import net.openhft.chronicle.network.api.session.SessionProvider;
-import net.openhft.chronicle.threads.LongPauser;
-import net.openhft.chronicle.threads.NamedThreadFactory;
-import net.openhft.chronicle.threads.Pauser;
-import net.openhft.chronicle.threads.PauserMonitor;
+import net.openhft.chronicle.threads.*;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -494,24 +492,12 @@ public class TcpChannelHub implements Closeable {
         closed = true;
         tcpSocketConsumer.prepareToShutdown();
 
-        if (shouldSendCloseMessage)
-
+        if (shouldSendCloseMessage) {
             eventLoop.addHandler(new EventHandler() {
                 @Override
                 public boolean action() throws InvalidEventHandlerException {
                     try {
                         TcpChannelHub.this.sendCloseMessage();
-                        tcpSocketConsumer.stop();
-                        closed = true;
-
-                        if (LOG.isDebugEnabled())
-                            Jvm.debug().on(getClass(), "closing connection to " + socketAddressSupplier);
-
-                        while (clientChannel != null) {
-
-                            if (LOG.isDebugEnabled())
-                                Jvm.debug().on(getClass(), "waiting for disconnect to " + socketAddressSupplier);
-                        }
                     } catch (ConnectionDroppedException e) {
                         throw new InvalidEventHandlerException(e);
                     }
@@ -526,6 +512,23 @@ public class TcpChannelHub implements Closeable {
                     return TcpChannelHub.class.getSimpleName() + "..close()";
                 }
             });
+
+            awaitAckOfClosedMessage();
+        }
+
+        if (LOG.isDebugEnabled())
+            Jvm.debug().on(getClass(), "closing connection to " + socketAddressSupplier);
+        tcpSocketConsumer.stop();
+
+        while (clientChannel != null) {
+            if (LOG.isDebugEnabled()) {
+                Jvm.debug().on(getClass(), "waiting for disconnect to " + socketAddressSupplier);
+                Jvm.pause(50);
+            }
+        }
+
+        outWire.bytes().release();
+        handShakingWire.bytes().release();
     }
 
     /**
@@ -542,7 +545,9 @@ public class TcpChannelHub implements Closeable {
                     w.writeEventName(EventId.onClientClosing).text(""));
 
         }, TryLock.LOCK);
+    }
 
+    private void awaitAckOfClosedMessage() {
         // wait up to 1 seconds to receive an close request acknowledgment from the server
         try {
             final boolean await = receivedClosedAcknowledgement.await(1, TimeUnit.SECONDS);
@@ -1066,6 +1071,7 @@ public class TcpChannelHub implements Closeable {
             long start = Time.currentTimeMillis();
 
             final Wire wire = syncInWireThreadLocal.get();
+            assert BytesUtil.unregister(wire.bytes());
             wire.clear();
 
             @NotNull Bytes<?> bytes = wire.bytes();
@@ -1242,8 +1248,9 @@ public class TcpChannelHub implements Closeable {
         }
 
         private void running() {
+            final Wire inWire = wireType.apply(elasticByteBuffer());
+
             try {
-                final Wire inWire = wireType.apply(elasticByteBuffer());
                 assert inWire != null;
                 assert inWire.startUse();
 
@@ -1314,13 +1321,13 @@ public class TcpChannelHub implements Closeable {
                     } finally {
                         start = Long.MAX_VALUE;
                         clear(inWire);
-                        inWire.bytes().release();
                     }
                 }
             } catch (Throwable e) {
                 if (!isShuttingdown())
                     Jvm.warn().on(getClass(), e);
             } finally {
+                inWire.bytes().release();
                 closeSocket();
             }
         }
@@ -1666,18 +1673,11 @@ public class TcpChannelHub implements Closeable {
             if (shutdownHere == null)
                 shutdownHere = new StackTrace(Thread.currentThread() + " Shutdown here");
 
+            Threads.shutdown(service);
+
+            serverHeartBeatHandler.release();
+
             isShutdown = true;
-            service.shutdown();
-            try {
-                service.awaitTermination(100, TimeUnit.MILLISECONDS);
-
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-
-            } finally {
-                service.shutdownNow();
-                serverHeartBeatHandler.release();
-            }
         }
 
         /**

@@ -123,6 +123,9 @@ public class WireTcpHandlerTest {
                     times[count++] = System.nanoTime() - now;
             }
         }
+        inWire.bytes().release();
+        outWire.bytes().release();
+
         Arrays.sort(times);
         System.out.printf("%s: Loop back echo latency was %.1f/%.1f %,d/%,d %,d/%d us for 50/90 99/99.9 99.99/worst %%tile%n",
                 desc,
