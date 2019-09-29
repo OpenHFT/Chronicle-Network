@@ -1003,7 +1003,6 @@ public class TcpChannelHub implements Closeable {
         private volatile boolean isShutdown;
         @Nullable
         private volatile Throwable shutdownHere = null;
-        private long failedConnectionCount;
         private volatile boolean prepareToShutdown;
         private Thread readThread;
 
@@ -1315,6 +1314,7 @@ public class TcpChannelHub implements Closeable {
                     } finally {
                         start = Long.MAX_VALUE;
                         clear(inWire);
+                        inWire.bytes().release();
                     }
                 }
             } catch (Throwable e) {
@@ -1676,6 +1676,7 @@ public class TcpChannelHub implements Closeable {
 
             } finally {
                 service.shutdownNow();
+                serverHeartBeatHandler.release();
             }
         }
 

@@ -17,12 +17,14 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.bytes.BytesUtil;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -64,6 +66,11 @@ public class WireTcpHandlerTest {
                 //,
                 //   new Object[]{"RawWire", WireType.RAW}
         );
+    }
+
+    @After
+    public void checkRegisteredBytes() {
+        BytesUtil.checkRegisteredBytes();
     }
 
     private static void testLatency(String desc, @NotNull Function<Bytes, Wire> wireWrapper, @NotNull SocketChannel... sockets) throws IOException {
