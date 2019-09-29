@@ -403,8 +403,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             return;
         closed = true;
         closeSC();
-        // NOTE Do not release buffers here as they might be in use.
-        // wait for action() to do it when it is ready.
+        // NOTE Do not release buffers here as they might be in use. Wait for loopFinished() to do it
     }
 
     @PackageLocal

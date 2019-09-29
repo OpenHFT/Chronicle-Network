@@ -139,8 +139,9 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
 
     @Override
     public void close() {
+        if (closed)
+            return;
         closed = true;
         closeSocket();
     }
-
 }
