@@ -1,6 +1,9 @@
 package net.openhft.chronicle.network.ssl;
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -21,6 +24,18 @@ import static org.junit.Assert.assertTrue;
 
 public final class NioSslIntegrationTest {
     private static final boolean SEND_DATA_BEFORE_SSL_HANDSHAKE = Boolean.getBoolean("ssl.test.payload");
+
+    @Before
+    public void setUp() throws IOException {
+        // https://bugs.openjdk.java.net/browse/JDK-8211426
+        if (Jvm.majorVersion()>=11)
+            System.setProperty("jdk.tls.server.protocols", "TLSv1.2");
+    }
+
+    @After
+    public void teardown() {
+        System.clearProperty("jdk.tls.server.protocols");
+    }
 
     @Test
     public void shouldEncryptAndDecryptTraffic() throws Exception {
