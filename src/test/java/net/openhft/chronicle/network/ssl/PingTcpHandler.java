@@ -56,7 +56,7 @@ final class PingTcpHandler extends AbstractSubHandler<SslTestClusteredNetworkCon
             @NotNull WriteMarshallable writeMarshallable = newPingHandler(csp(), cid());
             publish(writeMarshallable);
 
-            nc().eventLoop().addHandler(true, new PingSender(this::nc, this::localIdentifier, this::remoteIdentifier, cid()));
+            nc().eventLoop().addHandler(new PingSender(this::nc, this::localIdentifier, this::remoteIdentifier, cid()));
         }
     }
 }
