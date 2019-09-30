@@ -86,7 +86,7 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
             SocketChannel sc = acceptStrategy.accept(ssc);
 
             if (sc != null) {
-                if (closed) {
+                if (closed || eventLoop.isClosed()) {
                     Closeable.closeQuietly(sc);
                     throw new InvalidEventHandlerException("closed");
                 }

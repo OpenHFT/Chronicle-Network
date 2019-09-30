@@ -132,7 +132,7 @@ public class RemoteConnector implements Closeable {
 
         @Override
         public boolean action() throws InvalidEventHandlerException {
-            if (closed)
+            if (closed || eventLoop.isClosed())
                 throw new InvalidEventHandlerException();
             final long time = System.currentTimeMillis();
 
