@@ -148,7 +148,7 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
 
     @Override
     public void close() {
-        hostDetails().forEach(Closeable::closeQuietly);
+        Closeable.closeQuietly(hostDetails());
     }
 
     public void install() {

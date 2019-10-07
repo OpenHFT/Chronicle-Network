@@ -53,7 +53,7 @@ public enum TCPRegistry {
     static final Map<String, ServerSocketChannel> DESC_TO_SERVER_SOCKET_CHANNEL_MAP = new ConcurrentSkipListMap<>();
 
     public static void reset() {
-        DESC_TO_SERVER_SOCKET_CHANNEL_MAP.values().forEach(Closeable::closeQuietly);
+        Closeable.closeQuietly(DESC_TO_SERVER_SOCKET_CHANNEL_MAP.values());
         HOSTNAME_PORT_ALIAS.clear();
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.clear();
         Jvm.pause(50);
@@ -77,7 +77,7 @@ public enum TCPRegistry {
     }
 
     public static void setAlias(String name, @NotNull String hostname, int port) {
-        HOSTNAME_PORT_ALIAS.put(name, new InetSocketAddress(hostname, port));
+        addInetSocketAddress(name, hostname, port);
     }
 
     /**

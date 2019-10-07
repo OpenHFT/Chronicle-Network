@@ -87,7 +87,7 @@ public class RemoteConnector implements Closeable {
 
         @Nullable final List<Closeable> closeables = this.closeables;
         this.closeables = null;
-        closeables.forEach(Closeable::closeQuietly);
+        Closeable.closeQuietly(closeables);
     }
 
     @PackageLocal
