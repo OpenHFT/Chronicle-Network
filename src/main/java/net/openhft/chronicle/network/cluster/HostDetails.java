@@ -23,16 +23,16 @@ import org.jetbrains.annotations.NotNull;
 
 public class HostDetails implements Marshallable {
 
-    ClusterNotifier clusterNotifier;
     private int hostId;
     private int tcpBufferSize;
     private String connectUri;
     private String region;
     private int timeoutMs;
-    private ConnectionStrategy connectionStrategy;
-    private ConnectionManager connectionManager;
-    private TerminationEventHandler terminationEventHandler;
-    private HostConnector hostConnector;
+    private transient ClusterNotifier clusterNotifier;
+    private transient ConnectionStrategy connectionStrategy;
+    private transient ConnectionManager connectionManager;
+    private transient TerminationEventHandler terminationEventHandler;
+    private transient HostConnector hostConnector;
 
     public HostDetails() {
     }
@@ -131,5 +131,25 @@ public class HostDetails implements Marshallable {
 
     public void clusterNotifier(ClusterNotifier clusterHandler) {
         this.clusterNotifier = clusterHandler;
+    }
+
+    public int getHostId() {
+        return hostId;
+    }
+
+    public int getTcpBufferSize() {
+        return tcpBufferSize;
+    }
+
+    public String getConnectUri() {
+        return connectUri;
+    }
+
+    public String getRegion() {
+        return region;
+    }
+
+    public int getTimeoutMs() {
+        return timeoutMs;
     }
 }
