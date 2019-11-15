@@ -60,8 +60,8 @@ public class ClusterTest {
         }
 
         @Override
-        protected WireParser createWireParser() {
-            return super.createWireParser().register(() -> "value", (s, v) -> this.value = v.int32());
+        protected WireParser wireParser() {
+            return super.wireParser().register(() -> "value", (s, v) -> this.value = v.int32());
         }
 
         @Override
