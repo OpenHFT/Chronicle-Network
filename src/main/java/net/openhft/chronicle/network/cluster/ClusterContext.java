@@ -99,6 +99,7 @@ public abstract class ClusterContext implements Demarshallable, Marshallable, Co
 
     @NotNull
     protected WireParser wireParser() {
+        // TODO: creates every time
         @NotNull VanillaWireParser parser = new VanillaWireParser((s, v) -> {
         }, WireParser.SKIP_READABLE_BYTES);
         parser.register(() -> "wireType", (s, v) -> v.text(this, (o, x) -> this.wireType(WireType.valueOf(x))));
@@ -112,6 +113,10 @@ public abstract class ClusterContext implements Demarshallable, Marshallable, Co
         parser.register(() -> "heartbeatFactory", (s, v) -> this.heartbeatFactory(v.typedMarshallable()));
         parser.register(() -> "networkStatsListenerFactory", (s, v) -> this.networkStatsListenerFactory(v.typedMarshallable()));
         parser.register(() -> "serverThreadingStrategy", (s, v) -> this.serverThreadingStrategy(v.asEnum(ServerThreadingStrategy.class)));
+        parser.register(() -> "procPrefix", (s, v) -> this.procPrefix(v.text()));
+        parser.register(() -> "clusterName", (s, v) -> this.clusterName(v.text()));
+        parser.register(() -> "localIdentifier", (s, v) -> this.localIdentifier(v.int8()));
+        parser.register(() -> "retryInterval", (s, v) -> this.retryInterval(v.int64()));
         return parser;
     }
 
