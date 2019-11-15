@@ -91,6 +91,15 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
 
     }
 
+    @Override
+    public void writeMarshallable(@NotNull WireOut wire) {
+        wire.write("context").typedMarshallable(context);
+
+        for (@NotNull Map.Entry<String, E> entry2 : hostDetails.entrySet()) {
+            wire.writeEventName(entry2::getKey).marshallable(entry2.getValue());
+        }
+    }
+
     @Nullable
     public E findHostDetails(int id) {
 
@@ -133,13 +142,6 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
 
     @NotNull
     abstract protected E newHostDetails();
-
-    @Override
-    public void writeMarshallable(@NotNull WireOut wire) {
-        for (@NotNull Map.Entry<String, E> entry2 : hostDetails.entrySet()) {
-            wire.writeEventName(entry2::getKey).marshallable(entry2.getValue());
-        }
-    }
 
     @NotNull
     public Collection<E> hostDetails() {
