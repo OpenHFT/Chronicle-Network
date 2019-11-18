@@ -85,8 +85,6 @@ public class RemoteConnector implements Closeable {
 
         closed = true;
 
-        @Nullable final List<Closeable> closeables = this.closeables;
-        this.closeables = null;
         Closeable.closeQuietly(closeables);
     }
 
@@ -173,13 +171,13 @@ public class RemoteConnector implements Closeable {
                 nextPeriod.set(System.currentTimeMillis() + retryInterval);
                 return false;
             }
-            eventLoop.addHandler(eventHandler);
-            @Nullable final List<Closeable> closeables = RemoteConnector.this.closeables;
-            if (closeables == null)
+            if (closed || eventLoop.isClosed())
                 // we have died.
                 Closeable.closeQuietly(eventHandler);
-            else
+            else {
+                eventLoop.addHandler(eventHandler);
                 closeables.add(() -> closeSocket(sc));
+            }
 
             throw new InvalidEventHandlerException();
         }
