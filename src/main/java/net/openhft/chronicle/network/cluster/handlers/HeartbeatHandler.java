@@ -70,6 +70,9 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext> extends A
     @Override
     public void onInitialize(@NotNull WireOut outWire) {
 
+        if (nc().eventLoop().isClosed())
+            return;
+
         if (nc().isAcceptor())
             heartbeatHandler(heartbeatTimeoutMs, heartbeatIntervalMs, cid()).writeMarshallable
                     (outWire);
