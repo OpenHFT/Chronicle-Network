@@ -76,12 +76,12 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
 
     @Override
     public boolean action() throws InvalidEventHandlerException {
-        if (!ssc.isOpen())
+        if (!ssc.isOpen() || closed || eventLoop.isClosed())
             throw new InvalidEventHandlerException();
 
         try {
             if (Jvm.isDebugEnabled(getClass()))
-                Jvm.debug().on(getClass(), Thread.currentThread() + " accepting " + ssc);
+                Jvm.debug().on(getClass(), "accepting " + ssc);
 
             SocketChannel sc = acceptStrategy.accept(ssc);
 
@@ -104,7 +104,7 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
             throw new InvalidEventHandlerException(e);
         } catch (Exception e) {
 
-            if (!closed) {
+            if (!closed && !eventLoop.isClosed()) {
                 ServerSocket socket = ssc.socket();
                 if (socket != null)
                     Jvm.warn().on(getClass(), hostPort + ", port=" + socket.getLocalPort(), e);
