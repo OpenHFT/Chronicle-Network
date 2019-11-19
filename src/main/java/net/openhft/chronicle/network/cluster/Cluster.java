@@ -71,7 +71,7 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
             @NotNull final ValueIn valueIn = wire.readEventName(sb);
 
             if ("context".contentEquals(sb)) {
-                context = valueIn.typedMarshallable();
+                context = (C) valueIn.object(ClusterContext.class);
                 assert context != null;
                 context.clusterName(clusterName);
                 continue;
