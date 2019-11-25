@@ -16,10 +16,12 @@
 
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.cluster.TerminationEventHandler;
+import net.openhft.chronicle.network.connection.ConnectionListeners;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
@@ -78,17 +80,7 @@ public interface NetworkContext<T extends NetworkContext> extends Closeable {
 
     @Nullable
     default ConnectionListener acquireConnectionListener() {
-        return new ConnectionListener() {
-            @Override
-            public void onConnected(int localIdentifier, int remoteIdentifier, boolean isAcceptor) {
-
-            }
-
-            @Override
-            public void onDisconnected(int localIdentifier, int remoteIdentifier, boolean isAcceptor) {
-
-            }
-        };
+        return Jvm.isDebug() ? ConnectionListeners.LOGGING : ConnectionListeners.NONE;
     }
 
     Runnable socketReconnector();
