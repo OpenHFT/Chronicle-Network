@@ -16,6 +16,7 @@
 
 package net.openhft.chronicle.network.cluster;
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.wire.WriteMarshallable;
 
@@ -58,12 +59,15 @@ class ClusterNotifier implements TerminationEventHandler, ConnectionChangedNotif
 
     private void onClose() {
 
-        if (terminated.get()) {
-            closeQuietly(hostConnector);
-            return;
+        if (!terminated.get()) {
+            try {
+                hostConnector.reconnect();
+                return;
+            } catch (IllegalStateException e) {
+                Jvm.warn().on(getClass(), "Unable to reconnect as shutting down");
+            }
         }
-
-        hostConnector.reconnect();
+        closeQuietly(hostConnector);
     }
 
     @Override
