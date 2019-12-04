@@ -120,4 +120,9 @@ public interface NetworkStats<T extends NetworkStats> extends ReadMarshallable, 
      * @param value round trip latency, 99.9th percentile
      */
     void percentile99_9th(long value);
+
+    @Override
+    default boolean usesSelfDescribingMessage() {
+        return true;
+    }
 }

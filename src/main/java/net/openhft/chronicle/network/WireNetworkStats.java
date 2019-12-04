@@ -17,13 +17,13 @@
 
 package net.openhft.chronicle.network;
 
-import net.openhft.chronicle.wire.AbstractMarshallable;
+import net.openhft.chronicle.wire.BytesInBinaryMarshallable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
-public class WireNetworkStats extends AbstractMarshallable implements
-        NetworkStats<WireNetworkStats> {
+public class WireNetworkStats extends BytesInBinaryMarshallable
+        implements NetworkStats<WireNetworkStats> {
     private long writeBps, readBps, socketPollCountPerSecond;
     private long timestamp;
     private int localIdentifier;
