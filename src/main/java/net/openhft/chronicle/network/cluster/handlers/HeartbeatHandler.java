@@ -34,8 +34,8 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext> extends A
 
     @UsedViaReflection
     public HeartbeatHandler(@NotNull WireIn w) {
-        heartbeatTimeoutMs = w.read(() -> "heartbeatTimeoutMs").int64();
-        heartbeatIntervalMs = w.read(() -> "heartbeatIntervalMs").int64();
+        heartbeatTimeoutMs = w.read("heartbeatTimeoutMs").int64();
+        heartbeatIntervalMs = w.read("heartbeatIntervalMs").int64();
         assert heartbeatTimeoutMs >= 1000 :
                 "heartbeatTimeoutMs=" + heartbeatTimeoutMs + ", this is too small";
         assert heartbeatIntervalMs >= 500 :
@@ -60,11 +60,7 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext> extends A
     private static WriteMarshallable heartbeatHandler(final long heartbeatTimeoutMs,
                                                       final long heartbeatIntervalMs,
                                                       final long cid) {
-        return w -> w.writeDocument(true,
-                d -> d.writeEventName(CoreFields.csp).text("/")
-                        .writeEventName(CoreFields.cid).int64(cid)
-                        .writeEventName(CoreFields.handler).typedMarshallable(new
-                                HeartbeatHandler(heartbeatTimeoutMs, heartbeatIntervalMs)));
+        return new WriteHeartbeatHandler(cid, heartbeatTimeoutMs, heartbeatIntervalMs);
     }
 
     @Override
@@ -77,10 +73,7 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext> extends A
             heartbeatHandler(heartbeatTimeoutMs, heartbeatIntervalMs, cid()).writeMarshallable
                     (outWire);
 
-        @NotNull final WriteMarshallable heartbeatMessage = w -> {
-            w.writeDocument(true, d -> d.write(CoreFields.cid).int64(cid()));
-            w.writeDocument(false, d -> d.write(() -> "heartbeat").text(""));
-        };
+        @NotNull final WriteMarshallable heartbeatMessage = new HeartbeatMessage();
 
         connectionMonitor = nc().acquireConnectionListener();
         timer = new Timer(nc().eventLoop());
@@ -90,15 +83,7 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext> extends A
 
     private void startPeriodicallySendingHeartbeats(WriteMarshallable heartbeatMessage) {
 
-        @NotNull final VanillaEventHandler task = () -> {
-            if (isClosed())
-                throw new InvalidEventHandlerException("closed");
-            // we will only publish a heartbeat if the wire out publisher is empty
-            WireOutPublisher wireOutPublisher = nc().wireOutPublisher();
-            if (wireOutPublisher.isEmpty())
-                wireOutPublisher.publish(heartbeatMessage);
-            return true;
-        };
+        @NotNull final VanillaEventHandler task = new PeriodicallySendingHeartbeatsHandler(heartbeatMessage);
 
         timer.scheduleAtFixedRate(task, this.heartbeatIntervalMs, this.heartbeatIntervalMs);
     }
@@ -110,16 +95,16 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext> extends A
 
     @Override
     public void writeMarshallable(@NotNull WireOut w) {
-        w.write(() -> "heartbeatTimeoutMs").int64(heartbeatTimeoutMs);
+        w.write("heartbeatTimeoutMs").int64(heartbeatTimeoutMs);
         assert heartbeatIntervalMs > 0;
-        w.write(() -> "heartbeatIntervalMs").int64(heartbeatIntervalMs);
+        w.write("heartbeatIntervalMs").int64(heartbeatIntervalMs);
     }
 
     @Override
     public void onRead(@NotNull WireIn inWire, @NotNull WireOut outWire) {
         if (inWire.isEmpty())
             return;
-        inWire.read(() -> "heartbeat").text();
+        inWire.read("heartbeat").text();
     }
 
     @Override
@@ -139,37 +124,7 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext> extends A
     }
 
     private VanillaEventHandler heartbeatCheck() {
-
-        return () -> {
-
-            if (this.closable().isClosed())
-                throw new InvalidEventHandlerException("closed");
-
-            boolean hasHeartbeats = hasReceivedHeartbeat();
-            boolean prev = this.hasHeartbeats.getAndSet(hasHeartbeats);
-
-            if (hasHeartbeats != prev) {
-                if (!hasHeartbeats) {
-                    connectionMonitor.onDisconnected(this.localIdentifier(),
-                            this.remoteIdentifier(), nc().isAcceptor());
-
-                    this.close();
-
-                    final Runnable socketReconnector = nc().socketReconnector();
-
-                    // if we have been terminated then we should not attempt to reconnect
-                    TerminationEventHandler teHandler = nc().terminationEventHandler();
-                    if (teHandler != null && teHandler.isTerminated() && socketReconnector != null)
-                        socketReconnector.run();
-
-                    throw new InvalidEventHandlerException("closed");
-                } else
-                    connectionMonitor.onConnected(this.localIdentifier(),
-                            this.remoteIdentifier(), nc().isAcceptor());
-            }
-
-            return true;
-        };
+        return new HeartbeatCheckHandler();
     }
 
     /**
@@ -211,6 +166,120 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext> extends A
             long heartbeatIntervalMs = clusterContext.heartbeatIntervalMs();
             return heartbeatHandler(heartbeatTimeoutMs, heartbeatIntervalMs,
                     HeartbeatHandler.class.hashCode());
+        }
+    }
+
+    public String name() {
+        return "rid=" + HeartbeatHandler.this.remoteIdentifier() + ", " +
+                "lid=" + HeartbeatHandler.this.localIdentifier();
+    }
+
+    @Override
+    public String toString() {
+        return "HeartbeatHandler{" + name() + "}";
+    }
+
+    private static class WriteHeartbeatHandler implements WriteMarshallable {
+        private final long cid;
+        private final long heartbeatTimeoutMs;
+        private final long heartbeatIntervalMs;
+
+        public WriteHeartbeatHandler(long cid, long heartbeatTimeoutMs, long heartbeatIntervalMs) {
+            this.cid = cid;
+            this.heartbeatTimeoutMs = heartbeatTimeoutMs;
+            this.heartbeatIntervalMs = heartbeatIntervalMs;
+        }
+
+        @Override
+        public void writeMarshallable(@NotNull WireOut w) {
+            w.writeDocument(true,
+                    d -> d.writeEventName(CoreFields.csp).text("/")
+                            .writeEventName(CoreFields.cid).int64(cid)
+                            .writeEventName(CoreFields.handler).typedMarshallable(new
+                                    HeartbeatHandler(heartbeatTimeoutMs, heartbeatIntervalMs)));
+        }
+
+        @Override
+        public String toString() {
+            return "WriteHeartbeatHandler{" +
+                    "cid=" + cid +
+                    '}';
+        }
+    }
+
+    class HeartbeatCheckHandler implements VanillaEventHandler {
+        @Override
+        public boolean action() throws InvalidEventHandlerException {
+
+            if (HeartbeatHandler.this.closable().isClosed())
+                throw new InvalidEventHandlerException("closed");
+
+            boolean hasHeartbeats = HeartbeatHandler.this.hasReceivedHeartbeat();
+            boolean prev = HeartbeatHandler.this.hasHeartbeats.getAndSet(hasHeartbeats);
+
+            if (hasHeartbeats != prev) {
+                if (!hasHeartbeats) {
+                    connectionMonitor.onDisconnected(HeartbeatHandler.this.localIdentifier(),
+                            HeartbeatHandler.this.remoteIdentifier(), HeartbeatHandler.this.nc().isAcceptor());
+
+                    HeartbeatHandler.this.close();
+
+                    final Runnable socketReconnector = HeartbeatHandler.this.nc().socketReconnector();
+
+                    // if we have been terminated then we should not attempt to reconnect
+                    TerminationEventHandler teHandler = HeartbeatHandler.this.nc().terminationEventHandler();
+                    if (teHandler != null && teHandler.isTerminated() && socketReconnector != null)
+                        socketReconnector.run();
+
+                    throw new InvalidEventHandlerException("closed");
+                } else
+                    connectionMonitor.onConnected(HeartbeatHandler.this.localIdentifier(),
+                            HeartbeatHandler.this.remoteIdentifier(), HeartbeatHandler.this.nc().isAcceptor());
+            }
+
+            return true;
+        }
+
+        @Override
+        public String toString() {
+            return "HeartbeatCheckHandler{" + name() + "}";
+        }
+    }
+
+    class PeriodicallySendingHeartbeatsHandler implements VanillaEventHandler {
+        private final WriteMarshallable heartbeatMessage;
+
+        public PeriodicallySendingHeartbeatsHandler(WriteMarshallable heartbeatMessage) {
+            this.heartbeatMessage = heartbeatMessage;
+        }
+
+        @Override
+        public boolean action() throws InvalidEventHandlerException, InterruptedException {
+            if (HeartbeatHandler.this.isClosed())
+                throw new InvalidEventHandlerException("closed");
+            // we will only publish a heartbeat if the wire out publisher is empty
+            WireOutPublisher wireOutPublisher = HeartbeatHandler.this.nc().wireOutPublisher();
+            if (wireOutPublisher.isEmpty())
+                wireOutPublisher.publish(heartbeatMessage);
+            return true;
+        }
+
+        @Override
+        public String toString() {
+            return "PeriodicallySendingHeartbeatsHandler{" + name() + "}";
+        }
+    }
+
+    class HeartbeatMessage implements WriteMarshallable {
+        @Override
+        public void writeMarshallable(@NotNull WireOut w) {
+            w.writeDocument(true, d -> d.write(CoreFields.cid).int64(cid()));
+            w.writeDocument(false, d -> d.write("heartbeat").text(""));
+        }
+
+        @Override
+        public String toString() {
+            return "HeartbeatMessage{" + cid() + "}";
         }
     }
 }

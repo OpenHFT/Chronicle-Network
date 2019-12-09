@@ -165,7 +165,6 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     public HandlerPriority priority() {
         ServerThreadingStrategy sts = nc.serverThreadingStrategy();
         switch (sts) {
-
             case SINGLE_THREADED:
                 return singleThreadedPriority();
             case CONCURRENT:
