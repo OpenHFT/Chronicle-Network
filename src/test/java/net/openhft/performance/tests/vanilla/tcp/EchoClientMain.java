@@ -120,7 +120,6 @@ Loop back echo latency was 18.4/19.0 26/31 33/1236 us for 50/90 99/99.9 99.99/wo
 Between two servers via Solarflare with onload on client (16 minor GCs)
 Throughput was 643.6 MB/s
 Loop back echo latency was 20.8/21.8 29/34 38/2286 us for 50/90 99/99.9 99.99/worst %tile
-
 */
 
 public class EchoClientMain {
@@ -143,7 +142,7 @@ public class EchoClientMain {
         testThroughput(sockets);
         closeConnections(sockets);
         openConnections(hostnames, PORT, sockets);
-        for (int i : new int[]{200_000, 150_000, 120_000, 100_000, 80_000, 60_000, 50_000, 40_000, 30_000, 20_000})
+        for (int i : new int[]{/*200_000, 150_000, 120_000,*/ 100_000, 80_000, 60_000, 50_000, 40_000, 30_000, 20_000})
             testByteLatency(i, sockets);
         closeConnections(sockets);
     }

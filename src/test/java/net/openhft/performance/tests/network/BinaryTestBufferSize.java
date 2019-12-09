@@ -84,7 +84,6 @@ public class BinaryTestBufferSize {
 
     @Test
     public void test() throws IOException {
-
         sendAndReceive(64 << 10);
     }
 

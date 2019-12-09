@@ -222,7 +222,12 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             ByteBuffer inBB = inBBB.underlyingObject();
             int start = inBB.position();
 
+            assert !sc.isBlocking();
+            long time0 = System.nanoTime();
             int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
+            long time1 = System.nanoTime() - time0;
+            if (time1 > 1_000_000)
+                Jvm.warn().on(getClass(), "Non blocking read took " + time1 / 1000 + " us.");
 
             if (read == Integer.MAX_VALUE)
                 onInBBFul();
@@ -422,6 +427,9 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         long writeTime = System.nanoTime();
         assert !sc.isBlocking();
         int wrote = sc.write(outBB);
+        long time1 = System.nanoTime() - writeTime;
+        if (time1 > 1_000_000)
+            Jvm.warn().on(getClass(), "Non blocking write took " + time1 / 1000 + " us.");
         tcpHandler.onWriteTime(writeTime, outBB, start, outBB.position());
 
         bytesWriteCount += (outBB.position() - start);
