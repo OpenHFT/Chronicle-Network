@@ -16,12 +16,10 @@
 
 package net.openhft.chronicle.network.cluster;
 
-import net.openhft.chronicle.wire.Marshallable;
-import net.openhft.chronicle.wire.WireIn;
-import net.openhft.chronicle.wire.WireOut;
+import net.openhft.chronicle.wire.SelfDescribingMarshallable;
 import org.jetbrains.annotations.NotNull;
 
-public class HostDetails implements Marshallable {
+public class HostDetails extends SelfDescribingMarshallable {
 
     private int hostId;
     private int tcpBufferSize;
@@ -45,24 +43,6 @@ public class HostDetails implements Marshallable {
     public HostDetails hostId(int hostId) {
         this.hostId = hostId;
         return this;
-    }
-
-    @Override
-    public void readMarshallable(@NotNull WireIn wire) throws IllegalStateException {
-        wire.read(() -> "hostId").int32(this, (o, i) -> o.hostId = i)
-                .read(() -> "tcpBufferSize").int32(this, (o, i) -> o.tcpBufferSize = i)
-                .read(() -> "connectUri").text(this, (o, i) -> o.connectUri = i)
-                .read(() -> "timeoutMs").int32(this, (o, i) -> o.timeoutMs = i)
-                .read(() -> "region").text(this, (o, i) -> o.region = i);
-    }
-
-    @Override
-    public void writeMarshallable(@NotNull WireOut wire) {
-        wire.write(() -> "hostId").int32(hostId)
-                .write(() -> "tcpBufferSize").int32(tcpBufferSize)
-                .write(() -> "connectUri").text(connectUri)
-                .write(() -> "timeoutMs").int32(timeoutMs)
-                .write(() -> "region").text(region);
     }
 
     public String connectUri() {

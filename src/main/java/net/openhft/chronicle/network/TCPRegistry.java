@@ -18,7 +18,9 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.pool.ClassAliasPool;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
+import net.openhft.chronicle.network.api.NetworkStats;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -51,6 +53,12 @@ public enum TCPRegistry {
     ;
     static final Map<String, InetSocketAddress> HOSTNAME_PORT_ALIAS = new ConcurrentSkipListMap<>();
     static final Map<String, ServerSocketChannel> DESC_TO_SERVER_SOCKET_CHANNEL_MAP = new ConcurrentSkipListMap<>();
+
+    static {
+        ClassAliasPool.CLASS_ALIASES.addAlias(
+                NetworkStats.class,
+                AlwaysStartOnPrimaryConnectionStrategy.class);
+    }
 
     public static void reset() {
         Closeable.closeQuietly(DESC_TO_SERVER_SOCKET_CHANNEL_MAP.values());
