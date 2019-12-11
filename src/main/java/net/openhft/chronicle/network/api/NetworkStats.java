@@ -32,6 +32,7 @@ public class NetworkStats extends SelfDescribingMarshallable {
     private String remoteHostName;
     private int remotePort;
     private String userId;
+    private String host;
 
     public String userId() {
         return userId;
@@ -210,6 +211,15 @@ public class NetworkStats extends SelfDescribingMarshallable {
 
     public NetworkStats remotePort(int remotePort) {
         this.remotePort = remotePort;
+        return this;
+    }
+
+    public String host() {
+        return host;
+    }
+
+    public NetworkStats host(String host) {
+        this.host = host;
         return this;
     }
 }
