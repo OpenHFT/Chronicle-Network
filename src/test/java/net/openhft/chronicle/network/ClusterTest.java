@@ -1,14 +1,10 @@
 package net.openhft.chronicle.network;
 
-import net.openhft.chronicle.core.annotation.UsedViaReflection;
-import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.cluster.Cluster;
 import net.openhft.chronicle.network.cluster.ClusterContext;
 import net.openhft.chronicle.network.cluster.HostDetails;
 import net.openhft.chronicle.wire.Marshallable;
-import net.openhft.chronicle.wire.WireIn;
-import net.openhft.chronicle.wire.WireParser;
 import net.openhft.chronicle.wire.WireType;
 import org.junit.Assert;
 import org.junit.Test;
@@ -48,21 +44,8 @@ public class ClusterTest {
         }
     }
 
-    private static class MyClusterContext extends net.openhft.chronicle.network.cluster.ClusterContext {
+    static class MyClusterContext extends net.openhft.chronicle.network.cluster.ClusterContext {
         int value;
-
-        @UsedViaReflection
-        protected MyClusterContext(WireIn wire) throws IORuntimeException {
-            readMarshallable(wire);
-        }
-
-        public MyClusterContext() {
-        }
-
-        @Override
-        protected WireParser wireParser() {
-            return super.wireParser().register(() -> "value", (s, v) -> this.value = v.int32());
-        }
 
         @Override
         public ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpEventHandlerFactory() {
