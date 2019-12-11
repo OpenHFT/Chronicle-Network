@@ -1,6 +1,5 @@
 package net.openhft.chronicle.network.ssl;
 
-import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.api.TcpHandler;
@@ -11,7 +10,6 @@ import net.openhft.chronicle.network.cluster.handlers.UberHandler;
 import net.openhft.chronicle.network.connection.VanillaWireOutPublisher;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.threads.Pauser;
-import net.openhft.chronicle.wire.WireIn;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,11 +23,7 @@ import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
 public final class SslTestClusterContext extends ClusterContext {
 
-    private SslTestCluster cluster;
-
-    SslTestClusterContext(@NotNull final WireIn wire) throws IORuntimeException {
-        super(wire);
-    }
+    private transient SslTestCluster cluster;
 
     private static TcpHandler wrapForSsl(final TcpHandler delegate) {
         new RuntimeException(String.format("%s/0x%s created",

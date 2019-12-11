@@ -16,7 +16,6 @@
 
 package net.openhft.chronicle.network.cluster;
 
-import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.util.ThrowingFunction;
@@ -24,7 +23,10 @@ import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.cluster.handlers.UberHandler;
 import net.openhft.chronicle.network.cluster.handlers.UberHandler.Factory;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
-import net.openhft.chronicle.wire.*;
+import net.openhft.chronicle.wire.SelfDescribingMarshallable;
+import net.openhft.chronicle.wire.WireIn;
+import net.openhft.chronicle.wire.WireType;
+import net.openhft.chronicle.wire.WriteMarshallable;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -34,7 +36,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public abstract class ClusterContext implements Demarshallable, Marshallable, Consumer<HostDetails> {
+public abstract class ClusterContext extends SelfDescribingMarshallable implements Consumer<HostDetails> {
 
     private transient Factory handlerFactory;
     private transient Function<WireType, WireOutPublisher> wireOutPublisherFactory;
@@ -53,11 +55,6 @@ public abstract class ClusterContext implements Demarshallable, Marshallable, Co
     private long retryInterval = 1_000L;
     private String procPrefix;
 
-    @UsedViaReflection
-    protected ClusterContext(@NotNull WireIn wire) throws IORuntimeException {
-        readMarshallable(wire);
-    }
-
     protected ClusterContext() {
         defaults();
     }
@@ -73,11 +70,7 @@ public abstract class ClusterContext implements Demarshallable, Marshallable, Co
     @Override
     public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
         defaults();
-        while (wire.bytes().readRemaining() > 0) {
-            wire.consumePadding();
-            if (wire.bytes().readRemaining() > 0)
-                wireParser().parseOne(wire);
-        }
+        super.readMarshallable(wire);
     }
 
     public Function<ClusterContext, NetworkStatsListener> networkStatsListenerFactory() {
@@ -96,29 +89,6 @@ public abstract class ClusterContext implements Demarshallable, Marshallable, Co
 
     @NotNull
     public abstract ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpEventHandlerFactory();
-
-    @NotNull
-    protected WireParser wireParser() {
-        // TODO: creates every time
-        @NotNull VanillaWireParser parser = new VanillaWireParser((s, v) -> {
-        }, WireParser.SKIP_READABLE_BYTES);
-        parser.register(() -> "wireType", (s, v) -> v.text(this, (o, x) -> this.wireType(WireType.valueOf(x))));
-        parser.register(() -> "handlerFactory", (s, v) -> this.handlerFactory(v.typedMarshallable()));
-        parser.register(() -> "heartbeatTimeoutMs", (s, v) -> this.heartbeatTimeoutMs(v.int64()));
-        parser.register(() -> "heartbeatIntervalMs", (s, v) -> this.heartbeatIntervalMs(v.int64()));
-        parser.register(() -> "wireOutPublisherFactory", (s, v) -> this.wireOutPublisherFactory(v.typedMarshallable()));
-        parser.register(() -> "networkContextFactory", (s, v) -> this.networkContextFactory(v.typedMarshallable()));
-        parser.register(() -> "connectionStrategy", (s, v) -> this.connectionStrategy(v.typedMarshallable()));
-        parser.register(() -> "connectionEventHandler", (s, v) -> this.connectionEventHandler(v.typedMarshallable()));
-        parser.register(() -> "heartbeatFactory", (s, v) -> this.heartbeatFactory(v.typedMarshallable()));
-        parser.register(() -> "networkStatsListenerFactory", (s, v) -> this.networkStatsListenerFactory(v.typedMarshallable()));
-        parser.register(() -> "serverThreadingStrategy", (s, v) -> this.serverThreadingStrategy(v.asEnum(ServerThreadingStrategy.class)));
-        parser.register(() -> "procPrefix", (s, v) -> this.procPrefix(v.text()));
-        parser.register(() -> "clusterName", (s, v) -> this.clusterName(v.text()));
-        parser.register(() -> "localIdentifier", (s, v) -> this.localIdentifier(v.int8()));
-        parser.register(() -> "retryInterval", (s, v) -> this.retryInterval(v.int64()));
-        return parser;
-    }
 
     public void serverThreadingStrategy(ServerThreadingStrategy serverThreadingStrategy) {
         this.serverThreadingStrategy = serverThreadingStrategy;
