@@ -56,5 +56,10 @@ public class ClusterTest {
             this.value = v;
             return this;
         }
+
+        @Override
+        protected void defaults() {
+
+        }
     }
 }

@@ -55,6 +55,10 @@ public abstract class ClusterContext extends SelfDescribingMarshallable implemen
     private long retryInterval = 1_000L;
     private String procPrefix;
 
+    public ClusterContext() {
+        defaults();
+    }
+
     public String procPrefix() {
         return procPrefix;
     }
@@ -116,8 +120,7 @@ public abstract class ClusterContext extends SelfDescribingMarshallable implemen
         return this;
     }
 
-    public void defaults() {
-    }
+    protected abstract void defaults();
 
     @NotNull
     public ClusterContext localIdentifier(byte localIdentifier) {
