@@ -36,7 +36,7 @@ public interface NetworkStatsListener<N extends NetworkContext> extends Closeabl
      * @param nl NetworkStatsListener
      */
     static void notifyHostPort(@Nullable final SocketChannel sc, @NotNull final NetworkStatsListener nl) {
-        if (sc != null && sc.socket() != null
+        if (nl != null && sc != null && sc.socket() != null
                 && sc.socket().getRemoteSocketAddress() instanceof InetSocketAddress) {
             @NotNull final InetSocketAddress remoteSocketAddress = (InetSocketAddress) sc.socket()
                     .getRemoteSocketAddress();

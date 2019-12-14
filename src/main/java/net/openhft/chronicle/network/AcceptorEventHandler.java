@@ -94,8 +94,7 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
                 nc.socketChannel(sc);
                 nc.isAcceptor(true);
                 NetworkStatsListener nl = nc.networkStatsListener();
-                if (nl != null)
-                    notifyHostPort(sc, nl);
+                notifyHostPort(sc, nl);
                 TcpEventHandler apply = handlerFactory.apply(nc);
                 eventLoop.addHandler(apply);
             }

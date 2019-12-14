@@ -82,8 +82,7 @@ public final class SslTestClusterContext extends ClusterContext {
             };
 
             final NetworkStatsListener nl = nc.networkStatsListener();
-            if (nl != null)
-                notifyHostPort(nc.socketChannel(), nl);
+            notifyHostPort(nc.socketChannel(), nl);
 
             @Nullable final Function<NetworkContext, TcpHandler> f
                     = x -> new HeaderTcpHandler<>(handler, consumer, x);
