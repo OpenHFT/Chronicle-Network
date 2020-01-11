@@ -48,10 +48,11 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
     private static final AtomicBoolean FIRST_HANDLER = new AtomicBoolean();
-    public static boolean DISABLE_TCP_NODELAY;
+    public static final int TARGET_WRITE_SIZE = Integer.getInteger("TcpEventHandler.targetWriteSize", 1024);
+    public static boolean DISABLE_TCP_NODELAY = Boolean.getBoolean("disable.tcp_nodelay");
+
 
     static {
-        DISABLE_TCP_NODELAY = Boolean.getBoolean("disable.tcp_nodelay");
         if (DISABLE_TCP_NODELAY) System.out.println("tcpNoDelay disabled");
     }
 
@@ -333,12 +334,23 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             // process method might change the underlying ByteBuffer by resizing it.
             ByteBuffer outBB = outBBB.underlyingObject();
             // did it write something?
-            if (outBBB.writePosition() > outBB.limit() || outBBB.writePosition() >= 4) {
-                outBB.limit(Maths.toInt32(outBBB.writePosition()));
-                busy |= tryWrite(outBB);
-                break;
+            int wpBBB = Maths.toUInt31(outBBB.writePosition());
+            int length = wpBBB - outBB.limit();
+            if (length >= TARGET_WRITE_SIZE) {
+                outBB.limit(wpBBB);
+                boolean busy2 = tryWrite(outBB);
+                if (busy2)
+                    busy = busy2;
+                else
+                    break;
             }
         } while (lastInBBBReadPosition != inBBB.readPosition());
+
+        ByteBuffer outBB = outBBB.underlyingObject();
+        if (outBBB.writePosition() > outBB.limit() || outBBB.writePosition() >= 4) {
+            outBB.limit(Maths.toInt32(outBBB.writePosition()));
+            busy |= tryWrite(outBB);
+        }
 
         Jvm.optionalSafepoint();
 
