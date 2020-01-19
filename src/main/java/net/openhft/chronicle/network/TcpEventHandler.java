@@ -46,6 +46,8 @@ import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandlerManager {
 
     private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
+    private static final long NBR_WARNING_NANOS = Long.getLong("tcp.nbr.warning.nanos", 2_000_000);
+    private static final long NBW_WARNING_NANOS = Long.getLong("tcp.nbw.warning.nanos", 2_000_000);
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
     private static final AtomicBoolean FIRST_HANDLER = new AtomicBoolean();
     public static final int TARGET_WRITE_SIZE = Integer.getInteger("TcpEventHandler.targetWriteSize", 1024);
@@ -226,7 +228,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             long time0 = System.nanoTime();
             int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
             long time1 = System.nanoTime() - time0;
-            if (time1 > 2_000_000)
+            if (time1 > NBR_WARNING_NANOS)
                 Jvm.warn().on(getClass(), "Non blocking read took " + time1 / 1000 + " us.");
 
             if (read == Integer.MAX_VALUE)
@@ -439,7 +441,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         assert !sc.isBlocking();
         int wrote = sc.write(outBB);
         long time1 = System.nanoTime() - writeTime;
-        if (time1 > 2_000_000)
+        if (time1 > NBW_WARNING_NANOS)
             Jvm.warn().on(getClass(), "Non blocking write took " + time1 / 1000 + " us.");
         tcpHandler.onWriteTime(writeTime, outBB, start, outBB.position());
 
