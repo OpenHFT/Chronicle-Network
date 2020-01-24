@@ -227,15 +227,19 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
             }
 
             SubHandler<T> handler = handler();
-            if (handler == null)
-                throw new IllegalStateException("handler == null, check that the " +
+            if (handler != null && dc.isData() && !inWire.bytes().isEmpty())
+                try {
+                    handler.onRead(inWire, outWire);
+                } catch (RejectedHandlerException ex) {
+                    Jvm.debug().on(getClass(), "Removing rejected handler: " + handler);
+                    removeHandler(handler);
+                }
+            else
+                Jvm.warn().on(getClass(), "handler == null, check that the " +
                         "Csp/Cid has been sent, failed to " +
                         "fully " +
                         "process the following " +
                         "YAML\n");
-
-            if (dc.isData() && !inWire.bytes().isEmpty())
-                handler.onRead(inWire, outWire);
         } catch (Throwable e) {
             Jvm.warn().on(getClass(), "failed to parse:" + peekContents(dc), e);
         }
@@ -255,7 +259,12 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     protected void onWrite(@NotNull WireOut outWire) {
         SubHandler handler = handler();
         if (handler != null)
-            handler.onWrite(outWire);
+            try {
+                handler.onWrite(outWire);
+            } catch (RejectedHandlerException ex) {
+                Jvm.debug().on(getClass(), "Removing rejected handler: " + handler);
+                removeHandler(handler);
+            }
 
         WriteMarshallable w;
         for (int i = 0; i < writers.size(); i++) {
