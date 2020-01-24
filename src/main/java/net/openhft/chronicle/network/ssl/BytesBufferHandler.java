@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
  *
  * @param <N> the type of {@see NetworkContext}
  */
-public final class BytesBufferHandler<N extends NetworkContext> implements BufferHandler {
+public final class BytesBufferHandler<N extends NetworkContext<N>> implements BufferHandler {
     private static final Bytes<ByteBuffer> EMPTY_APPLICATION_INPUT = Bytes.wrapForRead(ByteBuffer.allocate(0));
     private TcpHandler<N> delegateHandler;
     private Bytes<ByteBuffer> input;
