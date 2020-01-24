@@ -3,6 +3,7 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.cluster.Cluster;
 import net.openhft.chronicle.network.cluster.ClusterContext;
+import net.openhft.chronicle.network.cluster.ClusteredNetworkContext;
 import net.openhft.chronicle.network.cluster.HostDetails;
 import net.openhft.chronicle.wire.Marshallable;
 import net.openhft.chronicle.wire.WireType;
@@ -35,6 +36,7 @@ public class ClusterTest {
         public MyCluster() {
             this("dummy");
         }
+
         MyCluster(String clusterName) {
             super(clusterName);
         }
@@ -45,7 +47,7 @@ public class ClusterTest {
         }
     }
 
-    static class MyClusterContext<T extends VanillaNetworkContext<T>> extends net.openhft.chronicle.network.cluster.ClusterContext<T> {
+    static class MyClusterContext<T extends ClusteredNetworkContext<T>> extends net.openhft.chronicle.network.cluster.ClusterContext<T> {
         int value;
 
         @NotNull

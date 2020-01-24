@@ -35,7 +35,7 @@ public final class SslTestClusterContext extends ClusterContext<SslTestClustered
 
     @Override
     public void defaults() {
-        this.handlerFactory(new UberHandler.Factory())
+        this.handlerFactory(new UberHandler.Factory<>())
                 .heartbeatFactory(new HeartbeatHandler.Factory<>())
                 .wireOutPublisherFactory(VanillaWireOutPublisher::new)
                 .wireType(WireType.TEXT)

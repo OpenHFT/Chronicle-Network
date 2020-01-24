@@ -7,7 +7,6 @@ import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.core.threads.Timer;
 import net.openhft.chronicle.core.threads.VanillaEventHandler;
 import net.openhft.chronicle.network.ConnectionListener;
-import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.cluster.*;
 import net.openhft.chronicle.network.connection.CoreFields;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
@@ -150,7 +149,7 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
         return result;
     }
 
-    public static class Factory<T extends NetworkContext<T>> implements Function<ClusterContext<T>, WriteMarshallable>,
+    public static class Factory<T extends ClusteredNetworkContext<T>> implements Function<ClusterContext<T>, WriteMarshallable>,
             Demarshallable {
 
         @UsedViaReflection

@@ -18,7 +18,6 @@ package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.threads.EventLoop;
-import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.NetworkStatsListener;
 import net.openhft.chronicle.network.RemoteConnector;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
@@ -32,7 +31,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-public class HostConnector<T extends NetworkContext<T>> implements Closeable {
+public class HostConnector<T extends ClusteredNetworkContext<T>> implements Closeable {
 
     private final WireType wireType;
 
