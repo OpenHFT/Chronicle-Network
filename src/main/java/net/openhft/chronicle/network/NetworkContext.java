@@ -95,9 +95,6 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
 
     T serverThreadingStrategy(ServerThreadingStrategy singleThreaded);
 
-    T remoteHostId(int hostId);
-    int remoteHostId();
-
     default void addConnectionListener(ConnectionListener connectionListener) {
         // do nothing
     }

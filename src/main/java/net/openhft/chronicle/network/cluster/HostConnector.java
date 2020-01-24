@@ -41,7 +41,6 @@ public class HostConnector<T extends NetworkContext<T>> implements Closeable {
 
     private final RemoteConnector<T> remoteConnector;
     private final String connectUri;
-    private final int hostId;
     private final Function<ClusterContext<T>, T> networkContextFactory;
     @NotNull
     private final ClusterContext<T> clusterContext;
@@ -60,7 +59,6 @@ public class HostConnector<T extends NetworkContext<T>> implements Closeable {
         this.networkStatsListenerFactory = clusterContext.networkStatsListenerFactory();
         this.networkContextFactory = clusterContext.networkContextFactory();
         this.connectUri = hostdetails.connectUri();
-        this.hostId = hostdetails.getHostId();
         this.wireType = clusterContext.wireType();
         this.wireOutPublisherFactory = clusterContext.wireOutPublisherFactory();
         this.eventLoop = clusterContext.eventLoop();
@@ -107,8 +105,7 @@ public class HostConnector<T extends NetworkContext<T>> implements Closeable {
                 .heartbeatTimeoutMs(clusterContext.heartbeatTimeoutMs() * 2)
                 .socketReconnector(this::reconnect)
                 .serverThreadingStrategy(clusterContext.serverThreadingStrategy())
-                .remoteHostId(hostId)
-                .wireType(this.wireType);;
+                .wireType(this.wireType);
 
         if (networkStatsListenerFactory != null) {
             final NetworkStatsListener<T> networkStatsListener = networkStatsListenerFactory.apply(clusterContext);

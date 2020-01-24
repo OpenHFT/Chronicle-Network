@@ -214,18 +214,19 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                 if (!readMeta(inWire))
                     return;
 
-                SubHandler handler = handler();
+                SubHandler<T> handler = handler();
                 handler.remoteIdentifier(remoteIdentifier);
                 handler.localIdentifier(localIdentifier);
                 try {
                     handler.onInitialize(outWire);
                 } catch (RejectedExecutionException e) {
-                    throw new IllegalStateException("EventGroup shutdown", e);
+                    Jvm.warn().on(getClass(), "EventGroup shutdown", e);
+                    removeHandler(handler);
                 }
                 return;
             }
 
-            SubHandler handler = handler();
+            SubHandler<T> handler = handler();
             if (handler == null)
                 throw new IllegalStateException("handler == null, check that the " +
                         "Csp/Cid has been sent, failed to " +

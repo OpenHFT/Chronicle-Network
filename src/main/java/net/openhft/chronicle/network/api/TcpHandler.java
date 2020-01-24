@@ -25,11 +25,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
 
-/*
- * Created by peter.lawrey on 22/01/15.
- */
 @FunctionalInterface
-public interface TcpHandler<N extends NetworkContext> extends ClientClosedProvider, Closeable {
+public interface TcpHandler<N extends NetworkContext<N>> extends ClientClosedProvider, Closeable {
 
     /**
      * The server reads the bytes {@code in} from the client and sends a response {@code out} back

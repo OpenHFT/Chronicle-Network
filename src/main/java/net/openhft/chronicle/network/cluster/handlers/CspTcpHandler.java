@@ -46,6 +46,10 @@ public abstract class CspTcpHandler<T extends NetworkContext<T>> extends WireTcp
         super.close();
     }
 
+    protected void removeHandler(SubHandler<T> handler) {
+        cidToHandle.remove(handler.cid());
+    }
+
     /**
      * peeks the csp or if it has a cid converts the cid into a Csp and returns that
      *
@@ -74,13 +78,18 @@ public abstract class CspTcpHandler<T extends NetworkContext<T>> extends WireTcp
             if (CoreFields.handler.contentEquals(event)) {
                 if (cidToHandle.containsKey(cid)) {
                     String registeredCsp = cidToHandle.get(cid).csp();
-                    if (!csp.equals(registeredCsp))
+                    if (!registeredCsp.equals(csp))
                         Jvm.warn().on(getClass(), "cid: " + cid + " already has handler registered with different csp, registered csp:" + registeredCsp + ", received csp: " + csp);
                     // already has it registered
                     return false;
                 }
-                handler = valueIn.typedMarshallable();
-                handler.nc(nc());
+                try {
+                    handler = valueIn.typedMarshallable();
+                    handler.nc(nc());
+                } catch (RejectedHandlerException ex) {
+                    Jvm.warn().on(getClass(), "Handler for csp=" + csp + ", cid=" + cid + " was rejected: " + ex.getMessage(), ex);
+                    return false;
+                }
                 handler.closeable(this);
 
                 try {

@@ -42,7 +42,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> implement
     private long heartbeatTimeoutMs;
     private WireOutPublisher wireOutPublisher;
     private WireType wireType = WireType.TEXT;
-    private int remoteHostId;
     private Runnable socketReconnector;
     @Nullable
     private NetworkStatsListener<T> networkStatsListener;
@@ -226,16 +225,5 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> implement
     public T serverThreadingStrategy(ServerThreadingStrategy serverThreadingStrategy) {
         this.serverThreadingStrategy = serverThreadingStrategy;
         return (T) this;
-    }
-
-    @Override
-    public T remoteHostId(int hostId) {
-        this.remoteHostId = hostId;
-        return (T) this;
-    }
-
-    @Override
-    public int remoteHostId() {
-        return remoteHostId;
     }
 }

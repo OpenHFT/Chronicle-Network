@@ -24,9 +24,6 @@ import net.openhft.chronicle.wire.WireOut;
 import net.openhft.chronicle.wire.WriteMarshallable;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * @author Rob Austin.
- */
 public abstract class AbstractSubHandler<T extends NetworkContext<T>> implements SubHandler<T> {
     private Closeable closeable;
     private T nc;
