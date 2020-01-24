@@ -36,9 +36,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public abstract class ClusterContext<T extends NetworkContext<T>> extends SelfDescribingMarshallable implements Consumer<HostDetails> {
+public abstract class ClusterContext<T extends ClusteredNetworkContext<T>> extends SelfDescribingMarshallable implements Consumer<HostDetails> {
 
-    private transient Factory handlerFactory;
+    private transient Factory<T> handlerFactory;
     private transient Function<WireType, WireOutPublisher> wireOutPublisherFactory;
     private transient Function<ClusterContext<T>, T> networkContextFactory;
     private transient Function<ClusterContext<T>, WriteMarshallable> heartbeatFactory;
@@ -99,11 +99,11 @@ public abstract class ClusterContext<T extends NetworkContext<T>> extends SelfDe
         return serverThreadingStrategy;
     }
 
-    private UberHandler.Factory handlerFactory() {
+    private UberHandler.Factory<T> handlerFactory() {
         return handlerFactory;
     }
 
-    public ClusterContext<T> handlerFactory(UberHandler.Factory handlerFactory) {
+    public ClusterContext<T> handlerFactory(UberHandler.Factory<T> handlerFactory) {
         this.handlerFactory = handlerFactory;
         return this;
     }
@@ -245,7 +245,7 @@ public abstract class ClusterContext<T extends NetworkContext<T>> extends SelfDe
 
     @NotNull
     private List<WriteMarshallable> bootstraps(HostDetails hd) {
-        final UberHandler.Factory handler = this.handlerFactory();
+        final UberHandler.Factory<T> handler = this.handlerFactory();
         final Function<ClusterContext<T>, WriteMarshallable> heartbeat = this.heartbeatFactory();
 
         @NotNull ArrayList<WriteMarshallable> result = new ArrayList<>();

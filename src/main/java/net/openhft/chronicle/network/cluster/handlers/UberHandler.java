@@ -282,7 +282,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
             heartbeatEventHandler.onMessageReceived();
     }
 
-    public static class Factory implements BiFunction<ClusterContext, HostDetails,
+    public static class Factory<T extends ClusteredNetworkContext<T>> implements BiFunction<ClusterContext<T>, HostDetails,
             WriteMarshallable>, Demarshallable {
 
         @UsedViaReflection
@@ -293,13 +293,13 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         }
 
         @NotNull
-        public WriteMarshallable apply(@NotNull final ClusterContext clusterContext,
+        public WriteMarshallable apply(@NotNull final ClusterContext<T> clusterContext,
                                        @NotNull final HostDetails hostdetails) {
             final byte localIdentifier = clusterContext.localIdentifier();
             final int remoteIdentifier = hostdetails.hostId();
             final WireType wireType = clusterContext.wireType();
             final String name = clusterContext.clusterName();
-            return uberHandler(new UberHandler(localIdentifier,
+            return uberHandler(new UberHandler<>(localIdentifier,
                     remoteIdentifier,
                     wireType,
                     name));
