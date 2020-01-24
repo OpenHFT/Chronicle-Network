@@ -18,19 +18,17 @@ package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.network.NetworkContext;
+import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.api.TcpHandler;
 import org.jetbrains.annotations.NotNull;
 
-/*
- * Created by peter.lawrey on 22/01/15.
- */
-public class EchoHandler implements TcpHandler<NetworkContext> {
+public class EchoHandler<T extends VanillaNetworkContext<T>> implements TcpHandler<T> {
 
     public EchoHandler() {
     }
 
     @Override
-    public void process(@NotNull final Bytes in, @NotNull final Bytes out, NetworkContext nc) {
+    public void process(@NotNull final Bytes in, @NotNull final Bytes out, T nc) {
 //        System.out.println(in.readRemaining());
         if (in.readRemaining() == 0)
             return;

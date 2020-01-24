@@ -7,6 +7,7 @@ import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.core.threads.Timer;
 import net.openhft.chronicle.core.threads.VanillaEventHandler;
 import net.openhft.chronicle.network.ConnectionListener;
+import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.cluster.*;
 import net.openhft.chronicle.network.connection.CoreFields;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
@@ -20,7 +21,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
-public final class HeartbeatHandler<T extends ClusteredNetworkContext> extends AbstractSubHandler<T> implements
+public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extends AbstractSubHandler<T> implements
         Demarshallable, WriteMarshallable, HeartbeatEventHandler {
 
     private final long heartbeatIntervalMs;
@@ -149,7 +150,7 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext> extends A
         return result;
     }
 
-    public static class Factory implements Function<ClusterContext, WriteMarshallable>,
+    public static class Factory<T extends NetworkContext<T>> implements Function<ClusterContext<T>, WriteMarshallable>,
             Demarshallable {
 
         @UsedViaReflection
@@ -196,7 +197,7 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext> extends A
                     d -> d.writeEventName(CoreFields.csp).text("/")
                             .writeEventName(CoreFields.cid).int64(cid)
                             .writeEventName(CoreFields.handler).typedMarshallable(new
-                                    HeartbeatHandler(heartbeatTimeoutMs, heartbeatIntervalMs)));
+                                    HeartbeatHandler<>(heartbeatTimeoutMs, heartbeatIntervalMs)));
         }
 
         @Override
@@ -227,7 +228,7 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext> extends A
                     final Runnable socketReconnector = HeartbeatHandler.this.nc().socketReconnector();
 
                     // if we have been terminated then we should not attempt to reconnect
-                    TerminationEventHandler teHandler = HeartbeatHandler.this.nc().terminationEventHandler();
+                    TerminationEventHandler<T> teHandler = HeartbeatHandler.this.nc().terminationEventHandler();
                     if (teHandler != null && teHandler.isTerminated() && socketReconnector != null)
                         socketReconnector.run();
 

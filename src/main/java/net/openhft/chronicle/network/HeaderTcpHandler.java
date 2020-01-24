@@ -29,31 +29,24 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
-/**
- * @author Rob Austin.
- */
-public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
+public class HeaderTcpHandler<T extends NetworkContext<T>> implements TcpHandler<T> {
 
     public static final String HANDLER = "handler";
     private static final Logger LOG = LoggerFactory.getLogger(HeaderTcpHandler.class);
     @NotNull
-    private final TcpEventHandler handlerManager;
+    private final TcpEventHandler<T> handlerManager;
     @NotNull
-    private final Function<Object, TcpHandler> handlerFunction;
-    @NotNull
-    private final NetworkContext nc;
+    private final Function<Object, TcpHandler<T>> handlerFunction;
     private AtomicBoolean isClosed = new AtomicBoolean();
 
-    public HeaderTcpHandler(@NotNull final TcpEventHandler handlerManager,
-                            @NotNull final Function<Object, TcpHandler> handlerFunction,
-                            @NotNull final T nc) {
+    public HeaderTcpHandler(@NotNull final TcpEventHandler<T> handlerManager,
+                            @NotNull final Function<Object, TcpHandler<T>> handlerFunction) {
         this.handlerManager = handlerManager;
         this.handlerFunction = handlerFunction;
-        this.nc = nc;
     }
 
     @Override
-    public void process(@NotNull Bytes in, @NotNull Bytes out, NetworkContext nc) {
+    public void process(@NotNull Bytes in, @NotNull Bytes out, T nc) {
 
         assert nc.wireType() != null;
 
@@ -85,7 +78,7 @@ public class HeaderTcpHandler<T extends NetworkContext> implements TcpHandler {
             handler = handlerFunction.apply(o);
 
             if (handler instanceof NetworkContextManager)
-                ((NetworkContextManager) handler).nc(nc);
+                ((NetworkContextManager<T>) handler).nc(nc);
 
             handlerManager.tcpHandler(handler);
 

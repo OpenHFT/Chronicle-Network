@@ -37,14 +37,14 @@ import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 /*
  * Created by peter.lawrey on 22/01/15.
  */
-public class AcceptorEventHandler implements EventHandler, Closeable {
+public class AcceptorEventHandler<T extends NetworkContext<T>> implements EventHandler, Closeable {
     @NotNull
-    private final Function<NetworkContext, TcpEventHandler> handlerFactory;
+    private final Function<T, TcpEventHandler<T>> handlerFactory;
     @NotNull
 
     private final ServerSocketChannel ssc;
     @NotNull
-    private final Supplier<? extends NetworkContext> ncFactory;
+    private final Supplier<T> ncFactory;
     private final String hostPort;
     private final AcceptStrategy acceptStrategy;
 
@@ -53,14 +53,14 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
     private volatile boolean closed;
 
     public AcceptorEventHandler(@NotNull final String hostPort,
-                                @NotNull final Function<NetworkContext, TcpEventHandler> handlerFactory,
-                                @NotNull final Supplier<? extends NetworkContext> ncFactory) throws IOException {
+                                @NotNull final Function<T, TcpEventHandler<T>> handlerFactory,
+                                @NotNull final Supplier<T> ncFactory) throws IOException {
         this(hostPort, handlerFactory, ncFactory, AcceptStrategy.ACCEPT_ALL);
     }
 
     public AcceptorEventHandler(@NotNull final String hostPort,
-                                @NotNull final Function<NetworkContext, TcpEventHandler> handlerFactory,
-                                @NotNull final Supplier<? extends NetworkContext> ncFactory,
+                                @NotNull final Function<T, TcpEventHandler<T>> handlerFactory,
+                                @NotNull final Supplier<T> ncFactory,
                                 @NotNull final AcceptStrategy acceptStrategy) throws IOException {
         this.handlerFactory = handlerFactory;
         this.hostPort = hostPort;
@@ -90,12 +90,12 @@ public class AcceptorEventHandler implements EventHandler, Closeable {
                     Closeable.closeQuietly(sc);
                     throw new InvalidEventHandlerException("closed");
                 }
-                final NetworkContext nc = ncFactory.get();
+                final T nc = ncFactory.get();
                 nc.socketChannel(sc);
                 nc.isAcceptor(true);
-                NetworkStatsListener nl = nc.networkStatsListener();
+                NetworkStatsListener<T> nl = nc.networkStatsListener();
                 notifyHostPort(sc, nl);
-                TcpEventHandler apply = handlerFactory.apply(nc);
+                TcpEventHandler<T> apply = handlerFactory.apply(nc);
                 eventLoop.addHandler(apply);
             }
         } catch (AsynchronousCloseException e) {

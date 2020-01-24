@@ -36,14 +36,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public abstract class ClusterContext extends SelfDescribingMarshallable implements Consumer<HostDetails> {
+public abstract class ClusterContext<T extends NetworkContext<T>> extends SelfDescribingMarshallable implements Consumer<HostDetails> {
 
     private transient Factory handlerFactory;
     private transient Function<WireType, WireOutPublisher> wireOutPublisherFactory;
-    private transient Function<ClusterContext, NetworkContext> networkContextFactory;
-    private transient Function<ClusterContext, WriteMarshallable> heartbeatFactory;
-    private transient Function<ClusterContext, NetworkStatsListener> networkStatsListenerFactory;
-    private transient Supplier<ConnectionManager> connectionEventHandler;
+    private transient Function<ClusterContext<T>, T> networkContextFactory;
+    private transient Function<ClusterContext<T>, WriteMarshallable> heartbeatFactory;
+    private transient Function<ClusterContext<T>, NetworkStatsListener<T>> networkStatsListenerFactory;
+    private transient Supplier<ConnectionManager<T>> connectionEventHandler;
     private transient EventLoop eventLoop;
     private long heartbeatTimeoutMs = 40_000;
     private long heartbeatIntervalMs = 20_000;
@@ -73,12 +73,12 @@ public abstract class ClusterContext extends SelfDescribingMarshallable implemen
         super.readMarshallable(wire);
     }
 
-    public Function<ClusterContext, NetworkStatsListener> networkStatsListenerFactory() {
+    public Function<ClusterContext<T>, NetworkStatsListener<T>> networkStatsListenerFactory() {
         return networkStatsListenerFactory;
     }
 
     @NotNull
-    public ClusterContext networkStatsListenerFactory(Function<ClusterContext, NetworkStatsListener> networkStatsListenerFactory) {
+    public ClusterContext<T> networkStatsListenerFactory(Function<ClusterContext<T>, NetworkStatsListener<T>> networkStatsListenerFactory) {
         this.networkStatsListenerFactory = networkStatsListenerFactory;
         return this;
     }
@@ -88,10 +88,11 @@ public abstract class ClusterContext extends SelfDescribingMarshallable implemen
     }
 
     @NotNull
-    public abstract ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpEventHandlerFactory();
+    public abstract ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpEventHandlerFactory();
 
-    public void serverThreadingStrategy(ServerThreadingStrategy serverThreadingStrategy) {
+    public ClusterContext<T> serverThreadingStrategy(ServerThreadingStrategy serverThreadingStrategy) {
         this.serverThreadingStrategy = serverThreadingStrategy;
+        return this;
     }
 
     public ServerThreadingStrategy serverThreadingStrategy() {
@@ -102,8 +103,9 @@ public abstract class ClusterContext extends SelfDescribingMarshallable implemen
         return handlerFactory;
     }
 
-    public void handlerFactory(UberHandler.Factory handlerFactory) {
+    public ClusterContext<T> handlerFactory(UberHandler.Factory handlerFactory) {
         this.handlerFactory = handlerFactory;
+        return this;
     }
 
     public void clusterName(String clusterName) {
@@ -115,7 +117,7 @@ public abstract class ClusterContext extends SelfDescribingMarshallable implemen
     }
 
     @NotNull
-    public ClusterContext eventLoop(EventLoop eventLoop) {
+    public ClusterContext<T> eventLoop(EventLoop eventLoop) {
         this.eventLoop = eventLoop;
         return this;
     }
@@ -123,44 +125,44 @@ public abstract class ClusterContext extends SelfDescribingMarshallable implemen
     protected abstract void defaults();
 
     @NotNull
-    public ClusterContext localIdentifier(byte localIdentifier) {
+    public ClusterContext<T> localIdentifier(byte localIdentifier) {
         this.localIdentifier = localIdentifier;
         return this;
     }
 
     @NotNull
-    public ClusterContext wireType(WireType wireType) {
+    public ClusterContext<T> wireType(WireType wireType) {
         this.wireType = wireType;
         return this;
     }
 
     @NotNull
-    public ClusterContext heartbeatFactory(Function<ClusterContext, WriteMarshallable>
-                                                   heartbeatFactor) {
+    public ClusterContext<T> heartbeatFactory(Function<ClusterContext<T>, WriteMarshallable>
+                                                      heartbeatFactor) {
         this.heartbeatFactory = heartbeatFactor;
         return this;
     }
 
     @NotNull
-    public ClusterContext heartbeatIntervalMs(long heartbeatIntervalMs) {
+    public ClusterContext<T> heartbeatIntervalMs(long heartbeatIntervalMs) {
         this.heartbeatIntervalMs = heartbeatIntervalMs;
         return this;
     }
 
     @NotNull
-    public ClusterContext heartbeatTimeoutMs(long heartbeatTimeoutMs) {
+    public ClusterContext<T> heartbeatTimeoutMs(long heartbeatTimeoutMs) {
         this.heartbeatTimeoutMs = heartbeatTimeoutMs;
         return this;
     }
 
     @NotNull
-    public ClusterContext wireOutPublisherFactory(Function<WireType, WireOutPublisher> wireOutPublisherFactory) {
+    public ClusterContext<T> wireOutPublisherFactory(Function<WireType, WireOutPublisher> wireOutPublisherFactory) {
         this.wireOutPublisherFactory = wireOutPublisherFactory;
         return this;
     }
 
     @NotNull
-    public ClusterContext networkContextFactory(Function<ClusterContext, NetworkContext> networkContextFactory) {
+    public ClusterContext<T> networkContextFactory(Function<ClusterContext<T>, T> networkContextFactory) {
         this.networkContextFactory = networkContextFactory;
         return this;
     }
@@ -185,12 +187,12 @@ public abstract class ClusterContext extends SelfDescribingMarshallable implemen
         return localIdentifier;
     }
 
-    public Function<ClusterContext, NetworkContext> networkContextFactory() {
+    public Function<ClusterContext<T>, T> networkContextFactory() {
         return networkContextFactory;
     }
 
     @NotNull
-    public ClusterContext connectionStrategy(ConnectionStrategy connectionStrategy) {
+    public ClusterContext<T> connectionStrategy(ConnectionStrategy connectionStrategy) {
         this.connectionStrategy = connectionStrategy;
         return this;
     }
@@ -199,17 +201,17 @@ public abstract class ClusterContext extends SelfDescribingMarshallable implemen
         return this.connectionStrategy;
     }
 
-    private Supplier<ConnectionManager> connectionEventHandler() {
+    private Supplier<ConnectionManager<T>> connectionEventHandler() {
         return connectionEventHandler;
     }
 
     @NotNull
-    public ClusterContext connectionEventHandler(Supplier<ConnectionManager> connectionEventHandler) {
+    public ClusterContext<T> connectionEventHandler(Supplier<ConnectionManager<T>> connectionEventHandler) {
         this.connectionEventHandler = connectionEventHandler;
         return this;
     }
 
-    private Function<ClusterContext, WriteMarshallable> heartbeatFactory() {
+    private Function<ClusterContext<T>, WriteMarshallable> heartbeatFactory() {
         return heartbeatFactory;
     }
 
@@ -221,12 +223,14 @@ public abstract class ClusterContext extends SelfDescribingMarshallable implemen
         final ConnectionStrategy connectionStrategy = this.connectionStrategy();
         hd.connectionStrategy(connectionStrategy);
 
-        final ConnectionManager connectionManager = this
+        final ConnectionManager<T> connectionManager = this
                 .connectionEventHandler().get();
         hd.connectionManager(connectionManager);
 
-        @NotNull final HostConnector hostConnector = new HostConnector(this, new
-                RemoteConnector(this.tcpEventHandlerFactory()), hd);
+        @NotNull
+        final HostConnector<T> hostConnector = new HostConnector<>(this,
+                new RemoteConnector<>(this.tcpEventHandlerFactory()),
+                hd);
 
         hd.hostConnector(hostConnector);
 
@@ -242,7 +246,7 @@ public abstract class ClusterContext extends SelfDescribingMarshallable implemen
     @NotNull
     private List<WriteMarshallable> bootstraps(HostDetails hd) {
         final UberHandler.Factory handler = this.handlerFactory();
-        final Function<ClusterContext, WriteMarshallable> heartbeat = this.heartbeatFactory();
+        final Function<ClusterContext<T>, WriteMarshallable> heartbeat = this.heartbeatFactory();
 
         @NotNull ArrayList<WriteMarshallable> result = new ArrayList<>();
         result.add(handler.apply(this, hd));
@@ -254,7 +258,7 @@ public abstract class ClusterContext extends SelfDescribingMarshallable implemen
         return retryInterval;
     }
 
-    public ClusterContext retryInterval(final long retryInterval) {
+    public ClusterContext<T> retryInterval(final long retryInterval) {
         this.retryInterval = retryInterval;
         return this;
     }

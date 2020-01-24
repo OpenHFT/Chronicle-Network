@@ -9,6 +9,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -39,18 +40,17 @@ public final class SslClusterIntegrationTest {
     }
 
     private void startHost(final int hostId, final SslTestCluster node) throws IOException {
-        node.clusterContext().cluster(node);
-        node.clusterContext().localIdentifier((byte) hostId);
+        final SslTestClusterContext clusterContext = Objects.requireNonNull(node.clusterContext());
+        clusterContext.cluster(node);
+        clusterContext.localIdentifier((byte) hostId);
         node.install();
-        node.clusterContext().eventLoop().start();
+        clusterContext.eventLoop().start();
         final String connectUri = node.findHostDetails(hostId).connectUri();
-        final AcceptorEventHandler acceptorEventHandler = new AcceptorEventHandler(connectUri,
-                new SslTestClusterContext.BootstrapHandlerFactory()::createHandler,
-                () -> {
-                    return new SslTestClusteredNetworkContext((byte) hostId, node, node.clusterContext().eventLoop());
-                });
+        final AcceptorEventHandler<SslTestClusteredNetworkContext> acceptorEventHandler = new AcceptorEventHandler<>(connectUri,
+                new SslTestClusterContext.BootstrapHandlerFactory<SslTestClusteredNetworkContext>()::createHandler,
+                () -> new SslTestClusteredNetworkContext((byte) hostId, node, clusterContext.eventLoop()));
 
-        node.clusterContext().eventLoop().addHandler(acceptorEventHandler);
+        clusterContext.eventLoop().addHandler(acceptorEventHandler);
 
     }
 }

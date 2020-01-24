@@ -21,7 +21,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static net.openhft.chronicle.network.HeaderTcpHandler.HANDLER;
 import static net.openhft.chronicle.network.cluster.TerminatorHandler.terminationHandler;
 
-public final class UberHandler<T extends ClusteredNetworkContext> extends CspTcpHandler<T>
+public final class UberHandler<T extends ClusteredNetworkContext<T>> extends CspTcpHandler<T>
         implements Demarshallable, WriteMarshallable {
 
     private final int remoteIdentifier;
@@ -29,7 +29,7 @@ public final class UberHandler<T extends ClusteredNetworkContext> extends CspTcp
     @NotNull
     private AtomicBoolean isClosing = new AtomicBoolean();
     @Nullable
-    private ConnectionChangedNotifier connectionChangedNotifier;
+    private ConnectionChangedNotifier<T> connectionChangedNotifier;
     @NotNull
     private String clusterName;
 
@@ -103,7 +103,7 @@ public final class UberHandler<T extends ClusteredNetworkContext> extends CspTcp
 
     @Override
     protected void onInitialize() {
-        ClusteredNetworkContext nc = nc();
+        ClusteredNetworkContext<T> nc = nc();
         nc.wireType(wireType());
         isAcceptor(nc.isAcceptor());
 

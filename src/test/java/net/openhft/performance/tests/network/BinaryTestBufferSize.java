@@ -34,10 +34,7 @@ package net.openhft.performance.tests.network;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.ThreadDump;
-import net.openhft.chronicle.network.AcceptorEventHandler;
-import net.openhft.chronicle.network.TCPRegistry;
-import net.openhft.chronicle.network.TcpEventHandler;
-import net.openhft.chronicle.network.VanillaNetworkContext;
+import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
 import org.jetbrains.annotations.NotNull;
@@ -154,14 +151,14 @@ public class BinaryTestBufferSize {
         return result;
     }
 
-    private void createServer(@NotNull String desc, @NotNull EventLoop eg) throws IOException {
-        @NotNull AcceptorEventHandler eah = new AcceptorEventHandler(desc,
+    private <T extends VanillaNetworkContext<T>> void createServer(@NotNull String desc, @NotNull EventLoop eg) throws IOException {
+        @NotNull AcceptorEventHandler<T> eah = new AcceptorEventHandler<T>(desc,
                 (networkContext) -> {
-                    @NotNull final TcpEventHandler handler = new TcpEventHandler(networkContext);
-                    handler.tcpHandler(new EchoHandler());
+                    @NotNull final TcpEventHandler<T> handler = new TcpEventHandler<>(networkContext);
+                    handler.tcpHandler(new EchoHandler<>());
                     return handler;
                 },
-                VanillaNetworkContext::new);
+                () -> (T) new VanillaNetworkContext());
 
         eg.addHandler(eah);
         SocketChannel sc = TCPRegistry.createSocketChannel(desc);

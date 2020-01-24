@@ -42,18 +42,18 @@ import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
-public class RemoteConnector implements Closeable {
+public class RemoteConnector<T extends NetworkContext<T>> implements Closeable {
 
     @NotNull
-    private final ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpHandlerSupplier;
+    private final ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpHandlerSupplier;
 
     private final Integer tcpBufferSize;
     private volatile boolean closed;
 
-    @Nullable
+    @NotNull
     private volatile List<Closeable> closeables = new ArrayList<>();
 
-    public RemoteConnector(@NotNull final ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpEventHandlerFactory) {
+    public RemoteConnector(@NotNull final ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpEventHandlerFactory) {
         this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TcpChannelHub.TCP_BUFFER);
         this.tcpHandlerSupplier = tcpEventHandlerFactory;
     }
@@ -64,7 +64,7 @@ public class RemoteConnector implements Closeable {
 
     public void connect(@NotNull final String remoteHostPort,
                         @NotNull final EventLoop eventLoop,
-                        @NotNull NetworkContext nc,
+                        @NotNull T nc,
                         final long retryInterval) {
 
         final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
@@ -106,13 +106,13 @@ public class RemoteConnector implements Closeable {
         private final InetSocketAddress address;
         private final AtomicLong nextPeriod = new AtomicLong();
         private final String remoteHostPort;
-        private final NetworkContext nc;
+        private final T nc;
         private final EventLoop eventLoop;
         private final long retryInterval;
         private volatile boolean closed;
 
         RCEventHandler(String remoteHostPort,
-                       NetworkContext nc,
+                       T nc,
                        EventLoop eventLoop,
                        InetSocketAddress address, long retryInterval) {
             this.remoteHostPort = remoteHostPort;
@@ -149,7 +149,7 @@ public class RemoteConnector implements Closeable {
             }
 
             final SocketChannel sc;
-            final TcpEventHandler eventHandler;
+            final TcpEventHandler<T> eventHandler;
 
             try {
                 sc = RemoteConnector.this.openSocketChannel(address);

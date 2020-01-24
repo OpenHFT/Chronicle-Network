@@ -32,34 +32,35 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-public class HostConnector implements Closeable {
+public class HostConnector<T extends NetworkContext<T>> implements Closeable {
 
     private final WireType wireType;
 
-    //  private final WriteMarshallable header;
     private final Function<WireType, WireOutPublisher> wireOutPublisherFactory;
     private final List<WriteMarshallable> bootstraps = new LinkedList<>();
 
-    private final RemoteConnector remoteConnector;
+    private final RemoteConnector<T> remoteConnector;
     private final String connectUri;
-    private final Function<ClusterContext, NetworkContext> networkContextFactory;
+    private final int hostId;
+    private final Function<ClusterContext<T>, T> networkContextFactory;
     @NotNull
-    private final ClusterContext clusterContext;
-    private final Function<ClusterContext, NetworkStatsListener> networkStatsListenerFactory;
-    private NetworkContext nc;
+    private final ClusterContext<T> clusterContext;
+    private final Function<ClusterContext<T>, NetworkStatsListener<T>> networkStatsListenerFactory;
+    private T nc;
     @NotNull
     private volatile AtomicReference<WireOutPublisher> wireOutPublisher = new AtomicReference<>();
     @NotNull
     private EventLoop eventLoop;
 
-    HostConnector(@NotNull ClusterContext clusterContext,
-                  final RemoteConnector remoteConnector,
+    HostConnector(@NotNull ClusterContext<T> clusterContext,
+                  final RemoteConnector<T> remoteConnector,
                   @NotNull final HostDetails hostdetails) {
         this.clusterContext = clusterContext;
         this.remoteConnector = remoteConnector;
         this.networkStatsListenerFactory = clusterContext.networkStatsListenerFactory();
         this.networkContextFactory = clusterContext.networkContextFactory();
         this.connectUri = hostdetails.connectUri();
+        this.hostId = hostdetails.getHostId();
         this.wireType = clusterContext.wireType();
         this.wireOutPublisherFactory = clusterContext.wireOutPublisherFactory();
         this.eventLoop = clusterContext.eventLoop();
@@ -100,16 +101,17 @@ public class HostConnector implements Closeable {
 
         // we will send the initial header as text wire, then the rest will be sent in
         // what ever wire is configured
-        nc = networkContextFactory.apply(clusterContext);
-        nc.wireOutPublisher(wireOutPublisher);
-        nc.isAcceptor(false);
-
-        nc.heartbeatTimeoutMs(clusterContext.heartbeatTimeoutMs() * 2);
-        nc.socketReconnector(this::reconnect);
-        nc.serverThreadingStrategy(clusterContext.serverThreadingStrategy());
+        nc = networkContextFactory.apply(clusterContext)
+                .wireOutPublisher(wireOutPublisher)
+                .isAcceptor(false)
+                .heartbeatTimeoutMs(clusterContext.heartbeatTimeoutMs() * 2)
+                .socketReconnector(this::reconnect)
+                .serverThreadingStrategy(clusterContext.serverThreadingStrategy())
+                .remoteHostId(hostId)
+                .wireType(this.wireType);;
 
         if (networkStatsListenerFactory != null) {
-            final NetworkStatsListener networkStatsListener = networkStatsListenerFactory.apply(clusterContext);
+            final NetworkStatsListener<T> networkStatsListener = networkStatsListenerFactory.apply(clusterContext);
             nc.networkStatsListener(networkStatsListener);
             networkStatsListener.networkContext(nc);
         }
@@ -118,8 +120,6 @@ public class HostConnector implements Closeable {
             wireOutPublisher.publish(bootstrap);
             wireOutPublisher.wireType(this.wireType);
         }
-
-        nc.wireType(this.wireType);
 
         remoteConnector.connect(connectUri, eventLoop, nc, clusterContext.retryInterval());
     }

@@ -27,7 +27,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * @author Rob Austin.
  */
-public abstract class AbstractSubHandler<T extends NetworkContext> implements SubHandler<T> {
+public abstract class AbstractSubHandler<T extends NetworkContext<T>> implements SubHandler<T> {
     private Closeable closeable;
     private T nc;
     private long cid;

@@ -27,28 +27,26 @@ import net.openhft.performance.tests.vanilla.tcp.EchoClientMain;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.util.function.Supplier;
 
-/*
- * Created by peter.lawrey on 22/01/15.
- */
-class TimedEchoHandler implements TcpHandler<NetworkContext> {
+class TimedEchoHandler<T extends NetworkContext<T>> implements TcpHandler<T> {
 
-    public <T extends NetworkContext> TimedEchoHandler(T t) {
+    public TimedEchoHandler(T t) {
 
     }
 
-    public static void main(String[] args) throws IOException {
+    public static <T extends NetworkContext<T>> void main(String[] args) throws IOException {
         @NotNull EventLoop eg = new EventGroup(false);
         eg.start();
-        @NotNull AcceptorEventHandler eah = new AcceptorEventHandler("*:" + EchoClientMain.PORT,
+        @NotNull AcceptorEventHandler<T> eah = new AcceptorEventHandler<>("*:" + EchoClientMain.PORT,
                 LegacyHanderFactory.legacyTcpEventHandlerFactory(TimedEchoHandler::new),
-                VanillaNetworkContext::new);
+                () -> (T) new VanillaNetworkContext<>());
 
         eg.addHandler(eah);
     }
 
     @Override
-    public void process(@NotNull final Bytes in, @NotNull final Bytes out, NetworkContext nc) {
+    public void process(@NotNull final Bytes in, @NotNull final Bytes out, T nc) {
         if (in.readRemaining() == 0)
             return;
         long toWrite = Math.min(in.readRemaining(), out.writeRemaining());

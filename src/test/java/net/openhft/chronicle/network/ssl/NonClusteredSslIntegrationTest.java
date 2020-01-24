@@ -73,14 +73,14 @@ public final class NonClusteredSslIntegrationTest {
         TCPRegistry.reset();
         TCPRegistry.createServerSocketChannelFor("client", "server");
 
-        client.addHandler(new AcceptorEventHandler("client", nc -> {
-            final TcpEventHandler eventHandler = new TcpEventHandler(nc);
+        client.addHandler(new AcceptorEventHandler<>("client", nc -> {
+            final TcpEventHandler<StubNetworkContext> eventHandler = new TcpEventHandler<>(nc);
             eventHandler.tcpHandler(getTcpHandler(clientAcceptor));
             return eventHandler;
         }, StubNetworkContext::new));
 
-        server.addHandler(new AcceptorEventHandler("server", nc -> {
-            final TcpEventHandler eventHandler = new TcpEventHandler(nc);
+        server.addHandler(new AcceptorEventHandler<>("server", nc -> {
+            final TcpEventHandler<StubNetworkContext> eventHandler = new TcpEventHandler<>(nc);
             eventHandler.tcpHandler(getTcpHandler(serverAcceptor));
             return eventHandler;
         }, StubNetworkContext::new));
@@ -109,7 +109,7 @@ public final class NonClusteredSslIntegrationTest {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         client.close();
         client.stop();
         server.close();
@@ -120,16 +120,16 @@ public final class NonClusteredSslIntegrationTest {
 
     private void doConnect() {
         if (mode == Mode.CLIENT_TO_SERVER || mode == Mode.BI_DIRECTIONAL) {
-            new RemoteConnector(nc -> {
-                final TcpEventHandler eventHandler = new TcpEventHandler(nc);
+            new RemoteConnector<StubNetworkContext>(nc -> {
+                final TcpEventHandler<StubNetworkContext> eventHandler = new TcpEventHandler<>(nc);
                 eventHandler.tcpHandler(getTcpHandler(clientInitiator));
                 return eventHandler;
             }).connect("server", client, new StubNetworkContext(), 1000L);
         }
 
         if (mode == Mode.SERVER_TO_CLIENT || mode == Mode.BI_DIRECTIONAL) {
-            new RemoteConnector(nc -> {
-                final TcpEventHandler eventHandler = new TcpEventHandler(nc);
+            new RemoteConnector<StubNetworkContext>(nc -> {
+                final TcpEventHandler<StubNetworkContext> eventHandler = new TcpEventHandler<>(nc);
                 eventHandler.tcpHandler(getTcpHandler(serverInitiator));
                 return eventHandler;
             }).connect("client", server, new StubNetworkContext(), 1000L);
@@ -224,8 +224,7 @@ public final class NonClusteredSslIntegrationTest {
         }
     }
 
-    private static final class StubNetworkContext extends VanillaNetworkContext
-            implements SslNetworkContext {
+    private static final class StubNetworkContext extends VanillaNetworkContext<StubNetworkContext> implements SslNetworkContext<StubNetworkContext> {
         @Override
         public SSLContext sslContext() {
             try {
@@ -238,7 +237,7 @@ public final class NonClusteredSslIntegrationTest {
 
         @NotNull
         @Override
-        public VanillaNetworkContext socketChannel(final SocketChannel socketChannel) {
+        public StubNetworkContext socketChannel(final SocketChannel socketChannel) {
             return super.socketChannel(socketChannel);
         }
 
@@ -248,10 +247,10 @@ public final class NonClusteredSslIntegrationTest {
         }
 
         @Override
-        public NetworkStatsListener<? extends NetworkContext> networkStatsListener() {
-            return new NetworkStatsListener<NetworkContext>() {
+        public NetworkStatsListener<StubNetworkContext> networkStatsListener() {
+            return new NetworkStatsListener<StubNetworkContext>() {
                 @Override
-                public void networkContext(final NetworkContext networkContext) {
+                public void networkContext(final StubNetworkContext networkContext) {
 
                 }
 

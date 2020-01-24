@@ -21,31 +21,29 @@ import java.util.function.Function;
 
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
-public final class SslTestClusterContext extends ClusterContext {
+public final class SslTestClusterContext extends ClusterContext<SslTestClusteredNetworkContext> {
 
     private transient SslTestCluster cluster;
 
-    private static TcpHandler wrapForSsl(final TcpHandler delegate) {
+    private static <T extends SslNetworkContext<T>> TcpHandler<T> wrapForSsl(final TcpHandler<T> delegate) {
         new RuntimeException(String.format("%s/0x%s created",
                 delegate.getClass().getSimpleName(), Integer.toHexString(System.identityHashCode(delegate)))).
                 printStackTrace(System.out);
 
-//        return delegate;
-
-        return new SslDelegatingTcpHandler(delegate);
+        return new SslDelegatingTcpHandler<>(delegate);
     }
 
     @Override
     public void defaults() {
-        this.handlerFactory(new UberHandler.Factory());
-        this.heartbeatFactory(new HeartbeatHandler.Factory());
-        this.wireOutPublisherFactory(VanillaWireOutPublisher::new);
-        this.wireType(WireType.TEXT);
-        this.connectionEventHandler(StubConnectionManager::new);
-        this.serverThreadingStrategy(ServerThreadingStrategy.CONCURRENT);
-        this.networkContextFactory(c -> ncFactory());
-        this.networkStatsListenerFactory(ctx -> new LoggingNetworkStatsListener());
-        this.eventLoop(new EventGroup(false, Pauser.balanced(), false, "ssl-cluster-"));
+        this.handlerFactory(new UberHandler.Factory())
+                .heartbeatFactory(new HeartbeatHandler.Factory<>())
+                .wireOutPublisherFactory(VanillaWireOutPublisher::new)
+                .wireType(WireType.TEXT)
+                .connectionEventHandler(StubConnectionManager::new)
+                .serverThreadingStrategy(ServerThreadingStrategy.CONCURRENT)
+                .networkContextFactory(c -> ncFactory())
+                .networkStatsListenerFactory(ctx -> new LoggingNetworkStatsListener<>())
+                .eventLoop(new EventGroup(false, Pauser.balanced(), false, "ssl-cluster-"));
     }
 
     @NotNull
@@ -55,8 +53,8 @@ public final class SslTestClusterContext extends ClusterContext {
 
     @NotNull
     @Override
-    public ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpEventHandlerFactory() {
-        return new BootstrapHandlerFactory()::createHandler;
+    public ThrowingFunction<SslTestClusteredNetworkContext, TcpEventHandler<SslTestClusteredNetworkContext>, IOException> tcpEventHandlerFactory() {
+        return new BootstrapHandlerFactory<SslTestClusteredNetworkContext>()::createHandler;
     }
 
     void cluster(final SslTestCluster cluster) {
@@ -64,15 +62,15 @@ public final class SslTestClusterContext extends ClusterContext {
         this.cluster = cluster;
     }
 
-    public static final class BootstrapHandlerFactory {
+    public static final class BootstrapHandlerFactory<T extends NetworkContext<T>> {
         @NotNull
-        TcpEventHandler createHandler(final NetworkContext networkContext) {
-            @NotNull final NetworkContext nc = networkContext;
+        TcpEventHandler<T> createHandler(final T networkContext) {
+            @NotNull final T nc = networkContext;
             if (nc.isAcceptor())
                 nc.wireOutPublisher(new VanillaWireOutPublisher(WireType.TEXT));
-            @NotNull final TcpEventHandler handler = new TcpEventHandler(networkContext);
+            @NotNull final TcpEventHandler<T> handler = new TcpEventHandler<>(networkContext);
 
-            @NotNull final Function<Object, TcpHandler> consumer = o -> {
+            @NotNull final Function<Object, TcpHandler<T>> consumer = o -> {
 
                 if (o instanceof TcpHandler) {
                     return wrapForSsl((TcpHandler) o);
@@ -81,13 +79,13 @@ public final class SslTestClusterContext extends ClusterContext {
                 throw new UnsupportedOperationException("not supported class=" + o.getClass());
             };
 
-            final NetworkStatsListener nl = nc.networkStatsListener();
+            final NetworkStatsListener<T> nl = nc.networkStatsListener();
             notifyHostPort(nc.socketChannel(), nl);
 
-            @Nullable final Function<NetworkContext, TcpHandler> f
-                    = x -> new HeaderTcpHandler<>(handler, consumer, x);
+            @Nullable final Function<T, TcpHandler<T>> f
+                    = x -> new HeaderTcpHandler<>(handler, consumer);
 
-            @NotNull final WireTypeSniffingTcpHandler sniffer = new
+            @NotNull final WireTypeSniffingTcpHandler<T> sniffer = new
                     WireTypeSniffingTcpHandler<>(handler, f);
 
             handler.tcpHandler(sniffer);
@@ -95,25 +93,25 @@ public final class SslTestClusterContext extends ClusterContext {
         }
     }
 
-    private static class StubConnectionManager implements ConnectionManager {
-        private final List<ConnectionListener> listeners = new CopyOnWriteArrayList<>();
+    private static class StubConnectionManager<T extends NetworkContext<T>> implements ConnectionManager<T> {
+        private final List<ConnectionListener<T>> listeners = new CopyOnWriteArrayList<>();
 
         @Override
-        public void onConnectionChanged(final boolean isConnected, final NetworkContext nc) {
-            for (ConnectionListener listener : listeners) {
+        public void onConnectionChanged(final boolean isConnected, final T nc) {
+            for (ConnectionListener<T> listener : listeners) {
                 listener.onConnectionChange(nc, isConnected);
             }
         }
 
         @Override
-        public void addListener(final ConnectionListener connectionListener) {
+        public void addListener(final ConnectionListener<T> connectionListener) {
             listeners.add(connectionListener);
         }
     }
 
-    private static class LoggingNetworkStatsListener implements NetworkStatsListener {
+    private static class LoggingNetworkStatsListener<T extends NetworkContext<T>> implements NetworkStatsListener<T> {
         @Override
-        public void networkContext(final NetworkContext networkContext) {
+        public void networkContext(final T networkContext) {
 
         }
 

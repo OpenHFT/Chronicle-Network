@@ -18,12 +18,12 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
-import org.jetbrains.annotations.Nullable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,21 +32,18 @@ import static net.openhft.chronicle.wire.WireType.BINARY;
 import static net.openhft.chronicle.wire.WireType.DELTA_BINARY;
 import static net.openhft.chronicle.wire.WriteMarshallable.EMPTY;
 
-public abstract class WireTcpHandler<T extends NetworkContext>
-        implements TcpHandler, NetworkContextManager<T> {
+public abstract class WireTcpHandler<T extends NetworkContext<T>> implements TcpHandler<T>, NetworkContextManager<T> {
 
     private static final int SIZE_OF_SIZE = 4;
     private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
     // this is the point at which it is worth doing more work to get more data.
 
-    @NotNull
     protected Wire outWire;
     long lastWritePosition = 0;
     long writeBps;
     long bytesReadCount;
     int socketPollCount;
     volatile long lastMonitor;
-    @NotNull
     private Wire inWire;
     private boolean recreateWire;
     @Nullable
@@ -109,7 +106,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
     }
 
     @Override
-    public void process(@NotNull Bytes in, @NotNull Bytes out, NetworkContext nc) {
+    public void process(@NotNull Bytes in, @NotNull Bytes out, T nc) {
 
         if (closed)
             return;
@@ -135,7 +132,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
 
         long now = System.currentTimeMillis();
         if (now > lastMonitor + 10000) {
-            final NetworkStatsListener networkStatsListener = nc().networkStatsListener();
+            final NetworkStatsListener<T> networkStatsListener = this.nc.networkStatsListener();
 
             if (networkStatsListener != null) {
                 if (lastMonitor == 0) {
@@ -169,7 +166,7 @@ public abstract class WireTcpHandler<T extends NetworkContext>
 
     @Override
     public void onEndOfConnection(boolean heartbeatTimeOut) {
-        final NetworkStatsListener networkStatsListener = nc().networkStatsListener();
+        final NetworkStatsListener<T> networkStatsListener = this.nc.networkStatsListener();
 
         if (networkStatsListener != null)
             networkStatsListener.onNetworkStats(-1, -1, -1);

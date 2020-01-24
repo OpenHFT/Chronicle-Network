@@ -18,10 +18,7 @@ package net.openhft.chronicle.network;
 
 import org.jetbrains.annotations.Nullable;
 
-/**
- * @author Rob Austin.
- */
-public interface NetworkContextManager<T extends NetworkContext> {
+public interface NetworkContextManager<T extends NetworkContext<T>> {
 
     @Nullable
     T nc();

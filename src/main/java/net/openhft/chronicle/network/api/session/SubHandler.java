@@ -28,8 +28,7 @@ import java.util.concurrent.RejectedExecutionException;
 /**
  * @author Rob Austin.
  */
-public interface SubHandler<T extends NetworkContext> extends NetworkContextManager<T>,
-        Closeable {
+public interface SubHandler<T extends NetworkContext<T>> extends NetworkContextManager<T>, Closeable {
 
     void cid(long cid);
 
@@ -57,6 +56,5 @@ public interface SubHandler<T extends NetworkContext> extends NetworkContextMana
     void closeable(Closeable closeable);
 
     default void onWrite(WireOut outWire) {
-
     }
 }

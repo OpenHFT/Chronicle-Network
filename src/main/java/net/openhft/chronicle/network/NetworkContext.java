@@ -29,9 +29,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.channels.SocketChannel;
 
-public interface NetworkContext<T extends NetworkContext> extends Closeable {
+public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
 
-    void onHandlerChanged(TcpHandler handler);
+    void onHandlerChanged(TcpHandler<T> handler);
 
     @NotNull
     T isAcceptor(boolean serverSocket);
@@ -45,7 +45,7 @@ public interface NetworkContext<T extends NetworkContext> extends Closeable {
 
     WireOutPublisher wireOutPublisher();
 
-    void wireOutPublisher(WireOutPublisher wireOutPublisher);
+    T wireOutPublisher(WireOutPublisher wireOutPublisher);
 
     WireType wireType();
 
@@ -58,9 +58,9 @@ public interface NetworkContext<T extends NetworkContext> extends Closeable {
     T sessionDetails(SessionDetailsProvider sessionDetails);
 
     @Nullable
-    TerminationEventHandler terminationEventHandler();
+    TerminationEventHandler<T> terminationEventHandler();
 
-    void terminationEventHandler(TerminationEventHandler terminationEventHandler);
+    void terminationEventHandler(TerminationEventHandler<T> terminationEventHandler);
 
     long heartbeatTimeoutMs();
 
@@ -88,12 +88,15 @@ public interface NetworkContext<T extends NetworkContext> extends Closeable {
     @NotNull
     T socketReconnector(Runnable socketReconnector);
 
-    void networkStatsListener(NetworkStatsListener NetworkStatsListener);
+    void networkStatsListener(NetworkStatsListener<T> NetworkStatsListener);
 
     @Nullable
-    NetworkStatsListener networkStatsListener();
+    NetworkStatsListener<T> networkStatsListener();
 
-    void serverThreadingStrategy(ServerThreadingStrategy singleThreaded);
+    T serverThreadingStrategy(ServerThreadingStrategy singleThreaded);
+
+    T remoteHostId(int hostId);
+    int remoteHostId();
 
     default void addConnectionListener(ConnectionListener connectionListener) {
         // do nothing

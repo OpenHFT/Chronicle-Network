@@ -26,7 +26,7 @@ import java.time.Instant;
  *
  * @param <N> the type of NetworkContext
  */
-public final class SslDelegatingTcpHandler<N extends SslNetworkContext>
+public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
         implements TcpHandler<N>, NetworkContextManager<N> {
     private static final Logger LOGGER = LoggerFactory.getLogger(SslDelegatingTcpHandler.class);
 

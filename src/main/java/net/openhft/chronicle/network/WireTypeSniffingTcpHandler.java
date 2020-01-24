@@ -32,16 +32,16 @@ import static net.openhft.chronicle.wire.WireType.*;
  *
  * @author Rob Austin.
  */
-public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements TcpHandler<T> {
+public class WireTypeSniffingTcpHandler<T extends NetworkContext<T>> implements TcpHandler<T> {
 
     @NotNull
     private final TcpEventHandler handlerManager;
 
     @NotNull
-    private final Function<T, TcpHandler> delegateHandlerFactory;
+    private final Function<T, TcpHandler<T>> delegateHandlerFactory;
 
     public WireTypeSniffingTcpHandler(@NotNull final TcpEventHandler handlerManager,
-                                      @NotNull final Function<T, TcpHandler> delegateHandlerFactory) {
+                                      @NotNull final Function<T, TcpHandler<T>> delegateHandlerFactory) {
         this.handlerManager = handlerManager;
         this.delegateHandlerFactory = delegateHandlerFactory;
     }
@@ -81,10 +81,10 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext> implements Tcp
         // the type of the header
         nc.wireType(wireType);
 
-        final TcpHandler handler = delegateHandlerFactory.apply(nc);
+        final TcpHandler<T> handler = delegateHandlerFactory.apply(nc);
 
         if (handler instanceof NetworkContextManager)
-            ((NetworkContextManager) handler).nc(nc);
+            ((NetworkContextManager<T>) handler).nc(nc);
 
         handlerManager.tcpHandler(handler);
     }

@@ -6,6 +6,7 @@ import net.openhft.chronicle.network.cluster.ClusterContext;
 import net.openhft.chronicle.network.cluster.HostDetails;
 import net.openhft.chronicle.wire.Marshallable;
 import net.openhft.chronicle.wire.WireType;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -22,15 +23,15 @@ public class ClusterTest {
         MyClusterContext cc2 = cc.deepCopy();
         Assert.assertEquals(cc.value, cc2.value);
 
-        Cluster c = new MyCluster("mine");
+        Cluster<HostDetails, MyClusterContext> c = new MyCluster("mine");
         c.clusterContext(cc);
-        Cluster c2 = c.deepCopy();
-        MyClusterContext mcc = (MyClusterContext) c2.clusterContext();
+        Cluster<HostDetails, MyClusterContext> c2 = c.deepCopy();
+        MyClusterContext mcc = c2.clusterContext();
         Assert.assertNotNull(mcc);
         Assert.assertEquals(22, mcc.value);
     }
 
-    private static class MyCluster extends Cluster {
+    private static class MyCluster extends Cluster<HostDetails, MyClusterContext> {
         public MyCluster() {
             this("dummy");
         }
@@ -44,15 +45,16 @@ public class ClusterTest {
         }
     }
 
-    static class MyClusterContext extends net.openhft.chronicle.network.cluster.ClusterContext {
+    static class MyClusterContext<T extends VanillaNetworkContext<T>> extends net.openhft.chronicle.network.cluster.ClusterContext<T> {
         int value;
 
+        @NotNull
         @Override
-        public ThrowingFunction<NetworkContext, TcpEventHandler, IOException> tcpEventHandlerFactory() {
+        public ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpEventHandlerFactory() {
             return null;
         }
 
-        public ClusterContext value(int v) {
+        public ClusterContext<T> value(int v) {
             this.value = v;
             return this;
         }

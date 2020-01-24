@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 
-public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandlerManager {
+public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandler, Closeable, TcpEventHandlerManager<T> {
 
     private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
     private static final long NBR_WARNING_NANOS = Long.getLong("tcp.nbr.warning.nanos", 2_000_000);
@@ -62,7 +62,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private final ISocketChannel sc;
     private final String scToString;
     @NotNull
-    private final NetworkContext nc;
+    private final T nc;
     @NotNull
     private final NetworkLog readLog, writeLog;
     @NotNull
@@ -72,7 +72,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private final boolean fair;
     private int oneInTen;
     @Nullable
-    private volatile TcpHandler tcpHandler;
+    private volatile TcpHandler<T> tcpHandler;
     private long lastTickReadTime = System.currentTimeMillis();
     private volatile boolean closed;
     // monitoring
@@ -81,11 +81,11 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     private long bytesWriteCount;
     private long lastMonitor;
 
-    public TcpEventHandler(@NotNull NetworkContext nc) {
+    public TcpEventHandler(@NotNull T nc) {
         this(nc, false);
     }
 
-    public TcpEventHandler(@NotNull NetworkContext nc, boolean fair) {
+    public TcpEventHandler(@NotNull T nc, boolean fair) {
 
         this.sc = ISocketChannel.wrapUnsafe(nc.socketChannel());
         this.scToString = sc.toString();
@@ -183,12 +183,12 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
     }
 
     @Nullable
-    public TcpHandler tcpHandler() {
+    public TcpHandler<T> tcpHandler() {
         return tcpHandler;
     }
 
     @Override
-    public void tcpHandler(TcpHandler tcpHandler) {
+    public void tcpHandler(TcpHandler<T> tcpHandler) {
         nc.onHandlerChanged(tcpHandler);
         this.tcpHandler = tcpHandler;
     }
@@ -303,7 +303,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         // TODO: consider installing this on EventLoop using Timer
         long now = System.currentTimeMillis();
         if (now > lastMonitor + (MONITOR_POLL_EVERY_SEC * 1000)) {
-            final NetworkStatsListener networkStatsListener = nc.networkStatsListener();
+            final NetworkStatsListener<T> networkStatsListener = nc.networkStatsListener();
             if (networkStatsListener != null) {
                 if (lastMonitor == 0) {
                     networkStatsListener.onNetworkStats(0, 0, 0);
@@ -394,7 +394,7 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
             if (clientIntentionallyClosed)
                 return;
             if (e.getMessage() != null && e.getMessage().startsWith("Connection reset by peer"))
-                LOG.trace("", e.getMessage());
+                LOG.trace(e.getMessage(), e);
             else if (e.getMessage() != null && e.getMessage().startsWith("An existing connection " +
                     "was forcibly closed"))
                 Jvm.debug().on(getClass(), e.getMessage());
@@ -458,14 +458,14 @@ public class TcpEventHandler implements EventHandler, Closeable, TcpEventHandler
         return false;
     }
 
-    public static class Factory implements MarshallableFunction<NetworkContext, TcpEventHandler> {
+    public static class Factory<T extends NetworkContext<T>> implements MarshallableFunction<T, TcpEventHandler<T>> {
         public Factory() {
         }
 
         @NotNull
         @Override
-        public TcpEventHandler apply(@NotNull NetworkContext nc) {
-            return new TcpEventHandler(nc);
+        public TcpEventHandler<T> apply(@NotNull T nc) {
+            return new TcpEventHandler<T>(nc);
         }
     }
 

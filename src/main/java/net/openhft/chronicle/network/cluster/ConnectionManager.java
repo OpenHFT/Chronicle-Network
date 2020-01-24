@@ -18,19 +18,16 @@ package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.network.NetworkContext;
 
-/**
- * @author Rob Austin.
- */
-public interface ConnectionManager extends ConnectionChangedNotifier {
+public interface ConnectionManager<T extends NetworkContext<T>> extends ConnectionChangedNotifier<T> {
 
     /**
      * notifies the strategy that a message has been received, ( any message is assumed to be a
      * heartbeat )
      */
-    void addListener(ConnectionListener connectionListener);
+    void addListener(ConnectionListener<T> connectionListener);
 
     @FunctionalInterface
-    interface ConnectionListener {
-        void onConnectionChange(NetworkContext nc, boolean isConnected);
+    interface ConnectionListener<T extends NetworkContext<T>> {
+        void onConnectionChange(T nc, boolean isConnected);
     }
 }

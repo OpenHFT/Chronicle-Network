@@ -30,32 +30,28 @@ import java.util.function.Function;
 
 import static net.openhft.chronicle.wire.WireType.TEXT;
 
-/**
- * @author Rob Austin.
- */
 public enum LegacyHanderFactory {
     INSTANCE;
 
-    public static <T extends NetworkContext> Function<T, TcpEventHandler>
-    legacyTcpEventHandlerFactory(@NotNull final Function<T, TcpHandler> defaultHandedFactory,
+    public static <T extends NetworkContext<T>> Function<T, TcpEventHandler<T>>
+    legacyTcpEventHandlerFactory(@NotNull final Function<T, TcpHandler<T>> defaultHandedFactory,
                                  final long heartbeatIntervalTicks,
                                  final long heartbeatIntervalTimeout) {
         return (networkContext) -> {
-            @NotNull final TcpEventHandler handler = new TcpEventHandler(networkContext);
+            @NotNull final TcpEventHandler<T> handler = new TcpEventHandler<>(networkContext);
 
-            @NotNull final Function<Object, TcpHandler> consumer = o -> {
+            @NotNull final Function<Object, TcpHandler<T>> consumer = o -> {
                 if (o instanceof SessionDetailsProvider) {
                     networkContext.sessionDetails((SessionDetailsProvider) o);
                     return defaultHandedFactory.apply(networkContext);
                 } else if (o instanceof TcpHandler)
-                    return (TcpHandler) o;
+                    return (TcpHandler<T>) o;
 
                 throw new UnsupportedOperationException("");
             };
 
             @NotNull final HeaderTcpHandler<T> headerTcpHandler = new HeaderTcpHandler<>(handler,
-                    consumer,
-                    networkContext
+                    consumer
             );
 
             @NotNull final WireTypeSniffingTcpHandler<T> wireTypeSniffingTcpHandler =
@@ -66,17 +62,16 @@ public enum LegacyHanderFactory {
         };
     }
 
-    public static <T extends NetworkContext> Function<T, TcpEventHandler> legacyTcpEventHandlerFactory(
-            @NotNull final Function<T, TcpHandler> defaultHandedFactory) {
+    public static <T extends NetworkContext<T>> Function<T, TcpEventHandler<T>> legacyTcpEventHandlerFactory(
+            @NotNull final Function<T, TcpHandler<T>> defaultHandedFactory) {
         return legacyTcpEventHandlerFactory(defaultHandedFactory, 20_000, 40_000);
     }
 
-    public static <T extends NetworkContext> Function<T, TcpEventHandler>
-    simpleTcpEventHandlerFactory(@NotNull final Function<T, TcpHandler> defaultHandedFactory, final WireType text) {
+    public static <T extends NetworkContext<T>> Function<T, TcpEventHandler<T>> simpleTcpEventHandlerFactory(@NotNull final Function<T, TcpHandler<T>> defaultHandedFactory, final WireType text) {
         return (networkContext) -> {
 
             networkContext.wireOutPublisher(new VanillaWireOutPublisher(TEXT));
-            @NotNull final TcpEventHandler handler = new TcpEventHandler(networkContext);
+            @NotNull final TcpEventHandler<T> handler = new TcpEventHandler<>(networkContext);
             handler.tcpHandler(new WireTypeSniffingTcpHandler<>(handler,
                     defaultHandedFactory));
             return handler;
@@ -84,11 +79,10 @@ public enum LegacyHanderFactory {
         };
     }
 
-    public static <T extends NetworkContext> Function<T, TcpEventHandler>
-    defaultTcpEventHandlerFactory(@NotNull final Function<T, TcpHandler> defaultHandedFactory) {
+    public static <T extends NetworkContext<T>> Function<T, TcpEventHandler<T>> defaultTcpEventHandlerFactory(@NotNull final Function<T, TcpHandler<T>> defaultHandedFactory) {
         return (networkContext) -> {
             networkContext.wireOutPublisher(new VanillaWireOutPublisher(TEXT));
-            @NotNull final TcpEventHandler handler = new TcpEventHandler(networkContext);
+            @NotNull final TcpEventHandler<T> handler = new TcpEventHandler<>(networkContext);
             handler.tcpHandler(defaultHandedFactory.apply(networkContext));
             return handler;
 

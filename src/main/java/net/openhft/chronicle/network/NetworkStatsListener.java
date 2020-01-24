@@ -24,10 +24,7 @@ import org.jetbrains.annotations.Nullable;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
-/**
- * @author Rob Austin.
- */
-public interface NetworkStatsListener<N extends NetworkContext> extends Closeable {
+public interface NetworkStatsListener<N extends NetworkContext<N>> extends Closeable {
 
     /**
      * notifies the NetworkStatsListener of the host and port based on the SocketChannel
@@ -35,7 +32,7 @@ public interface NetworkStatsListener<N extends NetworkContext> extends Closeabl
      * @param sc SocketChannel
      * @param nl NetworkStatsListener
      */
-    static void notifyHostPort(@Nullable final SocketChannel sc, @NotNull final NetworkStatsListener nl) {
+    static <N extends NetworkContext<N>> void notifyHostPort(@Nullable final SocketChannel sc, @Nullable final NetworkStatsListener<N> nl) {
         if (nl != null && sc != null && sc.socket() != null
                 && sc.socket().getRemoteSocketAddress() instanceof InetSocketAddress) {
             @NotNull final InetSocketAddress remoteSocketAddress = (InetSocketAddress) sc.socket()
@@ -52,6 +49,7 @@ public interface NetworkStatsListener<N extends NetworkContext> extends Closeabl
 
     void onRoundTripLatency(long nanosecondLatency);
 
-    default void procPrefix(String procPrefix) { }
+    default void procPrefix(String procPrefix) {
+    }
 
 }

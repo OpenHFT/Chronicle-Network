@@ -14,19 +14,19 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 
 public class EchoServer2Main {
-    public static <T extends NetworkContext> void main(String[] args) throws IOException {
+    public static <T extends VanillaNetworkContext<T>> void main(String[] args) throws IOException {
         System.setProperty("pauser.minProcessors", "1");
         Affinity.acquireCore();
         @NotNull EventLoop eg = new EventGroup(false, Pauser.busy(), true);
         eg.start();
-        @NotNull AcceptorEventHandler eah = new AcceptorEventHandler("*:" + EchoClientMain.PORT,
 
+        @NotNull AcceptorEventHandler<T> eah = new AcceptorEventHandler<T>("*:" + EchoClientMain.PORT,
                 nc -> {
-                    TcpEventHandler teh = new TcpEventHandler(nc);
-                    teh.tcpHandler(new EchoHandler());
+                    TcpEventHandler<T> teh = new TcpEventHandler<T>(nc);
+                    teh.tcpHandler(new EchoHandler<>());
                     return teh;
                 },
-                VanillaNetworkContext::new);
+                () -> (T) new VanillaNetworkContext());
         eg.addHandler(eah);
     }
 }

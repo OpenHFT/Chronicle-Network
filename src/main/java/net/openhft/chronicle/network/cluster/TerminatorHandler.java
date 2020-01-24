@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author Rob Austin.
  */
-public class TerminatorHandler extends AbstractSubHandler<NetworkContext> implements
+public class TerminatorHandler<T extends NetworkContext<T>> extends AbstractSubHandler<T> implements
         Demarshallable, WriteMarshallable {
 
     private final AtomicBoolean isClosed = new AtomicBoolean();
@@ -50,7 +50,7 @@ public class TerminatorHandler extends AbstractSubHandler<NetworkContext> implem
         return w -> w.writeDocument(true,
                 d -> d.writeEventName(CoreFields.csp).text("/")
                         .writeEventName(CoreFields.cid).int64(cid)
-                        .writeEventName(CoreFields.handler).typedMarshallable(new TerminatorHandler())
+                        .writeEventName(CoreFields.handler).typedMarshallable(new TerminatorHandler<>())
                         .writeComment("localIdentifier=" + localIdentifier +
                                 ",remoteIdentifier=" + remoteIdentifier));
     }

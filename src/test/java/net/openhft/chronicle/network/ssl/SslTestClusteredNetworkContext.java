@@ -16,7 +16,7 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
 public final class SslTestClusteredNetworkContext
-        extends VanillaNetworkContext implements ClusteredNetworkContext, SslNetworkContext {
+        extends VanillaNetworkContext<SslTestClusteredNetworkContext> implements ClusteredNetworkContext<SslTestClusteredNetworkContext>, SslNetworkContext<SslTestClusteredNetworkContext> {
     private final byte hostId;
     private final Cluster cluster;
     private final EventLoop eventLoop;
@@ -58,10 +58,10 @@ public final class SslTestClusteredNetworkContext
     }
 
     @Override
-    public NetworkStatsListener<? extends NetworkContext> networkStatsListener() {
-        return new NetworkStatsListener<NetworkContext>() {
+    public NetworkStatsListener<SslTestClusteredNetworkContext> networkStatsListener() {
+        return new NetworkStatsListener<SslTestClusteredNetworkContext>() {
             @Override
-            public void networkContext(final NetworkContext networkContext) {
+            public void networkContext(final SslTestClusteredNetworkContext networkContext) {
 
             }
 

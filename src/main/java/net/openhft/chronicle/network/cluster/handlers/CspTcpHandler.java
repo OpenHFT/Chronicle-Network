@@ -23,20 +23,20 @@ import java.util.Map;
 
 import static net.openhft.chronicle.network.connection.CoreFields.csp;
 
-public abstract class CspTcpHandler<T extends NetworkContext> extends WireTcpHandler<T> {
+public abstract class CspTcpHandler<T extends NetworkContext<T>> extends WireTcpHandler<T> {
 
     protected final List<WriteMarshallable> writers = new ArrayList<>();
     @NotNull
-    private final Map<Long, SubHandler> cidToHandle = new HashMap<>();
-    private final Map<Object, SubHandler> registry = new HashMap<>();
+    private final Map<Long, SubHandler<T>> cidToHandle = new HashMap<>();
+    private final Map<Object, SubHandler<T>> registry = new HashMap<>();
     @Nullable
-    private SubHandler handler;
+    private SubHandler<T> handler;
     @Nullable
     private HeartbeatEventHandler heartbeatEventHandler;
     private long lastCid;
 
     @Nullable
-    protected SubHandler handler() {
+    protected SubHandler<T> handler() {
         return handler;
     }
 

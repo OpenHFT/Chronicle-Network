@@ -18,10 +18,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.network.api.TcpHandler;
 
-/**
- * @author Rob Austin.
- */
 @FunctionalInterface
-interface TcpEventHandlerManager {
-    void tcpHandler(TcpHandler tcpHandler);
+interface TcpEventHandlerManager<T extends NetworkContext<T>> {
+    void tcpHandler(TcpHandler<T> tcpHandler);
 }

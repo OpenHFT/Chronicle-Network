@@ -29,10 +29,7 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @author Rob Austin.
- */
-public class VanillaNetworkContext<T extends VanillaNetworkContext> implements NetworkContext<T>, Closeable {
+public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> implements NetworkContext<T>, Closeable {
 
     private final AtomicLong cid = new AtomicLong();
     private final AtomicBoolean isClosed = new AtomicBoolean(false);
@@ -41,13 +38,14 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     private HeartbeatListener heartbeatListener;
     private SessionDetailsProvider sessionDetails;
     @Nullable
-    private TerminationEventHandler terminationEventHandler;
+    private TerminationEventHandler<T> terminationEventHandler;
     private long heartbeatTimeoutMs;
     private WireOutPublisher wireOutPublisher;
     private WireType wireType = WireType.TEXT;
+    private int remoteHostId;
     private Runnable socketReconnector;
     @Nullable
-    private NetworkStatsListener<? extends NetworkContext> networkStatsListener;
+    private NetworkStatsListener<T> networkStatsListener;
     private ServerThreadingStrategy serverThreadingStrategy = ServerThreadingStrategy.SINGLE_THREADED;
 
     @Override
@@ -63,13 +61,13 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     }
 
     @Override
-    public void onHandlerChanged(TcpHandler handler) {
+    public void onHandlerChanged(TcpHandler<T> handler) {
 
     }
 
     /**
      * @param isAcceptor {@code} true if its a server socket, {@code} false if its a client
-     * @return
+     * @return this for chaining
      */
     @NotNull
     @Override
@@ -92,8 +90,9 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     }
 
     @Override
-    public void wireOutPublisher(WireOutPublisher wireOutPublisher) {
+    public T wireOutPublisher(WireOutPublisher wireOutPublisher) {
         this.wireOutPublisher = wireOutPublisher;
+        return (T) this;
     }
 
     @Override
@@ -122,12 +121,12 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
 
     @Nullable
     @Override
-    public TerminationEventHandler terminationEventHandler() {
+    public TerminationEventHandler<T> terminationEventHandler() {
         return terminationEventHandler;
     }
 
     @Override
-    public void terminationEventHandler(@Nullable TerminationEventHandler terminationEventHandler) {
+    public void terminationEventHandler(@Nullable TerminationEventHandler<T> terminationEventHandler) {
         this.terminationEventHandler = terminationEventHandler;
     }
 
@@ -208,13 +207,13 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     }
 
     @Override
-    public void networkStatsListener(@NotNull NetworkStatsListener networkStatsListener) {
+    public void networkStatsListener(@NotNull NetworkStatsListener<T> networkStatsListener) {
         this.networkStatsListener = networkStatsListener;
     }
 
     @Nullable
     @Override
-    public NetworkStatsListener<? extends NetworkContext> networkStatsListener() {
+    public NetworkStatsListener<T> networkStatsListener() {
         return this.networkStatsListener;
     }
 
@@ -224,7 +223,19 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext> implements N
     }
 
     @Override
-    public void serverThreadingStrategy(ServerThreadingStrategy serverThreadingStrategy) {
+    public T serverThreadingStrategy(ServerThreadingStrategy serverThreadingStrategy) {
         this.serverThreadingStrategy = serverThreadingStrategy;
+        return (T) this;
+    }
+
+    @Override
+    public T remoteHostId(int hostId) {
+        this.remoteHostId = hostId;
+        return (T) this;
+    }
+
+    @Override
+    public int remoteHostId() {
+        return remoteHostId;
     }
 }
