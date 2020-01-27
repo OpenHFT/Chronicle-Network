@@ -6,8 +6,8 @@ import net.openhft.chronicle.network.ConnectionListener;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.WireTcpHandler;
 import net.openhft.chronicle.network.api.session.SubHandler;
+import net.openhft.chronicle.network.api.session.WritableSubHandler;
 import net.openhft.chronicle.network.cluster.HeartbeatEventHandler;
-import net.openhft.chronicle.network.cluster.WritableSubHandler;
 import net.openhft.chronicle.network.connection.CoreFields;
 import net.openhft.chronicle.wire.ValueIn;
 import net.openhft.chronicle.wire.WireIn;
@@ -25,7 +25,7 @@ import static net.openhft.chronicle.network.connection.CoreFields.csp;
 
 public abstract class CspTcpHandler<T extends NetworkContext<T>> extends WireTcpHandler<T> {
 
-    protected final List<WriteMarshallable> writers = new ArrayList<>();
+    protected final List<WritableSubHandler<T>> writers = new ArrayList<>();
     @NotNull
     private final Map<Long, SubHandler<T>> cidToHandle = new HashMap<>();
     private final Map<Object, SubHandler<T>> registry = new HashMap<>();
@@ -117,7 +117,7 @@ public abstract class CspTcpHandler<T extends NetworkContext<T>> extends WireTcp
                 cidToHandle.put(cid, handler);
 
                 if (handler instanceof WritableSubHandler)
-                    writers.add(((WritableSubHandler) handler).writer());
+                    writers.add(((WritableSubHandler<T>) handler));
             } else
                 throw new IllegalStateException("expecting 'cid' but eventName=" + event);
             return true;

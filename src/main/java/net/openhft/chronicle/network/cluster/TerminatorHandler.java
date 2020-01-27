@@ -31,8 +31,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * used to send/receive a termination event, or receipt of the termination event the connection is
  * closed
- *
- * @author Rob Austin.
  */
 public class TerminatorHandler<T extends NetworkContext<T>> extends AbstractSubHandler<T> implements
         Demarshallable, WriteMarshallable {

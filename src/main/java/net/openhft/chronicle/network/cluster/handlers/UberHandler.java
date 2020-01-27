@@ -4,6 +4,7 @@ import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.api.session.SubHandler;
+import net.openhft.chronicle.network.api.session.WritableSubHandler;
 import net.openhft.chronicle.network.cluster.*;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.threads.NamedThreadFactory;
@@ -257,17 +258,8 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
      */
     @Override
     protected void onWrite(@NotNull WireOut outWire) {
-        SubHandler handler = handler();
-        if (handler != null)
-            try {
-                handler.onWrite(outWire);
-            } catch (RejectedHandlerException ex) {
-                Jvm.debug().on(getClass(), "Removing rejected handler: " + handler);
-                removeHandler(handler);
-            }
-
-        WriteMarshallable w;
-        for (int i = 0; i < writers.size(); i++) {
+        WritableSubHandler<T> w;
+        for (int i = 0; i < writers.size(); i++)
             try {
                 w = writers.get(i);
                 if (null == w)
@@ -276,11 +268,10 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                 if (isClosing.get())
                     return;
 
-                w.writeMarshallable(outWire);
+                w.onWrite(outWire);
             } catch (Exception e) {
                 Jvm.fatal().on(getClass(), e);
             }
-        }
     }
 
     private void onMessageReceivedOrWritten() {

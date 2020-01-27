@@ -25,9 +25,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.RejectedExecutionException;
 
-/**
- * @author Rob Austin.
- */
 public interface SubHandler<T extends NetworkContext<T>> extends NetworkContextManager<T>, Closeable {
 
     void cid(long cid);
@@ -54,7 +51,4 @@ public interface SubHandler<T extends NetworkContext<T>> extends NetworkContextM
     void onInitialize(WireOut outWire) throws RejectedExecutionException;
 
     void closeable(Closeable closeable);
-
-    default void onWrite(WireOut outWire) {
-    }
 }
