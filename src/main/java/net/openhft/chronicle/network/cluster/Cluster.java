@@ -28,16 +28,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 
-/**
- * @author Rob Austin.
- */
-abstract public class Cluster<E extends HostDetails, C extends ClusterContext> implements Marshallable, Closeable {
+abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkContext<T>, C extends ClusterContext<T>> implements Marshallable, Closeable {
 
     @NotNull
     public final Map<String, E> hostDetails;
     private final String clusterName;
 
-    @Nullable
     private C context;
 
     public Cluster(String clusterName) {
@@ -49,7 +45,6 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
         return clusterName;
     }
 
-    @Nullable
     public C clusterContext() {
         return context;
     }
@@ -119,14 +114,14 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
     }
 
     @Nullable
-    public ConnectionManager findConnectionManager(int remoteIdentifier) {
+    public ConnectionManager<T> findConnectionManager(int remoteIdentifier) {
         @Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.connectionManager();
     }
 
     @Nullable
-    public TerminationEventHandler findTerminationEventHandler(int remoteIdentifier) {
+    public TerminationEventHandler<T> findTerminationEventHandler(int remoteIdentifier) {
         @Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.terminationEventHandler();
@@ -134,7 +129,7 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
     }
 
     @Nullable
-    public ConnectionChangedNotifier findClusterNotifier(int remoteIdentifier) {
+    public ConnectionChangedNotifier<T> findClusterNotifier(int remoteIdentifier) {
         @Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.clusterNotifier();
@@ -156,7 +151,7 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
     public void install() {
         Set<Integer> hostIds = hostDetails.values().stream().map(HostDetails::hostId).collect(Collectors.toSet());
 
-        int local = (int) context.localIdentifier();
+        int local = context.localIdentifier();
         if (!hostIds.contains(local)) {
             if (Jvm.isDebugEnabled(getClass()))
                 Jvm.debug().on(getClass(), "cluster='" + context.clusterName() + "' ignored as localIdentifier=" + context.localIdentifier() + " is in this cluster");
@@ -164,6 +159,6 @@ abstract public class Cluster<E extends HostDetails, C extends ClusterContext> i
         }
 
         if (context != null)
-            hostDetails.values().forEach(context::accept);
+            hostDetails.values().forEach(context);
     }
 }

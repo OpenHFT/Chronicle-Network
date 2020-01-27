@@ -24,15 +24,15 @@ public class ClusterTest {
         MyClusterContext cc2 = cc.deepCopy();
         Assert.assertEquals(cc.value, cc2.value);
 
-        Cluster<HostDetails, MyClusterContext> c = new MyCluster("mine");
+        Cluster<HostDetails, ?, MyClusterContext<?>> c = new MyCluster("mine");
         c.clusterContext(cc);
-        Cluster<HostDetails, MyClusterContext> c2 = c.deepCopy();
+        Cluster<HostDetails, ?, MyClusterContext<?>> c2 = c.deepCopy();
         MyClusterContext mcc = c2.clusterContext();
         Assert.assertNotNull(mcc);
         Assert.assertEquals(22, mcc.value);
     }
 
-    private static class MyCluster extends Cluster<HostDetails, MyClusterContext> {
+    private static class MyCluster<T extends ClusteredNetworkContext<T>> extends Cluster<HostDetails, T, MyClusterContext<T>> {
         public MyCluster() {
             this("dummy");
         }
@@ -42,6 +42,7 @@ public class ClusterTest {
         }
 
         @Override
+        @NotNull
         protected HostDetails newHostDetails() {
             return new HostDetails();
         }

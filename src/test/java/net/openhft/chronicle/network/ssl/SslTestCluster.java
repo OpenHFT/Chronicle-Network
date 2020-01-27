@@ -6,7 +6,7 @@ import net.openhft.chronicle.network.cluster.HostDetails;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public final class SslTestCluster extends Cluster<HostDetails, SslTestClusterContext> {
+public final class SslTestCluster extends Cluster<HostDetails, SslTestClusteredNetworkContext, SslTestClusterContext> {
 
     public SslTestCluster(final String clusterName) {
         super(clusterName);
@@ -20,7 +20,7 @@ public final class SslTestCluster extends Cluster<HostDetails, SslTestClusterCon
                 continue;
             }
 
-            final ConnectionManager connectionManager = findConnectionManager(hostDetail.hostId());
+            final ConnectionManager<SslTestClusteredNetworkContext> connectionManager = findConnectionManager(hostDetail.hostId());
             connectionManager.addListener((nc, isConnected) -> {
                 if (nc.isAcceptor() || !isConnected || nc.isClosed()) {
                     return;
@@ -31,7 +31,6 @@ public final class SslTestCluster extends Cluster<HostDetails, SslTestClusterCon
         }
     }
 
-    @Nullable
     @Override
     public SslTestClusterContext clusterContext() {
         return super.clusterContext();
