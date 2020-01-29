@@ -88,6 +88,9 @@ public abstract class CspTcpHandler<T extends NetworkContext<T>> extends WireTcp
                     handler.nc(nc());
                 } catch (RejectedHandlerException ex) {
                     Jvm.warn().on(getClass(), "Handler for csp=" + csp + ", cid=" + cid + " was rejected: " + ex.getMessage(), ex);
+                    handler = null;
+                    lastCid = cid;
+                    System.err.println("Map: " + cidToHandle);
                     return false;
                 }
                 handler.closeable(this);
