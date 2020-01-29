@@ -21,4 +21,8 @@ public class RejectedHandlerException  extends RuntimeException {
     public RejectedHandlerException(String message) {
         super(message);
     }
+
+    public RejectedHandlerException() {
+        super();
+    }
 }

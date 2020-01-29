@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 higherfrequencytrading.com
+ * Copyright 2016-2020 http://chronicle.software
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -231,7 +231,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
         }
     }
 
-    protected void checkWires(Bytes in, Bytes out, @NotNull WireType wireType) {
+    protected void checkWires(Bytes<?> in, Bytes<?> out, @NotNull WireType wireType) {
         if (recreateWire) {
             recreateWire = false;
             initialiseInWire(wireType, in);
@@ -263,11 +263,11 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
         }
     }
 
-    protected Wire initialiseOutWire(Bytes out, @NotNull WireType wireType) {
+    protected Wire initialiseOutWire(Bytes<?> out, @NotNull WireType wireType) {
         return outWire = wireType.apply(out);
     }
 
-    protected Wire initialiseInWire(@NotNull WireType wireType, Bytes in) {
+    protected Wire initialiseInWire(@NotNull WireType wireType, Bytes<?> in) {
         return inWire = wireType.apply(in);
     }
 
@@ -288,7 +288,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
     /**
      * write and exceptions and rolls back if no data was written
      */
-    protected void writeData(@NotNull Bytes inBytes, @NotNull WriteMarshallable c) {
+    protected void writeData(@NotNull Bytes<?> inBytes, @NotNull WriteMarshallable c) {
         outWire.writeDocument(false, out -> {
             final long readPosition = inBytes.readPosition();
             final long position = outWire.bytes().writePosition();
@@ -315,7 +315,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
     /**
      * write and exceptions and rolls back if no data was written
      */
-    protected void writeData(boolean isNotComplete, @NotNull Bytes inBytes, @NotNull WriteMarshallable c) {
+    protected void writeData(boolean isNotComplete, @NotNull Bytes<?> inBytes, @NotNull WriteMarshallable c) {
 
         @NotNull final WriteMarshallable marshallable = out -> {
             final long readPosition = inBytes.readPosition();

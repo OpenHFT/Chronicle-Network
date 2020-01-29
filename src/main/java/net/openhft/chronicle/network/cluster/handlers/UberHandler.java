@@ -126,7 +126,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         if (!eventLoop.isClosed()) {
             eventLoop.start();
 
-            final Cluster engineCluster = nc.getCluster(clusterName);
+            final Cluster<?, T, ? extends ClusterContext<T>> engineCluster = nc.getCluster(clusterName);
 
             // note : we have to publish the uber handler, even if we send a termination event
             // this is so the termination event can be processed by the receiver
@@ -222,6 +222,9 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                     handler.onInitialize(outWire);
                 } catch (RejectedExecutionException e) {
                     Jvm.warn().on(getClass(), "EventGroup shutdown", e);
+                    removeHandler(handler);
+                } catch (RejectedHandlerException ex) {
+                    Jvm.debug().on(getClass(), "Removing rejected handler: " + handler);
                     removeHandler(handler);
                 }
                 return;

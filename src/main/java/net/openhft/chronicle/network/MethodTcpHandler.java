@@ -34,7 +34,7 @@ public class MethodTcpHandler<I, O, N extends NetworkContext<N>> extends WireTcp
     }
 
     @Override
-    protected Wire initialiseOutWire(Bytes out, @NotNull WireType wireType) {
+    protected Wire initialiseOutWire(Bytes<?> out, @NotNull WireType wireType) {
         Wire wire = super.initialiseOutWire(out, wireType);
         output = wire.methodWriter(outClass);
         return wire;
@@ -42,7 +42,7 @@ public class MethodTcpHandler<I, O, N extends NetworkContext<N>> extends WireTcp
     }
 
     @Override
-    protected Wire initialiseInWire(@NotNull WireType wireType, Bytes in) {
+    protected Wire initialiseInWire(@NotNull WireType wireType, Bytes<?> in) {
         Wire wire = super.initialiseInWire(wireType, in);
         reader = wire.methodReader(implSupplier.get());
         return wire;

@@ -1,3 +1,18 @@
+/*
+ * Copyright 2016-2020 http://chronicle.software
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package net.openhft.chronicle.network.cluster.handlers;
 
 import net.openhft.chronicle.core.Jvm;
@@ -47,6 +62,11 @@ public abstract class CspTcpHandler<T extends NetworkContext<T>> extends WireTcp
 
     protected void removeHandler(SubHandler<T> handler) {
         cidToHandle.remove(handler.cid());
+        if (this.handler == handler) {
+            this.handler = null;
+            this.lastCid = 0;
+        }
+        Closeable.closeQuietly(handler);
     }
 
     /**
@@ -89,7 +109,6 @@ public abstract class CspTcpHandler<T extends NetworkContext<T>> extends WireTcp
                     Jvm.warn().on(getClass(), "Handler for csp=" + csp + ", cid=" + cid + " was rejected: " + ex.getMessage(), ex);
                     handler = null;
                     lastCid = cid;
-                    System.err.println("Map: " + cidToHandle);
                     return false;
                 }
                 handler.closeable(this);

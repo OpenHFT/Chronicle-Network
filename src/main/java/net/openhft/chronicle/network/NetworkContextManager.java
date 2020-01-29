@@ -16,11 +16,8 @@
 
 package net.openhft.chronicle.network;
 
-import org.jetbrains.annotations.Nullable;
-
 public interface NetworkContextManager<T extends NetworkContext<T>> {
 
-    @Nullable
     T nc();
 
     void nc(T nc);
