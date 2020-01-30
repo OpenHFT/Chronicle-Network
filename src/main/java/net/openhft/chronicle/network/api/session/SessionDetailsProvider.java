@@ -18,6 +18,7 @@ package net.openhft.chronicle.network.api.session;
 
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.network.SessionMode;
+import net.openhft.chronicle.network.VanillaSessionDetails;
 import net.openhft.chronicle.network.connection.EventId;
 import net.openhft.chronicle.wire.Marshallable;
 import net.openhft.chronicle.wire.WireIn;
@@ -69,4 +70,10 @@ public interface SessionDetailsProvider extends SessionDetails, Marshallable {
     default void writeMarshallable(@NotNull WireOut w) {
         SessionDetails.super.writeMarshallable(w);
     }
+
+    @NotNull
+    static SessionDetailsProvider create() {
+        return new VanillaSessionDetails();
+    }
+    
 }
