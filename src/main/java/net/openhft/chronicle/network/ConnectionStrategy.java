@@ -70,12 +70,14 @@ public interface ConnectionStrategy extends Marshallable {
     }
 
     /**
+     * Connects and returns a new SocketChannel.
+     *
      * @param name                  the name of the connection, only used for logging
-     * @param socketAddressSupplier
+     * @param socketAddressSupplier to use for address
      * @param didLogIn              was the last attempt successful, was a login established
-     * @param fatalFailureMonitor
-     * @return
-     * @throws InterruptedException
+     * @param fatalFailureMonitor   this is invoked on failures
+     * @return the SocketChannel
+     * @throws InterruptedException if the channel is interrupted.
      */
     SocketChannel connect(@NotNull String name,
                           @NotNull SocketAddressSupplier socketAddressSupplier,

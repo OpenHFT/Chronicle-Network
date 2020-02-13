@@ -12,10 +12,10 @@ import java.nio.ByteBuffer;
  * - socket-side data - encrypted, handled by <code>readData</code>, <code>writeData</code>
  * - application-side data - decrypted, handled by <code>handleDecryptedData</code>
  * <p>
- * The delegate {@see TcpHandler} will be invoked with decrypted input data, and its
+ * The delegate {@link TcpHandler} will be invoked with decrypted input data, and its
  * output will be encrypted read for transmission over a socket.
  *
- * @param <N> the type of {@see NetworkContext}
+ * @param <N> the type of {@link NetworkContext}
  */
 public final class BytesBufferHandler<N extends NetworkContext<N>> implements BufferHandler {
     private static final Bytes<ByteBuffer> EMPTY_APPLICATION_INPUT = Bytes.wrapForRead(ByteBuffer.allocate(0));

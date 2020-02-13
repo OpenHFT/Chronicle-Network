@@ -35,7 +35,7 @@ import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
  * --f.     Connection attempt no 2 with DR2:  failed
  * --g.    Connection attempt no 3 with MAIN:  failed
  * --h.     Connection attempt no 3 with DR1:  failed
- * --i.      Connection attempt no 3 with DR2:  failed   =>  Attempt 3 finished. Fatal Failure is raised
+ * --i.      Connection attempt no 3 with DR2:  failed   implies:   Attempt 3 finished. Fatal Failure is raised
  */
 public class FatalFailureConnectionStrategy implements ConnectionStrategy {
 
