@@ -56,6 +56,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 import static java.lang.Integer.getInteger;
 import static java.lang.ThreadLocal.withInitial;
@@ -71,7 +72,7 @@ import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
  * as the very first field in the message. The TcpChannelHub will look at each message and read the
  * tid, and then marshall the message onto your appropriate client thread. Created by Rob Austin
  */
-public class TcpChannelHub implements Closeable {
+public final class TcpChannelHub implements Closeable {
 
     public static final int TCP_BUFFER = getTcpBufferSize();
     public static final int SAFE_TCP_SIZE = TCP_BUFFER * 3 / 4;
@@ -109,7 +110,7 @@ public class TcpChannelHub implements Closeable {
     private final ClientConnectionMonitor clientConnectionMonitor;
     private final ConnectionStrategy connectionStrategy;
     @NotNull
-    private Pauser pauser = new LongPauser(100, 100, 500, 20_000, TimeUnit.MICROSECONDS);
+    private final Pauser pauser;
     // private final String description;
     private long largestChunkSoFar = 0;
     @Nullable
@@ -121,6 +122,7 @@ public class TcpChannelHub implements Closeable {
     private long limitOfLast = 0;
     private boolean shouldSendCloseMessage;
     private HandlerPriority priority;
+
     public TcpChannelHub(@Nullable final SessionProvider sessionProvider,
                          @NotNull final EventLoop eventLoop,
                          @NotNull final WireType wireType,
@@ -130,6 +132,28 @@ public class TcpChannelHub implements Closeable {
                          @Nullable ClientConnectionMonitor clientConnectionMonitor,
                          @NotNull final HandlerPriority monitor,
                          @NotNull final ConnectionStrategy connectionStrategy) {
+        this(sessionProvider,
+                eventLoop,
+                wireType,
+                name,
+                socketAddressSupplier,
+                shouldSendCloseMessage,
+                clientConnectionMonitor,
+                monitor,
+                connectionStrategy,
+                null);
+    }
+
+    public TcpChannelHub(@Nullable final SessionProvider sessionProvider,
+                         @NotNull final EventLoop eventLoop,
+                         @NotNull final WireType wireType,
+                         @NotNull final String name,
+                         @NotNull final SocketAddressSupplier socketAddressSupplier,
+                         boolean shouldSendCloseMessage,
+                         @Nullable ClientConnectionMonitor clientConnectionMonitor,
+                         @NotNull final HandlerPriority monitor,
+                         @NotNull final ConnectionStrategy connectionStrategy,
+                         @Nullable final Supplier<Pauser> pauserSupplier) {
         assert !name.trim().isEmpty();
         this.connectionStrategy = connectionStrategy;
         this.priority = monitor;
@@ -149,13 +173,13 @@ public class TcpChannelHub implements Closeable {
         this.sessionProvider = sessionProvider;
         this.shouldSendCloseMessage = shouldSendCloseMessage;
         this.clientConnectionMonitor = clientConnectionMonitor;
+        this.pauser = (pauserSupplier != null) ? pauserSupplier.get() : new LongPauser(100, 100, 500, 20_000, TimeUnit.MICROSECONDS);
         hubs.add(this);
         eventLoop.addHandler(new PauserMonitor(pauser, "async-read", 30));
 
         // has to be done last as it starts a thread which uses this class.
         this.tcpSocketConsumer = new TcpSocketConsumer();
     }
-
     private static int getTcpBufferSize() {
         String sizeStr = System.getProperty("TcpEventHandler.tcpBufferSize");
         if (sizeStr != null && !sizeStr.isEmpty())
