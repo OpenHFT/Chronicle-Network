@@ -884,16 +884,17 @@ public final class TcpChannelHub implements Closeable {
                                          @Nullable final String csp,
                                          final long cid) {
         assert outBytesLock().isHeldByCurrentThread();
+
         wire.writeDocument(true, new MetadataForKnownTID(tid, cid, csp));
     }
 
     private static final class MetadataForKnownTID implements WriteMarshallable {
 
-        final long tid;
-        final long cid;
-        final String csp;
+        private final long tid;
+        private final long cid;
+        private final String csp;
 
-        public MetadataForKnownTID(long tid, long cid, String csp) {
+        MetadataForKnownTID(final long tid, final long cid, final String csp) {
             this.tid = tid;
             this.csp = csp;
             this.cid = cid;
@@ -1240,7 +1241,6 @@ public final class TcpChannelHub implements Closeable {
          * uses a single read thread, to process messages to waiting threads based on their {@code
          * tid}
          */
-        @NotNull
         private void start() {
             checkNotShutdown();
 
