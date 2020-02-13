@@ -74,6 +74,22 @@
             <artifactId>chronicle-wire</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.koloboke</groupId>
+            <artifactId>koloboke-api-jdk8</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.koloboke</groupId>
+            <artifactId>koloboke-impl-common-jdk8</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.koloboke</groupId>
+            <artifactId>koloboke-compile</artifactId>
+        </dependency>
+
+
         <!-- test dependencies -->
 
         <dependency>

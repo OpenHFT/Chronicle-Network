@@ -16,6 +16,9 @@
 
 package net.openhft.chronicle.network.connection;
 
+import com.koloboke.collect.map.LongObjMap;
+import com.koloboke.collect.map.hash.HashLongObjMapFactory;
+import com.koloboke.collect.map.hash.HashLongObjMaps;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.bytes.BytesUtil;
 import net.openhft.chronicle.bytes.ConnectionDroppedException;
@@ -1012,15 +1015,15 @@ public final class TcpChannelHub implements Closeable {
     /**
      * uses a single read thread, to process messages to waiting threads based on their {@code tid}
      */
-    class TcpSocketConsumer implements EventHandler {
+    final class TcpSocketConsumer implements EventHandler {
         @NotNull
-        private final Map<Long, Object> map = new ConcurrentHashMap<>();
-        private final Map<Long, Object> omap = new ConcurrentHashMap<>();
+        private final PrimitiveLongObjMap<Object> map = PrimitiveLongObjMap.withExpectedSize(32);
+        private final PrimitiveLongObjMap<Object> omap = PrimitiveLongObjMap.withExpectedSize(32);
         @NotNull
         private final ExecutorService service;
         @NotNull
         private final ThreadLocal<Wire> syncInWireThreadLocal = withInitial(() -> {
-            Wire wire = wireType.apply(elasticByteBuffer());
+            final Wire wire = wireType.apply(elasticByteBuffer());
             assert wire.startUse();
             return wire;
         });
@@ -1209,7 +1212,7 @@ public final class TcpChannelHub implements Closeable {
          * @param tid the unique identifier for the subscription
          */
         public void unsubscribe(long tid) {
-            map.remove(tid);
+            map.justRemove(tid);
         }
 
         /**
@@ -1419,9 +1422,8 @@ public final class TcpChannelHub implements Closeable {
                             throw new AssertionError("Found tid=" + tid + " in the old map.");
                         }
                     } else {
-                        if (isReady && (o instanceof Bytes || o instanceof
-                                AsyncTemporarySubscription)) {
-                            omap.put(tid, map.remove(tid));
+                        if (isReady && (o instanceof Bytes || o instanceof AsyncTemporarySubscription)) {
+                            omap.justPut(tid, map.remove(tid));
                             isLastMessageForThisTid = true;
                         }
                         break;
@@ -1476,7 +1478,7 @@ public final class TcpChannelHub implements Closeable {
                 } catch (Exception e) {
                     if (LOG.isDebugEnabled())
                         Jvm.debug().on(getClass(), "Removing " + tid + " " + o, e);
-                    omap.remove(tid);
+                    omap.justRemove(tid);
                 }
             }
 
@@ -1820,16 +1822,16 @@ public final class TcpChannelHub implements Closeable {
         }
 
         private void keepSubscriptionsAndClearEverythingElse() {
-
             tid = 0;
             omap.clear();
 
-            @NotNull final Set<Long> keys = new HashSet<>(map.keySet());
+            final Set<Long> keys = new HashSet<>();
+            map.forEach((k, v) -> keys.add(k));
 
             keys.forEach(k -> {
                 final Object o = map.get(k);
                 if (o instanceof Bytes || o instanceof AsyncTemporarySubscription)
-                    map.remove(k);
+                    map.justRemove(k);
             });
         }
 
