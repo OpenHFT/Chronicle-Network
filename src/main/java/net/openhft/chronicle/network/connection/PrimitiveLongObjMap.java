@@ -21,7 +21,7 @@ public abstract class PrimitiveLongObjMap<V>  {
 
     public abstract V remove(long key);
 
-    public abstract boolean justRemove(long key);
+     public abstract boolean justRemove(long key);
 
     public abstract void clear();
 

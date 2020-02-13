@@ -869,23 +869,44 @@ public final class TcpChannelHub implements Closeable {
         }
     }
 
-    public long writeMetaDataStartTime(long startTime, @NotNull Wire wire, String csp, long cid) {
+    public long writeMetaDataStartTime(final long startTime,
+                                       @NotNull final Wire wire,
+                                       final String csp,
+                                       final long cid) {
         assert outBytesLock().isHeldByCurrentThread();
         long tid = nextUniqueTransaction(startTime);
         writeMetaDataForKnownTID(tid, wire, csp, cid);
         return tid;
     }
 
-    public void writeMetaDataForKnownTID(long tid, @NotNull Wire wire, @Nullable String csp,
-                                         long cid) {
+    public void writeMetaDataForKnownTID(final long tid,
+                                         @NotNull final Wire wire,
+                                         @Nullable final String csp,
+                                         final long cid) {
         assert outBytesLock().isHeldByCurrentThread();
-        wire.writeDocument(true, wireOut -> {
+        wire.writeDocument(true, new MetadataForKnownTID(tid, cid, csp));
+    }
+
+    private static final class MetadataForKnownTID implements WriteMarshallable {
+
+        final long tid;
+        final long cid;
+        final String csp;
+
+        public MetadataForKnownTID(long tid, long cid, String csp) {
+            this.tid = tid;
+            this.csp = csp;
+            this.cid = cid;
+        }
+
+        @Override
+        public void writeMarshallable(@NotNull WireOut wireOut) {
             if (cid == 0)
                 wireOut.writeEventName(CoreFields.csp).text(csp);
             else
                 wireOut.writeEventName(CoreFields.cid).int64(cid);
             wireOut.writeEventName(CoreFields.tid).int64(tid);
-        });
+        }
     }
 
     /**
