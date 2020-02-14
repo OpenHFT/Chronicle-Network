@@ -885,30 +885,15 @@ public final class TcpChannelHub implements Closeable {
                                          final long cid) {
         assert outBytesLock().isHeldByCurrentThread();
 
-        wire.writeDocument(true, new MetadataForKnownTID(tid, cid, csp));
-    }
-
-    private static final class MetadataForKnownTID implements WriteMarshallable {
-
-        private final long tid;
-        private final long cid;
-        private final String csp;
-
-        MetadataForKnownTID(final long tid, final long cid, final String csp) {
-            this.tid = tid;
-            this.csp = csp;
-            this.cid = cid;
-        }
-
-        @Override
-        public void writeMarshallable(@NotNull WireOut wireOut) {
+        try(DocumentContext dc = wire.writingDocument(true)){
             if (cid == 0)
-                wireOut.writeEventName(CoreFields.csp).text(csp);
+                dc.wire().writeEventName(CoreFields.csp).text(csp);
             else
-                wireOut.writeEventName(CoreFields.cid).int64(cid);
-            wireOut.writeEventName(CoreFields.tid).int64(tid);
+                dc.wire().writeEventName(CoreFields.cid).int64(cid);
+            dc.wire().writeEventName(CoreFields.tid).int64(tid);
         }
     }
+
 
     /**
      * The writes the meta data to wire - the async version does not contain the tid
