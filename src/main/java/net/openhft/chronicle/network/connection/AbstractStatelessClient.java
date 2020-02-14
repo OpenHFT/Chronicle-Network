@@ -30,10 +30,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
+import static java.lang.ThreadLocal.withInitial;
 import static net.openhft.chronicle.network.connection.CoreFields.reply;
 
 /*
@@ -42,12 +45,16 @@ import static net.openhft.chronicle.network.connection.CoreFields.reply;
 public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> implements Closeable {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractStatelessClient.class);
+    private static final WriteValue NOOP = out -> {};
 
     @NotNull
     protected final TcpChannelHub hub;
     @NotNull
     protected final String csp;
     private final long cid;
+    private final ThreadLocal<OneParameterWriteValue> oneParameterWriteValueTL;
+    private final Map<Class<?>, Function<ValueIn, ?>> consumerInFunctionMap;
+    private final ThreadLocal<ConsumerInUsingFunction<?>> consumerInFunctionUsingTL;
 
     /**
      * @param hub for this connection
@@ -60,28 +67,50 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         this.cid = cid;
         this.csp = csp;
         this.hub = hub;
+        this.oneParameterWriteValueTL = withInitial(OneParameterWriteValue::new);
+        this.consumerInFunctionMap = new ConcurrentHashMap<>();
+        this.consumerInFunctionUsingTL = withInitial(ConsumerInUsingFunction::new);
     }
 
-    protected static <E extends ParameterizeWireKey>
-    WriteValue toParameters(@NotNull final E eventId,
-                            @Nullable final Object... args) {
+    /**
+     * Returns a WriteValue for the provided {@code eventId} and
+     * provided {@code argument}.
+     *
+     * This is a specialized one-parameter implementation of
+     * {@link #toParameters(ParameterizeWireKey, Object...)} which
+     * avoids creation of an array and lambda.
+     *
+     * @param eventId to used
+     * @param arg single argument
+     * @param <E> Event it type
+     * @return a WriteValue for the provided {@code eventId} and
+     *         provided {@code argument}.
+     */
+    protected <E extends ParameterizeWireKey> WriteValue toParameters(
+            @NotNull final E eventId,
+            @Nullable final Object arg) {
+        final OneParameterWriteValue oneParameterWriteValue = oneParameterWriteValueTL.get();
+        oneParameterWriteValue.arg(arg);
+        return oneParameterWriteValue;
+    }
+
+    protected <E extends ParameterizeWireKey> WriteValue toParameters(
+            @NotNull final E eventId,
+            @Nullable final Object... args) {
+
+        // In order to reduce the number of dynamically created lambdas,
+        // we are first capturing potential static lambdas
+        if (args == null || args.length == 0) {
+            // Do nothing
+            return NOOP;
+        }
+        if (args.length == 1) {
+            return toParameters(eventId, args[0]);
+        }
+        // Todo: Unwind this double dynamic lambda. See https://github.com/OpenHFT/Chronicle-Network/issues/59
         return out -> {
-            @NotNull final WireKey[] paramNames = eventId.params();
-
-            //args can be null, e.g. when get() is called from Reference.
-            if (args == null) return;
-
-            assert args.length == paramNames.length :
-                    "methodName=" + eventId +
-                            ", args.length=" + args.length +
-                            ", paramNames.length=" + paramNames.length;
-
-            if (paramNames.length == 1) {
-                out.object(args[0]);
-                return;
-            }
-
             out.marshallable(m -> {
+                @NotNull final WireKey[] paramNames = eventId.params();
                 for (int i = 0; i < paramNames.length; i++) {
                     @NotNull final ValueOut vo = m.write(paramNames[i]);
                     vo.object(args[i]);
@@ -90,6 +119,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         };
     }
 
+
     @Nullable
     protected <R> R proxyReturnWireTypedObject(
             @NotNull final E eventId,
@@ -97,12 +127,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
             @NotNull final Class<R> resultType,
             @NotNull Object... args) {
 
-        @Nullable Function<ValueIn, R> consumerIn = resultType == CharSequence.class && usingValue != null
-                ? f -> {
-            f.textTo((StringBuilder) usingValue);
-            return usingValue;
-        }
-                : f -> f.object(resultType);
+        final Function<ValueIn, R> consumerIn = consumerInFunction(usingValue, resultType);
         return proxyReturnWireConsumerInOut(eventId,
                 CoreFields.reply,
                 toParameters(eventId, args),
@@ -116,40 +141,74 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
             @NotNull final Class<R> resultType,
             @NotNull Object... args) {
 
-        @NotNull Function<ValueIn, R> consumerIn = resultType == CharSequence.class && usingValue != null
-                ? f -> {
-            f.textTo((StringBuilder) usingValue);
-            return usingValue;
-        }
-                : f -> f.object(resultType);
+        final Function<ValueIn, R> consumerIn = consumerInFunction(usingValue, resultType);
         return proxyReturnWireConsumerInOut(eventId,
                 CoreFields.reply,
                 toParameters(eventId, args),
                 consumerIn);
     }
 
+    // Specialized version with zero parameters. This creates less arrays and lambdas
+    // compared to the vararg version.
+
+    @Nullable
+    protected <R> R proxyReturnTypedObject(
+            @NotNull final E eventId,
+            @Nullable final R usingValue,
+            @NotNull final Class<R> resultType) {
+
+        final Function<ValueIn, R> consumerIn = consumerInFunction(usingValue, resultType);
+        return proxyReturnWireConsumerInOut(eventId,
+                CoreFields.reply,
+                NOOP,
+                consumerIn);
+    }
+
+    // Specialized version with only one parameter. This creates less arrays and lambdas
+    // compared to the vararg version.
     @Nullable
     protected <R> R proxyReturnTypedObject(
             @NotNull final E eventId,
             @Nullable R usingValue,
-            @NotNull final Class<R> resultType) {
+            @NotNull final Class<R> resultType,
+            @NotNull Object arg) {
 
-        @NotNull Function<ValueIn, R> consumerIn =
-                resultType == CharSequence.class && usingValue != null ? f -> {
-                    f.textTo((StringBuilder) usingValue);
-                    return usingValue;
-                }
-                        : f -> f.object(resultType);
+        final Function<ValueIn, R> consumerIn = consumerInFunction(usingValue, resultType);
         return proxyReturnWireConsumerInOut(eventId,
                 CoreFields.reply,
-                x -> {
-                },
+                toParameters(eventId, arg),
                 consumerIn);
     }
 
+    @NotNull
+    private <R> Function<ValueIn, R> consumerInFunction(@Nullable final R usingValue, @NotNull final Class<R> resultType) {
+
+        // Suspicious code. see https://github.com/OpenHFT/Chronicle-Network/issues/58
+        if (resultType == CharSequence.class && usingValue != null)
+            return f -> {
+                f.textTo((StringBuilder) usingValue);
+                return usingValue;
+            };
+
+        if (usingValue == null) {
+            // Avoid having to create the same lambda over and over again.
+            @SuppressWarnings("unchecked")
+            final Function<ValueIn, R> consumerInFunction = (Function<ValueIn, R>) consumerInFunctionMap.computeIfAbsent(resultType, c -> (f -> f.object(c)));
+            return consumerInFunction;
+        } else {
+            // use a per-class ThreadLocal to avoid lambda creation.
+            @SuppressWarnings("unchecked")
+            final ConsumerInUsingFunction<R> consumerInUsingFunctionThreadLocal =
+                    (ConsumerInUsingFunction<R>) consumerInFunctionUsingTL.get();
+            consumerInUsingFunctionThreadLocal.using(usingValue);
+            consumerInUsingFunctionThreadLocal.resultType(resultType);
+            return consumerInUsingFunctionThreadLocal;
+        }
+    }
+
     /**
-     * this method will re attempt a number of times until successful,if connection is dropped to
-     * the  remote server the TcpChannelHub may ( if configured )  automatically failover to another
+     * this method will re attempt a number of times until successful, if connection is dropped to
+     * the  remote server the TcpChannelHub may ( if configured )  automatically fail-over to another
      * host.
      *
      * @param s   the supply
@@ -510,4 +569,40 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
     public void close() {
         hub.close();
     }
+
+    private static final class OneParameterWriteValue implements WriteValue {
+
+        private Object arg;
+
+        @Override
+        public void writeValue(@NotNull final ValueOut out) {
+            // There is just one parameter so we do not have to
+            // write out the parameter name
+            out.object(arg);
+        }
+
+        private void arg(Object arg) {
+            this.arg = arg;
+        }
+    }
+
+    private static final class ConsumerInUsingFunction<R> implements Function<ValueIn, R> {
+
+        private Class<?> resultType;
+        private R using;
+
+        private void using(R using) {
+            this.using = using;
+        }
+
+        private void resultType(Class<?> resultType) {
+            this.resultType = resultType;
+        }
+
+        @Override
+        public R apply(ValueIn valueIn) {
+            return valueIn.object(using, resultType);
+        }
+    }
+
 }
