@@ -82,20 +82,19 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
      *
      * @param eventId to used
      * @param arg single argument
-     * @param <P> Event it type
      * @return a WriteValue for the provided {@code eventId} and
      *         provided {@code argument}.
      */
-    protected <P extends ParameterizeWireKey> WriteValue toParameters(
-            @NotNull final P eventId,
+    protected  WriteValue toParameters(
+            @NotNull final E eventId,
             @Nullable final Object arg) {
         final OneParameterWriteValue oneParameterWriteValue = oneParameterWriteValueTL.get();
         oneParameterWriteValue.arg(arg);
         return oneParameterWriteValue;
     }
 
-    protected <P extends ParameterizeWireKey> WriteValue toParameters(
-            @NotNull final P eventId,
+    protected  WriteValue toParameters(
+            @NotNull final E eventId,
             @Nullable final Object... args) {
 
         // In order to reduce the number of dynamically created lambdas,
