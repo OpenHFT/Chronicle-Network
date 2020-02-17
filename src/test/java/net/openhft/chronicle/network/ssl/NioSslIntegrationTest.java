@@ -38,7 +38,6 @@ public final class NioSslIntegrationTest {
         System.clearProperty("jdk.tls.server.protocols");
     }
 
-    @Ignore("issues with ssl cert")
     @Test
     public void shouldEncryptAndDecryptTraffic() throws Exception {
         final ExecutorService threadPool = Executors.newFixedThreadPool(2);
