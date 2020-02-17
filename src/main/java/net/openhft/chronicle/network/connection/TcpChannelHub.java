@@ -16,9 +16,6 @@
 
 package net.openhft.chronicle.network.connection;
 
-import com.koloboke.collect.map.LongObjMap;
-import com.koloboke.collect.map.hash.HashLongObjMapFactory;
-import com.koloboke.collect.map.hash.HashLongObjMaps;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.bytes.BytesUtil;
 import net.openhft.chronicle.bytes.ConnectionDroppedException;
@@ -1045,8 +1042,6 @@ public final class TcpChannelHub implements Closeable {
         private volatile boolean prepareToShutdown;
         private Thread readThread;
 
-        private final ReadMarshallable tidReader = w -> this.tid = CoreFields.tid(w);
-
         TcpSocketConsumer() {
             if (LOG.isDebugEnabled())
                 Jvm.debug().on(getClass(), "constructor remoteAddress=" + socketAddressSupplier);
@@ -1326,7 +1321,7 @@ public final class TcpChannelHub implements Closeable {
                             logToStandardOutMessageReceived(inWire);
                             // ensure the tid is reset
                             this.tid = -1;
-                            inWire.readDocument(tidReader, null);
+                            inWire.readDocument(this::tidReader, null);
 
 /*                            try (DocumentContext dc = inWire.readingDocument()) {
                                 this.tid = CoreFields.tid(dc.wire());
@@ -1856,6 +1851,10 @@ public final class TcpChannelHub implements Closeable {
                 Thread.currentThread().interrupt();
             }
             service.shutdown();
+        }
+
+        private void tidReader(WireIn w) {
+            this.tid = CoreFields.tid(w);
         }
     }
 }
