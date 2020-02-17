@@ -74,8 +74,16 @@ import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
  */
 public final class TcpChannelHub implements Closeable {
 
+    private static final boolean hasAssert;
+
+    static {
+        boolean x = false;
+        assert (x = true) == true;
+        hasAssert = x;
+    }
+
     public static final int TCP_BUFFER = getTcpBufferSize();
-    public static final int SAFE_TCP_SIZE = TCP_BUFFER * 3 / 4;
+    static final int SAFE_TCP_SIZE = TCP_BUFFER * 3 / 4;
     private static final int HEATBEAT_PING_PERIOD =
             getInteger("heartbeat.ping.period",
                     Jvm.isDebug() ? 30_000 : 5_000);
@@ -1022,7 +1030,8 @@ public final class TcpChannelHub implements Closeable {
     private final class TcpSocketConsumer implements EventHandler {
         @NotNull
         private final PrimitiveLongObjMap<Object> map = PrimitiveLongObjMap.withExpectedSize(32);
-        private final PrimitiveLongObjMap<Object> omap = PrimitiveLongObjMap.withExpectedSize(32);
+
+        private final PrimitiveLongObjMap<Object> omap = hasAssert ? PrimitiveLongObjMap.withExpectedSize(32) : null;
         @NotNull
         private final ExecutorService service;
         @NotNull
@@ -1428,16 +1437,25 @@ public final class TcpChannelHub implements Closeable {
                     // we only remove the subscription so they are AsyncTemporarySubscription, as the AsyncSubscription
                     // can not be remove from the map as they are required when you resubscribe when we loose connectivity
                     if (o == null) {
-                        o = omap.get(tid);
-                        if (o != null) {
-                            blockingRead(inWire, messageSize);
+                        if (hasAssert) {
+                            o = omap.get(tid);
+                            if (o != null) {
+                                blockingRead(inWire, messageSize);
 
-                            logToStandardOutMessageReceivedInERROR(inWire);
-                            throw new AssertionError("Found tid=" + tid + " in the old map.");
+                                logToStandardOutMessageReceivedInERROR(inWire);
+                                throw new AssertionError("Found tid=" + tid + " in the old map.");
+                            }
                         }
                     } else {
+
                         if (isReady && (o instanceof Bytes || o instanceof AsyncTemporarySubscription)) {
-                            omap.justPut(tid, map.remove(tid));
+
+                            if (hasAssert) {
+                                omap.justPut(tid, map.remove(tid));
+                            } else {
+                                map.remove(tid);
+                            }
+
                             isLastMessageForThisTid = true;
                         }
                         break;
@@ -1485,7 +1503,8 @@ public final class TcpChannelHub implements Closeable {
                 } catch (Exception e) {
                     if (LOG.isDebugEnabled())
                         Jvm.debug().on(getClass(), "Removing " + tid + " " + o, e);
-                    omap.justRemove(tid);
+                    if (hasAssert)
+                        omap.justRemove(tid);
                 }
             }
 
@@ -1508,7 +1527,8 @@ public final class TcpChannelHub implements Closeable {
                     bytes.readLimit(byteBuffer.position());
                     bytes.notifyAll();
                 }
-                omap.justRemove(tid); // Todo: Verify this...
+                if (hasAssert)
+                    omap.justRemove(tid); // Todo: Verify this...
             }
             return isLastMessageForThisTid;
         }
@@ -1830,7 +1850,8 @@ public final class TcpChannelHub implements Closeable {
 
         private void keepSubscriptionsAndClearEverythingElse() {
             tid = 0;
-            omap.clear();
+            if (hasAssert)
+                omap.clear();
 
             final Set<Long> keys = new HashSet<>();
             map.forEach((k, v) -> keys.add(k));
