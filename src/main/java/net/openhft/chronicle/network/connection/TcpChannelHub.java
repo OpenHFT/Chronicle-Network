@@ -1032,7 +1032,9 @@ public final class TcpChannelHub implements Closeable {
      */
     private final class TcpSocketConsumer implements EventHandler {
         @NotNull
-        private final TLongObjectMap<Object> map = TCollections.synchronizedMap(new TLongObjectHashMap<>(16));
+        private final TLongObjectMap<Object> map;
+        //private final TLongObjectMap<Object> map = new TLongObjectHashMap<>(16);
+        //private final Map<Long, Object> map = new ConcurrentHashMap<>();
 
         private final TLongObjectMap<Object> omap = hasAssert ? TCollections.synchronizedMap(new TLongObjectHashMap<>(8)) : null;
         @NotNull
@@ -1060,6 +1062,11 @@ public final class TcpChannelHub implements Closeable {
 
             service = newCachedThreadPool(
                     new NamedThreadFactory("TcpChannelHub-Reads-" + socketAddressSupplier, true));
+
+            final TLongObjectHashMap<Object> longMap = new TLongObjectHashMap<>(32);
+            // Prevent excessive array creation upon removals
+            longMap.setAutoCompactionFactor(0);
+            map = TCollections.synchronizedMap(longMap);
             start();
         }
 
@@ -1858,10 +1865,11 @@ public final class TcpChannelHub implements Closeable {
             if (hasAssert)
                 omap.clear();
 
+
             // Make sure we are alone
             synchronized (map) {
                 final Set<Long> keys = new HashSet<>();
-                map.forEachKey(keys::add);
+                map.keySet().forEach(keys::add);
 
                 keys.forEach(k -> {
                     final Object o = map.get(k);
