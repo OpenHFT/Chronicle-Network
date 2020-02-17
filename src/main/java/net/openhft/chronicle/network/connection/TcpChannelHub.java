@@ -16,6 +16,7 @@
 
 package net.openhft.chronicle.network.connection;
 
+import gnu.trove.map.hash.TLongObjectHashMap;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.bytes.BytesUtil;
 import net.openhft.chronicle.bytes.ConnectionDroppedException;
@@ -78,7 +79,7 @@ public final class TcpChannelHub implements Closeable {
 
     static {
         boolean x = false;
-        assert (x = true) == true;
+        assert x = true;
         hasAssert = x;
     }
 
@@ -1029,9 +1030,9 @@ public final class TcpChannelHub implements Closeable {
      */
     private final class TcpSocketConsumer implements EventHandler {
         @NotNull
-        private final PrimitiveLongObjMap<Object> map = PrimitiveLongObjMap.withExpectedSize(32);
+        private final TLongObjectHashMap<Object> map = new TLongObjectHashMap<>(16);
 
-        private final PrimitiveLongObjMap<Object> omap = hasAssert ? PrimitiveLongObjMap.withExpectedSize(32) : null;
+        private final TLongObjectHashMap<Object> omap = hasAssert ? new TLongObjectHashMap<>(8) : null;
         @NotNull
         private final ExecutorService service;
         @NotNull
@@ -1068,18 +1069,19 @@ public final class TcpChannelHub implements Closeable {
         private void onReconnect() {
 
             preventSubscribeUponReconnect.forEach(this::unsubscribe);
-            map.values().forEach(v -> {
+            map.forEachValue(v -> {
                 if (v instanceof AsyncSubscription) {
                     if (!(v instanceof AsyncTemporarySubscription))
                         ((AsyncSubscription) v).applySubscribe();
                 }
+                return true;
             });
 
         }
 
         @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
         void onConnectionClosed() {
-            map.values().forEach(v -> {
+            map.forEachValue(v -> {
                 if (v instanceof Bytes)
                     synchronized (v) {
                         v.notifyAll();
@@ -1091,6 +1093,7 @@ public final class TcpChannelHub implements Closeable {
                         v.notifyAll();
                     }
                 }
+                return true;
             });
         }
 
@@ -1226,7 +1229,7 @@ public final class TcpChannelHub implements Closeable {
          * @param tid the unique identifier for the subscription
          */
         public void unsubscribe(long tid) {
-            map.justRemove(tid);
+            map.remove(tid);
         }
 
         /**
@@ -1451,7 +1454,7 @@ public final class TcpChannelHub implements Closeable {
                         if (isReady && (o instanceof Bytes || o instanceof AsyncTemporarySubscription)) {
 
                             if (hasAssert) {
-                                omap.justPut(tid, map.remove(tid));
+                                omap.put(tid, map.remove(tid));
                             } else {
                                 map.remove(tid);
                             }
@@ -1504,7 +1507,7 @@ public final class TcpChannelHub implements Closeable {
                     if (LOG.isDebugEnabled())
                         Jvm.debug().on(getClass(), "Removing " + tid + " " + o, e);
                     if (hasAssert)
-                        omap.justRemove(tid);
+                        omap.remove(tid);
                 }
             }
 
@@ -1528,7 +1531,7 @@ public final class TcpChannelHub implements Closeable {
                     bytes.notifyAll();
                 }
                 if (hasAssert)
-                    omap.justRemove(tid); // Todo: Verify this...
+                    omap.remove(tid);
             }
             return isLastMessageForThisTid;
         }
@@ -1854,12 +1857,12 @@ public final class TcpChannelHub implements Closeable {
                 omap.clear();
 
             final Set<Long> keys = new HashSet<>();
-            map.forEach((k, v) -> keys.add(k));
+            map.forEachKey(keys::add);
 
             keys.forEach(k -> {
                 final Object o = map.get(k);
                 if (o instanceof Bytes || o instanceof AsyncTemporarySubscription)
-                    map.justRemove(k);
+                    map.remove(k);
             });
         }
 

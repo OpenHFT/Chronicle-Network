@@ -75,20 +75,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.koloboke</groupId>
-            <artifactId>koloboke-api-jdk8</artifactId>
+            <groupId>net.sf.trove4j</groupId>
+            <artifactId>trove4j</artifactId>
         </dependency>
-
-        <dependency>
-            <groupId>com.koloboke</groupId>
-            <artifactId>koloboke-impl-common-jdk8</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.koloboke</groupId>
-            <artifactId>koloboke-compile</artifactId>
-        </dependency>
-
 
         <!-- test dependencies -->
 
