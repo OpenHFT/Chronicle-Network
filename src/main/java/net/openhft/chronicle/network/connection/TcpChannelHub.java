@@ -16,6 +16,8 @@
 
 package net.openhft.chronicle.network.connection;
 
+import gnu.trove.TCollections;
+import gnu.trove.map.TLongObjectMap;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.bytes.BytesUtil;
@@ -1030,9 +1032,9 @@ public final class TcpChannelHub implements Closeable {
      */
     private final class TcpSocketConsumer implements EventHandler {
         @NotNull
-        private final TLongObjectHashMap<Object> map = new TLongObjectHashMap<>(16);
+        private final TLongObjectMap<Object> map = TCollections.synchronizedMap(new TLongObjectHashMap<>(16));
 
-        private final TLongObjectHashMap<Object> omap = hasAssert ? new TLongObjectHashMap<>(8) : null;
+        private final TLongObjectMap<Object> omap = hasAssert ? TCollections.synchronizedMap(new TLongObjectHashMap<>(8)) : null;
         @NotNull
         private final ExecutorService service;
         @NotNull
@@ -1856,14 +1858,17 @@ public final class TcpChannelHub implements Closeable {
             if (hasAssert)
                 omap.clear();
 
-            final Set<Long> keys = new HashSet<>();
-            map.forEachKey(keys::add);
+            // Make sure we are alone
+            synchronized (map) {
+                final Set<Long> keys = new HashSet<>();
+                map.forEachKey(keys::add);
 
-            keys.forEach(k -> {
-                final Object o = map.get(k);
-                if (o instanceof Bytes || o instanceof AsyncTemporarySubscription)
-                    map.remove(k);
-            });
+                keys.forEach(k -> {
+                    final Object o = map.get(k);
+                    if (o instanceof Bytes || o instanceof AsyncTemporarySubscription)
+                        map.remove(k);
+                });
+            }
         }
 
         void prepareToShutdown() {
