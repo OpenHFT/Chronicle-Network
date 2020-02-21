@@ -495,7 +495,8 @@ public final class TcpChannelHub implements Closeable {
             @NotNull final TcpSocketConsumer tcpSocketConsumer = this.tcpSocketConsumer;
 
             tcpSocketConsumer.tid = 0;
-            tcpSocketConsumer.omap.clear();
+            if (hasAssert)
+                tcpSocketConsumer.omap.clear();
 
             onDisconnected();
 
