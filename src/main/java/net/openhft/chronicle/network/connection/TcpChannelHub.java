@@ -192,10 +192,10 @@ public final class TcpChannelHub implements Closeable {
         this.tcpSocketConsumer = new TcpSocketConsumer();
     }
     private static int getTcpBufferSize() {
-        String sizeStr = System.getProperty("TcpEventHandler.tcpBufferSize");
+        final String sizeStr = System.getProperty("TcpEventHandler.tcpBufferSize");
         if (sizeStr != null && !sizeStr.isEmpty())
             try {
-                int size = Integer.parseInt(sizeStr);
+                final int size = Integer.parseInt(sizeStr);
                 if (size >= 64 << 10)
                     return size;
             } catch (Exception e) {
@@ -206,7 +206,7 @@ public final class TcpChannelHub implements Closeable {
                 try (Socket s = new Socket("localhost", ss.getLocalPort())) {
                     s.setReceiveBufferSize(4 << 20);
                     s.setSendBufferSize(4 << 20);
-                    int size = Math.min(s.getReceiveBufferSize(), s.getSendBufferSize());
+                    final int size = Math.min(s.getReceiveBufferSize(), s.getSendBufferSize());
                     (size >= 128 << 10 ? Jvm.debug() : Jvm.warn())
                             .on(TcpChannelHub.class, "tcpBufferSize = " + size / 1024.0 + " KiB");
                     return size;
@@ -218,8 +218,8 @@ public final class TcpChannelHub implements Closeable {
     }
 
     public static void assertAllHubsClosed() {
-        @NotNull StringBuilder errors = new StringBuilder();
-        for (@NotNull TcpChannelHub h : hubs) {
+        final StringBuilder errors = new StringBuilder();
+        for (@NotNull final TcpChannelHub h : hubs) {
             if (!h.isClosed())
                 errors.append("Connection ").append(h).append(" still open\n");
             h.close();
@@ -231,7 +231,7 @@ public final class TcpChannelHub implements Closeable {
 
     public static void closeAllHubs() {
         @NotNull final TcpChannelHub[] hubsArr = hubs.toArray(new TcpChannelHub[hubs.size()]);
-        for (@NotNull TcpChannelHub hub : hubsArr) {
+        for (@NotNull final TcpChannelHub hub : hubsArr) {
             if (hub.isClosed())
                 continue;
 
@@ -242,7 +242,7 @@ public final class TcpChannelHub implements Closeable {
         hubs.clear();
     }
 
-    private static void logToStandardOutMessageReceived(@NotNull Wire wire) {
+    private static void logToStandardOutMessageReceived(@NotNull final Wire wire) {
         @NotNull final Bytes<?> bytes = wire.bytes();
 
         if (!YamlLogging.showClientReads())
@@ -270,7 +270,7 @@ public final class TcpChannelHub implements Closeable {
         }
     }
 
-    private static void logToStandardOutMessageReceivedInERROR(@NotNull Wire wire) {
+    private static void logToStandardOutMessageReceivedInERROR(@NotNull final Wire wire) {
         @NotNull final Bytes<?> bytes = wire.bytes();
 
         final long position = bytes.writePosition();
@@ -295,7 +295,7 @@ public final class TcpChannelHub implements Closeable {
         }
     }
 
-    private static boolean checkWritesOnReadThread(@NotNull TcpSocketConsumer tcpSocketConsumer) {
+    private static boolean checkWritesOnReadThread(@NotNull final TcpSocketConsumer tcpSocketConsumer) {
         assert Thread.currentThread() != tcpSocketConsumer.readThread : "if writes" +
                 " and reads are on the same thread this can lead " +
                 "to deadlocks with the server, if the server buffer becomes full";
@@ -312,7 +312,7 @@ public final class TcpChannelHub implements Closeable {
     }
 
     @Nullable
-    SocketChannel openSocketChannel(InetSocketAddress socketAddress) throws IOException {
+    SocketChannel openSocketChannel(final InetSocketAddress socketAddress) throws IOException {
         final SocketChannel result = SocketChannel.open();
         @Nullable Selector selector = null;
         boolean failed = true;
@@ -361,7 +361,7 @@ public final class TcpChannelHub implements Closeable {
      *
      * @param tid unique transaction id
      */
-    public void preventSubscribeUponReconnect(long tid) {
+    public void preventSubscribeUponReconnect(final long tid) {
         preventSubscribeUponReconnect.add(tid);
     }
 
@@ -409,7 +409,7 @@ public final class TcpChannelHub implements Closeable {
         subscribe(asyncSubscription, false);
     }
 
-    private void subscribe(@NotNull final AsyncSubscription asyncSubscription, boolean tryLock) {
+    private void subscribe(@NotNull final AsyncSubscription asyncSubscription, final boolean tryLock) {
         tcpSocketConsumer.subscribe(asyncSubscription, tryLock);
     }
 
@@ -428,7 +428,7 @@ public final class TcpChannelHub implements Closeable {
         return outBytesLock;
     }
 
-    void doHandShaking(@NotNull SocketChannel socketChannel) throws IOException {
+    void doHandShaking(@NotNull final SocketChannel socketChannel) throws IOException {
 
         assert outBytesLock.isHeldByCurrentThread();
         @Nullable final SessionDetails sessionDetails = sessionDetails();
@@ -455,8 +455,6 @@ public final class TcpChannelHub implements Closeable {
 
     @Nullable
     private SessionDetails sessionDetails() {
-        if (sessionProvider == null)
-            return null;
         return sessionProvider.get();
     }
 
@@ -602,7 +600,7 @@ public final class TcpChannelHub implements Closeable {
      * @param timeMs in milliseconds
      * @return a unique transactionId
      */
-    public long nextUniqueTransaction(long timeMs) {
+    public long nextUniqueTransaction(final long timeMs) {
         long id = timeMs;
         for (; ; ) {
             long old = transactionID.get();
@@ -676,7 +674,7 @@ public final class TcpChannelHub implements Closeable {
      * @param tid         the {@code tid} of the message that we are waiting for
      * @return the wire of the message with the {@code tid}
      */
-    public Wire proxyReply(long timeoutTime, final long tid) throws ConnectionDroppedException, TimeoutException {
+    public Wire proxyReply(final long timeoutTime, final long tid) throws ConnectionDroppedException, TimeoutException {
 
         try {
             return tcpSocketConsumer.syncBlockingReadSocket(timeoutTime, tid);
@@ -696,9 +694,9 @@ public final class TcpChannelHub implements Closeable {
      * writes the bytes to the socket, onto the clientChannel provided
      *
      * @param outWire the data that you wish to write
+     * @throws IOException if the channel cannot be closed
      */
-    private void writeSocket1(@NotNull WireOut outWire, @Nullable SocketChannel clientChannel) throws
-            IOException {
+    private void writeSocket1(@NotNull final WireOut outWire, @Nullable final SocketChannel clientChannel) throws IOException {
 
         if (LOG.isDebugEnabled())
             Jvm.debug().on(getClass(), "sending :" + Wires.fromSizePrefixedBlobs((Wire) outWire));
@@ -805,7 +803,7 @@ public final class TcpChannelHub implements Closeable {
         }
     }
 
-    private void logToStandardOutMessageSent(@NotNull WireOut wire, @NotNull ByteBuffer outBuffer) {
+    private void logToStandardOutMessageSent(@NotNull final WireOut wire, @NotNull final ByteBuffer outBuffer) {
         if (!YamlLogging.showClientWrites())
             return;
 
@@ -835,7 +833,7 @@ public final class TcpChannelHub implements Closeable {
      *
      * @param outBuffer the outbound buffer
      */
-    private void updateLargestChunkSoFarSize(@NotNull ByteBuffer outBuffer) {
+    private void updateLargestChunkSoFarSize(@NotNull final ByteBuffer outBuffer) {
         int sizeOfThisChunk = (int) (outBuffer.limit() - limitOfLast);
         if (largestChunkSoFar < sizeOfThisChunk)
             largestChunkSoFar = sizeOfThisChunk;
@@ -852,7 +850,7 @@ public final class TcpChannelHub implements Closeable {
         return outBytesLock.isLocked();
     }
 
-    private void reflectServerHeartbeatMessage(@NotNull ValueIn valueIn) {
+    private void reflectServerHeartbeatMessage(@NotNull final ValueIn valueIn) {
 
         if (!outBytesLock().tryLock()) {
             if (Jvm.isDebug() && LOG.isDebugEnabled())
@@ -911,7 +909,9 @@ public final class TcpChannelHub implements Closeable {
      * @param csp  provide either the csp or the cid
      * @param cid  provide either the csp or the cid
      */
-    public void writeAsyncHeader(@NotNull Wire wire, String csp, long cid) {
+    public void writeAsyncHeader(@NotNull final Wire wire,
+                                 final String csp,
+                                 final long cid) {
         assert outBytesLock().isHeldByCurrentThread();
 
         wire.writeDocument(true, wireOut -> {
@@ -922,15 +922,17 @@ public final class TcpChannelHub implements Closeable {
         });
     }
 
-    public boolean lock(@NotNull Task r) {
+    public boolean lock(@NotNull final Task r) {
         return lock(r, TryLock.LOCK);
     }
 
-    private boolean lock(@NotNull Task r, @NotNull TryLock tryLock) {
+    private boolean lock(@NotNull final Task r, @NotNull final TryLock tryLock) {
         return lock2(r, false, tryLock);
     }
 
-    public boolean lock2(@NotNull Task r, boolean reconnectOnFailure, @NotNull TryLock tryLock) {
+    public boolean lock2(@NotNull final Task r,
+                         final boolean reconnectOnFailure,
+                         @NotNull final TryLock tryLock) {
         assert !outBytesLock.isHeldByCurrentThread();
         try {
             if (clientChannel == null && !reconnectOnFailure)
@@ -1508,7 +1510,7 @@ public final class TcpChannelHub implements Closeable {
 
                 blockingRead(inWire, messageSize);
                 logToStandardOutMessageReceived(inWire);
-                @NotNull AsyncSubscription asyncSubscription = (AsyncSubscription) o;
+                @NotNull final AsyncSubscription asyncSubscription = (AsyncSubscription) o;
 
                 try {
                     asyncSubscription.onConsumer(inWire);
@@ -1551,10 +1553,9 @@ public final class TcpChannelHub implements Closeable {
          *
          * @param header      a value representing the type of message
          * @param messageSize the size of the message
-         * @throws IOException
+         * @throws IOException if a buffer cannot be read
          */
-        private void processServerSystemMessage(final int header, final int messageSize)
-                throws IOException {
+        private void processServerSystemMessage(final int header, final int messageSize) throws IOException {
 
             serverHeartBeatHandler.clear();
             final Bytes bytes = serverHeartBeatHandler;
@@ -1594,8 +1595,7 @@ public final class TcpChannelHub implements Closeable {
          * @param numberOfBytes the size of the data to read
          * @throws IOException if anything bad happens to the socket connection
          */
-        private void blockingRead(@NotNull final WireIn wire, final long numberOfBytes)
-                throws IOException {
+        private void blockingRead(@NotNull final WireIn wire, final long numberOfBytes) throws IOException {
 
             @NotNull final Bytes<?> bytes = wire.bytes();
             bytes.ensureCapacity(bytes.writePosition() + numberOfBytes);
@@ -1751,7 +1751,7 @@ public final class TcpChannelHub implements Closeable {
          * gets called periodically to monitor the heartbeat
          *
          * @return true, if processing was performed
-         * @throws InvalidEventHandlerException
+         * @throws InvalidEventHandlerException if the clientChannel is invalid
          */
         @Override
         public boolean action() throws InvalidEventHandlerException {
@@ -1761,9 +1761,9 @@ public final class TcpChannelHub implements Closeable {
 
             // a heartbeat only gets sent out if we have not received any data in the last
             // HEATBEAT_PING_PERIOD milliseconds
-            long currentTime = Time.currentTimeMillis();
-            long millisecondsSinceLastMessageReceived = currentTime - lastTimeMessageReceivedOrSent;
-            long millisecondsSinceLastHeatbeatSend = currentTime - lastheartbeatSentTime;
+            final long currentTime = Time.currentTimeMillis();
+            final long millisecondsSinceLastMessageReceived = currentTime - lastTimeMessageReceivedOrSent;
+            final  long millisecondsSinceLastHeatbeatSend = currentTime - lastheartbeatSentTime;
 
             if (millisecondsSinceLastMessageReceived >= HEATBEAT_PING_PERIOD &&
                     millisecondsSinceLastHeatbeatSend >= HEATBEAT_PING_PERIOD) {
@@ -1865,7 +1865,6 @@ public final class TcpChannelHub implements Closeable {
             tid = 0;
             if (hasAssert)
                 omap.clear();
-
 
             // Make sure we are alone
             synchronized (map) {
