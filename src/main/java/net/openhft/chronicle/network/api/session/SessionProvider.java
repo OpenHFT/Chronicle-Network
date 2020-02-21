@@ -20,7 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A holder for the Session speicifc details i.e. for a remote client.
+ * A holder for the Session specific details i.e. for a remote client.
  */
 public interface SessionProvider {
     /**
@@ -37,7 +37,7 @@ public interface SessionProvider {
     void set(@NotNull SessionDetails sessionDetails);
 
     /**
-     * There is no longer any valid session detaisl and get() will return null.
+     * There is no longer any valid session details and get() will return null.
      */
     void remove();
 }
