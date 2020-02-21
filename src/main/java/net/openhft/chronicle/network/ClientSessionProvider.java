@@ -20,11 +20,14 @@ import net.openhft.chronicle.network.api.session.SessionDetails;
 import net.openhft.chronicle.network.api.session.SessionProvider;
 import org.jetbrains.annotations.NotNull;
 
-public class ClientSessionProvider implements SessionProvider {
+/**
+ * An immutable implementation of a SessionProvider
+ */
+public final class ClientSessionProvider implements SessionProvider {
     @NotNull
-    private SessionDetails sessionDetails;
+    private final SessionDetails sessionDetails;
 
-    public ClientSessionProvider(@NotNull SessionDetails sessionDetails) {
+    public ClientSessionProvider(@NotNull final SessionDetails sessionDetails) {
         this.sessionDetails = sessionDetails;
     }
 
@@ -34,7 +37,7 @@ public class ClientSessionProvider implements SessionProvider {
     }
 
     @Override
-    public void set(@NotNull SessionDetails sessionDetails) {
+    public void set(@NotNull final SessionDetails sessionDetails) {
         throw new UnsupportedOperationException();
     }
 
