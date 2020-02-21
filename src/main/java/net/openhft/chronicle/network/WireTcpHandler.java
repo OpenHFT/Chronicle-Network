@@ -95,18 +95,18 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
         return publisher;
     }
 
-    public void publisher(@NotNull WireOutPublisher publisher) {
+    public void publisher(@NotNull final WireOutPublisher publisher) {
         this.publisher = publisher;
         if (wireType() != null)
             publisher.wireType(wireType());
     }
 
-    public void isAcceptor(boolean isAcceptor) {
+    public void isAcceptor(final boolean isAcceptor) {
         this.isAcceptor = isAcceptor;
     }
 
     @Override
-    public void process(@NotNull Bytes in, @NotNull Bytes out, T nc) {
+    public void process(@NotNull final Bytes in, @NotNull final Bytes out, final T nc) {
 
         if (closed)
             return;
@@ -130,7 +130,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
 
         bytesReadCount += (in.readRemaining() - lastReadRemaining);
 
-        long now = System.currentTimeMillis();
+        final long now = System.currentTimeMillis();
         if (now > lastMonitor + 10000) {
             final NetworkStatsListener<T> networkStatsListener = this.nc.networkStatsListener();
 
@@ -160,12 +160,10 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
 
     }
 
-    protected void onBytesWritten() {
-
-    }
+    protected void onBytesWritten() {}
 
     @Override
-    public void onEndOfConnection(boolean heartbeatTimeOut) {
+    public void onEndOfConnection(final boolean heartbeatTimeOut) {
         final NetworkStatsListener<T> networkStatsListener = this.nc.networkStatsListener();
 
         if (networkStatsListener != null)
@@ -175,9 +173,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
             publisher.close();
     }
 
-    protected void onWrite(@NotNull WireOut out) {
-
-    }
+    protected void onWrite(@NotNull final WireOut out) {}
 
     /**
      * process all messages in this batch, provided there is plenty of output space.
@@ -222,7 +218,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
         }
     }
 
-    private void resizeInWire(long size) {
+    private void resizeInWire(final long size) {
         @NotNull final Bytes<?> bytes = inWire.bytes();
         if (size > bytes.realCapacity()) {
             if (Jvm.isDebugEnabled(getClass()))
@@ -231,7 +227,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
         }
     }
 
-    protected void checkWires(Bytes<?> in, Bytes<?> out, @NotNull WireType wireType) {
+    protected void checkWires(final Bytes<?> in, Bytes<?> out, @NotNull final WireType wireType) {
         if (recreateWire) {
             recreateWire = false;
             initialiseInWire(wireType, in);
@@ -263,11 +259,11 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
         }
     }
 
-    protected Wire initialiseOutWire(Bytes<?> out, @NotNull WireType wireType) {
+    protected Wire initialiseOutWire(final Bytes<?> out, @NotNull final WireType wireType) {
         return outWire = wireType.apply(out);
     }
 
-    protected Wire initialiseInWire(@NotNull WireType wireType, Bytes<?> in) {
+    protected Wire initialiseInWire(@NotNull final WireType wireType, final Bytes<?> in) {
         return inWire = wireType.apply(in);
     }
 
@@ -288,7 +284,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
     /**
      * write and exceptions and rolls back if no data was written
      */
-    protected void writeData(@NotNull Bytes<?> inBytes, @NotNull WriteMarshallable c) {
+    protected void writeData(@NotNull final Bytes<?> inBytes, @NotNull final WriteMarshallable c) {
         outWire.writeDocument(false, out -> {
             final long readPosition = inBytes.readPosition();
             final long position = outWire.bytes().writePosition();
@@ -315,7 +311,9 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
     /**
      * write and exceptions and rolls back if no data was written
      */
-    protected void writeData(boolean isNotComplete, @NotNull Bytes<?> inBytes, @NotNull WriteMarshallable c) {
+    protected void writeData(final boolean isNotComplete,
+                             @NotNull final Bytes<?> inBytes,
+                             @NotNull final WriteMarshallable c) {
 
         @NotNull final WriteMarshallable marshallable = out -> {
             final long readPosition = inBytes.readPosition();
@@ -346,7 +344,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
     }
 
     @Override
-    public final void nc(T nc) {
+    public final void nc(final T nc) {
         this.nc = nc;
         if (!closed)
             onInitialize();
@@ -365,7 +363,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
         Closeable.closeQuietly(nc);
     }
 
-    protected void publish(WriteMarshallable w) {
+    protected void publish(final WriteMarshallable w) {
         publisher.put("", w);
     }
 }
