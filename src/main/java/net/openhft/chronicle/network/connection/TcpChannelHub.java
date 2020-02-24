@@ -108,7 +108,7 @@ public final class TcpChannelHub implements Closeable {
     private final Condition condition = outBytesLock.newCondition();
     @NotNull
     private final AtomicLong transactionID = new AtomicLong(0);
-    @NotNull
+    @Nullable
     private final SessionProvider sessionProvider;
     @NotNull
     private final TcpSocketConsumer tcpSocketConsumer;
@@ -455,6 +455,8 @@ public final class TcpChannelHub implements Closeable {
 
     @Nullable
     private SessionDetails sessionDetails() {
+        if (sessionProvider == null)
+            return null;
         return sessionProvider.get();
     }
 
