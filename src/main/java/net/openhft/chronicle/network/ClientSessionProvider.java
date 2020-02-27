@@ -41,11 +41,6 @@ public final class ClientSessionProvider implements SessionProvider {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public void remove() {
-        throw new UnsupportedOperationException();
-    }
-
     @NotNull
     @Override
     public String toString() {

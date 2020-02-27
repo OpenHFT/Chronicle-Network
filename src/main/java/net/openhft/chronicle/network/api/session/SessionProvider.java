@@ -35,9 +35,4 @@ public interface SessionProvider {
      * @param sessionDetails to set to
      */
     void set(@NotNull SessionDetails sessionDetails);
-
-    /**
-     * There is no longer any valid session details and get() will return null.
-     */
-    void remove();
 }
