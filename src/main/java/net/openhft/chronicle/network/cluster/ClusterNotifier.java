@@ -45,7 +45,10 @@ class ClusterNotifier implements TerminationEventHandler, ConnectionChangedNotif
 
     public void connect() {
         bootstaps.forEach(hostConnector::bootstrap);
-        hostConnector.connect();
+        if (hostConnector.connectUri() == null || hostConnector.connectUri().isEmpty())
+            return;
+
+         hostConnector.connect();
     }
 
     @Override

@@ -124,6 +124,9 @@ public class HostConnector<T extends ClusteredNetworkContext<T>> implements Clos
         close();
         if (!nc.isAcceptor())
             HostConnector.this.connect();
+    }
 
+    public String connectUri() {
+        return connectUri;
     }
 }
