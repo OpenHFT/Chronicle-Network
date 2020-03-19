@@ -27,6 +27,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.nio.channels.AsynchronousCloseException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.function.Function;
@@ -98,7 +99,15 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> implements EventH
         } catch (AsynchronousCloseException e) {
             closeSocket();
             throw new InvalidEventHandlerException(e);
-        } catch (Exception e) {
+        } catch (ClosedChannelException e) {
+            Jvm.debug().on(this.getClass(), "ClosedChannel");
+            closeSocket();
+            if (closed)
+                throw new InvalidEventHandlerException();
+            else
+                throw new InvalidEventHandlerException(e);
+        } catch (
+                Exception e) {
 
             if (!closed && !eventLoop.isClosed()) {
                 ServerSocket socket = ssc.socket();
