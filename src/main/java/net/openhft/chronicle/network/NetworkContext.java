@@ -16,6 +16,7 @@
 
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.bytes.MappedUniqueMicroTimeProvider;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.TcpHandler;
@@ -74,7 +75,9 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
         return false;
     }
 
-    long newCid();
+    default long newCid() {
+        return MappedUniqueMicroTimeProvider.INSTANCE.currentTimeMicros();
+    }
 
     ServerThreadingStrategy serverThreadingStrategy();
 
