@@ -170,7 +170,7 @@ public class RemoteConnector<T extends NetworkContext<T>> implements Closeable {
                 nextPeriod.set(System.currentTimeMillis() + retryInterval);
                 return false;
             }
-            if (closed || eventLoop.isClosed())
+            if (closed || eventLoop.isClosed() || Thread.currentThread().isInterrupted())
                 // we have died.
                 Closeable.closeQuietly(eventHandler);
             else {
