@@ -150,23 +150,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> implement
         this.heartbeatListener = heartbeatListener;
     }
 
-    @Override
-    public long newCid() {
-
-        long time = System.nanoTime();
-
-        for (; ; ) {
-            long value = cid.get();
-            if (time <= value) {
-                time = value + 1;
-                continue;
-            }
-
-            if (cid.compareAndSet(value, time)) {
-                return time;
-            }
-        }
-    }
 
     @Override
     public void close() {
