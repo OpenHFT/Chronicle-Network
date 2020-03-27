@@ -22,20 +22,21 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static net.openhft.chronicle.network.HeaderTcpHandler.HANDLER;
 import static net.openhft.chronicle.network.cluster.TerminatorHandler.terminationHandler;
 
-public final class UberHandler<T extends ClusteredNetworkContext<T>> extends CspTcpHandler<T>
-        implements Demarshallable, WriteMarshallable {
+public final class UberHandler<T extends ClusteredNetworkContext<T>> extends CspTcpHandler<T> implements
+        Demarshallable,
+        WriteMarshallable {
 
     private final int remoteIdentifier;
     private final int localIdentifier;
     @NotNull
-    private AtomicBoolean isClosing = new AtomicBoolean();
+    private final AtomicBoolean isClosing = new AtomicBoolean();
     @Nullable
     private ConnectionChangedNotifier<T> connectionChangedNotifier;
     @NotNull
     private String clusterName;
 
     @UsedViaReflection
-    private UberHandler(@NotNull WireIn wire) {
+    private UberHandler(@NotNull final WireIn wire) {
         remoteIdentifier = wire.read(() -> "remoteIdentifier").int32();
         localIdentifier = wire.read(() -> "localIdentifier").int32();
         @Nullable final WireType wireType = wire.read(() -> "wireType").object(WireType.class);
@@ -43,10 +44,10 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         wireType(wireType);
     }
 
-    private UberHandler(int localIdentifier,
-                        int remoteIdentifier,
-                        @NotNull WireType wireType,
-                        @NotNull String clusterName) {
+    private UberHandler(final int localIdentifier,
+                        final int remoteIdentifier,
+                        @NotNull final WireType wireType,
+                        @NotNull final String clusterName) {
 
         this.localIdentifier = localIdentifier;
         this.remoteIdentifier = remoteIdentifier;
@@ -76,7 +77,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         };
     }
 
-    private static String peekContents(final @NotNull DocumentContext dc) {
+    private static String peekContents(@NotNull final DocumentContext dc) {
         try {
             return dc.wire().readingPeekYaml();
         } catch (RuntimeException e) {
@@ -94,7 +95,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     }
 
     @Override
-    public void writeMarshallable(@NotNull WireOut wire) {
+    public void writeMarshallable(@NotNull final WireOut wire) {
         wire.write(() -> "remoteIdentifier").int32(localIdentifier);
         wire.write(() -> "localIdentifier").int32(remoteIdentifier);
         final WireType value = wireType();
@@ -104,7 +105,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
 
     @Override
     protected void onInitialize() {
-        ClusteredNetworkContext<T> nc = nc();
+        final ClusteredNetworkContext<T> nc = nc();
         nc.wireType(wireType());
         isAcceptor(nc.isAcceptor());
 
@@ -122,7 +123,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
             return;
         }
 
-        @NotNull EventLoop eventLoop = nc.eventLoop();
+        @NotNull final EventLoop eventLoop = nc.eventLoop();
         if (!eventLoop.isClosed()) {
             eventLoop.start();
 
@@ -154,13 +155,13 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         return localIdentifier == nc().getLocalHostIdentifier() || 0 == nc().getLocalHostIdentifier();
     }
 
-    private void notifyConnectionListeners(@NotNull Cluster cluster) {
+    private void notifyConnectionListeners(@NotNull final Cluster cluster) {
         connectionChangedNotifier = cluster.findClusterNotifier(remoteIdentifier);
         if (connectionChangedNotifier != null)
             connectionChangedNotifier.onConnectionChanged(true, nc());
     }
 
-    private boolean checkConnectionStrategy(@NotNull Cluster cluster) {
+    private boolean checkConnectionStrategy(@NotNull final Cluster cluster) {
         final ConnectionStrategy strategy = cluster.findConnectionStrategy(remoteIdentifier);
         return strategy == null ||
                 strategy.notifyConnected(this, localIdentifier, remoteIdentifier);
@@ -182,7 +183,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
      */
     private void closeSoon() {
         isClosing.set(true);
-        @NotNull ScheduledExecutorService closer = newSingleThreadScheduledExecutor(new NamedThreadFactory("closer", true));
+        @NotNull final ScheduledExecutorService closer = newSingleThreadScheduledExecutor(new NamedThreadFactory("closer", true));
         closer.schedule(() -> {
             closer.shutdown();
             close();
@@ -203,19 +204,19 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     }
 
     @Override
-    protected void onRead(@NotNull DocumentContext dc, @NotNull WireOut outWire) {
+    protected void onRead(@NotNull final DocumentContext dc, @NotNull final WireOut outWire) {
         try {
             if (isClosing.get())
                 return;
 
             onMessageReceivedOrWritten();
 
-            Wire inWire = dc.wire();
+            final Wire inWire = dc.wire();
             if (dc.isMetaData()) {
                 if (!readMeta(inWire))
                     return;
 
-                SubHandler<T> handler = handler();
+                final SubHandler<T> handler = handler();
                 handler.remoteIdentifier(remoteIdentifier);
                 handler.localIdentifier(localIdentifier);
                 try {
@@ -230,7 +231,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                 return;
             }
 
-            SubHandler<T> handler = handler();
+            final SubHandler<T> handler = handler();
             if (handler != null && dc.isData() && !inWire.bytes().isEmpty())
                 try {
                     handler.onRead(inWire, outWire);
@@ -260,40 +261,35 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
      * @param outWire the wire that you wish to write
      */
     @Override
-    protected void onWrite(@NotNull WireOut outWire) {
-        WritableSubHandler<T> w;
+    protected void onWrite(@NotNull final WireOut outWire) {
         for (int i = 0; i < writers.size(); i++)
             try {
-                w = writers.get(i);
-                if (null == w)
-                    continue;
-
                 if (isClosing.get())
                     return;
-
-                w.onWrite(outWire);
+                final WritableSubHandler<T> w = writers.get(i);
+                if (w != null)
+                    w.onWrite(outWire);
             } catch (Exception e) {
                 Jvm.fatal().on(getClass(), e);
             }
     }
 
     private void onMessageReceivedOrWritten() {
-
         final HeartbeatEventHandler heartbeatEventHandler = heartbeatEventHandler();
-
         if (heartbeatEventHandler != null)
             heartbeatEventHandler.onMessageReceived();
     }
 
-    public static class Factory<T extends ClusteredNetworkContext<T>> implements BiFunction<ClusterContext<T>, HostDetails,
-            WriteMarshallable>, Demarshallable {
+    public static final class Factory<T extends ClusteredNetworkContext<T>> implements
+            BiFunction<ClusterContext<T>,
+            HostDetails,
+            WriteMarshallable>,
+            Demarshallable {
 
         @UsedViaReflection
-        private Factory(@NotNull WireIn wireIn) {
-        }
+        private Factory(@NotNull WireIn wireIn) {}
 
-        public Factory() {
-        }
+        public Factory() {}
 
         @NotNull
         public WriteMarshallable apply(@NotNull final ClusterContext<T> clusterContext,
