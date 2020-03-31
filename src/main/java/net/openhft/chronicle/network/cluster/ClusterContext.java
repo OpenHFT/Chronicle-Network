@@ -19,7 +19,10 @@ package net.openhft.chronicle.network.cluster;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.util.ThrowingFunction;
-import net.openhft.chronicle.network.*;
+import net.openhft.chronicle.network.NetworkStatsListener;
+import net.openhft.chronicle.network.RemoteConnector;
+import net.openhft.chronicle.network.ServerThreadingStrategy;
+import net.openhft.chronicle.network.TcpEventHandler;
 import net.openhft.chronicle.network.cluster.handlers.UberHandler;
 import net.openhft.chronicle.network.cluster.handlers.UberHandler.Factory;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
@@ -55,7 +58,6 @@ public abstract class ClusterContext<T extends ClusteredNetworkContext<T>> exten
     private long retryInterval = 1_000L;
     private String procPrefix;
 
-    
     public ClusterContext() {
         defaults();
     }
@@ -70,6 +72,7 @@ public abstract class ClusterContext<T extends ClusteredNetworkContext<T>> exten
 
     @Override
     public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
+        wire.read("networkStatsListenerFactory").object(networkStatsListenerFactory, Function.class);
         defaults();
         super.readMarshallable(wire);
     }

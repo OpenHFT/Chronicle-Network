@@ -34,7 +34,10 @@ package net.openhft.performance.tests.network;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.ThreadDump;
-import net.openhft.chronicle.network.*;
+import net.openhft.chronicle.network.AcceptorEventHandler;
+import net.openhft.chronicle.network.TCPRegistry;
+import net.openhft.chronicle.network.TcpEventHandler;
+import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
 import org.jetbrains.annotations.NotNull;
@@ -102,9 +105,11 @@ public class BinaryTestBufferSize {
 
         assert System.getProperty("TcpEventHandler.tcpBufferSize") == null;
         System.setProperty("TcpEventHandler.tcpBufferSize", Integer.toString(tcpBufferSize));
+        Bytes inBytes = null;
 
+        Bytes outBytes = null;
         try {
-            final Bytes outBytes = Bytes.elasticByteBuffer().writeUtf8(expectedMessage);
+            outBytes = Bytes.elasticByteBuffer().writeUtf8(expectedMessage);
             final long totalBytes = outBytes.writePosition();
             final ByteBuffer outBuff = (ByteBuffer) outBytes.underlyingObject();
 
@@ -115,7 +120,7 @@ public class BinaryTestBufferSize {
             while (outBuff.hasRemaining())
                 client.write(outBuff);
 
-            Bytes inBytes = Bytes.elasticByteBuffer((int) totalBytes).clear();
+            inBytes = Bytes.elasticByteBuffer((int) totalBytes).clear();
             final ByteBuffer inBuff = (ByteBuffer) inBytes.underlyingObject();
 
             // read back
@@ -134,6 +139,8 @@ public class BinaryTestBufferSize {
             Assert.assertEquals(expectedMessage, inBytes.readUtf8());
 
         } finally {
+            inBytes.release();
+            outBytes.release();
             System.clearProperty("TcpEventHandler.tcpBufferSize");
             client.close();
         }
