@@ -55,6 +55,7 @@ public abstract class ClusterContext<T extends ClusteredNetworkContext<T>> exten
     private long retryInterval = 1_000L;
     private String procPrefix;
 
+    
     public ClusterContext() {
         defaults();
     }
