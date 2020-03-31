@@ -19,7 +19,10 @@ package net.openhft.chronicle.network.cluster;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.util.ThrowingFunction;
-import net.openhft.chronicle.network.*;
+import net.openhft.chronicle.network.NetworkStatsListener;
+import net.openhft.chronicle.network.RemoteConnector;
+import net.openhft.chronicle.network.ServerThreadingStrategy;
+import net.openhft.chronicle.network.TcpEventHandler;
 import net.openhft.chronicle.network.cluster.handlers.UberHandler;
 import net.openhft.chronicle.network.cluster.handlers.UberHandler.Factory;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
@@ -40,11 +43,11 @@ public abstract class ClusterContext<T extends ClusteredNetworkContext<T>> exten
 
     private transient Factory<T> handlerFactory;
     private transient Function<WireType, WireOutPublisher> wireOutPublisherFactory;
-    private transient Function<ClusterContext<T>, T> networkContextFactory;
     private transient Function<ClusterContext<T>, WriteMarshallable> heartbeatFactory;
     private transient Function<ClusterContext<T>, NetworkStatsListener<T>> networkStatsListenerFactory;
     private transient Supplier<ConnectionManager<T>> connectionEventHandler;
     private transient EventLoop eventLoop;
+    private Function<ClusterContext<T>, T> networkContextFactory;
     private long heartbeatTimeoutMs = 40_000;
     private long heartbeatIntervalMs = 20_000;
     private ConnectionStrategy connectionStrategy;
