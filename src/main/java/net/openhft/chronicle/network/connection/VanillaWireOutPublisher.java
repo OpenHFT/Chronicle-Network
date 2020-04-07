@@ -132,7 +132,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
         }
 
-        Jvm.warn().on(getClass(), new IllegalStateException("loop when too long"));
+        Jvm.warn().on(getClass(), new IllegalStateException("looped for too long"));
 
     }
 
