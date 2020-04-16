@@ -68,7 +68,7 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> implements EventH
     }
 
     @Override
-    public void eventLoop(EventLoop eventLoop) {
+    public void eventLoop(final EventLoop eventLoop) {
         this.eventLoop = eventLoop;
     }
 
@@ -81,7 +81,7 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> implements EventH
             if (Jvm.isDebugEnabled(getClass()))
                 Jvm.debug().on(getClass(), "accepting " + ssc);
 
-            SocketChannel sc = acceptStrategy.accept(ssc);
+            final SocketChannel sc = acceptStrategy.accept(ssc);
 
             if (sc != null) {
                 if (closed || eventLoop.isClosed()) {
@@ -110,7 +110,7 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> implements EventH
                 Exception e) {
 
             if (!closed && !eventLoop.isClosed()) {
-                ServerSocket socket = ssc.socket();
+                final ServerSocket socket = ssc.socket();
                 if (socket != null)
                     Jvm.warn().on(getClass(), hostPort + ", port=" + socket.getLocalPort(), e);
                 else

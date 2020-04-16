@@ -118,7 +118,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         publisher(publisher);
 
         if (!nc.isValidCluster(clusterName)) {
-            Jvm.warn().on(getClass(), "cluster=" + clusterName, new RuntimeException("cluster  not " +
+            Jvm.warn().on(getClass(), "cluster=" + clusterName, new RuntimeException("cluster not " +
                     "found, cluster=" + clusterName));
             return;
         }
