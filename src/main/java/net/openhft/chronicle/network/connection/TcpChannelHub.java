@@ -128,18 +128,18 @@ public final class TcpChannelHub implements Closeable {
     private volatile SocketChannel clientChannel;
     private volatile boolean closed;
     @NotNull
-    private CountDownLatch receivedClosedAcknowledgement = new CountDownLatch(1);
+    private final CountDownLatch receivedClosedAcknowledgement = new CountDownLatch(1);
     // set up in the header
     private long limitOfLast = 0;
-    private boolean shouldSendCloseMessage;
-    private HandlerPriority priority;
+    private final boolean shouldSendCloseMessage;
+    private final HandlerPriority priority;
 
     public TcpChannelHub(@Nullable final SessionProvider sessionProvider,
                          @NotNull final EventLoop eventLoop,
                          @NotNull final WireType wireType,
                          @NotNull final String name,
                          @NotNull final SocketAddressSupplier socketAddressSupplier,
-                         boolean shouldSendCloseMessage,
+                         final boolean shouldSendCloseMessage,
                          @Nullable ClientConnectionMonitor clientConnectionMonitor,
                          @NotNull final HandlerPriority monitor,
                          @NotNull final ConnectionStrategy connectionStrategy) {
@@ -160,7 +160,7 @@ public final class TcpChannelHub implements Closeable {
                          @NotNull final WireType wireType,
                          @NotNull final String name,
                          @NotNull final SocketAddressSupplier socketAddressSupplier,
-                         boolean shouldSendCloseMessage,
+                         final boolean shouldSendCloseMessage,
                          @Nullable ClientConnectionMonitor clientConnectionMonitor,
                          @NotNull final HandlerPriority monitor,
                          @NotNull final ConnectionStrategy connectionStrategy,
@@ -191,6 +191,7 @@ public final class TcpChannelHub implements Closeable {
         // has to be done last as it starts a thread which uses this class.
         this.tcpSocketConsumer = new TcpSocketConsumer();
     }
+    
     private static int getTcpBufferSize() {
         final String sizeStr = System.getProperty("TcpEventHandler.tcpBufferSize");
         if (sizeStr != null && !sizeStr.isEmpty())
