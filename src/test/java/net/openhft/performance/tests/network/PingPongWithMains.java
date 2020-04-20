@@ -22,6 +22,7 @@ import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.threads.EventGroup;
+import net.openhft.chronicle.threads.Pauser;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
@@ -124,8 +125,6 @@ public class PingPongWithMains {
 
     private void testClient() throws IOException {
 
-        final @NotNull EventLoop eg = new EventGroup(true);
-
         SocketChannel sc = TCPRegistry.createSocketChannel(serverHostPort);
         sc.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         sc.configureBlocking(false);
@@ -133,14 +132,14 @@ public class PingPongWithMains {
         //       testThroughput(sc);
         testLatency(serverHostPort, WireType.BINARY, sc);
 
-        eg.stop();
         TcpChannelHub.closeAllHubs();
         TCPRegistry.reset();
     }
 
     @NotNull
     public void testServer() throws IOException {
-        @NotNull EventLoop eg = new EventGroup(true);
+        @NotNull EventLoop eg = new EventGroup(true, Pauser.busy(), true);
+
         eg.start();
         TCPRegistry.createServerSocketChannelFor(serverHostPort);
         @NotNull AcceptorEventHandler eah = new AcceptorEventHandler(serverHostPort,
