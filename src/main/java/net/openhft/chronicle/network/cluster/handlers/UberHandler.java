@@ -3,6 +3,7 @@ package net.openhft.chronicle.network.cluster.handlers;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.core.threads.EventLoop;
+import net.openhft.chronicle.network.ConnectionListener;
 import net.openhft.chronicle.network.api.session.SubHandler;
 import net.openhft.chronicle.network.api.session.WritableSubHandler;
 import net.openhft.chronicle.network.cluster.*;
@@ -30,10 +31,11 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     private final int localIdentifier;
     @NotNull
     private final AtomicBoolean isClosing = new AtomicBoolean();
+    @NotNull
+    private final String clusterName;
+
     @Nullable
     private ConnectionChangedNotifier<T> connectionChangedNotifier;
-    @NotNull
-    private String clusterName;
 
     @UsedViaReflection
     private UberHandler(@NotNull final WireIn wire) {
@@ -196,9 +198,11 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
             connectionChangedNotifier.onConnectionChanged(false, nc());
 
         try {
-            nc().acquireConnectionListener().onDisconnected(localIdentifier, remoteIdentifier(), nc().isAcceptor());
+            final ConnectionListener listener = nc().acquireConnectionListener();
+            if (listener != null)
+                listener.onDisconnected(localIdentifier, remoteIdentifier(), nc().isAcceptor());
         } catch (Exception e) {
-            Jvm.fatal().on(this.getClass(), e);
+            Jvm.fatal().on(getClass(),"close",  e);
         }
         super.close();
     }
@@ -270,7 +274,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                 if (w != null)
                     w.onWrite(outWire);
             } catch (Exception e) {
-                Jvm.fatal().on(getClass(), e);
+                Jvm.fatal().on(getClass(), "onWrite", e);
             }
     }
 
