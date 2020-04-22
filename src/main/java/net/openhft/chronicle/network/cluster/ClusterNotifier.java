@@ -25,9 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
-/**
- * @author Rob Austin.
- */
 class ClusterNotifier implements TerminationEventHandler, ConnectionChangedNotifier {
 
     private final List<WriteMarshallable> bootstaps;

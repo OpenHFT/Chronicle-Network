@@ -25,18 +25,15 @@ import net.openhft.chronicle.wire.WriteMarshallable;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Handles the connection strategy ( in other words when to accept or reject a connection ) and
- * heart beating )
- *
- * @author Rob Austin.
+ * Handles the connection notification (in other words when to accept or reject a connection)
  */
-public class HostIdConnectionStrategy implements ConnectionStrategy, Demarshallable, WriteMarshallable {
+public class HostIdConnectionNotifier implements ConnectionNotifier, Demarshallable, WriteMarshallable {
 
     @UsedViaReflection
-    private HostIdConnectionStrategy(WireIn w) {
+    private HostIdConnectionNotifier(WireIn w) {
     }
 
-    public HostIdConnectionStrategy() {
+    public HostIdConnectionNotifier() {
     }
 
     /**

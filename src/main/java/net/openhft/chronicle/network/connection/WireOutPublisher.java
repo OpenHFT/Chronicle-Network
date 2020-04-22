@@ -29,9 +29,6 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 
-/**
- * @author Rob Austin.
- */
 @FunctionalInterface
 public interface WireOutPublisher extends Closeable {
     Logger LOG = LoggerFactory.getLogger(WireOutPublisher.class);

@@ -21,9 +21,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.net.SocketAddress;
 
-/**
- * @author Rob Austin.
- */
 public interface ClientConnectionMonitor extends FatalFailureMonitor {
 
     /**

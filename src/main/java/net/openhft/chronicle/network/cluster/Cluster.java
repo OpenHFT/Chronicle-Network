@@ -106,11 +106,11 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
     }
 
     @Nullable
-    public ConnectionStrategy findConnectionStrategy(int remoteIdentifier) {
+    public ConnectionNotifier findConnectionNotifier(int remoteIdentifier) {
 
         @Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
-        return hostDetails.connectionStrategy();
+        return hostDetails.connectionNotifier();
     }
 
     @Nullable

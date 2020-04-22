@@ -16,10 +16,6 @@
 
 package net.openhft.performance.tests.third.party.frameworks.mina;
 
-/**
- * @author Rob Austin.
- */
-
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IdleStatus;

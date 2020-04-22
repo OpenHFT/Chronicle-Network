@@ -164,9 +164,9 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     }
 
     private boolean checkConnectionStrategy(@NotNull final Cluster cluster) {
-        final ConnectionStrategy strategy = cluster.findConnectionStrategy(remoteIdentifier);
-        return strategy == null ||
-                strategy.notifyConnected(this, localIdentifier, remoteIdentifier);
+        final ConnectionNotifier notifier = cluster.findConnectionNotifier(remoteIdentifier);
+        return notifier == null ||
+                notifier.notifyConnected(this, localIdentifier, remoteIdentifier);
     }
 
     private WriteMarshallable uberHandler() {

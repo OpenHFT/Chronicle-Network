@@ -50,7 +50,7 @@ public abstract class ClusterContext<T extends ClusteredNetworkContext<T>> exten
     private transient EventLoop eventLoop;
     private long heartbeatTimeoutMs = 40_000;
     private long heartbeatIntervalMs = 20_000;
-    private ConnectionStrategy connectionStrategy;
+    private ConnectionNotifier connectionNotifier;
     private WireType wireType;
     private String clusterName;
     private byte localIdentifier;
@@ -196,13 +196,13 @@ public abstract class ClusterContext<T extends ClusteredNetworkContext<T>> exten
     }
 
     @NotNull
-    public ClusterContext<T> connectionStrategy(ConnectionStrategy connectionStrategy) {
-        this.connectionStrategy = connectionStrategy;
+    public ClusterContext<T> connectionNotifier(ConnectionNotifier connectionNotifier) {
+        this.connectionNotifier = connectionNotifier;
         return this;
     }
 
-    private ConnectionStrategy connectionStrategy() {
-        return this.connectionStrategy;
+    private ConnectionNotifier connectionNotifier() {
+        return this.connectionNotifier;
     }
 
     private Supplier<ConnectionManager<T>> connectionEventHandler() {
@@ -224,8 +224,8 @@ public abstract class ClusterContext<T extends ClusteredNetworkContext<T>> exten
         if (this.localIdentifier == hd.hostId())
             return;
 
-        final ConnectionStrategy connectionStrategy = this.connectionStrategy();
-        hd.connectionStrategy(connectionStrategy);
+        final ConnectionNotifier connectionNotifier = this.connectionNotifier();
+        hd.connectionNotifier(connectionNotifier);
 
         final ConnectionManager<T> connectionManager = this
                 .connectionEventHandler().get();

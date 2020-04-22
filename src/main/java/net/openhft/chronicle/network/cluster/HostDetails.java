@@ -27,7 +27,7 @@ public class HostDetails extends SelfDescribingMarshallable {
     private String region;
     private int timeoutMs;
     private transient ClusterNotifier clusterNotifier;
-    private transient ConnectionStrategy connectionStrategy;
+    private transient ConnectionNotifier connectionNotifier;
     private transient ConnectionManager connectionManager;
     private transient TerminationEventHandler terminationEventHandler;
     private transient HostConnector hostConnector;
@@ -73,8 +73,8 @@ public class HostDetails extends SelfDescribingMarshallable {
         return timeoutMs;
     }
 
-    public ConnectionStrategy connectionStrategy() {
-        return connectionStrategy;
+    public ConnectionNotifier connectionNotifier() {
+        return connectionNotifier;
     }
 
     public ConnectionManager connectionManager() {
@@ -85,8 +85,8 @@ public class HostDetails extends SelfDescribingMarshallable {
         return terminationEventHandler;
     }
 
-    public void connectionStrategy(ConnectionStrategy connectionStrategy) {
-        this.connectionStrategy = connectionStrategy;
+    public void connectionNotifier(ConnectionNotifier connectionStrategy) {
+        this.connectionNotifier = connectionStrategy;
     }
 
     public void connectionManager(@NotNull ConnectionManager connectionEventManagerHandler) {
@@ -111,25 +111,5 @@ public class HostDetails extends SelfDescribingMarshallable {
 
     public void clusterNotifier(ClusterNotifier clusterHandler) {
         this.clusterNotifier = clusterHandler;
-    }
-
-    public int getHostId() {
-        return hostId;
-    }
-
-    public int getTcpBufferSize() {
-        return tcpBufferSize;
-    }
-
-    public String getConnectUri() {
-        return connectUri;
-    }
-
-    public String getRegion() {
-        return region;
-    }
-
-    public int getTimeoutMs() {
-        return timeoutMs;
     }
 }

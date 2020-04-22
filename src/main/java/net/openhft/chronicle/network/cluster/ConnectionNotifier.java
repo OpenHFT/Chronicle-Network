@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 higherfrequencytrading.com
+ * Copyright 2016-2020 https://chronicle.software
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,8 @@ package net.openhft.chronicle.network.cluster;
 import net.openhft.chronicle.network.WireTcpHandler;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * @author Rob Austin.
- */
 @FunctionalInterface
-public interface ConnectionStrategy {
+public interface ConnectionNotifier {
     boolean notifyConnected(@NotNull WireTcpHandler nc,
                             int localIdentifier,
                             int remoteIdentifier);

@@ -95,7 +95,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
         try {
             sc.configureBlocking(false);
             Socket sock = sc.socket();
-            // TODO: should have a strategy for this like ConnectionStrategy
+            // TODO: should have a strategy for this like ConnectionNotifier
             if (!DISABLE_TCP_NODELAY)
                 sock.setTcpNoDelay(true);
 

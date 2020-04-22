@@ -24,9 +24,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * @author Rob Austin.
- */
 class TraceLock extends ReentrantLock {
 
     private static final long serialVersionUID = 1997992705529515418L;
