@@ -19,9 +19,6 @@ package net.openhft.chronicle.network.cluster;
 import net.openhft.chronicle.network.WireTcpHandler;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * @author Rob Austin.
- */
 @FunctionalInterface
 public interface ConnectionStrategy {
     boolean notifyConnected(@NotNull WireTcpHandler nc,
