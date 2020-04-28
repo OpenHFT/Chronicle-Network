@@ -25,9 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 
-/*
- * Created by peter.lawrey on 15/07/2015.
- */
+
 class NetworkLog {
     private static final Logger LOG =
             LoggerFactory.getLogger(NetworkLog.class.getName());

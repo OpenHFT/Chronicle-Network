@@ -25,9 +25,7 @@ import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
 
-/*
- * Created by peter.lawrey on 31/01/15.
- */
+
 class TestData implements DoubleConsumer, LongConsumer, IntConsumer {
     int value1;
     long value2;

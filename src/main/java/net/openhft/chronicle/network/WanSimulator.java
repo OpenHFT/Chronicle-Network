@@ -20,9 +20,7 @@ import net.openhft.chronicle.core.Jvm;
 
 import java.util.Random;
 
-/*
- * Created by peter.lawrey on 16/07/2015.
- */
+
 public enum WanSimulator {
     ;
     private static final int NET_BANDWIDTH = Integer.getInteger("wanMB", 0);

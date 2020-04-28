@@ -29,9 +29,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/*
- * Created by peter.lawrey on 09/07/2015.
- */
+
 public class VanillaWireOutPublisher implements WireOutPublisher {
 
     private static final Logger LOG = LoggerFactory.getLogger(VanillaWireOutPublisher.class);

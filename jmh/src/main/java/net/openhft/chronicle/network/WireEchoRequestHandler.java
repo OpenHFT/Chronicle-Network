@@ -25,9 +25,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;
 
-/*
- * Created by rob on 26/08/2015.
- */
+
 public class WireEchoRequestHandler extends WireTcpHandler {
 
     public WireEchoRequestHandler(@NotNull Function<Bytes, Wire> bytesToWire) {

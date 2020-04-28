@@ -16,9 +16,7 @@
 
 package net.openhft.chronicle.network;
 
-/*
- * Created by rob on 25/08/2015.
- */
+
 public enum ServerThreadingStrategy {
 
     SINGLE_THREADED("uses a single threaded prioritised event loop," +

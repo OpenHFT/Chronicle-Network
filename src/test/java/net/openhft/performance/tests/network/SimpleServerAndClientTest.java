@@ -46,9 +46,7 @@ import java.util.concurrent.TimeoutException;
 
 import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri;
 
-/*
- * Created by rob on 26/08/2015.
- */
+
 public class SimpleServerAndClientTest {
     private ThreadDump threadDump;
 
