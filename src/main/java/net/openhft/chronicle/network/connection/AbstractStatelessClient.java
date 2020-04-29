@@ -44,8 +44,8 @@ import static net.openhft.chronicle.network.connection.CoreFields.reply;
  */
 public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> implements Closeable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractStatelessClient.class);
     private static final WriteValue NOOP = out -> {};
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractStatelessClient.class);
 
     @NotNull
     protected final TcpChannelHub hub;
@@ -62,7 +62,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
      * @param csp the uri of the request
      */
     protected AbstractStatelessClient(@NotNull final TcpChannelHub hub,
-                                      long cid,
+                                      final long cid,
                                       @NotNull final String csp) {
         this.cid = cid;
         this.csp = csp;
@@ -85,17 +85,15 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
      * @return a WriteValue for the provided {@code eventId} and
      *         provided {@code argument}.
      */
-    protected  WriteValue toParameters(
-            @NotNull final E eventId,
-            @Nullable final Object arg) {
+    protected WriteValue toParameters(@NotNull final E eventId,
+                                      @Nullable final Object arg) {
         final OneParameterWriteValue oneParameterWriteValue = oneParameterWriteValueTL.get();
         oneParameterWriteValue.arg(arg);
         return oneParameterWriteValue;
     }
 
-    protected  WriteValue toParameters(
-            @NotNull final E eventId,
-            @Nullable final Object... args) {
+    protected WriteValue toParameters(@NotNull final E eventId,
+                                      @Nullable final Object... args) {
 
         // In order to reduce the number of dynamically created lambdas,
         // we are first capturing potential static lambdas
@@ -122,9 +120,9 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
     @Nullable
     protected <R> R proxyReturnWireTypedObject(
             @NotNull final E eventId,
-            @Nullable R usingValue,
+            @Nullable final R usingValue,
             @NotNull final Class<R> resultType,
-            @NotNull Object... args) {
+            @NotNull final Object... args) {
 
         final Function<ValueIn, R> consumerIn = consumerInFunction(usingValue, resultType);
         return proxyReturnWireConsumerInOut(eventId,
@@ -136,9 +134,9 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
     @Nullable
     protected <R> R proxyReturnTypedObject(
             @NotNull final E eventId,
-            @Nullable R usingValue,
+            @Nullable final R usingValue,
             @NotNull final Class<R> resultType,
-            @NotNull Object... args) {
+            @NotNull final Object... args) {
 
         final Function<ValueIn, R> consumerIn = consumerInFunction(usingValue, resultType);
         return proxyReturnWireConsumerInOut(eventId,
@@ -168,9 +166,9 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
     @Nullable
     protected <R> R proxyReturnTypedObject(
             @NotNull final E eventId,
-            @Nullable R usingValue,
+            @Nullable final R usingValue,
             @NotNull final Class<R> resultType,
-            @NotNull Object arg) {
+            @NotNull final Object arg) {
 
         final Function<ValueIn, R> consumerIn = consumerInFunction(usingValue, resultType);
         return proxyReturnWireConsumerInOut(eventId,
@@ -341,7 +339,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
      */
     protected boolean sendEventAsync(@NotNull final WireKey eventId,
                                      @Nullable final WriteValue consumer,
-                                     boolean reattemptUponFailure) {
+                                     final boolean reattemptUponFailure) {
 
         if (!reattemptUponFailure && !hub.isOpen())
             return false;
@@ -364,7 +362,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
      * @param reattemptUponFailure if false - will only be sent if the connection is valid
      */
     protected boolean sendBytes(@NotNull final Bytes bytes,
-                                boolean reattemptUponFailure) {
+                                final boolean reattemptUponFailure) {
 
         if (reattemptUponFailure)
             hub.lock(hub::checkConnection);
@@ -437,7 +435,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
      * @param startTime the start time of this transaction
      * @return the translation id ( which is sent to the server )
      */
-    private long writeMetaDataStartTime(long startTime) {
+    private long writeMetaDataStartTime(final long startTime) {
         return hub.writeMetaDataStartTime(startTime, hub.outWire(), csp, cid);
     }
 
@@ -446,7 +444,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
      *
      * @param tid the tid transaction
      */
-    protected void writeMetaDataForKnownTID(long tid) {
+    protected void writeMetaDataForKnownTID(final long tid) {
         hub.writeMetaDataForKnownTID(tid, hub.outWire(), csp, cid);
     }
 
@@ -457,8 +455,8 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         hub.writeAsyncHeader(hub.outWire(), csp, cid);
     }
 
-    private void checkIsData(@NotNull Wire wireIn) {
-        @NotNull Bytes<?> bytes = wireIn.bytes();
+    private void checkIsData(@NotNull final Wire wireIn) {
+        @NotNull final Bytes<?> bytes = wireIn.bytes();
         int dataLen = bytes.readVolatileInt();
 
         if (!Wires.isData(dataLen))
@@ -466,7 +464,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
                     (bytes, 0, bytes.readLimit()));
     }
 
-    protected boolean readBoolean(long tid, long startTime) throws ConnectionDroppedException, TimeoutException {
+    protected boolean readBoolean(final long tid, final long startTime) throws ConnectionDroppedException, TimeoutException {
         assert !hub.outBytesLock().isHeldByCurrentThread();
 
         long timeoutTime = startTime + hub.timeoutMs;
@@ -479,7 +477,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
     }
 
-    private long readLong(long tid, long startTime) throws ConnectionDroppedException, TimeoutException {
+    private long readLong(final long tid, final long startTime) throws ConnectionDroppedException, TimeoutException {
         assert !hub.outBytesLock().isHeldByCurrentThread();
 
         long timeoutTime = startTime + hub.timeoutMs;
@@ -491,7 +489,9 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         return readReply(wireIn, CoreFields.reply, ValueIn::int64);
     }
 
-    private <R> R readReply(@NotNull WireIn wireIn, @NotNull WireKey replyId, @NotNull Function<ValueIn, R> function) {
+    private <R> R readReply(@NotNull final WireIn wireIn,
+                            @NotNull final WireKey replyId,
+                            @NotNull final Function<ValueIn, R> function) {
 
         final StringBuilder eventName = Wires.acquireStringBuilder();
         @NotNull final ValueIn event = wireIn.read(eventName);
@@ -540,7 +540,8 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
         return attempt(() -> readBoolean(sendEvent(startTime, eventId, null), startTime));
     }
 
-    private <T> T readWire(long tid, long startTime,
+    private <T> T readWire(final long tid,
+                           final long startTime,
                            @NotNull WireKey reply,
                            @NotNull Function<ValueIn, T> c) throws ConnectionDroppedException, TimeoutException {
         assert !hub.outBytesLock().isHeldByCurrentThread();
@@ -553,10 +554,10 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
 
     }
 
-    protected int readInt(long tid, long startTime) throws ConnectionDroppedException, TimeoutException {
+    protected int readInt(final long tid, final long startTime) throws ConnectionDroppedException, TimeoutException {
         assert !hub.outBytesLock().isHeldByCurrentThread();
 
-        long timeoutTime = startTime + hub.timeoutMs;
+        final long timeoutTime = startTime + hub.timeoutMs;
 
         final Wire wireIn = hub.proxyReply(timeoutTime, tid);
         checkIsData(wireIn);
@@ -580,7 +581,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> imp
             out.object(arg);
         }
 
-        private void arg(Object arg) {
+        private void arg(final Object arg) {
             this.arg = arg;
         }
     }
