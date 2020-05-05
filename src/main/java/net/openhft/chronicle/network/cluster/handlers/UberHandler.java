@@ -32,6 +32,8 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     @NotNull
     private final AtomicBoolean isClosing = new AtomicBoolean();
     @NotNull
+    private final AtomicBoolean closed = new AtomicBoolean();
+    @NotNull
     private final String clusterName;
 
     @Nullable
@@ -184,27 +186,31 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
      * termination event to be sent.
      */
     private void closeSoon() {
-        isClosing.set(true);
-        @NotNull final ScheduledExecutorService closer = newSingleThreadScheduledExecutor(new NamedThreadFactory("closer", true));
-        closer.schedule(() -> {
-            closer.shutdown();
-            close();
-        }, 2, SECONDS);
+        if (isClosing.compareAndSet(false, true)) {
+            @NotNull final ScheduledExecutorService closer = newSingleThreadScheduledExecutor(new NamedThreadFactory("closer", true));
+            closer.schedule(() -> {
+                close();
+                closer.shutdown();
+            }, 2, SECONDS);
+        }
     }
 
     @Override
     public void close() {
-        if (!isClosing.getAndSet(true) && connectionChangedNotifier != null)
-            connectionChangedNotifier.onConnectionChanged(false, nc());
+        if (closed.compareAndSet(false, true)) {
 
-        try {
-            final ConnectionListener listener = nc().acquireConnectionListener();
-            if (listener != null)
-                listener.onDisconnected(localIdentifier, remoteIdentifier(), nc().isAcceptor());
-        } catch (Exception e) {
-            Jvm.fatal().on(getClass(),"close:",  e);
+            if (!isClosing.getAndSet(true) && connectionChangedNotifier != null)
+                connectionChangedNotifier.onConnectionChanged(false, nc());
+
+            try {
+                final ConnectionListener listener = nc().acquireConnectionListener();
+                if (listener != null)
+                    listener.onDisconnected(localIdentifier, remoteIdentifier(), nc().isAcceptor());
+            } catch (Exception e) {
+                Jvm.fatal().on(getClass(), "close:", e);
+            }
+            super.close();
         }
-        super.close();
     }
 
     @Override
@@ -309,4 +315,3 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         }
     }
 }
-
