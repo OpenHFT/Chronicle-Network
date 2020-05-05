@@ -40,6 +40,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 
@@ -70,11 +71,15 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
     @NotNull
     private final Bytes<ByteBuffer> outBBB;
     private final boolean fair;
+    @NotNull
+    private final AtomicBoolean scClosed = new AtomicBoolean();
+    @NotNull
+    private final AtomicBoolean closed = new AtomicBoolean();
     private int oneInTen;
     @Nullable
     private volatile TcpHandler<T> tcpHandler;
     private long lastTickReadTime = System.currentTimeMillis();
-    private volatile boolean closed;
+
     // monitoring
     private int socketPollCount;
     private long bytesReadCount;
@@ -107,7 +112,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
                 checkBufSize(sock.getSendBufferSize(), "send");
             }
         } catch (IOException e) {
-            if (closed || !sc.isOpen())
+            if (closed.get() || !sc.isOpen())
                 throw new IORuntimeException(e);
             Jvm.warn().on(getClass(), e);
         }
@@ -160,7 +165,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
 
     @Override
     public boolean isClosed() {
-        return closed;
+        return closed.get();
     }
 
     @NotNull
@@ -197,7 +202,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
     public synchronized boolean action() throws InvalidEventHandlerException {
         Jvm.optionalSafepoint();
 
-        if (closed)
+        if (closed.get())
             throw new InvalidEventHandlerException();
 
         if (tcpHandler == null)
@@ -291,7 +296,10 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
 
     @Override
     public void loopFinished() {
-        inBBB.release();
+        // Release unless already released
+        if (inBBB.refCount() > 0)
+            inBBB.release();
+        if (outBBB.refCount() > 0)
         outBBB.release();
     }
 
@@ -417,19 +425,21 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
 
     @Override
     public void close() {
-        if (closed)
-            return;
-        closed = true;
-        closeSC();
-        // NOTE Do not release buffers here as they might be in use. Wait for loopFinished() to do it
+        if (closed.compareAndSet(false, true)) {
+            closeSC();
+            // NOTE Do not release buffers here as they might be in use. Wait for loopFinished() to do it
+            // Note: loopFinished() may actually be called before close() if a InvalidEventHandlerException is thrown
+        }
     }
 
     @PackageLocal
     void closeSC() {
-        Closeable.closeQuietly(tcpHandler);
-        Closeable.closeQuietly(this.nc.networkStatsListener());
-        Closeable.closeQuietly(sc);
-        Closeable.closeQuietly(nc);
+        if (scClosed.compareAndSet(false, true)) {
+            Closeable.closeQuietly(tcpHandler);
+            Closeable.closeQuietly(this.nc.networkStatsListener());
+            Closeable.closeQuietly(sc);
+            Closeable.closeQuietly(nc);
+        }
     }
 
     @PackageLocal
@@ -492,7 +502,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
             closeSC();
 
         } catch (IOException e) {
-            if (!closed)
+            if (!closed.get())
                 handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
         }
         return busy;
