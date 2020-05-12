@@ -1624,6 +1624,10 @@ public final class TcpChannelHub implements Closeable {
                             " channel is closed, name=" + name);
                 int numberOfBytesRead = clientChannel.read(buffer);
 
+                // we dont want to call isInterrupted every time so will only call it if we have read no bytes
+                if (numberOfBytesRead == 0 && Thread.currentThread().isInterrupted())
+                    isShutdown = true;
+                
                 WanSimulator.dataRead(numberOfBytesRead);
                 if (numberOfBytesRead == -1)
                     throw new ConnectionDroppedException("Disconnection to server=" + socketAddressSupplier +
