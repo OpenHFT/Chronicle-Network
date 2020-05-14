@@ -540,13 +540,13 @@ public final class TcpChannelHub implements Closeable {
                     }
 
                     // we just want this to run once
-                    throw new InvalidEventHandlerException();
+                    throw InvalidEventHandlerException.reusable();
                 }
 
                 @NotNull
                 @Override
                 public String toString() {
-                    return TcpChannelHub.class.getSimpleName() + "..close()";
+                    return TcpChannelHub.class.getSimpleName() + ".close()";
                 }
             });
 
@@ -1037,6 +1037,7 @@ public final class TcpChannelHub implements Closeable {
      * uses a single read thread, to process messages to waiting threads based on their {@code tid}
      */
     private final class TcpSocketConsumer implements EventHandler {
+        private static final int TIME_OUT_MS = 3_000;
         @NotNull
         private final TLongObjectMap<Object> map;
         //private final TLongObjectMap<Object> map = new TLongObjectHashMap<>(16);
@@ -1280,7 +1281,8 @@ public final class TcpChannelHub implements Closeable {
                         continue;
 
                     long delay = System.currentTimeMillis() - start;
-                    if (delay >= 150) {
+                    // This duration has to account for TIME OUT and processing
+                    if (delay >= TIME_OUT_MS + 150L) {
                         StringBuilder sb = new StringBuilder().append(readThread).append(" at ").append(delay).append(" ms");
                         Jvm.trimStackTrace(sb, readThread.getStackTrace());
 
@@ -1487,7 +1489,7 @@ public final class TcpChannelHub implements Closeable {
                     else
                         Jvm.pause(1);
 
-                    if (Time.currentTimeMillis() - startTime > 3_000) {
+                    if (Time.currentTimeMillis() - startTime > TIME_OUT_MS) {
 
                         blockingRead(inWire, messageSize);
                         logToStandardOutMessageReceived(inWire);
