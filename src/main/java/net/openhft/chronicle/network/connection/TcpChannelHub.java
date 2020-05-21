@@ -394,8 +394,10 @@ public final class TcpChannelHub implements Closeable {
 
         if (clientConnectionMonitor != null) {
             @Nullable final SocketAddress socketAddress = socketAddressSupplier.get();
-            if (socketAddress != null)
+            if (socketAddress != null) {
                 clientConnectionMonitor.onConnected(name, socketAddress);
+
+            }
         }
     }
 
@@ -1055,20 +1057,20 @@ public final class TcpChannelHub implements Closeable {
         long lastheartbeatSentTime = 0;
         volatile long start = Long.MAX_VALUE;
         private long tid;
-        private Bytes serverHeartBeatHandler = Bytes.elasticByteBuffer();
+        private final Bytes serverHeartBeatHandler = Bytes.elasticByteBuffer();
         private volatile long lastTimeMessageReceivedOrSent = Time.currentTimeMillis();
         private volatile boolean isShutdown;
         @Nullable
         private volatile Throwable shutdownHere = null;
         private volatile boolean prepareToShutdown;
-        private Thread readThread;
+        private volatile Thread readThread;
 
         TcpSocketConsumer() {
             if (LOG.isDebugEnabled())
                 Jvm.debug().on(getClass(), "constructor remoteAddress=" + socketAddressSupplier);
 
             service = newCachedThreadPool(
-                    new NamedThreadFactory("TcpChannelHub-Reads-" + socketAddressSupplier, true));
+                    new NamedThreadFactory(threadName(), true));
 
             final TLongObjectHashMap<Object> longMap = new TLongObjectHashMap<>(32);
             // Prevent excessive array creation upon removals
@@ -1305,6 +1307,11 @@ public final class TcpChannelHub implements Closeable {
         public void checkNotShutdown() {
             if (isShutdown)
                 throw new IORuntimeException("Called after shutdown", shutdownHere);
+        }
+
+        @NotNull
+        private String threadName() {
+            return "TcpChannelHub-Reads-" + name + "-" + socketAddressSupplier;
         }
 
         private void running() {
@@ -1732,6 +1739,8 @@ public final class TcpChannelHub implements Closeable {
                         inWire.clear();
                     }
                 }, true);
+                // Update the thread name if connected or re-connected
+                readThread.setName(threadName());
             } finally {
                 assert outWire.endUse();
             }
