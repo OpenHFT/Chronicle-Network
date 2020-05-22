@@ -68,12 +68,10 @@ import static java.util.concurrent.TimeUnit.*;
 import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
 
 /**
- * The TcpChannelHub is used to send your messages to the server and then read the servers response.
- * The TcpChannelHub ensures that each response is marshalled back onto the appropriate client
- * thread. It does this through the use of a unique transaction ID ( we call this transaction ID the
- * "tid" ), when the server responds to the client, its expected that the server sends back the tid
- * as the very first field in the message. The TcpChannelHub will look at each message and read the
- * tid, and then marshall the message onto your appropriate client thread. Created by Rob Austin
+ * The TcpChannelHub is used to send your messages to the server and then read the servers response. The TcpChannelHub ensures that each response is
+ * marshalled back onto the appropriate client thread. It does this through the use of a unique transaction ID ( we call this transaction ID the "tid"
+ * ), when the server responds to the client, its expected that the server sends back the tid as the very first field in the message. The
+ * TcpChannelHub will look at each message and read the tid, and then marshall the message onto your appropriate client thread. Created by Rob Austin
  */
 public final class TcpChannelHub implements Closeable {
 
@@ -191,7 +189,7 @@ public final class TcpChannelHub implements Closeable {
         // has to be done last as it starts a thread which uses this class.
         this.tcpSocketConsumer = new TcpSocketConsumer();
     }
-    
+
     private static int getTcpBufferSize() {
         final String sizeStr = System.getProperty("TcpEventHandler.tcpBufferSize");
         if (sizeStr != null && !sizeStr.isEmpty())
@@ -356,9 +354,8 @@ public final class TcpChannelHub implements Closeable {
     }
 
     /**
-     * prevents subscriptions upon reconnect for the following {@code tid} its useful to call this
-     * method when an unsubscribe has been sent to the server, but before the server has acknoleged
-     * the unsubscribe, hence, perverting a resubscribe upon reconnection.
+     * prevents subscriptions upon reconnect for the following {@code tid} its useful to call this method when an unsubscribe has been sent to the
+     * server, but before the server has acknoleged the unsubscribe, hence, perverting a resubscribe upon reconnection.
      *
      * @param tid unique transaction id
      */
@@ -402,9 +399,8 @@ public final class TcpChannelHub implements Closeable {
     }
 
     /**
-     * sets up subscriptions with the server, even if the socket connection is down, the
-     * subscriptions will be re-establish with the server automatically once it comes back up. To
-     * end the subscription with the server call {@code net.openhft.chronicle.network.connection.TcpChannelHub#unsubscribe(long)}
+     * sets up subscriptions with the server, even if the socket connection is down, the subscriptions will be re-establish with the server
+     * automatically once it comes back up. To end the subscription with the server call {@code net.openhft.chronicle.network.connection.TcpChannelHub#unsubscribe(long)}
      *
      * @param asyncSubscription detail of the subscription that you wish to hold with the server
      */
@@ -571,8 +567,8 @@ public final class TcpChannelHub implements Closeable {
     }
 
     /**
-     * used to signal to the server that the client is going to drop the connection, and waits up to
-     * one second for the server to acknowledge the receipt of this message
+     * used to signal to the server that the client is going to drop the connection, and waits up to one second for the server to acknowledge the
+     * receipt of this message
      */
     private void sendCloseMessage() {
 
@@ -741,6 +737,10 @@ public final class TcpChannelHub implements Closeable {
                         throw new ConnectionDroppedException("Connection has Changed");
 
                     int len = clientChannel.write(outBuffer);
+                    if (len > 0)
+                        // given that we wrote something we must still be connected so will reset the heartbeat monitor
+                        pauser.reset();
+
                     if (len == -1)
                         throw new IORuntimeException("Disconnection to server=" +
                                 socketAddressSupplier + ", name=" + name);
@@ -897,7 +897,7 @@ public final class TcpChannelHub implements Closeable {
                                          final long cid) {
         assert outBytesLock().isHeldByCurrentThread();
 
-        try(DocumentContext dc = wire.writingDocument(true)){
+        try (DocumentContext dc = wire.writingDocument(true)) {
             if (cid == 0)
                 dc.wire().writeEventName(CoreFields.csp).text(csp);
             else
@@ -905,7 +905,6 @@ public final class TcpChannelHub implements Closeable {
             dc.wire().writeEventName(CoreFields.tid).int64(tid);
         }
     }
-
 
     /**
      * The writes the meta data to wire - the async version does not contain the tid
@@ -1019,8 +1018,7 @@ public final class TcpChannelHub implements Closeable {
     }
 
     /**
-     * you are unlikely to want to call this method in a production environment the purpose of this
-     * method is to simulate a network outage
+     * you are unlikely to want to call this method in a production environment the purpose of this method is to simulate a network outage
      */
     public void forceDisconnect() {
         Closeable.closeQuietly(clientChannel);
@@ -1080,9 +1078,8 @@ public final class TcpChannelHub implements Closeable {
         }
 
         /**
-         * re-establish all the subscriptions to the server, this method calls the {@code
-         * net.openhft.chronicle.network.connection.AsyncSubscription#applySubscribe()} for each
-         * subscription, this could should establish a subscription with the server.
+         * re-establish all the subscriptions to the server, this method calls the {@code net.openhft.chronicle.network.connection.AsyncSubscription#applySubscribe()}
+         * for each subscription, this could should establish a subscription with the server.
          */
         private void onReconnect() {
 
@@ -1251,8 +1248,7 @@ public final class TcpChannelHub implements Closeable {
         }
 
         /**
-         * uses a single read thread, to process messages to waiting threads based on their {@code
-         * tid}
+         * uses a single read thread, to process messages to waiting threads based on their {@code tid}
          */
         private void start() {
             checkNotShutdown();
@@ -1602,8 +1598,7 @@ public final class TcpChannelHub implements Closeable {
         /**
          * blocks indefinitely until the number of expected bytes is received
          *
-         * @param wire          the wire that the data will be written into, this wire must contain
-         *                      an underlying ByteBuffer
+         * @param wire          the wire that the data will be written into, this wire must contain an underlying ByteBuffer
          * @param numberOfBytes the size of the data to read
          * @throws IOException if anything bad happens to the socket connection
          */
@@ -1636,7 +1631,7 @@ public final class TcpChannelHub implements Closeable {
                 // we dont want to call isInterrupted every time so will only call it if we have read no bytes
                 if (numberOfBytesRead == 0 && Thread.currentThread().isInterrupted())
                     isShutdown = true;
-                
+
                 WanSimulator.dataRead(numberOfBytesRead);
                 if (numberOfBytesRead == -1)
                     throw new ConnectionDroppedException("Disconnection to server=" + socketAddressSupplier +
@@ -1747,8 +1742,8 @@ public final class TcpChannelHub implements Closeable {
         }
 
         /**
-         * called when we are completed finished with using the TcpChannelHub, after this method is
-         * called you will no longer be able to use this instance to received or send data
+         * called when we are completed finished with using the TcpChannelHub, after this method is called you will no longer be able to use this
+         * instance to received or send data
          */
         void stop() {
 
@@ -1781,7 +1776,7 @@ public final class TcpChannelHub implements Closeable {
             // HEATBEAT_PING_PERIOD milliseconds
             final long currentTime = Time.currentTimeMillis();
             final long millisecondsSinceLastMessageReceived = currentTime - lastTimeMessageReceivedOrSent;
-            final  long millisecondsSinceLastHeatbeatSend = currentTime - lastheartbeatSentTime;
+            final long millisecondsSinceLastHeatbeatSend = currentTime - lastheartbeatSentTime;
 
             if (millisecondsSinceLastMessageReceived >= HEATBEAT_PING_PERIOD &&
                     millisecondsSinceLastHeatbeatSend >= HEATBEAT_PING_PERIOD) {
