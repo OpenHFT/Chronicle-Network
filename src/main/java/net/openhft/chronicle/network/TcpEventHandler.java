@@ -40,8 +40,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.lang.Math.max;
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 
 public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandler, Closeable, TcpEventHandlerManager<T> {
@@ -52,8 +52,8 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
     private static final AtomicBoolean FIRST_HANDLER = new AtomicBoolean();
     public static final int TARGET_WRITE_SIZE = Integer.getInteger("TcpEventHandler.targetWriteSize", 1024);
+    private static final int TWICE_DEFAULT_MAX_MESSAGE_SIZE = 128 << 20;
     public static boolean DISABLE_TCP_NODELAY = Boolean.getBoolean("disable.tcp_nodelay");
-
 
     static {
         if (DISABLE_TCP_NODELAY) System.out.println("tcpNoDelay disabled");
@@ -117,8 +117,12 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
             Jvm.warn().on(getClass(), e);
         }
 
-        inBBB = Bytes.elasticByteBuffer(TCP_BUFFER + OS.pageSize());
-        outBBB = Bytes.elasticByteBuffer(TCP_BUFFER);
+        //We have to provide back pressure to restrict the buffer growing beyond,2GB because it reverts to
+        // being Native bytes, we should also provide back pressure if we are not able to keep up,
+        // limited to twice max message size
+        inBBB = Bytes.elasticByteBuffer(TCP_BUFFER + OS.pageSize(), max(TCP_BUFFER + OS.pageSize(), TWICE_DEFAULT_MAX_MESSAGE_SIZE));
+        outBBB = Bytes.elasticByteBuffer(TCP_BUFFER, max(TCP_BUFFER, TWICE_DEFAULT_MAX_MESSAGE_SIZE));
+
         // TODO Fix Chronicle-Queue-Enterprise tests so socket connections are closed cleanly.
         BytesUtil.unregister(inBBB);
         BytesUtil.unregister(outBBB);
@@ -300,7 +304,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
         if (inBBB.refCount() > 0)
             inBBB.release();
         if (outBBB.refCount() > 0)
-        outBBB.release();
+            outBBB.release();
     }
 
     public void onInBBFul() {
