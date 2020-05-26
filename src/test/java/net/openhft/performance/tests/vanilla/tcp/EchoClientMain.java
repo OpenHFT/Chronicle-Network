@@ -14,7 +14,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */package net.openhft.performance.tests.vanilla.tcp;
+ */
+package net.openhft.performance.tests.vanilla.tcp;
 
 import net.openhft.affinity.Affinity;
 import net.openhft.chronicle.core.tcp.ISocketChannel;

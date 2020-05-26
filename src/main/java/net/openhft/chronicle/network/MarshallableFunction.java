@@ -14,7 +14,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */package net.openhft.chronicle.network;
+ */
+package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.wire.Demarshallable;
 import net.openhft.chronicle.wire.WireOut;

@@ -14,7 +14,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */package net.openhft.chronicle.network.connection;
+ */
+package net.openhft.chronicle.network.connection;
 
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.NotNull;
