@@ -14,9 +14,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */package net.openhft.chronicle.network;
+ */
+package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
@@ -35,7 +37,7 @@ import java.util.function.Supplier;
 
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
-public class AcceptorEventHandler<T extends NetworkContext<T>> implements EventHandler, Closeable {
+public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractCloseable implements EventHandler, Closeable {
     @NotNull
     private final Function<T, TcpEventHandler<T>> handlerFactory;
     @NotNull
@@ -47,8 +49,6 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> implements EventH
     private final AcceptStrategy acceptStrategy;
 
     private EventLoop eventLoop;
-
-    private volatile boolean closed;
 
     public AcceptorEventHandler(@NotNull final String hostPort,
                                 @NotNull final Function<T, TcpEventHandler<T>> handlerFactory,
@@ -74,7 +74,7 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> implements EventH
 
     @Override
     public boolean action() throws InvalidEventHandlerException {
-        if (!ssc.isOpen() || closed || eventLoop.isClosed())
+        if (!ssc.isOpen() || isClosed() || eventLoop.isClosed())
             throw new InvalidEventHandlerException();
 
         try {
@@ -84,7 +84,7 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> implements EventH
             final SocketChannel sc = acceptStrategy.accept(ssc);
 
             if (sc != null) {
-                if (closed || eventLoop.isClosed()) {
+                if (isClosed() || eventLoop.isClosed()) {
                     Closeable.closeQuietly(sc);
                     throw new InvalidEventHandlerException("closed");
                 }
@@ -102,14 +102,14 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> implements EventH
         } catch (ClosedChannelException e) {
             Jvm.debug().on(this.getClass(), "ClosedChannel");
             closeSocket();
-            if (closed)
+            if (isClosed())
                 throw new InvalidEventHandlerException();
             else
                 throw new InvalidEventHandlerException(e);
         } catch (
                 Exception e) {
 
-            if (!closed && !eventLoop.isClosed()) {
+            if (!isClosed() && !eventLoop.isClosed()) {
                 final ServerSocket socket = ssc.socket();
                 if (socket != null)
                     Jvm.warn().on(getClass(), hostPort + ", port=" + socket.getLocalPort(), e);
@@ -143,10 +143,7 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> implements EventH
     }
 
     @Override
-    public void close() {
-        if (closed)
-            return;
-        closed = true;
+    protected void performClose() {
         closeSocket();
     }
 }

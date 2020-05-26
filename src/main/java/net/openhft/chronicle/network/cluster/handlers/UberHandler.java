@@ -1,3 +1,20 @@
+/*
+ * Copyright 2016-2020 Chronicle Software
+ *
+ * https://chronicle.software
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package net.openhft.chronicle.network.cluster.handlers;
 
 import net.openhft.chronicle.core.Jvm;
@@ -31,8 +48,6 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     private final int localIdentifier;
     @NotNull
     private final AtomicBoolean isClosing = new AtomicBoolean();
-    @NotNull
-    private final AtomicBoolean closed = new AtomicBoolean();
     @NotNull
     private final String clusterName;
 
@@ -196,21 +211,18 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     }
 
     @Override
-    public void close() {
-        if (closed.compareAndSet(false, true)) {
+    protected void performClose() {
+        if (!isClosing.getAndSet(true) && connectionChangedNotifier != null)
+            connectionChangedNotifier.onConnectionChanged(false, nc());
 
-            if (!isClosing.getAndSet(true) && connectionChangedNotifier != null)
-                connectionChangedNotifier.onConnectionChanged(false, nc());
-
-            try {
-                final ConnectionListener listener = nc().acquireConnectionListener();
-                if (listener != null)
-                    listener.onDisconnected(localIdentifier, remoteIdentifier(), nc().isAcceptor());
-            } catch (Exception e) {
-                Jvm.fatal().on(getClass(), "close:", e);
-            }
-            super.close();
+        try {
+            final ConnectionListener listener = nc().acquireConnectionListener();
+            if (listener != null)
+                listener.onDisconnected(localIdentifier, remoteIdentifier(), nc().isAcceptor());
+        } catch (Exception e) {
+            Jvm.fatal().on(getClass(), "close:", e);
         }
+        super.performClose();
     }
 
     @Override
@@ -292,8 +304,8 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
 
     public static final class Factory<T extends ClusteredNetworkContext<T>> implements
             BiFunction<ClusterContext<T>,
-            HostDetails,
-            WriteMarshallable>,
+                    HostDetails,
+                    WriteMarshallable>,
             Demarshallable {
 
         @UsedViaReflection

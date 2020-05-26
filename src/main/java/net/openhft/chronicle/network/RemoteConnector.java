@@ -1,11 +1,13 @@
 /*
- * Copyright 2016 higherfrequencytrading.com
+ * Copyright 2016-2020 Chronicle Software
+ *
+ * https://chronicle.software
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.PackageLocal;
+import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.threads.EventHandler;
@@ -41,16 +43,15 @@ import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
-public class RemoteConnector<T extends NetworkContext<T>> implements Closeable {
+public class RemoteConnector<T extends NetworkContext<T>> extends AbstractCloseable implements Closeable {
 
     @NotNull
     private final ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpHandlerSupplier;
 
     private final Integer tcpBufferSize;
-    private volatile boolean closed;
 
     @NotNull
-    private volatile List<Closeable> closeables = new ArrayList<>();
+    private final List<java.io.Closeable> closeables = new ArrayList<>();
 
     public RemoteConnector(@NotNull final ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpEventHandlerFactory) {
         this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TcpChannelHub.TCP_BUFFER);
@@ -78,12 +79,7 @@ public class RemoteConnector<T extends NetworkContext<T>> implements Closeable {
     }
 
     @Override
-    public void close() {
-        if (closed)
-            return;
-
-        closed = true;
-
+    protected void performClose() {
         Closeable.closeQuietly(closeables);
     }
 
@@ -100,7 +96,7 @@ public class RemoteConnector<T extends NetworkContext<T>> implements Closeable {
         return result;
     }
 
-    private class RCEventHandler implements EventHandler, Closeable {
+    private class RCEventHandler extends AbstractCloseable implements EventHandler, Closeable {
 
         private final InetSocketAddress address;
         private final AtomicLong nextPeriod = new AtomicLong();
@@ -108,7 +104,6 @@ public class RemoteConnector<T extends NetworkContext<T>> implements Closeable {
         private final T nc;
         private final EventLoop eventLoop;
         private final long retryInterval;
-        private volatile boolean closed;
 
         RCEventHandler(String remoteHostPort,
                        T nc,
@@ -129,7 +124,7 @@ public class RemoteConnector<T extends NetworkContext<T>> implements Closeable {
 
         @Override
         public boolean action() throws InvalidEventHandlerException {
-            if (closed || eventLoop.isClosed())
+            if (isClosed() || eventLoop.isClosed())
                 throw new InvalidEventHandlerException();
             final long time = System.currentTimeMillis();
 
@@ -170,7 +165,7 @@ public class RemoteConnector<T extends NetworkContext<T>> implements Closeable {
                 nextPeriod.set(System.currentTimeMillis() + retryInterval);
                 return false;
             }
-            if (closed || eventLoop.isClosed() || Thread.currentThread().isInterrupted())
+            if (isClosed() || eventLoop.isClosed() || Thread.currentThread().isInterrupted())
                 // we have died.
                 Closeable.closeQuietly(eventHandler);
             else {
@@ -186,18 +181,17 @@ public class RemoteConnector<T extends NetworkContext<T>> implements Closeable {
         public String toString() {
             return getClass().getSimpleName() + "{"
                     + "remoteHostPort=" + remoteHostPort
-                    + ", closed=" + closed +
+                    + ", closed=" + isClosed() +
                     "}";
         }
 
         @Override
-        public void close() {
-            closed = true;
+        protected void performClose() {
         }
 
         @Override
         public void notifyClosing() {
-            closed = true;
+            close();
         }
     }
 }

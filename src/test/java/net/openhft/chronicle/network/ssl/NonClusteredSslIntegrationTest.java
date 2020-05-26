@@ -1,6 +1,7 @@
 package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.threads.EventGroup;
@@ -171,7 +172,7 @@ public final class NonClusteredSslIntegrationTest {
         BI_DIRECTIONAL
     }
 
-    private static final class CountingTcpHandler implements TcpHandler<StubNetworkContext> {
+    private static final class CountingTcpHandler extends AbstractCloseable implements TcpHandler<StubNetworkContext> {
         private final String label;
         private final CountDownLatch latch = new CountDownLatch(1);
         private volatile long operationCount = 0;
@@ -221,6 +222,10 @@ public final class NonClusteredSslIntegrationTest {
                 System.err.printf("Exception in %s: %s/%s%n", label, e.getClass().getSimpleName(), e.getMessage());
                 e.printStackTrace();
             }
+        }
+
+        @Override
+        protected void performClose() {
         }
     }
 
@@ -272,6 +277,11 @@ public final class NonClusteredSslIntegrationTest {
                 @Override
                 public void close() {
 
+                }
+
+                @Override
+                public boolean isClosed() {
+                    return false;
                 }
             };
         }

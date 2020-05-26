@@ -29,8 +29,6 @@ import static net.openhft.chronicle.wire.WireType.*;
 
 /**
  * sets the wire-type in the network context by inspecting the byte message
- *
- * @author Rob Austin.
  */
 public class WireTypeSniffingTcpHandler<T extends NetworkContext<T>> implements TcpHandler<T> {
 
@@ -92,5 +90,10 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext<T>> implements 
     @Override
     public String toString() {
         return "WireTypeSniffingTcpHandler@" + Integer.toHexString(hashCode());
+    }
+
+    @Override
+    public boolean isClosed() {
+        throw new UnsupportedOperationException();
     }
 }

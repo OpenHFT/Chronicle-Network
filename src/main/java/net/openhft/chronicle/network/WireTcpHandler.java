@@ -18,6 +18,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
@@ -32,7 +33,7 @@ import static net.openhft.chronicle.wire.WireType.BINARY;
 import static net.openhft.chronicle.wire.WireType.DELTA_BINARY;
 import static net.openhft.chronicle.wire.WriteMarshallable.EMPTY;
 
-public abstract class WireTcpHandler<T extends NetworkContext<T>> implements TcpHandler<T>, NetworkContextManager<T> {
+public abstract class WireTcpHandler<T extends NetworkContext<T>> extends AbstractCloseable implements TcpHandler<T>, NetworkContextManager<T> {
 
     private static final int SIZE_OF_SIZE = 4;
     private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
@@ -50,7 +51,6 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
     private WireType wireType;
     private WireOutPublisher publisher;
     private T nc;
-    private volatile boolean closed;
     private boolean isAcceptor;
     private long lastReadRemaining;
 
@@ -108,7 +108,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
     @Override
     public void process(@NotNull final Bytes in, @NotNull final Bytes out, final T nc) {
 
-        if (closed)
+        if (isClosed())
             return;
 
         WireType wireType = wireType();
@@ -160,7 +160,8 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
 
     }
 
-    protected void onBytesWritten() {}
+    protected void onBytesWritten() {
+    }
 
     @Override
     public void onEndOfConnection(final boolean heartbeatTimeOut) {
@@ -173,7 +174,8 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
             publisher.close();
     }
 
-    protected void onWrite(@NotNull final WireOut out) {}
+    protected void onWrite(@NotNull final WireOut out) {
+    }
 
     /**
      * process all messages in this batch, provided there is plenty of output space.
@@ -346,7 +348,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
     @Override
     public final void nc(final T nc) {
         this.nc = nc;
-        if (!closed)
+        if (!isClosed())
             onInitialize();
     }
 
@@ -357,9 +359,9 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> implements Tcp
 
     protected abstract void onInitialize();
 
+
     @Override
-    public void close() {
-        closed = true;
+    protected void performClose() {
         Closeable.closeQuietly(nc);
     }
 

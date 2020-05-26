@@ -17,14 +17,19 @@
  */package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.api.TcpHandler;
 import org.jetbrains.annotations.NotNull;
 
-public class EchoHandler<T extends VanillaNetworkContext<T>> implements TcpHandler<T> {
+public class EchoHandler<T extends VanillaNetworkContext<T>> extends AbstractCloseable implements TcpHandler<T> {
 
     public EchoHandler() {
+    }
+
+    @Override
+    protected void performClose() {
     }
 
     @Override

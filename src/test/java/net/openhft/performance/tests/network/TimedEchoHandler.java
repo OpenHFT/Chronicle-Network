@@ -54,4 +54,9 @@ class TimedEchoHandler<T extends NetworkContext<T>> implements TcpHandler<T> {
         out.writeLong(System.nanoTime());
         in.readSkip(toWrite);
     }
+
+    @Override
+    public boolean isClosed() {
+        return false;
+    }
 }
