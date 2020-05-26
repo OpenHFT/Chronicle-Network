@@ -18,6 +18,7 @@
 package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +30,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 
-abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkContext<T>, C extends ClusterContext<T>> implements Marshallable, Closeable {
+abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkContext<T>, C extends ClusterContext<T>> extends AbstractCloseable implements Marshallable, Closeable {
 
     @NotNull
     public final Map<String, E> hostDetails;
@@ -145,7 +146,7 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
     }
 
     @Override
-    public void close() {
+    protected void performClose() {
         Closeable.closeQuietly(hostDetails());
     }
 

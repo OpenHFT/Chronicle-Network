@@ -52,4 +52,9 @@ public interface NetworkStatsListener<N extends NetworkContext<N>> extends Close
     default void procPrefix(String procPrefix) {
     }
 
+    @Override
+    default boolean isClosed() {
+        throw new UnsupportedOperationException();
+    }
+
 }
