@@ -517,7 +517,7 @@ public final class TcpChannelHub extends AbstractCloseable {
      * called when we are finished with using the TcpChannelHub
      */
     @Override
-    public void performClose() {
+    protected void performClose() {
         tcpSocketConsumer.prepareToShutdown();
 
         if (shouldSendCloseMessage) {

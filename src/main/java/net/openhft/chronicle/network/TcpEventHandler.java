@@ -420,7 +420,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
     }
 
     @Override
-    public void performClose() {
+    protected void performClose() {
         // NOTE Do not release buffers here as they might be in use. loopFinished() releases them and
         // is called from event loop when it knows that the thread calling "action" is done
         Closeable.closeQuietly(tcpHandler);
