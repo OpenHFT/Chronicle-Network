@@ -17,6 +17,7 @@
  */
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
@@ -27,13 +28,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
-public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> implements NetworkContext<T>, Closeable {
+public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> extends AbstractCloseable implements NetworkContext<T> {
 
-    private final AtomicLong cid = new AtomicLong();
-    private final AtomicBoolean isClosed = new AtomicBoolean(false);
     private SocketChannel socketChannel;
     private boolean isAcceptor = true;
     private HeartbeatListener heartbeatListener;
@@ -153,28 +150,8 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> implement
 
 
     @Override
-    public void close() {
-        closeAtomically();
-    }
-
-    /**
-     * Close the connection atomically.
-     *
-     * @return true if state changed to closed; false if nothing changed.
-     */
-    protected boolean closeAtomically() {
-        if (isClosed.compareAndSet(false, true)) {
-            Closeable.closeQuietly(networkStatsListener);
-            return true;
-        } else {
-            //was already closed.
-            return false;
-        }
-    }
-
-    @Override
-    public boolean isClosed() {
-        return isClosed.get();
+    public void performClose() {
+        Closeable.closeQuietly(networkStatsListener);
     }
 
     @Override

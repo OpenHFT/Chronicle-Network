@@ -37,7 +37,7 @@ import java.util.function.Supplier;
 
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
-public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractCloseable implements EventHandler, Closeable {
+public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractCloseable implements EventHandler {
     @NotNull
     private final Function<T, TcpEventHandler<T>> handlerFactory;
     @NotNull

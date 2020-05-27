@@ -23,6 +23,7 @@ import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.core.annotation.PackageLocal;
+import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
@@ -45,7 +46,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.lang.Math.max;
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 
-public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandler, Closeable, TcpEventHandlerManager<T> {
+public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractCloseable implements EventHandler, TcpEventHandlerManager<T> {
 
     private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
     private static final long NBR_WARNING_NANOS = Long.getLong("tcp.nbr.warning.nanos", 2_000_000);
@@ -72,10 +73,6 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
     @NotNull
     private final Bytes<ByteBuffer> outBBB;
     private final boolean fair;
-    @NotNull
-    private final AtomicBoolean scClosed = new AtomicBoolean();
-    @NotNull
-    private final AtomicBoolean closed = new AtomicBoolean();
     private int oneInTen;
     @Nullable
     private volatile TcpHandler<T> tcpHandler;
@@ -113,7 +110,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
                 checkBufSize(sock.getSendBufferSize(), "send");
             }
         } catch (IOException e) {
-            if (closed.get() || !sc.isOpen())
+            if (isClosed() || !sc.isOpen())
                 throw new IORuntimeException(e);
             Jvm.warn().on(getClass(), e);
         }
@@ -140,7 +137,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
         return "TcpEventHandler{" +
                 "sc=" + scToString + ", " +
                 "tcpHandler=" + tcpHandler + ", " +
-                "closed=" + closed +
+                "closed=" + isClosed() +
                 '}';
     }
 
@@ -165,11 +162,6 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
 
     public ISocketChannel socketChannel() {
         return sc;
-    }
-
-    @Override
-    public boolean isClosed() {
-        return closed.get();
     }
 
     @NotNull
@@ -206,7 +198,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
     public synchronized boolean action() throws InvalidEventHandlerException {
         Jvm.optionalSafepoint();
 
-        if (closed.get())
+        if (isClosed())
             throw new InvalidEventHandlerException();
 
         if (tcpHandler == null)
@@ -265,7 +257,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
                             lastTickReadTime += heartbeatListener.lingerTimeBeforeDisconnect();
                         } else {
                             tcpHandler.onEndOfConnection(true);
-                            closeSC();
+                            close();
                             throw new InvalidEventHandlerException("heartbeat timeout");
                         }
                     }
@@ -423,27 +415,18 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
                 heartbeatListener.onMissedHeartbeat();
 
         } finally {
-            closeSC();
+            close();
         }
     }
 
     @Override
-    public void close() {
-        if (closed.compareAndSet(false, true)) {
-            closeSC();
-            // NOTE Do not release buffers here as they might be in use. Wait for loopFinished() to do it
-            // Note: loopFinished() may actually be called before close() if a InvalidEventHandlerException is thrown
-        }
-    }
-
-    @PackageLocal
-    void closeSC() {
-        if (scClosed.compareAndSet(false, true)) {
-            Closeable.closeQuietly(tcpHandler);
-            Closeable.closeQuietly(this.nc.networkStatsListener());
-            Closeable.closeQuietly(sc);
-            Closeable.closeQuietly(nc);
-        }
+    public void performClose() {
+        // NOTE Do not release buffers here as they might be in use. loopFinished() releases them and
+        // is called from event loop when it knows that the thread calling "action" is done
+        Closeable.closeQuietly(tcpHandler);
+        Closeable.closeQuietly(this.nc.networkStatsListener());
+        Closeable.closeQuietly(sc);
+        Closeable.closeQuietly(nc);
     }
 
     @PackageLocal
@@ -463,7 +446,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
         writeLog.log(outBB, start, outBB.position());
 
         if (wrote < 0) {
-            closeSC();
+            close();
         } else if (wrote > 0) {
             outBB.compact().flip();
             outBBB.writePosition(outBB.limit());
@@ -503,10 +486,10 @@ public class TcpEventHandler<T extends NetworkContext<T>> implements EventHandle
                     busy = tryWrite(outBB);
             }
         } catch (ClosedChannelException cce) {
-            closeSC();
+            close();
 
         } catch (IOException e) {
-            if (!closed.get())
+            if (!isClosed())
                 handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
         }
         return busy;

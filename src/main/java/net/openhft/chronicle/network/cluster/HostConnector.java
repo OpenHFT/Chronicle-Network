@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-public class HostConnector<T extends ClusteredNetworkContext<T>> extends AbstractCloseable implements Closeable {
+public class HostConnector<T extends ClusteredNetworkContext<T>> extends AbstractCloseable {
 
     private final WireType wireType;
 

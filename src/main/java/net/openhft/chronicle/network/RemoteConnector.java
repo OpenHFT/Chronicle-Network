@@ -43,7 +43,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
-public class RemoteConnector<T extends NetworkContext<T>> extends AbstractCloseable implements Closeable {
+public class RemoteConnector<T extends NetworkContext<T>> extends AbstractCloseable {
 
     @NotNull
     private final ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpHandlerSupplier;

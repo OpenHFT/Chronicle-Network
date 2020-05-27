@@ -25,6 +25,7 @@ import net.openhft.chronicle.bytes.BytesUtil;
 import net.openhft.chronicle.bytes.ConnectionDroppedException;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.StackTrace;
+import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.threads.EventHandler;
@@ -74,7 +75,7 @@ import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
  * ), when the server responds to the client, its expected that the server sends back the tid as the very first field in the message. The
  * TcpChannelHub will look at each message and read the tid, and then marshall the message onto your appropriate client thread. Created by Rob Austin
  */
-public final class TcpChannelHub implements Closeable {
+public final class TcpChannelHub extends AbstractCloseable {
 
     private static final boolean hasAssert;
 
@@ -125,7 +126,6 @@ public final class TcpChannelHub implements Closeable {
     private long largestChunkSoFar = 0;
     @Nullable
     private volatile SocketChannel clientChannel;
-    private volatile boolean closed;
     @NotNull
     private final CountDownLatch receivedClosedAcknowledgement = new CountDownLatch(1);
     // set up in the header
@@ -508,24 +508,16 @@ public final class TcpChannelHub implements Closeable {
     }
 
     @Override
-    public boolean isClosed() {
-        return closed;
-    }
-
-    @Override
     public void notifyClosing() {
         // close early if possible.
         close();
     }
 
     /**
-     * called when we are completed finished with using the TcpChannelHub
+     * called when we are finished with using the TcpChannelHub
      */
     @Override
-    public void close() {
-        if (closed)
-            return;
-        closed = true;
+    public void performClose() {
         tcpSocketConsumer.prepareToShutdown();
 
         if (shouldSendCloseMessage) {
