@@ -40,6 +40,7 @@ public class ReadWithFlowControl implements TcpEventHandler.SocketReader {
             rawLen = inBBB.readInt(this.len);
             len = lengthOf(rawLen);
             inBBB.ensureCapacity(this.len + 4);
+            bb = requireNonNull(inBBB.underlyingObject());
             limit(this.len + 8);
             position(4);
             limit(len + 4);
@@ -69,6 +70,7 @@ public class ReadWithFlowControl implements TcpEventHandler.SocketReader {
             this.len = lengthOf(rawLen);
             limit(this.len + 4);
             inBBB.ensureCapacity(this.len + 4);
+            bb = requireNonNull(inBBB.underlyingObject());
             bb.position(len + 4);
             inBBB.readPositionRemaining(0, result);
             hasReadLen = true;
