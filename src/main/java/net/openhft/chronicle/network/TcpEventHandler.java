@@ -61,6 +61,8 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
         if (DISABLE_TCP_NODELAY) System.out.println("tcpNoDelay disabled");
     }
 
+    private TcpEventHandler.SocketReader reader = (sc, inBBB) -> sc.read(inBBB.underlyingObject());
+
     @NotNull
     private final ISocketChannel sc;
     private final String scToString;
@@ -83,6 +85,107 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
     private long bytesReadCount;
     private long bytesWriteCount;
     private long lastMonitor;
+
+    public void reader(TcpEventHandler.SocketReader reader) {
+        this.reader = reader;
+    }
+
+    @Override
+    public synchronized boolean action() throws InvalidEventHandlerException {
+        Jvm.optionalSafepoint();
+
+        if (isClosed())
+            throw new InvalidEventHandlerException();
+
+        if (tcpHandler == null)
+            return false;
+
+        if (!sc.isOpen()) {
+            tcpHandler.onEndOfConnection(false);
+            Closeable.closeQuietly(nc);
+            throw new InvalidEventHandlerException("socket is closed");
+        }
+
+        socketPollCount++;
+
+        boolean busy = false;
+        if (fair || oneInTen++ >= 8) {
+            oneInTen = 0;
+            try {
+                busy = writeAction();
+            } catch (Exception e) {
+                Jvm.warn().on(getClass(), e);
+            }
+        }
+        try {
+            ByteBuffer inBB = inBBB.underlyingObject();
+            int start = inBB.position();
+
+            assert !sc.isBlocking();
+            long time0 = System.nanoTime();
+            int read = inBB.remaining() > 0 ? reader.read(sc, inBBB) : Integer.MAX_VALUE;
+            //   int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
+            long time1 = System.nanoTime() - time0;
+            if (time1 > NBR_WARNING_NANOS)
+                Jvm.warn().on(getClass(), "Non blocking read took " + time1 / 1000 + " us.");
+
+            if (read == Integer.MAX_VALUE)
+                onInBBFul();
+            if (read > 0) {
+                WanSimulator.dataRead(read);
+                tcpHandler.onReadTime(System.nanoTime(), inBB, start, inBB.position());
+                lastTickReadTime = System.currentTimeMillis();
+                readLog.log(inBB, start, inBB.position());
+                if (invokeHandler())
+                    oneInTen++;
+                busy = true;
+            } else if (read == 0) {
+                if (outBBB.readRemaining() > 0) {
+                    busy |= invokeHandler();
+                }
+
+                // check for timeout only here - in other branches we either just read something or are about to close socket anyway
+                if (nc.heartbeatTimeoutMs() > 0) {
+                    long tickTime = System.currentTimeMillis();
+                    if (tickTime > lastTickReadTime + nc.heartbeatTimeoutMs()) {
+                        final HeartbeatListener heartbeatListener = nc.heartbeatListener();
+                        if (heartbeatListener != null && heartbeatListener.onMissedHeartbeat()) {
+                            // implementer tries to recover - do not disconnect for some time
+                            lastTickReadTime += heartbeatListener.lingerTimeBeforeDisconnect();
+                        } else {
+                            tcpHandler.onEndOfConnection(true);
+                            close();
+                            throw new InvalidEventHandlerException("heartbeat timeout");
+                        }
+                    }
+                }
+
+                if (!busy)
+                    monitorStats();
+            } else {
+                // read == -1, socketChannel has reached end-of-stream
+                close();
+                throw new InvalidEventHandlerException("socket closed " + sc);
+            }
+
+            return busy;
+
+        } catch (ClosedChannelException e) {
+            close();
+            throw new InvalidEventHandlerException(e);
+        } catch (IOException e) {
+            close();
+            handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
+            throw new InvalidEventHandlerException();
+        } catch (InvalidEventHandlerException e) {
+            close();
+            throw e;
+        } catch (Exception e) {
+            close();
+            Jvm.warn().on(getClass(), "", e);
+            throw new InvalidEventHandlerException(e);
+        }
+    }
 
     public TcpEventHandler(@NotNull T nc) {
         this(nc, false);
@@ -194,100 +297,10 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
         this.tcpHandler = tcpHandler;
     }
 
-    @Override
-    public synchronized boolean action() throws InvalidEventHandlerException {
-        Jvm.optionalSafepoint();
+    @FunctionalInterface
+    interface SocketReader {
+        int read(final ISocketChannel sc, Bytes<ByteBuffer> inBBB) throws IOException;
 
-        if (isClosed())
-            throw new InvalidEventHandlerException();
-
-        if (tcpHandler == null)
-            return false;
-
-        if (!sc.isOpen()) {
-            tcpHandler.onEndOfConnection(false);
-            Closeable.closeQuietly(nc);
-            throw new InvalidEventHandlerException("socket is closed");
-        }
-
-        socketPollCount++;
-
-        boolean busy = false;
-        if (fair || oneInTen++ >= 8) {
-            oneInTen = 0;
-            try {
-                busy = writeAction();
-            } catch (Exception e) {
-                Jvm.warn().on(getClass(), e);
-            }
-        }
-        try {
-            ByteBuffer inBB = inBBB.underlyingObject();
-            int start = inBB.position();
-
-            assert !sc.isBlocking();
-            long time0 = System.nanoTime();
-            int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
-            long time1 = System.nanoTime() - time0;
-            if (time1 > NBR_WARNING_NANOS)
-                Jvm.warn().on(getClass(), "Non blocking read took " + time1 / 1000 + " us.");
-
-            if (read == Integer.MAX_VALUE)
-                onInBBFul();
-            if (read > 0) {
-                WanSimulator.dataRead(read);
-                tcpHandler.onReadTime(System.nanoTime(), inBB, start, inBB.position());
-                lastTickReadTime = System.currentTimeMillis();
-                readLog.log(inBB, start, inBB.position());
-                if (invokeHandler())
-                    oneInTen++;
-                busy = true;
-            } else if (read == 0) {
-                if (outBBB.readRemaining() > 0) {
-                    busy |= invokeHandler();
-                }
-
-                // check for timeout only here - in other branches we either just read something or are about to close socket anyway
-                if (nc.heartbeatTimeoutMs() > 0) {
-                    long tickTime = System.currentTimeMillis();
-                    if (tickTime > lastTickReadTime + nc.heartbeatTimeoutMs()) {
-                        final HeartbeatListener heartbeatListener = nc.heartbeatListener();
-                        if (heartbeatListener != null && heartbeatListener.onMissedHeartbeat()) {
-                            // implementer tries to recover - do not disconnect for some time
-                            lastTickReadTime += heartbeatListener.lingerTimeBeforeDisconnect();
-                        } else {
-                            tcpHandler.onEndOfConnection(true);
-                            close();
-                            throw new InvalidEventHandlerException("heartbeat timeout");
-                        }
-                    }
-                }
-
-                if (!busy)
-                    monitorStats();
-            } else {
-                // read == -1, socketChannel has reached end-of-stream
-                close();
-                throw new InvalidEventHandlerException("socket closed " + sc);
-            }
-
-            return busy;
-
-        } catch (ClosedChannelException e) {
-            close();
-            throw new InvalidEventHandlerException(e);
-        } catch (IOException e) {
-            close();
-            handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
-            throw new InvalidEventHandlerException();
-        } catch (InvalidEventHandlerException e) {
-            close();
-            throw e;
-        } catch (Exception e) {
-            close();
-            Jvm.warn().on(getClass(), "", e);
-            throw new InvalidEventHandlerException(e);
-        }
     }
 
     @Override
