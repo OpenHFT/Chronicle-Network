@@ -2,6 +2,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -13,34 +14,34 @@ import static net.openhft.chronicle.wire.Wires.lengthOf;
  * provides flow control and back pressure to the the socket writer, so that only just one message is read at a time from the TCP/IP socket This class
  * is only used in data grid
  */
-public class ReadWithFlowControl implements TcpEventHandler.SocketReader {
+public final class ReadWithFlowControl implements TcpEventHandler.SocketReader {
 
-    int len = 0;
-    boolean hasReadLen = false;
-    int position = 0;
-    int limit = 4;
+    private int len = 0;
+    private boolean hasReadLen = false;
+    private int position = 0;
+    private int limit = 4;
     private int rawLen;
 
     /**
      * reads just a single message from the socket
      */
-    public int read(ISocketChannel socketChannel, Bytes<ByteBuffer> inBBB) throws IOException {
-        ByteBuffer bb = requireNonNull(inBBB.underlyingObject());
+    public int read(@NotNull final ISocketChannel socketChannel, @NotNull final Bytes<ByteBuffer> bytes) throws IOException {
+        ByteBuffer bb = requireNonNull(bytes.underlyingObject());
         bb.limit(limit);
         bb.position(position);
         if (hasReadLen) {
             // write the len
-            inBBB.writeInt(0, rawLen);
+            bytes.writeInt(0, rawLen);
         } else {
             // read the len
             socketChannel.read(bb);
 
             if (bb.position() < bb.limit())
                 return 0;
-            rawLen = inBBB.readInt(this.len);
+            rawLen = bytes.readInt(this.len);
             len = lengthOf(rawLen);
-            inBBB.ensureCapacity(this.len + 4);
-            bb = requireNonNull(inBBB.underlyingObject());
+            bytes.ensureCapacity(this.len + 4);
+            bb = requireNonNull(bytes.underlyingObject());
             limit(this.len + 8);
             position(4);
             limit(len + 4);
@@ -54,8 +55,8 @@ public class ReadWithFlowControl implements TcpEventHandler.SocketReader {
         if (bb.position() == len + 4) {
             position(0);
             limit(4);
-            int result = len;
-            inBBB.readPositionRemaining(0, len);
+            final int result = len;
+            bytes.readPositionRemaining(0, len);
             hasReadLen = false;
             len = 0;
             // read all the data from the buffer
@@ -65,14 +66,14 @@ public class ReadWithFlowControl implements TcpEventHandler.SocketReader {
         // we can read the message and the len
         if (bb.position() == len + 8) {
             position(4);
-            int result = len;
-            rawLen = inBBB.readInt(this.len);
+            final int result = len;
+            rawLen = bytes.readInt(this.len);
             this.len = lengthOf(rawLen);
             limit(this.len + 4);
-            inBBB.ensureCapacity(this.len + 4);
-            bb = requireNonNull(inBBB.underlyingObject());
+            bytes.ensureCapacity(this.len + 4);
+            bb = requireNonNull(bytes.underlyingObject());
             bb.position(len + 4);
-            inBBB.readPositionRemaining(0, result);
+            bytes.readPositionRemaining(0, result);
             hasReadLen = true;
 
             return result;
