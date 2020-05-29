@@ -24,7 +24,7 @@ public class ReadWithFlowControl implements TcpEventHandler.SocketReader {
     /**
      * reads just a single message from the socket
      */
-    public int read(ISocketChannel sc, Bytes<ByteBuffer> inBBB) throws IOException {
+    public int read(ISocketChannel socketChannel, Bytes<ByteBuffer> inBBB) throws IOException {
         ByteBuffer bb = requireNonNull(inBBB.underlyingObject());
         bb.limit(limit);
         bb.position(position);
@@ -33,7 +33,7 @@ public class ReadWithFlowControl implements TcpEventHandler.SocketReader {
             inBBB.writeInt(0, rawLen);
         } else {
             // read the len
-            sc.read(bb);
+            socketChannel.read(bb);
 
             if (bb.position() < bb.limit())
                 return 0;
@@ -48,7 +48,7 @@ public class ReadWithFlowControl implements TcpEventHandler.SocketReader {
             hasReadLen = true;
         }
 
-        sc.read(bb);
+        socketChannel.read(bb);
 
         // we can read the message, now read the len of the next message
         if (bb.position() == len + 4) {

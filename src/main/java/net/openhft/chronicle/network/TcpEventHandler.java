@@ -298,9 +298,16 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
     }
 
     @FunctionalInterface
-    interface SocketReader {
-        int read(final ISocketChannel sc, Bytes<ByteBuffer> inBBB) throws IOException;
-
+    public interface SocketReader {
+        /**
+         * Reads content from the provided {@code socketChannel} socket channel into the provided {@code inBBB}.
+         *
+         * @param socketChannel to read from
+         * @param inBBB to which content from the socketChannel is put
+         * @return the number of bytes read from the provided socketChannel.
+s         * @throws IOException if there is a problem reading form the provided socketChannel.
+         */
+        int read(final ISocketChannel socketChannel, Bytes<ByteBuffer> inBBB) throws IOException;
     }
 
     @Override
