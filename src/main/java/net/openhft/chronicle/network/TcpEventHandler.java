@@ -61,7 +61,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
         if (DISABLE_TCP_NODELAY) System.out.println("tcpNoDelay disabled");
     }
 
-    private TcpEventHandler.SocketReader reader = (sc, inBBB) -> sc.read(inBBB.underlyingObject());
+    private TcpEventHandler.SocketReader reader = new DefaultSocketReader();
 
     @NotNull
     private final ISocketChannel sc;
@@ -85,6 +85,53 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
     private long bytesReadCount;
     private long bytesWriteCount;
     private long lastMonitor;
+
+    public TcpEventHandler(@NotNull final T nc) {
+        this(nc, false);
+    }
+
+    public TcpEventHandler(@NotNull final T nc, final boolean fair) {
+
+        this.sc = ISocketChannel.wrapUnsafe(nc.socketChannel());
+        this.scToString = sc.toString();
+        this.nc = nc;
+        this.fair = fair;
+        try {
+            sc.configureBlocking(false);
+            Socket sock = sc.socket();
+            // TODO: should have a strategy for this like ConnectionNotifier
+            if (!DISABLE_TCP_NODELAY)
+                sock.setTcpNoDelay(true);
+
+            if (TCP_BUFFER >= 64 << 10) {
+                sock.setReceiveBufferSize(TCP_BUFFER);
+                sock.setSendBufferSize(TCP_BUFFER);
+
+                checkBufSize(sock.getReceiveBufferSize(), "recv");
+                checkBufSize(sock.getSendBufferSize(), "send");
+            }
+        } catch (IOException e) {
+            if (isClosed() || !sc.isOpen())
+                throw new IORuntimeException(e);
+            Jvm.warn().on(getClass(), e);
+        }
+
+        //We have to provide back pressure to restrict the buffer growing beyond,2GB because it reverts to
+        // being Native bytes, we should also provide back pressure if we are not able to keep up
+        inBBB = Bytes.elasticByteBuffer(TCP_BUFFER + OS.pageSize(), max(TCP_BUFFER + OS.pageSize(), DEFAULT_MAX_MESSAGE_SIZE));
+        outBBB = Bytes.elasticByteBuffer(TCP_BUFFER, max(TCP_BUFFER, DEFAULT_MAX_MESSAGE_SIZE));
+
+        // TODO Fix Chronicle-Queue-Enterprise tests so socket connections are closed cleanly.
+        BytesUtil.unregister(inBBB);
+        BytesUtil.unregister(outBBB);
+
+        // must be set after we take a slice();
+        outBBB.underlyingObject().limit(0);
+        readLog = new NetworkLog(this.sc, "read");
+        writeLog = new NetworkLog(this.sc, "write");
+        if (FIRST_HANDLER.compareAndSet(false, true))
+            warmUp();
+    }
 
     public void reader(TcpEventHandler.SocketReader reader) {
         this.reader = reader;
@@ -187,54 +234,6 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
         }
     }
 
-    public TcpEventHandler(@NotNull T nc) {
-        this(nc, false);
-    }
-
-    public TcpEventHandler(@NotNull T nc, boolean fair) {
-
-        this.sc = ISocketChannel.wrapUnsafe(nc.socketChannel());
-        this.scToString = sc.toString();
-        this.nc = nc;
-        this.fair = fair;
-
-        try {
-            sc.configureBlocking(false);
-            Socket sock = sc.socket();
-            // TODO: should have a strategy for this like ConnectionNotifier
-            if (!DISABLE_TCP_NODELAY)
-                sock.setTcpNoDelay(true);
-
-            if (TCP_BUFFER >= 64 << 10) {
-                sock.setReceiveBufferSize(TCP_BUFFER);
-                sock.setSendBufferSize(TCP_BUFFER);
-
-                checkBufSize(sock.getReceiveBufferSize(), "recv");
-                checkBufSize(sock.getSendBufferSize(), "send");
-            }
-        } catch (IOException e) {
-            if (isClosed() || !sc.isOpen())
-                throw new IORuntimeException(e);
-            Jvm.warn().on(getClass(), e);
-        }
-
-        //We have to provide back pressure to restrict the buffer growing beyond,2GB because it reverts to
-        // being Native bytes, we should also provide back pressure if we are not able to keep up
-        inBBB = Bytes.elasticByteBuffer(TCP_BUFFER + OS.pageSize(), max(TCP_BUFFER + OS.pageSize(), DEFAULT_MAX_MESSAGE_SIZE));
-        outBBB = Bytes.elasticByteBuffer(TCP_BUFFER, max(TCP_BUFFER, DEFAULT_MAX_MESSAGE_SIZE));
-
-        // TODO Fix Chronicle-Queue-Enterprise tests so socket connections are closed cleanly.
-        BytesUtil.unregister(inBBB);
-        BytesUtil.unregister(outBBB);
-
-        // must be set after we take a slice();
-        outBBB.underlyingObject().limit(0);
-        readLog = new NetworkLog(this.sc, "read");
-        writeLog = new NetworkLog(this.sc, "write");
-        if (FIRST_HANDLER.compareAndSet(false, true))
-            warmUp();
-    }
-
     @Override
     public String toString() {
         return "TcpEventHandler{" +
@@ -309,6 +308,14 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
          * @throws IOException if there is a problem reading form the provided {@code socketChannel}.
          */
         int read(@NotNull ISocketChannel socketChannel, @NotNull Bytes<ByteBuffer> bytes) throws IOException;
+    }
+
+    public static final class DefaultSocketReader implements SocketReader {
+
+        @Override
+        public int read(@NotNull final ISocketChannel socketChannel, @NotNull final Bytes<ByteBuffer> bytes) throws IOException {
+            return socketChannel.read(bytes.underlyingObject());
+        }
     }
 
     @Override

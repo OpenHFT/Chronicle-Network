@@ -22,6 +22,8 @@ public final class ReadWithFlowControl implements TcpEventHandler.SocketReader {
     private int limit = 4;
     private int rawLen;
 
+    public ReadWithFlowControl() {}
+
     /**
      * reads just a single message from the socket
      */
