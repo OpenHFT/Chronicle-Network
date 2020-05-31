@@ -5,7 +5,6 @@ import net.openhft.chronicle.core.io.Closeable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.Ignore;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -24,7 +23,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public final class NioSslIntegrationTest {
-    private static final boolean SEND_DATA_BEFORE_SSL_HANDSHAKE = Boolean.getBoolean("ssl.test.payload");
+    private static final boolean SEND_DATA_BEFORE_SSL_HANDSHAKE = Jvm.getBoolean("ssl.test.payload");
 
     @Before
     public void setUp() throws IOException {

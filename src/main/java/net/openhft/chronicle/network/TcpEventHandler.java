@@ -55,7 +55,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
     private static final AtomicBoolean FIRST_HANDLER = new AtomicBoolean();
     public static final int TARGET_WRITE_SIZE = Integer.getInteger("TcpEventHandler.targetWriteSize", 1024);
     private static final int DEFAULT_MAX_MESSAGE_SIZE = 1 << 30;
-    public static boolean DISABLE_TCP_NODELAY = Boolean.getBoolean("disable.tcp_nodelay");
+    public static boolean DISABLE_TCP_NODELAY = Jvm.getBoolean("disable.tcp_nodelay");
 
     static {
         if (DISABLE_TCP_NODELAY) System.out.println("tcpNoDelay disabled");

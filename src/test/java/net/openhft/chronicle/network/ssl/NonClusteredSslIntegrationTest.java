@@ -1,6 +1,7 @@
 package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.api.TcpHandler;
@@ -43,7 +44,7 @@ import static org.junit.Assert.assertTrue;
 @Ignore
 public final class NonClusteredSslIntegrationTest {
 
-    private static final boolean DEBUG = Boolean.getBoolean("NonClusteredSslIntegrationTest.debug");
+    private static final boolean DEBUG = Jvm.getBoolean("NonClusteredSslIntegrationTest.debug");
     private final EventGroup client = new EventGroup(true, Pauser.millis(1), false, "client");
     private final EventGroup server = new EventGroup(true, Pauser.millis(1), false, "server");
     private final CountingTcpHandler clientAcceptor = new CountingTcpHandler("client-acceptor");
