@@ -128,7 +128,8 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
             if (pos == outWire.bytes().writePosition())
                 return;
-
+            if (y >= 100)
+                Jvm.pause(y / 100);
         }
 
         Jvm.warn().on(getClass(), new IllegalStateException("looped for too long"));
