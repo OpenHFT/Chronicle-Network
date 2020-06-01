@@ -133,7 +133,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
             warmUp();
     }
 
-    public void reader(TcpEventHandler.SocketReader reader) {
+    public void reader(@NotNull final TcpEventHandler.SocketReader reader) {
         this.reader = reader;
     }
 
