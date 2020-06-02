@@ -19,6 +19,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.io.SimpleCloseable;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.api.session.SubHandler;
@@ -27,10 +28,9 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
-public class HeaderTcpHandler<T extends NetworkContext<T>> implements TcpHandler<T> {
+public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseable implements TcpHandler<T> {
 
     public static final String HANDLER = "handler";
     private static final Logger LOG = LoggerFactory.getLogger(HeaderTcpHandler.class);
@@ -38,7 +38,6 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> implements TcpHandler
     private final TcpEventHandler<T> handlerManager;
     @NotNull
     private final Function<Object, TcpHandler<T>> handlerFunction;
-    private AtomicBoolean isClosed = new AtomicBoolean();
 
     public HeaderTcpHandler(@NotNull final TcpEventHandler<T> handlerManager,
                             @NotNull final Function<Object, TcpHandler<T>> handlerFunction) {
@@ -101,15 +100,5 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> implements TcpHandler
         @NotNull VanillaSessionDetails sd = new VanillaSessionDetails();
         sd.readMarshallable(inWire);
         return sd;
-    }
-
-    @Override
-    public boolean isClosed() {
-        return isClosed.get();
-    }
-
-    @Override
-    public void close() {
-        isClosed.set(true);
     }
 }
