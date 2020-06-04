@@ -576,9 +576,9 @@ public final class TcpChannelHub extends AbstractCloseable {
     }
 
     private void awaitAckOfClosedMessage() {
-        // wait up to 1 seconds to receive an close request acknowledgment from the server
+        // wait up to 250 ms to receive an close request acknowledgment from the server
         try {
-            final boolean await = receivedClosedAcknowledgement.await(1, TimeUnit.SECONDS);
+            final boolean await = receivedClosedAcknowledgement.await(250, MILLISECONDS);
             if (!await)
                 if (Jvm.isDebugEnabled(getClass()))
                     Jvm.debug().on(getClass(), "SERVER IGNORED CLOSE REQUEST: shutting down the client anyway as the " +
