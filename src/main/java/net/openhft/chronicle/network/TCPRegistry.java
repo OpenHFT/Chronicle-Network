@@ -28,27 +28,21 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.TimeUnit;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
 /**
- * The TCPRegistry allows you to either provide a true host and port for example "localhost:8080" or
- * if you would rather let the application allocate you a free port at random, you can just provide
- * a text reference to the port, for example "host.port", you can provide any text you want, it will
- * always be taken as a reference, that is unless its correctly formed like
- * "&lt;hostname&gt;:&lt;port&gt;”, then it will use the exact host and port you provide. For listen
- * addresses, if hostname is empty or * then all local addresses will be listened on. <p>The reason
- * we offer this functionality is quite often in unit tests you wish to start a test via loopback,
- * followed often by another test via loopback, if the first test does not shut down correctly it
- * can impact on the second test. Giving each test a unique port is one solution, but then managing
- * those ports can become a problem in its self. So we created the TCPRegistry which manages those
- * ports for you, when you come to clean up at the end of each test, all you have to do it call
- * TCPRegistry.reset() and it will ensure that any remaining ports that are open will be closed.
+ * The TCPRegistry allows you to either provide a true host and port for example "localhost:8080" or if you would rather let the application allocate
+ * you a free port at random, you can just provide a text reference to the port, for example "host.port", you can provide any text you want, it will
+ * always be taken as a reference, that is unless its correctly formed like "&lt;hostname&gt;:&lt;port&gt;”, then it will use the exact host and port
+ * you provide. For listen addresses, if hostname is empty or * then all local addresses will be listened on. <p>The reason we offer this
+ * functionality is quite often in unit tests you wish to start a test via loopback, followed often by another test via loopback, if the first test
+ * does not shut down correctly it can impact on the second test. Giving each test a unique port is one solution, but then managing those ports can
+ * become a problem in its self. So we created the TCPRegistry which manages those ports for you, when you come to clean up at the end of each test,
+ * all you have to do it call TCPRegistry.reset() and it will ensure that any remaining ports that are open will be closed.
  */
 public enum TCPRegistry {
     ;
@@ -90,8 +84,8 @@ public enum TCPRegistry {
     }
 
     /**
-     * @param descriptions each string is the name to a reference of a host and port, or if
-     *                     correctly formed this example host and port are used instead
+     * @param descriptions each string is the name to a reference of a host and port, or if correctly formed this example host and port are used
+     *                     instead
      * @throws IOException
      */
     public static void createServerSocketChannelFor(@NotNull String... descriptions) throws IOException {
@@ -195,5 +189,40 @@ public enum TCPRegistry {
 
     public static void dumpAllSocketChannels() {
         HOSTNAME_PORT_ALIAS.forEach((s, inetSocketAddress) -> System.out.println(s + ": " + inetSocketAddress.toString()));
+    }
+
+    public static void assertAllServersStopped(final int timeout, final TimeUnit unit) {
+        long endtime = System.currentTimeMillis() + unit.toMillis(timeout);
+        @NotNull List<ServerSocketChannel> closed = new ArrayList<>();
+        for (@NotNull Map.Entry<String, ServerSocketChannel> entry : DESC_TO_SERVER_SOCKET_CHANNEL_MAP.entrySet()) {
+            if (entry.getValue().isOpen())
+                closed.add(entry.getValue());
+
+        }
+        HOSTNAME_PORT_ALIAS.clear();
+        DESC_TO_SERVER_SOCKET_CHANNEL_MAP.clear();
+        if (closed.isEmpty())
+            return;
+
+        do {
+            Jvm.pause(1);
+
+            Iterator<ServerSocketChannel> iterator = closed.iterator();
+            while (iterator.hasNext()) {
+                ServerSocketChannel next = iterator.next();
+                if (!next.isOpen()) {
+
+                    iterator.remove();
+                }
+
+                if (closed.isEmpty())
+                    return;
+            }
+        }
+        while (System.currentTimeMillis() < endtime);
+
+        Closeable.closeQuietly(closed);
+        throw new AssertionError("Had to stop " + closed);
+
     }
 }
