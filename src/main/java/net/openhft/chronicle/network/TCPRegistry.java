@@ -191,7 +191,7 @@ public enum TCPRegistry {
         HOSTNAME_PORT_ALIAS.forEach((s, inetSocketAddress) -> System.out.println(s + ": " + inetSocketAddress.toString()));
     }
 
-    public static void assertAllServersStopped(final int timeout, final TimeUnit unit) {
+    public static void assertAllServersStopped(final long timeout, final TimeUnit unit) {
         long endtime = System.currentTimeMillis() + unit.toMillis(timeout);
         @NotNull List<ServerSocketChannel> closed = new ArrayList<>();
         for (@NotNull Map.Entry<String, ServerSocketChannel> entry : DESC_TO_SERVER_SOCKET_CHANNEL_MAP.entrySet()) {
