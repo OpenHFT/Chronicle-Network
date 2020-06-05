@@ -222,7 +222,17 @@ public enum TCPRegistry {
         while (System.currentTimeMillis() < endtime);
 
         Closeable.closeQuietly(closed);
-        throw new AssertionError("Had to stop " + closed);
+
+        StringBuilder e = new StringBuilder();
+        for (final ServerSocketChannel serverSocketChannel : closed) {
+            try {
+                e.append(serverSocketChannel.getLocalAddress().toString()).append(",");
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
+        }
+        e.setLength(e.length() - 1);
+        throw new AssertionError("Had to stop " + e);
 
     }
 }
