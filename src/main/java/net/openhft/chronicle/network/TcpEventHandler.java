@@ -18,12 +18,12 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.bytes.BytesUtil;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.core.annotation.PackageLocal;
 import net.openhft.chronicle.core.io.AbstractCloseable;
+import net.openhft.chronicle.core.io.AbstractReferenceCounted;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
@@ -122,8 +122,8 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
         outBBB = Bytes.elasticByteBuffer(TCP_BUFFER, max(TCP_BUFFER, DEFAULT_MAX_MESSAGE_SIZE));
 
         // TODO Fix Chronicle-Queue-Enterprise tests so socket connections are closed cleanly.
-        BytesUtil.unregister(inBBB);
-        BytesUtil.unregister(outBBB);
+        AbstractReferenceCounted.unmonitor(inBBB);
+        AbstractReferenceCounted.unmonitor(outBBB);
 
         // must be set after we take a slice();
         outBBB.underlyingObject().limit(0);
@@ -322,9 +322,9 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
     public void loopFinished() {
         // Release unless already released
         if (inBBB.refCount() > 0)
-            inBBB.release();
+            inBBB.releaseLast();
         if (outBBB.refCount() > 0)
-            outBBB.release();
+            outBBB.releaseLast();
     }
 
     public void onInBBFul() {

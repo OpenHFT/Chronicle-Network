@@ -42,7 +42,7 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(Parameterized.class)
 @Ignore
-public final class NonClusteredSslIntegrationTest {
+public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
 
     private static final boolean DEBUG = Jvm.getBoolean("NonClusteredSslIntegrationTest.debug");
     private final EventGroup client = new EventGroup(true, Pauser.millis(1), false, "client");

@@ -27,6 +27,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.ReferenceCountUtil;
+import net.openhft.chronicle.network.NetworkTestCommon;
 import net.openhft.performance.tests.vanilla.tcp.EchoClientMain;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,7 +41,7 @@ import java.util.concurrent.TimeUnit;
  * Simply put, the echo client initiates the ping-pong traffic between the echo client and server by
  * sending the first message to the server.
  */
-public final class NettyClientThroughPutTest {
+public final class NettyClientThroughPutTest extends NetworkTestCommon {
 
     static final boolean SSL = System.getProperty("ssl") != null;
     static final String HOST = System.getProperty("host", "127.0.0.1");

@@ -32,9 +32,11 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.io.AbstractReferenceCounted;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.ThreadDump;
 import net.openhft.chronicle.network.AcceptorEventHandler;
+import net.openhft.chronicle.network.NetworkTestCommon;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
@@ -54,7 +56,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-public class VerySimpleClientTest {
+public class VerySimpleClientTest extends NetworkTestCommon {
 
     public static final WireType WIRE_TYPE = WireType.BINARY;
     final Wire outWire = WIRE_TYPE.apply(Bytes.elasticByteBuffer());
@@ -96,12 +98,14 @@ public class VerySimpleClientTest {
         eg.close();
         TcpChannelHub.closeAllHubs();
         TCPRegistry.reset();
-        inWire.bytes().release();
-        outWire.bytes().release();
+        inWire.bytes().releaseLast();
+        outWire.bytes().releaseLast();
     }
 
     @Test
     public void test() throws IOException {
+// TODO FIX
+        AbstractReferenceCounted.disableReferenceTracing();
 
         // create the message to send§
         final long tid = 0;

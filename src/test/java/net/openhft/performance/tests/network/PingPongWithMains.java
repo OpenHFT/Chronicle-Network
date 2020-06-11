@@ -18,7 +18,6 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.bytes.BytesUtil;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
@@ -26,7 +25,6 @@ import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.threads.Pauser;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
-import org.junit.After;
 
 import java.io.IOException;
 import java.net.StandardSocketOptions;
@@ -94,8 +92,8 @@ public class PingPongWithMains {
                     times[count++] = System.nanoTime() - now;
             }
         }
-        inWire.bytes().release();
-        outWire.bytes().release();
+        inWire.bytes().releaseLast();
+        outWire.bytes().releaseLast();
 
         Arrays.sort(times);
         System.out.printf("%s: Loop back echo latency was %.1f/%.1f %,d/%,d %,d/%d us for 50/90 99/99.9 99.99/worst %%tile%n",
@@ -117,11 +115,6 @@ public class PingPongWithMains {
         } else {
             instance.testServer();
         }
-    }
-
-    @After
-    public void checkRegisteredBytes() {
-        BytesUtil.checkRegisteredBytes();
     }
 
     private void testClient() throws IOException {

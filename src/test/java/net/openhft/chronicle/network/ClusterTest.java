@@ -13,7 +13,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class ClusterTest {
+public class ClusterTest extends NetworkTestCommon {
 
     @Test
     public void testDeepCopy() {
@@ -24,12 +24,14 @@ public class ClusterTest {
         MyClusterContext cc2 = cc.deepCopy();
         Assert.assertEquals(cc.value, cc2.value);
 
-        Cluster<HostDetails, ?, MyClusterContext<?>> c = new MyCluster("mine");
-        c.clusterContext(cc);
-        Cluster<HostDetails, ?, MyClusterContext<?>> c2 = c.deepCopy();
-        MyClusterContext mcc = c2.clusterContext();
-        Assert.assertNotNull(mcc);
-        Assert.assertEquals(22, mcc.value);
+        try (Cluster<HostDetails, ?, MyClusterContext<?>> c = new MyCluster("mine")) {
+            c.clusterContext(cc);
+            try (Cluster<HostDetails, ?, MyClusterContext<?>> c2 = c.deepCopy()) {
+                MyClusterContext mcc = c2.clusterContext();
+                Assert.assertNotNull(mcc);
+                Assert.assertEquals(22, mcc.value);
+            }
+        }
     }
 
     private static class MyCluster<T extends ClusteredNetworkContext<T>> extends Cluster<HostDetails, T, MyClusterContext<T>> {

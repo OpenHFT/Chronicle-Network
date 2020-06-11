@@ -1,8 +1,6 @@
 package net.openhft.chronicle.network;
 
-import net.openhft.chronicle.bytes.BytesUtil;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -10,29 +8,12 @@ import java.io.IOException;
 
 import static junit.framework.TestCase.fail;
 
-public class TcpEventHandlerReleaseTest {
+public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
     private static final String hostPort = "host.port";
-
-    @After
-    public void teardown() {
-        TCPRegistry.reset();
-        BytesUtil.checkRegisteredBytes();
-    }
 
     @Before
     public void setUp() throws IOException {
         TCPRegistry.createServerSocketChannelFor(hostPort);
-
-        try {
-            BytesUtil.checkRegisteredBytes();
-        } catch (Throwable t) {
-            // just doing this to reset BytesUtil. TODO: fix other tests to not leak Bytes
-        }
-    }
-
-    @After
-    public void checkRegisteredBytes() {
-        BytesUtil.checkRegisteredBytes();
     }
 
     @Test

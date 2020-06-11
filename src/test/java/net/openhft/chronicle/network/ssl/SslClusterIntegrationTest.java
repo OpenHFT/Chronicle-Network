@@ -2,6 +2,7 @@ package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.core.pool.ClassAliasPool;
 import net.openhft.chronicle.network.AcceptorEventHandler;
+import net.openhft.chronicle.network.NetworkTestCommon;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.wire.TextWire;
 import org.junit.Before;
@@ -14,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
 @Ignore
-public final class SslClusterIntegrationTest {
+public final class SslClusterIntegrationTest extends NetworkTestCommon {
     static {
         ClassAliasPool.CLASS_ALIASES.addAlias(
                 SslTestClusterContext.class

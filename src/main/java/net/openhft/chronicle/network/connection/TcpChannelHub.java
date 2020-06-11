@@ -21,11 +21,11 @@ import gnu.trove.TCollections;
 import gnu.trove.map.TLongObjectMap;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.bytes.BytesUtil;
 import net.openhft.chronicle.bytes.ConnectionDroppedException;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.StackTrace;
 import net.openhft.chronicle.core.io.AbstractCloseable;
+import net.openhft.chronicle.core.io.AbstractReferenceCounted;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.threads.EventHandler;
@@ -555,8 +555,8 @@ public final class TcpChannelHub extends AbstractCloseable {
             }
         }
 
-        outWire.bytes().release();
-        handShakingWire.bytes().release();
+        outWire.bytes().releaseLast();
+        handShakingWire.bytes().releaseLast();
     }
 
     /**
@@ -1116,7 +1116,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
             final long start = Time.currentTimeMillis();
             final Wire wire = syncInWireThreadLocal.get();
-            assert BytesUtil.unregister(wire.bytes());
+            AbstractReferenceCounted.unmonitor(wire.bytes());
             wire.clear();
 
             @NotNull final Bytes<?> bytes = wire.bytes();
@@ -1382,7 +1382,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                 if (!isShuttingdown())
                     Jvm.warn().on(getClass(), e);
             } finally {
-                inWire.bytes().release();
+                inWire.bytes().releaseLast();
                 closeSocket();
             }
         }
@@ -1742,7 +1742,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
             Threads.shutdown(service);
 
-            serverHeartBeatHandler.release();
+            serverHeartBeatHandler.releaseLast();
 
             isShutdown = true;
         }

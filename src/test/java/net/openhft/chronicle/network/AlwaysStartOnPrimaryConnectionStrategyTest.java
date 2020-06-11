@@ -9,7 +9,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class AlwaysStartOnPrimaryConnectionStrategyTest {
+public class AlwaysStartOnPrimaryConnectionStrategyTest extends NetworkTestCommon {
     private static String uri;
 
     @After

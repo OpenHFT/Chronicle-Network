@@ -17,6 +17,7 @@
  */
 package net.openhft.performance.tests.third.party.frameworks.grizzly;
 
+import net.openhft.chronicle.network.NetworkTestCommon;
 import org.glassfish.grizzly.Buffer;
 import org.glassfish.grizzly.Connection;
 import org.glassfish.grizzly.filterchain.*;
@@ -37,7 +38,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * The simple client, which sends a message to the echo server and waits for response
  */
-public class GrizzlyClientLatencyTest {
+public class GrizzlyClientLatencyTest extends NetworkTestCommon {
 
     private static final String DEFAULT_PORT = Integer.toString(GrizzlyEchoServer.PORT);
     private static final int PORT = Integer.parseInt(System.getProperty("port", DEFAULT_PORT));

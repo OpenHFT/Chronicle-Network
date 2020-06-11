@@ -4,7 +4,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class VanillaNetworkContextTest {
+public class VanillaNetworkContextTest extends NetworkTestCommon {
 
     @Test
     public void testClose() {

@@ -139,8 +139,8 @@ public class BinaryTestBufferSize {
             Assert.assertEquals(expectedMessage, inBytes.readUtf8());
 
         } finally {
-            inBytes.release();
-            outBytes.release();
+            inBytes.releaseLast();
+            outBytes.releaseLast();
             System.clearProperty("TcpEventHandler.tcpBufferSize");
             client.close();
         }

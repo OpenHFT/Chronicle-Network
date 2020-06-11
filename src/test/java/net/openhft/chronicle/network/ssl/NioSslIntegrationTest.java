@@ -2,6 +2,8 @@ package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.network.NetworkTestCommon;
+import net.openhft.chronicle.threads.NamedThreadFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,13 +24,13 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public final class NioSslIntegrationTest {
+public final class NioSslIntegrationTest extends NetworkTestCommon {
     private static final boolean SEND_DATA_BEFORE_SSL_HANDSHAKE = Jvm.getBoolean("ssl.test.payload");
 
     @Before
     public void setUp() throws IOException {
         // https://bugs.openjdk.java.net/browse/JDK-8211426
-        if (Jvm.majorVersion()>=11)
+        if (Jvm.majorVersion() >= 11)
             System.setProperty("jdk.tls.server.protocols", "TLSv1.2");
     }
 
@@ -39,7 +41,8 @@ public final class NioSslIntegrationTest {
 
     @Test
     public void shouldEncryptAndDecryptTraffic() throws Exception {
-        final ExecutorService threadPool = Executors.newFixedThreadPool(2);
+        final ExecutorService threadPool = Executors.newFixedThreadPool(2,
+                new NamedThreadFactory("test"));
 
         final ServerSocketChannel serverChannel = ServerSocketChannel.open();
         serverChannel.bind(new InetSocketAddress("0.0.0.0", 13337));
