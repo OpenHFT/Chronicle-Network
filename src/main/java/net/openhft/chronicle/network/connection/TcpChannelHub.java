@@ -1043,6 +1043,8 @@ public final class TcpChannelHub extends AbstractCloseable {
         volatile long start = Long.MAX_VALUE;
         private long tid;
         private final Bytes serverHeartBeatHandler = Bytes.elasticByteBuffer();
+        private final TidReader tidReader = new TidReader();
+
         private volatile long lastTimeMessageReceivedOrSent = Time.currentTimeMillis();
         private volatile boolean isShutdown;
         @Nullable
@@ -1111,10 +1113,10 @@ public final class TcpChannelHub extends AbstractCloseable {
          * @param timeoutTimeMs the amount of time to wait before a time out exceptions
          * @param tid           the {@code tid} of the message that we are waiting for
          */
-        Wire syncBlockingReadSocket(final long timeoutTimeMs, long tid)
+        Wire syncBlockingReadSocket(final long timeoutTimeMs, final long tid)
                 throws TimeoutException, ConnectionDroppedException {
 
-            final long start = Time.currentTimeMillis();
+            final long beginMs = Time.currentTimeMillis();
             final Wire wire = syncInWireThreadLocal.get();
             AbstractReferenceCounted.unmonitor(wire.bytes());
             wire.clear();
@@ -1132,14 +1134,14 @@ public final class TcpChannelHub extends AbstractCloseable {
 
                 registerSubscribe(tid, bytes);
 
-                final long end = start + timeoutTimeMs;
+                final long endMs = beginMs + timeoutTimeMs;
                 try {
                     do {
-                        final long delay = end - System.currentTimeMillis();
-                        if (delay <= 0)
+                        final long delayMs = endMs - System.currentTimeMillis();
+                        if (delayMs <= 0)
                             break;
 
-                        bytes.wait(delay);
+                        bytes.wait(delayMs);
 
                         if (clientChannel == null)
                             throw new ConnectionDroppedException("Connection Closed : the connection to the " +
@@ -1156,7 +1158,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
             logToStandardOutMessageReceived(wire);
 
-            if (Time.currentTimeMillis() - start >= timeoutTimeMs) {
+            if (Time.currentTimeMillis() - beginMs >= timeoutTimeMs) {
                 throw new TimeoutException("timeoutTimeMs=" + timeoutTimeMs);
             }
 
@@ -1164,7 +1166,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
         }
 
-        private void registerSubscribe(long tid, Object bytes) {
+        private void registerSubscribe(final long tid, final Object bytes) {
             // this check ensure that a put does not occur while currently re-subscribing
             outBytesLock().isHeldByCurrentThread();
             //    if (bytes instanceof AbstractAsyncSubscription && !(bytes instanceof
@@ -1230,7 +1232,7 @@ public final class TcpChannelHub extends AbstractCloseable {
          *
          * @param tid the unique identifier for the subscription
          */
-        public void unsubscribe(long tid) {
+        public void unsubscribe(final long tid) {
             map.remove(tid);
         }
 
@@ -1340,7 +1342,9 @@ public final class TcpChannelHub extends AbstractCloseable {
                             logToStandardOutMessageReceived(inWire);
                             // ensure the tid is reset
                             this.tid = -1;
-                            inWire.readDocument(this::tidReader, null);
+                            inWire.readDocument(tidReader, null);
+
+                            //inWire.readDocument(this::tidReader, null);
 
 /*                            try (DocumentContext dc = inWire.readingDocument()) {
                                 this.tid = CoreFields.tid(dc.wire());
@@ -1899,5 +1903,18 @@ public final class TcpChannelHub extends AbstractCloseable {
             assert wire.startUse();
             return wire;
         }
+
+        private final class TidReader implements ReadMarshallable {
+
+            @Override
+            public void readMarshallable(@NotNull final WireIn wire) throws IORuntimeException {
+                tid = CoreFields.tid(wire);
+            }
+
+        }
+
+
     }
+
+
 }
