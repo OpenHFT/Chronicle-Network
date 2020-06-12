@@ -169,16 +169,16 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
             }
         }
         try {
-            ByteBuffer inBB = inBBB.underlyingObject();
-            int start = inBB.position();
+            final ByteBuffer inBB = inBBB.underlyingObject();
+            final int start = inBB.position();
 
             assert !sc.isBlocking();
-            long time0 = System.nanoTime();
-            int read = inBB.remaining() > 0 ? reader.read(sc, inBBB) : Integer.MAX_VALUE;
+            final long beginNs = System.nanoTime();
+            final int read = inBB.remaining() > 0 ? reader.read(sc, inBBB) : Integer.MAX_VALUE;
             //   int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
-            long time1 = System.nanoTime() - time0;
-            if (nbWarningEnabled && time1 > NBR_WARNING_NANOS)
-                Jvm.warn().on(getClass(), "Non blocking read took " + time1 / 1000 + " us.");
+            final long elapsedNs = System.nanoTime() - beginNs;
+            if (nbWarningEnabled && elapsedNs > NBR_WARNING_NANOS)
+                Jvm.warn().on(getClass(), "Non blocking read took " + elapsedNs / 1000 + " us.");
 
 
             if (read == Integer.MAX_VALUE)
@@ -198,7 +198,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
 
                 // check for timeout only here - in other branches we either just read something or are about to close socket anyway
                 if (nc.heartbeatTimeoutMs() > 0) {
-                    long tickTime = System.currentTimeMillis();
+                    final long tickTime = System.currentTimeMillis();
                     if (tickTime > lastTickReadTime + nc.heartbeatTimeoutMs()) {
                         final HeartbeatListener heartbeatListener = nc.heartbeatListener();
                         if (heartbeatListener != null && heartbeatListener.onMissedHeartbeat()) {
@@ -250,18 +250,18 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
 
     public void warmUp() {
         System.out.println(TcpEventHandler.class.getSimpleName() + " - Warming up...");
-        int runs = 12000;
-        long start = System.nanoTime();
+        final int runs = 12000;
+        long beginNs = System.nanoTime();
         for (int i = 0; i < runs; i++) {
             inBBB.readPositionRemaining(8, 1024);
             compactBuffer();
             clearBuffer();
         }
-        long time = System.nanoTime() - start;
-        System.out.println(TcpEventHandler.class.getSimpleName() + " - ... warmed up - took " + (time / runs / 1e3) + " us avg");
+        long elapsedNs = System.nanoTime() - beginNs;
+        System.out.println(TcpEventHandler.class.getSimpleName() + " - ... warmed up - took " + (elapsedNs / runs / 1e3) + " us avg");
     }
 
-    private void checkBufSize(int bufSize, String name) {
+    private void checkBufSize(final int bufSize, final String name) {
         if (bufSize < TCP_BUFFER) {
             LOG.warn("Attempted to set " + name + " tcp buffer to " + TCP_BUFFER + " but kernel only allowed " + bufSize);
         }
@@ -274,7 +274,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
     @NotNull
     @Override
     public HandlerPriority priority() {
-        ServerThreadingStrategy sts = nc.serverThreadingStrategy();
+        final ServerThreadingStrategy sts = nc.serverThreadingStrategy();
         switch (sts) {
             case SINGLE_THREADED:
                 return singleThreadedPriority();
@@ -296,7 +296,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
     }
 
     @Override
-    public void tcpHandler(TcpHandler<T> tcpHandler) {
+    public void tcpHandler(final TcpHandler<T> tcpHandler) {
         nc.onHandlerChanged(tcpHandler);
         this.tcpHandler = tcpHandler;
     }
@@ -385,7 +385,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
             }
         } while (lastInBBBReadPosition != inBBB.readPosition());
 
-        ByteBuffer outBB = outBBB.underlyingObject();
+        final ByteBuffer outBB = outBBB.underlyingObject();
         if (outBBB.writePosition() > outBB.limit() || outBBB.writePosition() >= 4) {
             outBB.limit(Maths.toInt32(outBBB.writePosition()));
             busy |= tryWrite(outBB);
@@ -398,7 +398,6 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
 
         } else if (inBBB.readPosition() > TCP_BUFFER / 4) {
             compactBuffer();
-
             busy = true;
         }
 
@@ -407,13 +406,13 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
 
     private void clearBuffer() {
         inBBB.clear();
-        @Nullable ByteBuffer inBB = inBBB.underlyingObject();
+        @Nullable final ByteBuffer inBB = inBBB.underlyingObject();
         inBB.clear();
     }
 
     private void compactBuffer() {
         // if it read some data compact();
-        @Nullable ByteBuffer inBB = inBBB.underlyingObject();
+        @Nullable final ByteBuffer inBB = inBBB.underlyingObject();
         inBB.position((int) inBBB.readPosition());
         inBB.limit((int) inBBB.readLimit());
         Jvm.optionalSafepoint();
@@ -424,8 +423,9 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
         inBBB.readLimit(inBB.remaining());
     }
 
-    private void handleIOE(@NotNull IOException e, final boolean clientIntentionallyClosed,
-                           @Nullable HeartbeatListener heartbeatListener) {
+    private void handleIOE(@NotNull final IOException e,
+                           final boolean clientIntentionallyClosed,
+                           @Nullable final HeartbeatListener heartbeatListener) {
         try {
 
             if (clientIntentionallyClosed)
@@ -463,17 +463,17 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
     }
 
     @PackageLocal
-    boolean tryWrite(ByteBuffer outBB) throws IOException {
+    boolean tryWrite(final ByteBuffer outBB) throws IOException {
         if (outBB.remaining() <= 0)
             return false;
-        int start = outBB.position();
-        long writeTime = System.nanoTime();
+        final int start = outBB.position();
+        final long beginNs = System.nanoTime();
         assert !sc.isBlocking();
         int wrote = sc.write(outBB);
-        long time1 = System.nanoTime() - writeTime;
-        if (nbWarningEnabled && time1 > NBW_WARNING_NANOS)
-            Jvm.warn().on(getClass(), "Non blocking write took " + time1 / 1000 + " us.");
-        tcpHandler.onWriteTime(writeTime, outBB, start, outBB.position());
+        long elapsedNs = System.nanoTime() - beginNs;
+        if (nbWarningEnabled && elapsedNs > NBW_WARNING_NANOS)
+            Jvm.warn().on(getClass(), "Non blocking write took " + elapsedNs / 1000 + " us.");
+        tcpHandler.onWriteTime(beginNs, outBB, start, outBB.position());
 
         bytesWriteCount += (outBB.position() - start);
         writeLog.log(outBB, start, outBB.position());
@@ -494,7 +494,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
 
         @NotNull
         @Override
-        public TcpEventHandler<T> apply(@NotNull T nc) {
+        public TcpEventHandler<T> apply(@NotNull final T nc) {
             return new TcpEventHandler<T>(nc);
         }
     }
@@ -506,8 +506,8 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
         try {
             // get more data to write if the buffer was empty
             // or we can write some of what is there
-            ByteBuffer outBB = outBBB.underlyingObject();
-            int remaining = outBB.remaining();
+            final ByteBuffer outBB = outBBB.underlyingObject();
+            final int remaining = outBB.remaining();
             busy = remaining > 0;
             if (busy)
                 tryWrite(outBB);
