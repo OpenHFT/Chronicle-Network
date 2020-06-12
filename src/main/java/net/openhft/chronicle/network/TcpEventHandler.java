@@ -75,6 +75,9 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
     @NotNull
     private final Bytes<ByteBuffer> outBBB;
     private final boolean fair;
+
+    private final boolean nbWarningEnabled;
+
     private int oneInTen;
     @Nullable
     private volatile TcpHandler<T> tcpHandler;
@@ -129,6 +132,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
         outBBB.underlyingObject().limit(0);
         readLog = new NetworkLog(this.sc, "read");
         writeLog = new NetworkLog(this.sc, "write");
+        nbWarningEnabled = Jvm.warn().isEnabled(getClass());
         if (FIRST_HANDLER.compareAndSet(false, true))
             warmUp();
     }
@@ -173,8 +177,9 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
             int read = inBB.remaining() > 0 ? reader.read(sc, inBBB) : Integer.MAX_VALUE;
             //   int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
             long time1 = System.nanoTime() - time0;
-            if (time1 > NBR_WARNING_NANOS)
+            if (nbWarningEnabled && time1 > NBR_WARNING_NANOS)
                 Jvm.warn().on(getClass(), "Non blocking read took " + time1 / 1000 + " us.");
+
 
             if (read == Integer.MAX_VALUE)
                 onInBBFul();
@@ -466,7 +471,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
         assert !sc.isBlocking();
         int wrote = sc.write(outBB);
         long time1 = System.nanoTime() - writeTime;
-        if (time1 > NBW_WARNING_NANOS)
+        if (nbWarningEnabled && time1 > NBW_WARNING_NANOS)
             Jvm.warn().on(getClass(), "Non blocking write took " + time1 / 1000 + " us.");
         tcpHandler.onWriteTime(writeTime, outBB, start, outBB.position());
 
