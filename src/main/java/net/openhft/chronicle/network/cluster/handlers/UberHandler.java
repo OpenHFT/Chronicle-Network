@@ -78,16 +78,6 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         wireType(wireType);
     }
 
-    @Override
-    public String toString() {
-        return "UberHandler{" +
-                "clusterName='" + clusterName + '\'' +
-                ", remoteIdentifier=" + remoteIdentifier +
-                ", localIdentifier=" + localIdentifier +
-                ", isClosing=" + isClosing +
-                '}';
-    }
-
     private static WriteMarshallable uberHandler(final WriteMarshallable m) {
         return wire -> {
             try (final DocumentContext ignored = wire.writingDocument(true)) {
@@ -102,6 +92,16 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         } catch (RuntimeException e) {
             return "Failed to peek at contents due to: " + e.getMessage();
         }
+    }
+
+    @Override
+    public String toString() {
+        return "UberHandler{" +
+                "clusterName='" + clusterName + '\'' +
+                ", remoteIdentifier=" + remoteIdentifier +
+                ", localIdentifier=" + localIdentifier +
+                ", isClosing=" + isClosing +
+                '}';
     }
 
     public int remoteIdentifier() {
@@ -212,13 +212,16 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
 
     @Override
     protected void performClose() {
+        T nc = nc();
         if (!isClosing.getAndSet(true) && connectionChangedNotifier != null)
-            connectionChangedNotifier.onConnectionChanged(false, nc());
+            connectionChangedNotifier.onConnectionChanged(false, nc);
 
         try {
-            final ConnectionListener listener = nc().acquireConnectionListener();
-            if (listener != null)
-                listener.onDisconnected(localIdentifier, remoteIdentifier(), nc().isAcceptor());
+            if (nc == null) {
+                final ConnectionListener listener = nc.acquireConnectionListener();
+                if (listener != null)
+                    listener.onDisconnected(localIdentifier, remoteIdentifier(), nc.isAcceptor());
+            }
         } catch (Exception e) {
             Jvm.fatal().on(getClass(), "close:", e);
         }
@@ -309,9 +312,11 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
             Demarshallable {
 
         @UsedViaReflection
-        private Factory(@NotNull WireIn wireIn) {}
+        private Factory(@NotNull WireIn wireIn) {
+        }
 
-        public Factory() {}
+        public Factory() {
+        }
 
         @NotNull
         public WriteMarshallable apply(@NotNull final ClusterContext<T> clusterContext,

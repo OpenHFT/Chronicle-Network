@@ -19,7 +19,7 @@ package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.io.AbstractReferenceCounted;
+import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
@@ -31,22 +31,18 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 
-public class VanillaWireOutPublisher implements WireOutPublisher {
+public class VanillaWireOutPublisher extends AbstractCloseable implements WireOutPublisher {
 
     private static final Logger LOG = LoggerFactory.getLogger(VanillaWireOutPublisher.class);
     private final Bytes<ByteBuffer> bytes;
 
-    private volatile boolean closed;
     private Wire wire;
     @NotNull
     private List<WireOutConsumer> consumers = new CopyOnWriteArrayList<>();
     private int consumerIndex;
 
     public VanillaWireOutPublisher(@NotNull WireType wireType) {
-        this.closed = false;
         bytes = Bytes.elasticByteBuffer(TcpChannelHub.TCP_BUFFER);
-        // TODO FIX?
-        AbstractReferenceCounted.unmonitor(bytes);
         final WireType wireType0 = wireType == WireType.DELTA_BINARY ? WireType.BINARY : wireType;
         wire = wireType0.apply(bytes);
     }
@@ -160,9 +156,10 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
 
     @Override
     public void put(final Object key, @NotNull WriteMarshallable event) {
-
-        if (closed) {
-            Jvm.debug().on(getClass(), "message ignored as closed");
+        try {
+            throwExceptionIfClosed();
+        } catch (IllegalStateException ise) {
+            Jvm.debug().on(getClass(), "message ignored as closed", ise);
             return;
         }
 
@@ -192,18 +189,13 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
         }
     }
 
-    @Override
-    public boolean isClosed() {
-        return closed;
-    }
-
     private Object lock() {
         return this;
     }
 
     @Override
-    public synchronized void close() {
-        closed = true;
+    protected void performClose() {
+        bytes.releaseLast();
         clear();
     }
 
@@ -250,7 +242,7 @@ public class VanillaWireOutPublisher implements WireOutPublisher {
     @Override
     public String toString() {
         return "VanillaWireOutPublisher{" +
-                ", closed=" + closed +
+                ", closed=" + isClosed() +
                 ", " + wire.getClass().getSimpleName() + "=" + bytes +
                 '}';
     }

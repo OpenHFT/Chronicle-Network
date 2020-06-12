@@ -1111,7 +1111,7 @@ public final class TcpChannelHub extends AbstractCloseable {
          * @param timeoutTimeMs the amount of time to wait before a time out exceptions
          * @param tid           the {@code tid} of the message that we are waiting for
          */
-        private Wire syncBlockingReadSocket(final long timeoutTimeMs, long tid)
+        Wire syncBlockingReadSocket(final long timeoutTimeMs, long tid)
                 throws TimeoutException, ConnectionDroppedException {
 
             final long start = Time.currentTimeMillis();
