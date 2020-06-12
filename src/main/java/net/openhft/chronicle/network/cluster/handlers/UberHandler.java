@@ -217,7 +217,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
             connectionChangedNotifier.onConnectionChanged(false, nc);
 
         try {
-            if (nc == null) {
+            if (nc != null) {
                 final ConnectionListener listener = nc.acquireConnectionListener();
                 if (listener != null)
                     listener.onDisconnected(localIdentifier, remoteIdentifier(), nc.isAcceptor());
