@@ -137,6 +137,12 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
             warmUp();
     }
 
+    @Override
+    public void resetUsedByThread() {
+        super.resetUsedByThread();
+        ((AbstractCloseable) nc).resetUsedByThread();
+    }
+
     public void reader(@NotNull final TcpEventHandler.SocketReader reader) {
         throwExceptionIfClosed();
         this.reader = reader;
@@ -276,7 +282,6 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
     @NotNull
     @Override
     public HandlerPriority priority() {
-        throwExceptionIfClosed();
         final ServerThreadingStrategy sts = nc.serverThreadingStrategy();
         switch (sts) {
             case SINGLE_THREADED:
@@ -290,13 +295,11 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
 
     @NotNull
     public HandlerPriority singleThreadedPriority() {
-        throwExceptionIfClosed();
         return HandlerPriority.MEDIUM;
     }
 
     @Nullable
     public TcpHandler<T> tcpHandler() {
-        throwExceptionIfClosed();
         return tcpHandler;
     }
 

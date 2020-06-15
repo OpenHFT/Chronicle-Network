@@ -418,13 +418,11 @@ public final class TcpChannelHub extends AbstractCloseable {
      * @param tid the unique id of this subscription
      */
     public void unsubscribe(final long tid) {
-        throwExceptionIfClosed();
         tcpSocketConsumer.unsubscribe(tid);
     }
 
     @NotNull
     public ReentrantLock outBytesLock() {
-        throwExceptionIfClosed();
         return outBytesLock;
     }
 
@@ -999,7 +997,6 @@ public final class TcpChannelHub extends AbstractCloseable {
      * blocks until there is a connection
      */
     public void checkConnection() {
-        throwExceptionIfClosed();
         long start = Time.currentTimeMillis();
 
         while (clientChannel == null) {
@@ -1025,12 +1022,10 @@ public final class TcpChannelHub extends AbstractCloseable {
      * you are unlikely to want to call this method in a production environment the purpose of this method is to simulate a network outage
      */
     public void forceDisconnect() {
-        throwExceptionIfClosed();
         Closeable.closeQuietly(clientChannel);
     }
 
     public boolean isOutBytesEmpty() {
-        throwExceptionIfClosed();
         return outWire.bytes().readRemaining() == 0;
     }
 
@@ -1307,7 +1302,6 @@ public final class TcpChannelHub extends AbstractCloseable {
         }
 
         public void checkNotShutdown() {
-            throwExceptionIfClosed();
             if (isShutdown)
                 throw new IORuntimeException("Called after shutdown", shutdownHere);
         }
@@ -1938,5 +1932,9 @@ public final class TcpChannelHub extends AbstractCloseable {
 
     }
 
-
+    @Override
+    protected boolean threadSafetyCheck() {
+        // Assume it is thread safe.
+        return true;
+    }
 }
