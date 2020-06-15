@@ -28,10 +28,7 @@ import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.AbstractReferenceCounted;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
-import net.openhft.chronicle.core.threads.EventHandler;
-import net.openhft.chronicle.core.threads.EventLoop;
-import net.openhft.chronicle.core.threads.HandlerPriority;
-import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
+import net.openhft.chronicle.core.threads.*;
 import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.ConnectionStrategy;
 import net.openhft.chronicle.network.WanSimulator;
@@ -64,7 +61,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 import static java.lang.Integer.getInteger;
-import static java.lang.ThreadLocal.withInitial;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.*;
 import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
@@ -1037,7 +1033,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         @NotNull
         private final ExecutorService service;
         @NotNull
-        private final ThreadLocal<Wire> syncInWireThreadLocal = withInitial(this::createWire);
+        private final ThreadLocal<Wire> syncInWireThreadLocal = CleaningThreadLocal.withCleanup(this::createWire, w -> w.bytes().releaseLast());
 
         long lastheartbeatSentTime = 0;
         volatile long start = Long.MAX_VALUE;
