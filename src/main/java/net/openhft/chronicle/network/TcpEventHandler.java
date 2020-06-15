@@ -138,6 +138,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
     }
 
     public void reader(@NotNull final TcpEventHandler.SocketReader reader) {
+        throwExceptionIfClosed();
         this.reader = reader;
     }
 
@@ -249,6 +250,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
     }
 
     public void warmUp() {
+        throwExceptionIfClosed();
         System.out.println(TcpEventHandler.class.getSimpleName() + " - Warming up...");
         final int runs = 12000;
         long beginNs = System.nanoTime();
@@ -274,6 +276,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
     @NotNull
     @Override
     public HandlerPriority priority() {
+        throwExceptionIfClosed();
         final ServerThreadingStrategy sts = nc.serverThreadingStrategy();
         switch (sts) {
             case SINGLE_THREADED:
@@ -287,16 +290,19 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
 
     @NotNull
     public HandlerPriority singleThreadedPriority() {
+        throwExceptionIfClosed();
         return HandlerPriority.MEDIUM;
     }
 
     @Nullable
     public TcpHandler<T> tcpHandler() {
+        throwExceptionIfClosed();
         return tcpHandler;
     }
 
     @Override
     public void tcpHandler(final TcpHandler<T> tcpHandler) {
+        throwExceptionIfClosed();
         nc.onHandlerChanged(tcpHandler);
         this.tcpHandler = tcpHandler;
     }
@@ -500,6 +506,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
     }
 
     public boolean writeAction() {
+        throwExceptionIfClosed();
         Jvm.optionalSafepoint();
 
         boolean busy = false;

@@ -129,6 +129,7 @@ public class HostConnector<T extends ClusteredNetworkContext<T>> extends Abstrac
     }
 
     public String connectUri() {
+        throwExceptionIfClosed();
         return connectUri;
     }
 }

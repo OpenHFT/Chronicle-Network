@@ -138,5 +138,10 @@ public final class SslTestClusterContext extends ClusterContext<SslTestClustered
         public void close() {
 
         }
+
+        @Override
+        public boolean isClosed() {
+            return false;
+        }
     }
 }

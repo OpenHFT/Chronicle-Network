@@ -54,6 +54,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
      */
     @Override
     public void applyAction(@NotNull Bytes bytes) {
+        throwExceptionIfClosed();
 
         if (this.bytes.readRemaining() > 0) {
 
@@ -94,6 +95,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
      */
     @Override
     public void applyAction(@NotNull WireOut outWire) {
+        throwExceptionIfClosed();
 
         applyAction(outWire.bytes());
 
@@ -134,11 +136,13 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
 
     @Override
     public void addWireConsumer(WireOutConsumer wireOutConsumer) {
+        throwExceptionIfClosed();
         consumers.add(wireOutConsumer);
     }
 
     @Override
     public boolean removeBytesConsumer(WireOutConsumer wireOutConsumer) {
+        throwExceptionIfClosed();
         return consumers.remove(wireOutConsumer);
     }
 
@@ -156,6 +160,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
 
     @Override
     public void put(final Object key, @NotNull WriteMarshallable event) {
+        throwExceptionIfClosed();
         try {
             throwExceptionIfClosed();
         } catch (IllegalStateException ise) {
@@ -201,6 +206,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
 
     @Override
     public boolean canTakeMoreData() {
+        throwExceptionIfClosed();
         synchronized (lock()) {
             assert wire.startUse();
             try {
@@ -214,6 +220,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
 
     @Override
     public void wireType(@NotNull WireType wireType) {
+        throwExceptionIfClosed();
 
         final WireType wireType0 = wireType == WireType.DELTA_BINARY ? WireType.BINARY : wireType;
         if (WireType.valueOf(wire) == wireType0)
@@ -226,6 +233,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
 
     @Override
     public void clear() {
+        throwExceptionIfClosed();
         synchronized (lock()) {
             wire.clear();
         }
@@ -233,6 +241,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
 
     @Override
     public boolean isEmpty() {
+        throwExceptionIfClosed();
         synchronized (lock()) {
             return bytes.isEmpty();
         }

@@ -1,7 +1,6 @@
 package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.core.threads.EventLoop;
-import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.NetworkStatsListener;
 import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.cluster.Cluster;
@@ -83,6 +82,11 @@ public final class SslTestClusteredNetworkContext
             @Override
             public void close() {
 
+            }
+
+            @Override
+            public boolean isClosed() {
+                return false;
             }
         };
     }

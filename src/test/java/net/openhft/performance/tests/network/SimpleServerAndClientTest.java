@@ -124,6 +124,7 @@ public class SimpleServerAndClientTest extends NetworkTestCommon {
                         // and this time out exception will be thrown
                         continue;
                     }
+                    eg.stop();
                     break;
                 }
             } finally {

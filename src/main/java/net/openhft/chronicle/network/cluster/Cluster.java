@@ -44,6 +44,7 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
     }
 
     public String clusterName() {
+        throwExceptionIfClosed();
         return clusterName;
     }
 
@@ -52,12 +53,14 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
     }
 
     public void clusterContext(@NotNull C clusterContext) {
+        throwExceptionIfClosed();
         this.context = clusterContext;
         clusterContext.clusterName(clusterName);
     }
 
     @Override
     public void readMarshallable(@NotNull WireIn wire) throws IllegalStateException {
+        throwExceptionIfClosed();
 
         hostDetails.clear();
 
@@ -90,6 +93,7 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
 
     @Override
     public void writeMarshallable(@NotNull WireOut wire) {
+        ;
         wire.write("context").typedMarshallable(context);
 
         for (@NotNull Map.Entry<String, E> entry2 : hostDetails.entrySet()) {
@@ -99,6 +103,7 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
 
     @Nullable
     public E findHostDetails(int id) {
+        throwExceptionIfClosed();
 
         for (@NotNull E hd : hostDetails.values()) {
             if (hd.hostId() == id)
@@ -109,6 +114,7 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
 
     @Nullable
     public ConnectionNotifier findConnectionNotifier(int remoteIdentifier) {
+        throwExceptionIfClosed();
 
         @Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
@@ -117,6 +123,7 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
 
     @Nullable
     public ConnectionManager<T> findConnectionManager(int remoteIdentifier) {
+        throwExceptionIfClosed();
         @Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.connectionManager();
@@ -124,6 +131,7 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
 
     @Nullable
     public TerminationEventHandler<T> findTerminationEventHandler(int remoteIdentifier) {
+        throwExceptionIfClosed();
         @Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.terminationEventHandler();
@@ -132,6 +140,7 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
 
     @Nullable
     public ConnectionChangedNotifier<T> findClusterNotifier(int remoteIdentifier) {
+        throwExceptionIfClosed();
         @Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.clusterNotifier();
@@ -151,6 +160,7 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
     }
 
     public void install() {
+        throwExceptionIfClosed();
         Set<Integer> hostIds = hostDetails.values().stream().map(HostDetails::hostId).collect(Collectors.toSet());
 
         int local = context.localIdentifier();

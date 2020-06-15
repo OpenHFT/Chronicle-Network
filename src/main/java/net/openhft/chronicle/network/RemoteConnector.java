@@ -66,6 +66,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
                         @NotNull final EventLoop eventLoop,
                         @NotNull T nc,
                         final long retryInterval) {
+        throwExceptionIfClosed();
 
         final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
 
@@ -119,11 +120,13 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
         @NotNull
         @Override
         public HandlerPriority priority() {
+            throwExceptionIfClosed();
             return HandlerPriority.BLOCKING;
         }
 
         @Override
         public boolean action() throws InvalidEventHandlerException {
+            throwExceptionIfClosed();
             if (isClosed() || eventLoop.isClosed())
                 throw new InvalidEventHandlerException();
             final long time = System.currentTimeMillis();
@@ -191,6 +194,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
 
         @Override
         public void notifyClosing() {
+            throwExceptionIfClosed();
             close();
         }
     }

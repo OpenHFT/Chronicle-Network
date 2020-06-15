@@ -18,6 +18,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.io.SimpleCloseable;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.WireType;
@@ -31,7 +32,7 @@ import static net.openhft.chronicle.wire.WireType.*;
 /**
  * sets the wire-type in the network context by inspecting the byte message
  */
-public class WireTypeSniffingTcpHandler<T extends NetworkContext<T>> implements TcpHandler<T> {
+public class WireTypeSniffingTcpHandler<T extends NetworkContext<T>> extends SimpleCloseable implements TcpHandler<T> {
 
     @NotNull
     private final TcpEventHandler handlerManager;
@@ -49,6 +50,7 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext<T>> implements 
     public void process(final @NotNull Bytes in,
                         final @NotNull Bytes out,
                         T nc) {
+        throwExceptionIfClosed();
 
         final WireOutPublisher publisher = nc.wireOutPublisher();
 
@@ -91,10 +93,5 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext<T>> implements 
     @Override
     public String toString() {
         return "WireTypeSniffingTcpHandler@" + Integer.toHexString(hashCode());
-    }
-
-    @Override
-    public boolean isClosed() {
-        throw new UnsupportedOperationException();
     }
 }

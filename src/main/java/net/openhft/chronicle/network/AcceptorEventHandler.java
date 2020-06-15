@@ -69,11 +69,13 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractC
 
     @Override
     public void eventLoop(final EventLoop eventLoop) {
+        throwExceptionIfClosed();
         this.eventLoop = eventLoop;
     }
 
     @Override
     public boolean action() throws InvalidEventHandlerException {
+        throwExceptionIfClosed();
         if (!ssc.isOpen() || isClosed() || eventLoop.isClosed())
             throw new InvalidEventHandlerException();
 
@@ -139,6 +141,7 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractC
     @NotNull
     @Override
     public HandlerPriority priority() {
+        throwExceptionIfClosed();
         return HandlerPriority.BLOCKING;
     }
 

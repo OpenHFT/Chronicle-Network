@@ -47,6 +47,7 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseab
 
     @Override
     public void process(@NotNull Bytes in, @NotNull Bytes out, T nc) {
+        throwExceptionIfClosed();
 
         assert nc.wireType() != null;
 
