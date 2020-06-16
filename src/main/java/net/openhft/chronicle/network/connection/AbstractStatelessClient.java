@@ -20,8 +20,8 @@ package net.openhft.chronicle.network.connection;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.bytes.ConnectionDroppedException;
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.core.io.SimpleCloseable;
 import net.openhft.chronicle.core.util.ThrowingSupplier;
 import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.wire.*;
@@ -41,7 +41,9 @@ import java.util.function.Function;
 import static java.lang.ThreadLocal.withInitial;
 import static net.openhft.chronicle.network.connection.CoreFields.reply;
 
-public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> extends AbstractCloseable implements Closeable {
+public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
+        extends SimpleCloseable
+        implements Closeable {
 
     private static final WriteValue NOOP = out -> {
     };

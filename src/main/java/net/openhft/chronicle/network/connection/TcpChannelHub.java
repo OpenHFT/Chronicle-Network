@@ -937,7 +937,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         return lock(r, TryLock.LOCK, false);
     }
 
-    private boolean lock(@NotNull final Task r, @NotNull final TryLock tryLock, boolean sessionMessage) {
+    boolean lock(@NotNull final Task r, @NotNull final TryLock tryLock, boolean sessionMessage) {
         return lock0(r, false, tryLock, sessionMessage);
     }
 
@@ -1740,7 +1740,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                 subscribe(new AbstractAsyncTemporarySubscription(TcpChannelHub.this, null, name) {
                     @Override
                     public void onSubscribe(@NotNull WireOut wireOut) {
-                            LOG.info("sending heartbeat");
+                        LOG.info("sending heartbeat");
                         wireOut.writeEventName(EventId.heartbeat).int64(Time
                                 .currentTimeMillis());
                     }
@@ -1757,6 +1757,10 @@ public final class TcpChannelHub extends AbstractCloseable {
                 }, true);
                 // Update the thread name if connected or re-connected
                 readThread.setName(threadName());
+            } catch (IllegalStateException e) {
+                if (!TcpChannelHub.this.isClosed())
+                    throw e;
+
             } finally {
                 assert outWire.endUse();
             }
