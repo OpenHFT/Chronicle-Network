@@ -29,7 +29,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.channels.SocketChannel;
 
-public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> extends AbstractCloseable implements NetworkContext<T> {
+public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
+        extends AbstractCloseable
+        implements NetworkContext<T> {
 
     private SocketChannel socketChannel;
     private boolean isAcceptor = true;

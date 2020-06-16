@@ -2,7 +2,7 @@ package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.io.AbstractCloseable;
+import net.openhft.chronicle.core.io.SimpleCloseable;
 import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.threads.EventGroup;
@@ -173,7 +173,9 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
         BI_DIRECTIONAL
     }
 
-    private static final class CountingTcpHandler extends AbstractCloseable implements TcpHandler<StubNetworkContext> {
+    private static final class CountingTcpHandler
+            extends SimpleCloseable
+            implements TcpHandler<StubNetworkContext> {
         private final String label;
         private final CountDownLatch latch = new CountDownLatch(1);
         private volatile long operationCount = 0;
@@ -230,7 +232,9 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
         }
     }
 
-    private static final class StubNetworkContext extends VanillaNetworkContext<StubNetworkContext> implements SslNetworkContext<StubNetworkContext> {
+    private static final class StubNetworkContext
+            extends VanillaNetworkContext<StubNetworkContext>
+            implements SslNetworkContext<StubNetworkContext> {
         @Override
         public SSLContext sslContext() {
             try {

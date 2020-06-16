@@ -1,6 +1,9 @@
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
+import net.openhft.chronicle.network.api.TcpHandler;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -43,7 +46,26 @@ public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
         NetworkContext nc = new VanillaNetworkContext();
         nc.socketChannel(TCPRegistry.createSocketChannel(hostPort));
         TcpEventHandler tcpEventHandler = new TcpEventHandler(nc);
-        tcpEventHandler.tcpHandler((in, out, nc1) -> { });
+        tcpEventHandler.tcpHandler(NullTcpHandler.INSTANCE);
         return tcpEventHandler;
+    }
+
+    enum NullTcpHandler implements TcpHandler {
+        INSTANCE;
+
+        @Override
+        public void process(@NotNull Bytes in, @NotNull Bytes out, NetworkContext nc) {
+
+        }
+
+        @Override
+        public void close() {
+
+        }
+
+        @Override
+        public boolean isClosed() {
+            return false;
+        }
     }
 }

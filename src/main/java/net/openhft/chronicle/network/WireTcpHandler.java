@@ -33,7 +33,9 @@ import static net.openhft.chronicle.wire.WireType.BINARY;
 import static net.openhft.chronicle.wire.WireType.DELTA_BINARY;
 import static net.openhft.chronicle.wire.WriteMarshallable.EMPTY;
 
-public abstract class WireTcpHandler<T extends NetworkContext<T>> extends AbstractCloseable implements TcpHandler<T>, NetworkContextManager<T> {
+public abstract class WireTcpHandler<T extends NetworkContext<T>>
+        extends AbstractCloseable
+        implements TcpHandler<T>, NetworkContextManager<T> {
 
     private static final int SIZE_OF_SIZE = 4;
     private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
