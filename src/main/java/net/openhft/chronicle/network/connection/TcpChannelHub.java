@@ -73,16 +73,9 @@ import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
  */
 public final class TcpChannelHub extends AbstractCloseable {
 
-    private static final boolean hasAssert;
-
-    static {
-        boolean x = false;
-        assert x = true;
-        hasAssert = x;
-    }
-
     public static final int TCP_BUFFER = getTcpBufferSize();
     static final int SAFE_TCP_SIZE = TCP_BUFFER * 3 / 4;
+    private static final boolean hasAssert;
     private static final int HEATBEAT_PING_PERIOD =
             getInteger("heartbeat.ping.period",
                     Jvm.isDebug() ? 30_000 : 5_000);
@@ -92,6 +85,13 @@ public final class TcpChannelHub extends AbstractCloseable {
     private static final int SIZE_OF_SIZE = 4;
     private static final Set<TcpChannelHub> hubs = new CopyOnWriteArraySet<>();
     private static final Logger LOG = LoggerFactory.getLogger(TcpChannelHub.class);
+
+    static {
+        boolean x = false;
+        assert x = true;
+        hasAssert = x;
+    }
+
     final long timeoutMs;
     @NotNull
     private final String name;
@@ -502,7 +502,6 @@ public final class TcpChannelHub extends AbstractCloseable {
     }
 
     public boolean isOpen() {
-        throwExceptionIfClosed();
         return clientChannel != null;
     }
 
@@ -523,7 +522,6 @@ public final class TcpChannelHub extends AbstractCloseable {
             eventLoop.addHandler(new EventHandler() {
                 @Override
                 public boolean action() throws InvalidEventHandlerException {
-                    throwExceptionIfClosed();
                     try {
                         TcpChannelHub.this.sendCloseMessage();
                     } catch (ConnectionDroppedException e) {
@@ -563,16 +561,16 @@ public final class TcpChannelHub extends AbstractCloseable {
      * used to signal to the server that the client is going to drop the connection, and waits up to one second for the server to acknowledge the
      * receipt of this message
      */
-    private void sendCloseMessage() {
+    void sendCloseMessage() {
 
         this.lock(() -> {
 
-            TcpChannelHub.this.writeMetaDataForKnownTID(0, outWire, null, 0);
+            TcpChannelHub.this.writeMetaDataForKnownTID(0, outWire, null, 0, true);
 
             TcpChannelHub.this.outWire.writeDocument(false, w ->
                     w.writeEventName(EventId.onClientClosing).text(""));
 
-        }, TryLock.LOCK);
+        }, TryLock.LOCK, true);
     }
 
     private void awaitAckOfClosedMessage() {
@@ -612,8 +610,13 @@ public final class TcpChannelHub extends AbstractCloseable {
      *
      * @param wire the {@code wire} containing the outbound data
      */
-    public void writeSocket(@NotNull final WireOut wire, boolean reconnectOnFailure) {
-        throwExceptionIfClosed();
+    public void writeSocket(@NotNull final WireOut wire, boolean reconnectOnFailure, boolean sessionMessage) {
+        if (sessionMessage) {
+            if (isClosed())
+                return;
+        } else {
+            throwExceptionIfClosed();
+        }
         assert outBytesLock().isHeldByCurrentThread();
 
         try {
@@ -840,7 +843,6 @@ public final class TcpChannelHub extends AbstractCloseable {
     }
 
     public Wire outWire() {
-        throwExceptionIfClosed();
         assert outBytesLock().isHeldByCurrentThread();
         return outWire;
     }
@@ -864,11 +866,11 @@ public final class TcpChannelHub extends AbstractCloseable {
             // time stamp sent from the server, this is so that the server can calculate the round
             // trip time
             long timestamp = valueIn.int64();
-            TcpChannelHub.this.writeMetaDataForKnownTID(0, outWire, null, 0);
+            TcpChannelHub.this.writeMetaDataForKnownTID(0, outWire, null, 0, true);
             TcpChannelHub.this.outWire.writeDocument(false, w ->
                     // send back the time stamp that was sent from the server
                     w.writeEventName(EventId.heartbeatReply).int64(timestamp));
-            writeSocket(outWire(), false);
+            writeSocket(outWire(), false, true);
 
         } finally {
             outBytesLock().unlock();
@@ -883,15 +885,21 @@ public final class TcpChannelHub extends AbstractCloseable {
         throwExceptionIfClosed();
         assert outBytesLock().isHeldByCurrentThread();
         long tid = nextUniqueTransaction(startTime);
-        writeMetaDataForKnownTID(tid, wire, csp, cid);
+        writeMetaDataForKnownTID(tid, wire, csp, cid, false);
         return tid;
     }
 
     public void writeMetaDataForKnownTID(final long tid,
                                          @NotNull final Wire wire,
                                          @Nullable final String csp,
-                                         final long cid) {
-        throwExceptionIfClosed();
+                                         final long cid,
+                                         boolean closeMessage) {
+        if (closeMessage) {
+            if (isClosed())
+                return;
+        } else {
+            throwExceptionIfClosed();
+        }
         assert outBytesLock().isHeldByCurrentThread();
 
         try (DocumentContext dc = wire.writingDocument(true)) {
@@ -926,17 +934,24 @@ public final class TcpChannelHub extends AbstractCloseable {
 
     public boolean lock(@NotNull final Task r) {
         throwExceptionIfClosed();
-        return lock(r, TryLock.LOCK);
+        return lock(r, TryLock.LOCK, false);
     }
 
-    private boolean lock(@NotNull final Task r, @NotNull final TryLock tryLock) {
-        return lock2(r, false, tryLock);
+    private boolean lock(@NotNull final Task r, @NotNull final TryLock tryLock, boolean sessionMessage) {
+        return lock0(r, false, tryLock, sessionMessage);
     }
 
     public boolean lock2(@NotNull final Task r,
                          final boolean reconnectOnFailure,
                          @NotNull final TryLock tryLock) {
         throwExceptionIfClosed();
+        return lock0(r, reconnectOnFailure, tryLock, false);
+    }
+
+    private boolean lock0(@NotNull final Task r,
+                          final boolean reconnectOnFailure,
+                          @NotNull final TryLock tryLock, boolean sessionMessage) {
+
         assert !outBytesLock.isHeldByCurrentThread();
         try {
             if (clientChannel == null && !reconnectOnFailure)
@@ -972,7 +987,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
                 assert checkWritesOnReadThread(tcpSocketConsumer);
 
-                writeSocket(outWire(), reconnectOnFailure);
+                writeSocket(outWire(), reconnectOnFailure, sessionMessage);
 
             } catch (ConnectionDroppedException e) {
                 if (Jvm.isDebug())
@@ -1026,6 +1041,12 @@ public final class TcpChannelHub extends AbstractCloseable {
 
     public boolean isOutBytesEmpty() {
         return outWire.bytes().readRemaining() == 0;
+    }
+
+    @Override
+    protected boolean threadSafetyCheck() {
+        // Assume it is thread safe.
+        return true;
     }
 
     @FunctionalInterface
@@ -1526,8 +1547,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                     asyncSubscription.onConsumer(inWire);
 
                 } catch (Exception e) {
-                    if (LOG.isDebugEnabled())
-                        Jvm.debug().on(getClass(), "Removing " + tid + " " + o, e);
+                    Jvm.warn().on(getClass(), "Removing " + tid + " " + o, e);
                     if (hasAssert)
                         omap.remove(tid);
                 }
@@ -1704,7 +1724,7 @@ public final class TcpChannelHub extends AbstractCloseable {
          * sends a heartbeat from the client to the server and logs the round trip time
          */
         private void sendHeartbeat() {
-            TcpChannelHub.this.lock(this::sendHeartbeat0, TryLock.TRY_LOCK_IGNORE);
+            TcpChannelHub.this.lock(this::sendHeartbeat0, TryLock.TRY_LOCK_IGNORE, true);
         }
 
         private void sendHeartbeat0() {
@@ -1720,8 +1740,6 @@ public final class TcpChannelHub extends AbstractCloseable {
                 subscribe(new AbstractAsyncTemporarySubscription(TcpChannelHub.this, null, name) {
                     @Override
                     public void onSubscribe(@NotNull WireOut wireOut) {
-                        throwExceptionIfClosed();
-                        if (Jvm.isDebug())
                             LOG.info("sending heartbeat");
                         wireOut.writeEventName(EventId.heartbeat).int64(Time
                                 .currentTimeMillis());
@@ -1729,7 +1747,6 @@ public final class TcpChannelHub extends AbstractCloseable {
 
                     @Override
                     public void onConsumer(@NotNull WireIn inWire) {
-                        throwExceptionIfClosed();
                         long roundTipTimeMicros = NANOSECONDS.toMicros(System.nanoTime() - l);
                         if (LOG.isDebugEnabled())
                             Jvm.debug().on(getClass(), "heartbeat round trip time=" + roundTipTimeMicros + "" +
@@ -1772,8 +1789,6 @@ public final class TcpChannelHub extends AbstractCloseable {
          */
         @Override
         public boolean action() throws InvalidEventHandlerException {
-            throwExceptionIfClosed();
-
             if (clientChannel == null)
                 throw new InvalidEventHandlerException();
 
@@ -1929,11 +1944,5 @@ public final class TcpChannelHub extends AbstractCloseable {
         }
 
 
-    }
-
-    @Override
-    protected boolean threadSafetyCheck() {
-        // Assume it is thread safe.
-        return true;
     }
 }

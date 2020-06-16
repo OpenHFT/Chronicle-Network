@@ -325,7 +325,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> ext
                     consumer.writeValue(valueOut);
             });
 
-            hub.writeSocket(hub.outWire(), true);
+            hub.writeSocket(hub.outWire(), true, false);
         } finally {
             hub.outBytesLock().unlock();
         }
@@ -413,7 +413,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> ext
     private void sendBytesAsyncWithoutLock(@NotNull final Bytes bytes) {
         writeAsyncMetaData();
         hub.outWire().bytes().write(bytes);
-        hub.writeSocket(hub.outWire(), true);
+        hub.writeSocket(hub.outWire(), true, false);
     }
 
     private void sendEventAsyncWithoutLock(@NotNull final WireKey eventId,
@@ -428,7 +428,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> ext
                 consumer.writeValue(valueOut);
         });
 
-        hub.writeSocket(hub.outWire(), true);
+        hub.writeSocket(hub.outWire(), true, false);
     }
 
     /**
@@ -445,7 +445,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> ext
      * @param tid the tid transaction
      */
     protected void writeMetaDataForKnownTID(final long tid) {
-        hub.writeMetaDataForKnownTID(tid, hub.outWire(), csp, cid);
+        hub.writeMetaDataForKnownTID(tid, hub.outWire(), csp, cid, false);
     }
 
     /**

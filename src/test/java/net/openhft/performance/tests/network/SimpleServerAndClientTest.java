@@ -100,7 +100,7 @@ public class SimpleServerAndClientTest extends NetworkTestCommon {
                     wire.writeDocument(false, w -> w.write(() -> "payload").text(expectedMessage));
 
                     // write the data to the socket
-                    tcpChannelHub.lock2(() -> tcpChannelHub.writeSocket(wire, true),
+                    tcpChannelHub.lock2(() -> tcpChannelHub.writeSocket(wire, true, false),
                             true, TryLock.TRY_LOCK_WARN);
 
                     // read the reply from the socket ( timeout after 5 second ), note: we have to pass
