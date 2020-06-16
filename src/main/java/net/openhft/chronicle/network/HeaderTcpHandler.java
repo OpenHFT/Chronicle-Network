@@ -86,6 +86,9 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseab
         } catch (Exception e) {
             if (isClosed())
                 return;
+            Jvm.pause(50);
+            if (isClosed())
+                return;
             if (o instanceof SubHandler) {
                 Jvm.warn().on(getClass(), "SubHandler " + o + " sent before UberHandler, closing.");
                 close();
