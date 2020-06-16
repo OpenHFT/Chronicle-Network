@@ -139,7 +139,6 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractC
     @NotNull
     @Override
     public HandlerPriority priority() {
-        throwExceptionIfClosed();
         return HandlerPriority.BLOCKING;
     }
 

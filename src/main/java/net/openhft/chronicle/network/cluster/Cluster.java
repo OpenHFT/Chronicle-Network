@@ -44,7 +44,6 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
     }
 
     public String clusterName() {
-        throwExceptionIfClosed();
         return clusterName;
     }
 
@@ -60,8 +59,6 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
 
     @Override
     public void readMarshallable(@NotNull WireIn wire) throws IllegalStateException {
-        throwExceptionIfClosed();
-
         hostDetails.clear();
 
         if (wire.isEmpty())
@@ -88,12 +85,10 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
         // commented out as this causes issues with the chronicle-engine gui
         //  if (context == null)
         //       throw new IllegalStateException("required field 'context' is missing.");
-
     }
 
     @Override
     public void writeMarshallable(@NotNull WireOut wire) {
-        ;
         wire.write("context").typedMarshallable(context);
 
         for (@NotNull Map.Entry<String, E> entry2 : hostDetails.entrySet()) {
@@ -160,7 +155,6 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
     }
 
     public void install() {
-        throwExceptionIfClosed();
         Set<Integer> hostIds = hostDetails.values().stream().map(HostDetails::hostId).collect(Collectors.toSet());
 
         int local = context.localIdentifier();
@@ -172,5 +166,11 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
 
         if (context != null)
             hostDetails.values().forEach(context);
+    }
+
+    @Override
+    protected boolean threadSafetyCheck() {
+        // assume thread safe
+        return true;
     }
 }

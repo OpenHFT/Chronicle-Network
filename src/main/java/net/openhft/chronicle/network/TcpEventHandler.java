@@ -310,6 +310,12 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
         this.tcpHandler = tcpHandler;
     }
 
+    @Override
+    protected boolean threadSafetyCheck() {
+        // assume thread safe
+        return true;
+    }
+
     @FunctionalInterface
     public interface SocketReader {
 
@@ -509,8 +515,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
     }
 
     public boolean writeAction() {
-        throwExceptionIfClosed();
-        Jvm.optionalSafepoint();
+        resetUsedByThread();
 
         boolean busy = false;
         try {

@@ -120,7 +120,6 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
         @NotNull
         @Override
         public HandlerPriority priority() {
-            throwExceptionIfClosed();
             return HandlerPriority.BLOCKING;
         }
 
@@ -194,7 +193,6 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
 
         @Override
         public void notifyClosing() {
-            throwExceptionIfClosed();
             close();
         }
     }

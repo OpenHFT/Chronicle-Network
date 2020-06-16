@@ -508,7 +508,6 @@ public final class TcpChannelHub extends AbstractCloseable {
 
     @Override
     public void notifyClosing() {
-        throwExceptionIfClosed();
         // close early if possible.
         close();
     }

@@ -197,4 +197,10 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> extends A
         this.serverThreadingStrategy = serverThreadingStrategy;
         return (T) this;
     }
+
+    @Override
+    protected boolean threadSafetyCheck() {
+        // assume thread safe.
+        return true;
+    }
 }
