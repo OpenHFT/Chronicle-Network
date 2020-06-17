@@ -36,6 +36,7 @@ import java.net.Socket;
 import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -48,10 +49,10 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
     @NotNull
     private final ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpHandlerSupplier;
 
-    private final Integer tcpBufferSize;
+    private final int tcpBufferSize;
 
     @NotNull
-    private final List<java.io.Closeable> closeables = new ArrayList<>();
+    private final List<java.io.Closeable> closeables = Collections.synchronizedList(new ArrayList<>());
 
     public RemoteConnector(@NotNull final ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpEventHandlerFactory) {
         this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TcpChannelHub.TCP_BUFFER);
@@ -60,6 +61,11 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
 
     private static void closeSocket(SocketChannel socketChannel) {
         Closeable.closeQuietly(socketChannel);
+    }
+
+    @Override
+    protected boolean threadSafetyCheck() {
+        return true;
     }
 
     public void connect(@NotNull final String remoteHostPort,

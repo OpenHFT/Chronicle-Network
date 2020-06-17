@@ -46,7 +46,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.lang.Math.max;
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 
-public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractCloseable implements EventHandler, TcpEventHandlerManager<T> {
+public class TcpEventHandler<T extends NetworkContext<T>>
+        extends AbstractCloseable
+        implements EventHandler, TcpEventHandlerManager<T> {
 
     private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
     private static final long NBR_WARNING_NANOS = Long.getLong("tcp.nbr.warning.nanos", 2_000_000);

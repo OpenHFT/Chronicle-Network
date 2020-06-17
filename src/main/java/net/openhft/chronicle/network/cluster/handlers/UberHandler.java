@@ -19,6 +19,7 @@ package net.openhft.chronicle.network.cluster.handlers;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.UsedViaReflection;
+import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.ConnectionListener;
 import net.openhft.chronicle.network.api.session.SubHandler;
@@ -117,8 +118,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     public void writeMarshallable(@NotNull final WireOut wire) {
         wire.write(() -> "remoteIdentifier").int32(localIdentifier);
         wire.write(() -> "localIdentifier").int32(remoteIdentifier);
-        final WireType value = wireType();
-        wire.write(() -> "wireType").object(value);
+        wire.write(() -> "wireType").object(wireType);
         wire.write(() -> "clusterName").text(clusterName);
     }
 
@@ -225,6 +225,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         } catch (Exception e) {
             Jvm.fatal().on(getClass(), "close:", e);
         }
+        Closeable.closeQuietly(writers);
         super.performClose();
     }
 

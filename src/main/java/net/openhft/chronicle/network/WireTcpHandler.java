@@ -50,7 +50,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
     private Wire inWire;
     private boolean recreateWire;
     @Nullable
-    private WireType wireType;
+    protected WireType wireType;
     private WireOutPublisher publisher;
     private T nc;
     private boolean isAcceptor;
@@ -280,7 +280,6 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
      * Process an incoming request
      */
     public WireType wireType() {
-        throwExceptionIfClosed();
         return this.wireType;
     }
 
