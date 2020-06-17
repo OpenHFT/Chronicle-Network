@@ -358,7 +358,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         long now = System.currentTimeMillis();
         if (now > lastMonitor + (MONITOR_POLL_EVERY_SEC * 1000)) {
             final NetworkStatsListener<T> networkStatsListener = nc.networkStatsListener();
-            if (networkStatsListener != null) {
+            if (networkStatsListener != null && !networkStatsListener.isClosed()) {
                 if (lastMonitor == 0) {
                     networkStatsListener.onNetworkStats(0, 0, 0);
                 } else {
