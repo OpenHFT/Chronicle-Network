@@ -29,7 +29,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.channels.SocketChannel;
 
-public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> extends AbstractCloseable implements NetworkContext<T> {
+public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
+        extends AbstractCloseable
+        implements NetworkContext<T> {
 
     private SocketChannel socketChannel;
     private boolean isAcceptor = true;
@@ -47,7 +49,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> extends A
 
     @Override
     public SocketChannel socketChannel() {
-        throwExceptionIfClosed();
         return socketChannel;
     }
 
@@ -61,8 +62,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> extends A
 
     @Override
     public void onHandlerChanged(TcpHandler<T> handler) {
-        throwExceptionIfClosed();
-
     }
 
     /**
@@ -82,7 +81,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> extends A
      */
     @Override
     public boolean isAcceptor() {
-        throwExceptionIfClosed();
         return isAcceptor;
     }
 
@@ -100,7 +98,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> extends A
 
     @Override
     public WireType wireType() {
-        throwExceptionIfClosed();
         return wireType;
     }
 
@@ -114,7 +111,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> extends A
 
     @Override
     public SessionDetailsProvider sessionDetails() {
-        throwExceptionIfClosed();
         return this.sessionDetails;
     }
 
@@ -129,7 +125,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> extends A
     @Nullable
     @Override
     public TerminationEventHandler<T> terminationEventHandler() {
-        throwExceptionIfClosed();
         return terminationEventHandler;
     }
 
@@ -148,13 +143,11 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> extends A
 
     @Override
     public long heartbeatTimeoutMs() {
-        throwExceptionIfClosed();
         return heartbeatTimeoutMs;
     }
 
     @Override
     public HeartbeatListener heartbeatListener() {
-        throwExceptionIfClosed();
         return this.heartbeatListener;
     }
 
@@ -172,7 +165,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> extends A
 
     @Override
     public Runnable socketReconnector() {
-        throwExceptionIfClosed();
         return socketReconnector;
     }
 
@@ -198,7 +190,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> extends A
 
     @Override
     public ServerThreadingStrategy serverThreadingStrategy() {
-        throwExceptionIfClosed();
         return serverThreadingStrategy;
     }
 
@@ -207,5 +198,11 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>> extends A
         throwExceptionIfClosed();
         this.serverThreadingStrategy = serverThreadingStrategy;
         return (T) this;
+    }
+
+    @Override
+    protected boolean threadSafetyCheck() {
+        // assume thread safe.
+        return true;
     }
 }

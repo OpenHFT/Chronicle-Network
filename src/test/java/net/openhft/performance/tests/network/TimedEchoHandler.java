@@ -18,6 +18,7 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.io.SimpleCloseable;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.NetworkContext;
@@ -28,9 +29,10 @@ import net.openhft.performance.tests.vanilla.tcp.EchoClientMain;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.function.Supplier;
 
-class TimedEchoHandler<T extends NetworkContext<T>> implements TcpHandler<T> {
+class TimedEchoHandler<T extends NetworkContext<T>>
+        extends SimpleCloseable
+        implements TcpHandler<T> {
 
     public TimedEchoHandler(T t) {
 
@@ -54,10 +56,5 @@ class TimedEchoHandler<T extends NetworkContext<T>> implements TcpHandler<T> {
         out.write(in, in.readPosition(), toWrite);
         out.writeLong(System.nanoTime());
         in.readSkip(toWrite);
-    }
-
-    @Override
-    public boolean isClosed() {
-        return false;
     }
 }

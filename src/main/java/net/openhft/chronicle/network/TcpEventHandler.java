@@ -46,7 +46,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.lang.Math.max;
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 
-public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractCloseable implements EventHandler, TcpEventHandlerManager<T> {
+public class TcpEventHandler<T extends NetworkContext<T>>
+        extends AbstractCloseable
+        implements EventHandler, TcpEventHandlerManager<T> {
 
     private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
     private static final long NBR_WARNING_NANOS = Long.getLong("tcp.nbr.warning.nanos", 2_000_000);
@@ -135,6 +137,12 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
         nbWarningEnabled = Jvm.warn().isEnabled(getClass());
         if (FIRST_HANDLER.compareAndSet(false, true))
             warmUp();
+    }
+
+    @Override
+    public void resetUsedByThread() {
+        super.resetUsedByThread();
+        ((AbstractCloseable) nc).resetUsedByThread();
     }
 
     public void reader(@NotNull final TcpEventHandler.SocketReader reader) {
@@ -276,7 +284,6 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
     @NotNull
     @Override
     public HandlerPriority priority() {
-        throwExceptionIfClosed();
         final ServerThreadingStrategy sts = nc.serverThreadingStrategy();
         switch (sts) {
             case SINGLE_THREADED:
@@ -290,13 +297,11 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
 
     @NotNull
     public HandlerPriority singleThreadedPriority() {
-        throwExceptionIfClosed();
         return HandlerPriority.MEDIUM;
     }
 
     @Nullable
     public TcpHandler<T> tcpHandler() {
-        throwExceptionIfClosed();
         return tcpHandler;
     }
 
@@ -305,6 +310,12 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
         throwExceptionIfClosed();
         nc.onHandlerChanged(tcpHandler);
         this.tcpHandler = tcpHandler;
+    }
+
+    @Override
+    protected boolean threadSafetyCheck() {
+        // assume thread safe
+        return true;
     }
 
     @FunctionalInterface
@@ -347,7 +358,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
         long now = System.currentTimeMillis();
         if (now > lastMonitor + (MONITOR_POLL_EVERY_SEC * 1000)) {
             final NetworkStatsListener<T> networkStatsListener = nc.networkStatsListener();
-            if (networkStatsListener != null) {
+            if (networkStatsListener != null && !networkStatsListener.isClosed()) {
                 if (lastMonitor == 0) {
                     networkStatsListener.onNetworkStats(0, 0, 0);
                 } else {
@@ -506,8 +517,7 @@ public class TcpEventHandler<T extends NetworkContext<T>> extends AbstractClosea
     }
 
     public boolean writeAction() {
-        throwExceptionIfClosed();
-        Jvm.optionalSafepoint();
+        resetUsedByThread();
 
         boolean busy = false;
         try {

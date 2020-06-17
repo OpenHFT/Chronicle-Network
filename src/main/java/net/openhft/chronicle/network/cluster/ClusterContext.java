@@ -40,7 +40,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public abstract class ClusterContext<T extends ClusteredNetworkContext<T>> extends SelfDescribingMarshallable implements Consumer<HostDetails> {
+public abstract class ClusterContext<T extends ClusteredNetworkContext<T>>
+        extends SelfDescribingMarshallable
+        implements Consumer<HostDetails> {
 
     private transient Factory<T> handlerFactory;
     private transient Function<WireType, WireOutPublisher> wireOutPublisherFactory;
@@ -125,6 +127,13 @@ public abstract class ClusterContext<T extends ClusteredNetworkContext<T>> exten
     public ClusterContext<T> eventLoop(EventLoop eventLoop) {
         this.eventLoop = eventLoop;
         return this;
+    }
+
+    protected void closeEventLoop() {
+        if (eventLoop != null) {
+            eventLoop.close();
+            eventLoop = null;
+        }
     }
 
     protected abstract void defaults();

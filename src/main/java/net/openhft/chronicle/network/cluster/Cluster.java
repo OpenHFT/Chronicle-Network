@@ -18,8 +18,8 @@
 package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.io.SimpleCloseable;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -30,7 +30,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 
-abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkContext<T>, C extends ClusterContext<T>> extends AbstractCloseable implements Marshallable {
+abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkContext<T>, C extends ClusterContext<T>> extends SimpleCloseable implements Marshallable {
 
     @NotNull
     public final Map<String, E> hostDetails;
@@ -44,7 +44,6 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
     }
 
     public String clusterName() {
-        throwExceptionIfClosed();
         return clusterName;
     }
 
@@ -60,8 +59,6 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
 
     @Override
     public void readMarshallable(@NotNull WireIn wire) throws IllegalStateException {
-        throwExceptionIfClosed();
-
         hostDetails.clear();
 
         if (wire.isEmpty())
@@ -88,12 +85,10 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
         // commented out as this causes issues with the chronicle-engine gui
         //  if (context == null)
         //       throw new IllegalStateException("required field 'context' is missing.");
-
     }
 
     @Override
     public void writeMarshallable(@NotNull WireOut wire) {
-        ;
         wire.write("context").typedMarshallable(context);
 
         for (@NotNull Map.Entry<String, E> entry2 : hostDetails.entrySet()) {
@@ -160,7 +155,6 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
     }
 
     public void install() {
-        throwExceptionIfClosed();
         Set<Integer> hostIds = hostDetails.values().stream().map(HostDetails::hostId).collect(Collectors.toSet());
 
         int local = context.localIdentifier();

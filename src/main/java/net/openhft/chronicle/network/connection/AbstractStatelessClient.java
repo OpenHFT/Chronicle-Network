@@ -20,8 +20,8 @@ package net.openhft.chronicle.network.connection;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.bytes.ConnectionDroppedException;
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.core.io.SimpleCloseable;
 import net.openhft.chronicle.core.util.ThrowingSupplier;
 import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.wire.*;
@@ -41,7 +41,9 @@ import java.util.function.Function;
 import static java.lang.ThreadLocal.withInitial;
 import static net.openhft.chronicle.network.connection.CoreFields.reply;
 
-public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> extends AbstractCloseable implements Closeable {
+public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
+        extends SimpleCloseable
+        implements Closeable {
 
     private static final WriteValue NOOP = out -> {
     };
@@ -325,7 +327,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> ext
                     consumer.writeValue(valueOut);
             });
 
-            hub.writeSocket(hub.outWire(), true);
+            hub.writeSocket(hub.outWire(), true, false);
         } finally {
             hub.outBytesLock().unlock();
         }
@@ -413,7 +415,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> ext
     private void sendBytesAsyncWithoutLock(@NotNull final Bytes bytes) {
         writeAsyncMetaData();
         hub.outWire().bytes().write(bytes);
-        hub.writeSocket(hub.outWire(), true);
+        hub.writeSocket(hub.outWire(), true, false);
     }
 
     private void sendEventAsyncWithoutLock(@NotNull final WireKey eventId,
@@ -428,7 +430,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> ext
                 consumer.writeValue(valueOut);
         });
 
-        hub.writeSocket(hub.outWire(), true);
+        hub.writeSocket(hub.outWire(), true, false);
     }
 
     /**
@@ -445,7 +447,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey> ext
      * @param tid the tid transaction
      */
     protected void writeMetaDataForKnownTID(final long tid) {
-        hub.writeMetaDataForKnownTID(tid, hub.outWire(), csp, cid);
+        hub.writeMetaDataForKnownTID(tid, hub.outWire(), csp, cid, false);
     }
 
     /**

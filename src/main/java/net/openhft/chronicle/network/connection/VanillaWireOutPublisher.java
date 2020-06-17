@@ -54,7 +54,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
      */
     @Override
     public void applyAction(@NotNull Bytes bytes) {
-        throwExceptionIfClosed();
+        resetUsedByThread();
 
         if (this.bytes.readRemaining() > 0) {
 
@@ -160,7 +160,6 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
 
     @Override
     public void put(final Object key, @NotNull WriteMarshallable event) {
-        throwExceptionIfClosed();
         try {
             throwExceptionIfClosed();
         } catch (IllegalStateException ise) {
@@ -233,7 +232,6 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
 
     @Override
     public void clear() {
-        throwExceptionIfClosed();
         synchronized (lock()) {
             wire.clear();
         }
@@ -241,7 +239,6 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
 
     @Override
     public boolean isEmpty() {
-        throwExceptionIfClosed();
         synchronized (lock()) {
             return bytes.isEmpty();
         }
@@ -254,6 +251,12 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
                 ", closed=" + isClosed() +
                 ", " + wire.getClass().getSimpleName() + "=" + bytes +
                 '}';
+    }
+
+    @Override
+    protected boolean threadSafetyCheck() {
+        // assume thread safe
+        return true;
     }
 }
 

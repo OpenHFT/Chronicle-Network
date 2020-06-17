@@ -50,9 +50,9 @@ public abstract class AbstractAsyncSubscription implements AsyncSubscription {
     @Override
     public void applySubscribe() {
         assert hub.outBytesLock().isHeldByCurrentThread();
-        hub.writeMetaDataForKnownTID(tid(), hub.outWire(), csp, 0);
+        hub.writeMetaDataForKnownTID(tid(), hub.outWire(), csp, 0, false);
         hub.outWire().writeDocument(false, this::onSubscribe);
-        hub.writeSocket(hub.outWire(), false); // will retry after reconnect.
+        hub.writeSocket(hub.outWire(), false, false); // will retry after reconnect.
     }
 
     /**

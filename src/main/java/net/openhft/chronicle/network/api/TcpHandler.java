@@ -26,7 +26,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
 
-@FunctionalInterface
 public interface TcpHandler<N extends NetworkContext<N>> extends ClientClosedProvider, Closeable {
 
     /**
@@ -44,10 +43,6 @@ public interface TcpHandler<N extends NetworkContext<N>> extends ClientClosedPro
     default void onEndOfConnection(boolean heartbeatTimeOut) {
     }
 
-    @Override
-    default void close() {
-    }
-
     default void onReadTime(long readTimeNS, final ByteBuffer inBB, final int position, final int limit) {
     }
 
@@ -58,10 +53,5 @@ public interface TcpHandler<N extends NetworkContext<N>> extends ClientClosedPro
     }
 
     default void onReadComplete() {
-    }
-
-    @Override
-    default boolean isClosed() {
-        throw new UnsupportedOperationException();
     }
 }

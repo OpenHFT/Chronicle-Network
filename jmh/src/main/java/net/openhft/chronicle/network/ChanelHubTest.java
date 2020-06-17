@@ -74,7 +74,7 @@ public class ChanelHubTest {
             }
             main.tearDown();
         } else {
-            int time = Boolean.getBoolean("longTest") ? 30 : 2;
+            int time = Jvm.getBoolean("longTest") ? 30 : 2;
             Options opt = new OptionsBuilder()
                     .include(ChanelHubTest.class.getSimpleName())
                     .warmupIterations(5)

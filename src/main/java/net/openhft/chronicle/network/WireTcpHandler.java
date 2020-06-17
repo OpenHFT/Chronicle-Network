@@ -33,7 +33,9 @@ import static net.openhft.chronicle.wire.WireType.BINARY;
 import static net.openhft.chronicle.wire.WireType.DELTA_BINARY;
 import static net.openhft.chronicle.wire.WriteMarshallable.EMPTY;
 
-public abstract class WireTcpHandler<T extends NetworkContext<T>> extends AbstractCloseable implements TcpHandler<T>, NetworkContextManager<T> {
+public abstract class WireTcpHandler<T extends NetworkContext<T>>
+        extends AbstractCloseable
+        implements TcpHandler<T>, NetworkContextManager<T> {
 
     private static final int SIZE_OF_SIZE = 4;
     private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
@@ -48,7 +50,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> extends Abstra
     private Wire inWire;
     private boolean recreateWire;
     @Nullable
-    private WireType wireType;
+    protected WireType wireType;
     private WireOutPublisher publisher;
     private T nc;
     private boolean isAcceptor;
@@ -111,7 +113,6 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> extends Abstra
 
     @Override
     public void process(@NotNull final Bytes in, @NotNull final Bytes out, final T nc) {
-        throwExceptionIfClosed();
 
         if (isClosed())
             return;
@@ -279,7 +280,6 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>> extends Abstra
      * Process an incoming request
      */
     public WireType wireType() {
-        throwExceptionIfClosed();
         return this.wireType;
     }
 
