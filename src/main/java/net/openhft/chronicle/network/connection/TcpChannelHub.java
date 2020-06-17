@@ -1348,7 +1348,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
                             long timeTaken = System.currentTimeMillis() - start;
                             start = Long.MAX_VALUE;
-                            if (timeTaken > 20)
+                            if (timeTaken > 100)
                                 LOG.info("Processing data=" + timeTaken + "ms");
 
                             if (clearTid)
