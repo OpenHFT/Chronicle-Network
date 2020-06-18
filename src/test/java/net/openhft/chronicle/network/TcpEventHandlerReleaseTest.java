@@ -1,18 +1,18 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.network.api.TcpHandler;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
 
 import static junit.framework.TestCase.fail;
+import static org.junit.Assume.assumeFalse;
 
-@Ignore("see https://github.com/OpenHFT/Chronicle-Network/issues/75")
 public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
     private static final String hostPort = "host.port";
 
@@ -33,6 +33,8 @@ public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
 
     @Test
     public void testBuffersReleasedWhenSocketChannelClosed() throws IOException {
+        // @Ignore("see https://github.com/OpenHFT/Chronicle-Network/issues/75")
+        assumeFalse(Jvm.isJava9Plus());
         try (TcpEventHandler t = createTcpEventHandler()) {
             t.socketChannel().close();
             try {
