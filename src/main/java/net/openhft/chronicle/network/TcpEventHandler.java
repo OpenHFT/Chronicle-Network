@@ -116,7 +116,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                 checkBufSize(sock.getSendBufferSize(), "send");
             }
         } catch (IOException e) {
-            if (isClosed() || sc.isClosed())
+            if (isClosed() || !sc.isOpen())
                 throw new IORuntimeException(e);
             Jvm.warn().on(getClass(), e);
         }
@@ -167,7 +167,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         if (tcpHandler == null)
             return false;
 
-        if (sc.isClosed()) {
+        if (!sc.isOpen()) {
             tcpHandler.onEndOfConnection(false);
             Closeable.closeQuietly(nc);
             throw new InvalidEventHandlerException("socket is closed");
