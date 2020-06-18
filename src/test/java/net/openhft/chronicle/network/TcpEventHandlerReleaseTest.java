@@ -21,11 +21,12 @@ public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
 
     @Test
     public void testRelease() throws IOException {
-        TcpEventHandler t = createTcpEventHandler();
-        t.loopFinished();
-        t.close();
-        // check second close OK
-        t.close();
+        try (TcpEventHandler t = createTcpEventHandler()) {
+            t.loopFinished();
+            t.close();
+            // check second close OK
+        }
+
     }
 
     @Test
