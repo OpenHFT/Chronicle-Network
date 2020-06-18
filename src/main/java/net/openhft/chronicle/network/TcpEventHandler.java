@@ -158,7 +158,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
         if (this.isClosed())
             throw new InvalidEventHandlerException();
-        if (sc.isClosed())
+        Closeable c = sc;
+        if (c.isClosed())
             throw new InvalidEventHandlerException();
 
         if (tcpHandler == null)
