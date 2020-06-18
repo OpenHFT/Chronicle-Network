@@ -23,7 +23,6 @@ import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.core.annotation.PackageLocal;
 import net.openhft.chronicle.core.io.AbstractCloseable;
-import net.openhft.chronicle.core.io.AbstractReferenceCounted;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
@@ -55,12 +54,12 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         extends AbstractCloseable
         implements EventHandler, TcpEventHandlerManager<T> {
 
+    public static final int TARGET_WRITE_SIZE = Integer.getInteger("TcpEventHandler.targetWriteSize", 1024);
     private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
     private static final long NBR_WARNING_NANOS = Long.getLong("tcp.nbr.warning.nanos", 20_000_000);
     private static final long NBW_WARNING_NANOS = Long.getLong("tcp.nbw.warning.nanos", 20_000_000);
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
     private static final AtomicBoolean FIRST_HANDLER = new AtomicBoolean();
-    public static final int TARGET_WRITE_SIZE = Integer.getInteger("TcpEventHandler.targetWriteSize", 1024);
     private static final int DEFAULT_MAX_MESSAGE_SIZE = 1 << 30;
     public static boolean DISABLE_TCP_NODELAY = Jvm.getBoolean("disable.tcp_nodelay");
 
@@ -126,10 +125,6 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         inBBB = Bytes.elasticByteBuffer(TCP_BUFFER + OS.pageSize(), max(TCP_BUFFER + OS.pageSize(), DEFAULT_MAX_MESSAGE_SIZE));
         outBBB = Bytes.elasticByteBuffer(TCP_BUFFER, max(TCP_BUFFER, DEFAULT_MAX_MESSAGE_SIZE));
 
-        // TODO Fix Chronicle-Queue-Enterprise tests so socket connections are closed cleanly.
-        AbstractReferenceCounted.unmonitor(inBBB);
-        AbstractReferenceCounted.unmonitor(outBBB);
-
         // must be set after we take a slice();
         outBBB.underlyingObject().limit(0);
         readLog = new NetworkLog(this.sc, "read");
@@ -161,7 +156,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     public synchronized boolean action() throws InvalidEventHandlerException {
         Jvm.optionalSafepoint();
 
-        if (isClosed())
+        if (isClosed() || sc.isClosed())
             throw new InvalidEventHandlerException();
 
         if (tcpHandler == null)
@@ -323,35 +318,11 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         return true;
     }
 
-    @FunctionalInterface
-    public interface SocketReader {
-
-        /**
-         * Reads content from the provided {@code socketChannel} into the provided {@code bytes}.
-         *
-         * @param socketChannel to read from
-         * @param bytes         to which content from the {@code socketChannel} is put
-         * @return the number of bytes read from the provided {@code socketChannel}.
-         * @throws IOException if there is a problem reading form the provided {@code socketChannel}.
-         */
-        int read(@NotNull ISocketChannel socketChannel, @NotNull Bytes<ByteBuffer> bytes) throws IOException;
-    }
-
-    public static final class DefaultSocketReader implements SocketReader {
-
-        @Override
-        public int read(@NotNull final ISocketChannel socketChannel, @NotNull final Bytes<ByteBuffer> bytes) throws IOException {
-            return socketChannel.read(bytes.underlyingObject());
-        }
-    }
-
     @Override
     public void loopFinished() {
         // Release unless already released
-        if (inBBB.refCount() > 0)
-            inBBB.releaseLast();
-        if (outBBB.refCount() > 0)
-            outBBB.releaseLast();
+        inBBB.releaseLast();
+        outBBB.releaseLast();
     }
 
     public void onInBBFul() {
@@ -457,12 +428,20 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
     @Override
     protected void performClose() {
-        // NOTE Do not release buffers here as they might be in use. loopFinished() releases them and
-        // is called from event loop when it knows that the thread calling "action" is done
         Closeable.closeQuietly(tcpHandler);
         Closeable.closeQuietly(this.nc.networkStatsListener());
         Closeable.closeQuietly(sc);
         Closeable.closeQuietly(nc);
+
+        // NOTE Do not release buffers here as they might be in use. loopFinished() releases them and
+        // is called from event loop when it knows that the thread calling "action" is done
+        for (int i = 50; i >= 0; i--) {
+            if (inBBB.refCount() + outBBB.refCount() == 0)
+                break;
+            Jvm.pause(5);
+            if (i == 0)
+                Jvm.debug().on(getClass(), "loopFinished failed to release buffers");
+        }
     }
 
     @PackageLocal
@@ -490,17 +469,6 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             return true;
         }
         return false;
-    }
-
-    public static class Factory<T extends NetworkContext<T>> implements MarshallableFunction<T, TcpEventHandler<T>> {
-        public Factory() {
-        }
-
-        @NotNull
-        @Override
-        public TcpEventHandler<T> apply(@NotNull final T nc) {
-            return new TcpEventHandler<T>(nc);
-        }
     }
 
     public boolean writeAction() {
@@ -532,6 +500,54 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         return busy;
     }
 
+    private enum LogType {
+        READ("read"), WRITE("write");
+
+        private final String label;
+
+        LogType(@NotNull final String label) {
+            this.label = label;
+        }
+
+        private String label() {
+            return label;
+        }
+
+    }
+
+    @FunctionalInterface
+    public interface SocketReader {
+
+        /**
+         * Reads content from the provided {@code socketChannel} into the provided {@code bytes}.
+         *
+         * @param socketChannel to read from
+         * @param bytes         to which content from the {@code socketChannel} is put
+         * @return the number of bytes read from the provided {@code socketChannel}.
+         * @throws IOException if there is a problem reading form the provided {@code socketChannel}.
+         */
+        int read(@NotNull ISocketChannel socketChannel, @NotNull Bytes<ByteBuffer> bytes) throws IOException;
+    }
+
+    public static final class DefaultSocketReader implements SocketReader {
+
+        @Override
+        public int read(@NotNull final ISocketChannel socketChannel, @NotNull final Bytes<ByteBuffer> bytes) throws IOException {
+            return socketChannel.read(bytes.underlyingObject());
+        }
+    }
+
+    public static class Factory<T extends NetworkContext<T>> implements MarshallableFunction<T, TcpEventHandler<T>> {
+        public Factory() {
+        }
+
+        @NotNull
+        @Override
+        public TcpEventHandler<T> apply(@NotNull final T nc) {
+            return new TcpEventHandler<T>(nc);
+        }
+    }
+
     private static final class ThreadLogTypeElapsedRecord {
 
         private final Thread thread;
@@ -545,21 +561,6 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             this.logType = logType;
             this.elapsedNs = elapsedNs;
         }
-    }
-
-    private enum LogType {
-        READ("read"), WRITE("write");
-
-        LogType(@NotNull final String label) {
-            this.label = label;
-        }
-
-        private final String label;
-
-        private String label() {
-            return label;
-        }
-
     }
 
     /**
