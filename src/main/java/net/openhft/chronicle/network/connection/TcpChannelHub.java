@@ -1956,8 +1956,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
                 tid = CoreFields.tid(wire);
             }
-
-        }
+ }
 
     }
 }

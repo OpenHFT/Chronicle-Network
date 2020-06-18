@@ -143,7 +143,6 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
                 LockSupport.parkNanos(PAUSE);
             }
         }
-
-    }
+ }
 
 }
