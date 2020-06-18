@@ -49,7 +49,7 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseab
     public void process(@NotNull Bytes in, @NotNull Bytes out, T nc) {
         throwExceptionIfClosed();
 
-        assert nc.wireType() != null;
+ assert nc.wireType() != null;
 
         // the type of the header
         final Wire inWire = nc.wireType().apply(in);

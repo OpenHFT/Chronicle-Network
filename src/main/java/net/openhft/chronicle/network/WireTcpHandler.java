@@ -82,11 +82,13 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
 
     public boolean isAcceptor() {
         throwExceptionIfClosed();
+
         return this.isAcceptor;
     }
 
     public void wireType(@NotNull WireType wireType) {
         throwExceptionIfClosed();
+
         if (wireType == BINARY)
             wireType = DELTA_BINARY.isAvailable() ? DELTA_BINARY : BINARY;
         this.wireType = wireType;
@@ -101,6 +103,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
 
     public void publisher(@NotNull final WireOutPublisher publisher) {
         throwExceptionIfClosed();
+
         this.publisher = publisher;
         if (wireType() != null)
             publisher.wireType(wireType());
@@ -108,6 +111,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
 
     public void isAcceptor(final boolean isAcceptor) {
         throwExceptionIfClosed();
+
         this.isAcceptor = isAcceptor;
     }
 
@@ -172,6 +176,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
     @Override
     public void onEndOfConnection(final boolean heartbeatTimeOut) {
         throwExceptionIfClosed();
+
         final NetworkStatsListener<T> networkStatsListener = this.nc.networkStatsListener();
 
         if (networkStatsListener != null)
@@ -365,7 +370,6 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
     }
 
     protected abstract void onInitialize();
-
 
     @Override
     protected void performClose() {

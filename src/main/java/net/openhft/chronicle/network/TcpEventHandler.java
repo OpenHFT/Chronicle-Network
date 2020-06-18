@@ -147,6 +147,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
     public void reader(@NotNull final TcpEventHandler.SocketReader reader) {
         throwExceptionIfClosed();
+
         this.reader = reader;
     }
 
@@ -188,7 +189,6 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             final long elapsedNs = System.nanoTime() - beginNs;
             if (nbWarningEnabled && elapsedNs > NBR_WARNING_NANOS)
                 Jvm.warn().on(getClass(), "Non blocking read took " + elapsedNs / 1000 + " us.");
-
 
             if (read == Integer.MAX_VALUE)
                 onInBBFul();
@@ -259,6 +259,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
     public void warmUp() {
         throwExceptionIfClosed();
+
         System.out.println(TcpEventHandler.class.getSimpleName() + " - Warming up...");
         final int runs = 12000;
         long beginNs = System.nanoTime();
@@ -308,6 +309,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     @Override
     public void tcpHandler(final TcpHandler<T> tcpHandler) {
         throwExceptionIfClosed();
+
         nc.onHandlerChanged(tcpHandler);
         this.tcpHandler = tcpHandler;
     }

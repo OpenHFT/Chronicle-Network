@@ -30,7 +30,6 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-
 public class VanillaWireOutPublisher extends AbstractCloseable implements WireOutPublisher {
 
     private static final Logger LOG = LoggerFactory.getLogger(VanillaWireOutPublisher.class);
@@ -97,7 +96,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     public void applyAction(@NotNull WireOut outWire) {
         throwExceptionIfClosed();
 
-        applyAction(outWire.bytes());
+ applyAction(outWire.bytes());
 
         for (int y = 1; y < 1000; y++) {
 
@@ -137,12 +136,14 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     @Override
     public void addWireConsumer(WireOutConsumer wireOutConsumer) {
         throwExceptionIfClosed();
+
         consumers.add(wireOutConsumer);
     }
 
     @Override
     public boolean removeBytesConsumer(WireOutConsumer wireOutConsumer) {
         throwExceptionIfClosed();
+
         return consumers.remove(wireOutConsumer);
     }
 
@@ -162,6 +163,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     public void put(final Object key, @NotNull WriteMarshallable event) {
         try {
             throwExceptionIfClosed();
+
         } catch (IllegalStateException ise) {
             Jvm.debug().on(getClass(), "message ignored as closed", ise);
             return;
@@ -206,6 +208,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     @Override
     public boolean canTakeMoreData() {
         throwExceptionIfClosed();
+
         synchronized (lock()) {
             assert wire.startUse();
             try {

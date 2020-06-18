@@ -53,6 +53,7 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
 
     public void clusterContext(@NotNull C clusterContext) {
         throwExceptionIfClosed();
+
         this.context = clusterContext;
         clusterContext.clusterName(clusterName);
     }
@@ -119,6 +120,7 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
     @Nullable
     public ConnectionManager<T> findConnectionManager(int remoteIdentifier) {
         throwExceptionIfClosed();
+
         @Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.connectionManager();
@@ -127,6 +129,7 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
     @Nullable
     public TerminationEventHandler<T> findTerminationEventHandler(int remoteIdentifier) {
         throwExceptionIfClosed();
+
         @Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.terminationEventHandler();
@@ -136,6 +139,7 @@ abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkC
     @Nullable
     public ConnectionChangedNotifier<T> findClusterNotifier(int remoteIdentifier) {
         throwExceptionIfClosed();
+
         @Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
         if (hostDetails == null) return null;
         return hostDetails.clusterNotifier();

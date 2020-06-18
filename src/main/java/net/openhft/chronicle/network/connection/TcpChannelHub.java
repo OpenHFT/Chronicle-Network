@@ -358,6 +358,7 @@ public final class TcpChannelHub extends AbstractCloseable {
      */
     public void preventSubscribeUponReconnect(final long tid) {
         throwExceptionIfClosed();
+
         preventSubscribeUponReconnect.add(tid);
     }
 
@@ -404,6 +405,7 @@ public final class TcpChannelHub extends AbstractCloseable {
      */
     public void subscribe(@NotNull final AsyncSubscription asyncSubscription) {
         throwExceptionIfClosed();
+
         subscribe(asyncSubscription, false);
     }
 
@@ -594,6 +596,7 @@ public final class TcpChannelHub extends AbstractCloseable {
      */
     public long nextUniqueTransaction(final long timeMs) {
         throwExceptionIfClosed();
+
         long id = timeMs;
         for (; ; ) {
             long old = transactionID.get();
@@ -616,6 +619,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                 return;
         } else {
             throwExceptionIfClosed();
+
         }
         assert outBytesLock().isHeldByCurrentThread();
 
@@ -849,6 +853,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
     public boolean isOutBytesLocked() {
         throwExceptionIfClosed();
+
         return outBytesLock.isLocked();
     }
 
@@ -883,6 +888,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                                        final String csp,
                                        final long cid) {
         throwExceptionIfClosed();
+
         assert outBytesLock().isHeldByCurrentThread();
         long tid = nextUniqueTransaction(startTime);
         writeMetaDataForKnownTID(tid, wire, csp, cid, false);
@@ -899,6 +905,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                 return;
         } else {
             throwExceptionIfClosed();
+
         }
         assert outBytesLock().isHeldByCurrentThread();
 
@@ -922,6 +929,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                                  final String csp,
                                  final long cid) {
         throwExceptionIfClosed();
+
         assert outBytesLock().isHeldByCurrentThread();
 
         wire.writeDocument(true, wireOut -> {
@@ -934,6 +942,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
     public boolean lock(@NotNull final Task r) {
         throwExceptionIfClosed();
+
         return lock(r, TryLock.LOCK, false);
     }
 
@@ -945,6 +954,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                          final boolean reconnectOnFailure,
                          @NotNull final TryLock tryLock) {
         throwExceptionIfClosed();
+
         return lock0(r, reconnectOnFailure, tryLock, false);
     }
 
@@ -1265,6 +1275,7 @@ public final class TcpChannelHub extends AbstractCloseable {
          */
         public void unsubscribe(final long tid) {
             throwExceptionIfClosed();
+
             map.remove(tid);
         }
 
@@ -1942,11 +1953,11 @@ public final class TcpChannelHub extends AbstractCloseable {
             @Override
             public void readMarshallable(@NotNull final WireIn wire) throws IORuntimeException {
                 throwExceptionIfClosed();
+
                 tid = CoreFields.tid(wire);
             }
 
         }
-
 
     }
 }

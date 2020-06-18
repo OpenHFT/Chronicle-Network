@@ -56,6 +56,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
     @Override
     public T socketChannel(SocketChannel socketChannel) {
         throwExceptionIfClosed();
+
         this.socketChannel = socketChannel;
         return (T) this;
     }
@@ -72,6 +73,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
     @Override
     public T isAcceptor(boolean isAcceptor) {
         throwExceptionIfClosed();
+
         this.isAcceptor = isAcceptor;
         return (T) this;
     }
@@ -92,6 +94,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
     @Override
     public T wireOutPublisher(WireOutPublisher wireOutPublisher) {
         throwExceptionIfClosed();
+
         this.wireOutPublisher = wireOutPublisher;
         return (T) this;
     }
@@ -105,6 +108,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
     @NotNull
     public T wireType(WireType wireType) {
         throwExceptionIfClosed();
+
         this.wireType = wireType;
         return (T) this;
     }
@@ -118,6 +122,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
     @Override
     public T sessionDetails(SessionDetailsProvider sessionDetails) {
         throwExceptionIfClosed();
+
         this.sessionDetails = sessionDetails;
         return (T) this;
     }
@@ -131,12 +136,14 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
     @Override
     public void terminationEventHandler(@Nullable TerminationEventHandler<T> terminationEventHandler) {
         throwExceptionIfClosed();
+
         this.terminationEventHandler = terminationEventHandler;
     }
 
     @Override
     public T heartbeatTimeoutMs(long heartbeatTimeoutMs) {
         throwExceptionIfClosed();
+
         this.heartbeatTimeoutMs = heartbeatTimeoutMs;
         return (T) this;
     }
@@ -154,9 +161,9 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
     @Override
     public void heartbeatListener(@NotNull HeartbeatListener heartbeatListener) {
         throwExceptionIfClosed();
+
         this.heartbeatListener = heartbeatListener;
     }
-
 
     @Override
     protected void performClose() {
@@ -172,6 +179,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
     @NotNull
     public T socketReconnector(Runnable socketReconnector) {
         throwExceptionIfClosed();
+
         this.socketReconnector = socketReconnector;
         return (T) this;
     }
@@ -179,6 +187,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
     @Override
     public void networkStatsListener(@NotNull NetworkStatsListener<T> networkStatsListener) {
         throwExceptionIfClosed();
+
         this.networkStatsListener = networkStatsListener;
     }
 
@@ -196,6 +205,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
     @Override
     public T serverThreadingStrategy(ServerThreadingStrategy serverThreadingStrategy) {
         throwExceptionIfClosed();
+
         this.serverThreadingStrategy = serverThreadingStrategy;
         return (T) this;
     }

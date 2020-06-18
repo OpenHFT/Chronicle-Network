@@ -52,7 +52,7 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext<T>> extends Sim
                         T nc) {
         throwExceptionIfClosed();
 
-        final WireOutPublisher publisher = nc.wireOutPublisher();
+ final WireOutPublisher publisher = nc.wireOutPublisher();
 
         if (publisher != null)
             publisher.applyAction(out);

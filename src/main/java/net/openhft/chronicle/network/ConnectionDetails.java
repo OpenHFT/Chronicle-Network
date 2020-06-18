@@ -39,12 +39,14 @@ public class ConnectionDetails extends VanillaNetworkContext {
 
     public SocketAddressSupplier sessionProvider() {
         throwExceptionIfClosed();
+
         return socketAddressSupplier;
     }
 
     @NotNull
     public ConnectionDetails sessionProvider(SocketAddressSupplier sessionProvider) {
         throwExceptionIfClosed();
+
         this.socketAddressSupplier = sessionProvider;
         return this;
     }
@@ -67,6 +69,7 @@ public class ConnectionDetails extends VanillaNetworkContext {
 
     public void setDisable(boolean disable) {
         throwExceptionIfClosed();
+
         this.disable = disable;
     }
 

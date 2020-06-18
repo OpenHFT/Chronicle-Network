@@ -74,7 +74,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
                         final long retryInterval) {
         throwExceptionIfClosed();
 
-        final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
+ final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
 
         @NotNull final RCEventHandler handler = new RCEventHandler(
                 remoteHostPort,
@@ -132,6 +132,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
         @Override
         public boolean action() throws InvalidEventHandlerException {
             throwExceptionIfClosed();
+
             if (isClosed() || eventLoop.isClosed())
                 throw new InvalidEventHandlerException();
             final long time = System.currentTimeMillis();

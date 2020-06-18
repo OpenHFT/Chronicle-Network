@@ -124,12 +124,11 @@ public class HostConnector<T extends ClusteredNetworkContext<T>> extends Abstrac
 
     synchronized void reconnect() {
         close();
-        if (!nc.isAcceptor())
+        if (!nc.isAcceptor() && !isClosed())
             HostConnector.this.connect();
     }
 
     public String connectUri() {
-        throwExceptionIfClosed();
         return connectUri;
     }
 }

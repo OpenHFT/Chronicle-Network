@@ -48,7 +48,6 @@ import java.util.concurrent.TimeoutException;
 
 import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri;
 
-
 public class SimpleServerAndClientTest extends NetworkTestCommon {
     private ThreadDump threadDump;
 

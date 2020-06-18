@@ -17,7 +17,6 @@
  */
 package net.openhft.chronicle.network;
 
-
 public enum SessionMode {
     ACTIVE,
     PASSIVE

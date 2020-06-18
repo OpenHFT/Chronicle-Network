@@ -118,8 +118,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
         };
     }
 
-
-    @Nullable
+@Nullable
     protected <R> R proxyReturnWireTypedObject(
             @NotNull final E eventId,
             @Nullable final R usingValue,

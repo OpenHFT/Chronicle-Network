@@ -46,6 +46,7 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
     @Override
     public void process(@NotNull final Bytes in, @NotNull final Bytes out, final N nc) {
         throwExceptionIfClosed();
+
         if (!handshakeComplete) {
             try {
                 doHandshake(nc);
@@ -66,6 +67,7 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
     @Override
     public void sendHeartBeat(final Bytes out, final SessionDetailsProvider sessionDetails) {
         throwExceptionIfClosed();
+
         delegate.sendHeartBeat(out, sessionDetails);
     }
 
@@ -75,6 +77,7 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
     @Override
     public void onEndOfConnection(final boolean heartbeatTimeOut) {
         throwExceptionIfClosed();
+
         delegate.onEndOfConnection(heartbeatTimeOut);
     }
 
@@ -95,6 +98,7 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
     @Override
     public void onReadTime(final long readTimeNS, final ByteBuffer inBB, final int position, final int limit) {
         throwExceptionIfClosed();
+
         delegate.onReadTime(readTimeNS, inBB, position, limit);
     }
 
@@ -107,6 +111,7 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
                             final int position
             , final int limit) {
         throwExceptionIfClosed();
+
         delegate.onWriteTime(writeTimeNS, byteBuffer, position, limit);
     }
 
@@ -116,6 +121,7 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
     @Override
     public void onReadComplete() {
         throwExceptionIfClosed();
+
         delegate.onReadComplete();
     }
 
@@ -125,6 +131,7 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
     @Override
     public boolean hasClientClosed() {
         throwExceptionIfClosed();
+
         return delegate.hasClientClosed();
     }
 
@@ -150,6 +157,7 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
     @Override
     public N nc() {
         throwExceptionIfClosed();
+
         return (delegate instanceof NetworkContextManager) ? ((NetworkContextManager<N>) delegate).nc() : null;
     }
 
@@ -159,6 +167,7 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
     @Override
     public void nc(final N nc) {
         throwExceptionIfClosed();
+
         if (delegate instanceof NetworkContextManager) {
             ((NetworkContextManager<N>) delegate).nc(nc);
         }
