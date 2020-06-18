@@ -89,11 +89,7 @@ public class EchoServerMain {
                         }
                     } catch (IOException ioe) {
                         System.out.println("... closed " + socket + " on " + ioe);
-                        try {
                             socket.close();
-                        } catch (IOException e) {
-                            // ignored
-                        }
                         sockets.remove(i--);
 
                     }
