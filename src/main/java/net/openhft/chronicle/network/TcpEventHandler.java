@@ -28,6 +28,7 @@ import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.core.threads.EventHandler;
+import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.network.api.TcpHandler;
@@ -41,7 +42,11 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.Math.max;
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
@@ -51,8 +56,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         implements EventHandler, TcpEventHandlerManager<T> {
 
     private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
-    private static final long NBR_WARNING_NANOS = Long.getLong("tcp.nbr.warning.nanos", 50_000_000);
-    private static final long NBW_WARNING_NANOS = Long.getLong("tcp.nbw.warning.nanos", 50_000_000);
+    private static final long NBR_WARNING_NANOS = Long.getLong("tcp.nbr.warning.nanos", 20_000_000);
+    private static final long NBW_WARNING_NANOS = Long.getLong("tcp.nbw.warning.nanos", 20_000_000);
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
     private static final AtomicBoolean FIRST_HANDLER = new AtomicBoolean();
     public static final int TARGET_WRITE_SIZE = Integer.getInteger("TcpEventHandler.targetWriteSize", 1024);
@@ -79,17 +84,12 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     private final boolean fair;
 
     private final boolean nbWarningEnabled;
+    private final StatusMonitorEventHandler statusMonitorEventHandler;
 
     private int oneInTen;
     @Nullable
     private volatile TcpHandler<T> tcpHandler;
     private long lastTickReadTime = System.currentTimeMillis();
-
-    // monitoring
-    private int socketPollCount;
-    private long bytesReadCount;
-    private long bytesWriteCount;
-    private long lastMonitor;
 
     public TcpEventHandler(@NotNull final T nc) {
         this(nc, false);
@@ -135,8 +135,14 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         readLog = new NetworkLog(this.sc, "read");
         writeLog = new NetworkLog(this.sc, "write");
         nbWarningEnabled = Jvm.warn().isEnabled(getClass());
+        statusMonitorEventHandler = new StatusMonitorEventHandler(getClass());
         if (FIRST_HANDLER.compareAndSet(false, true))
             warmUp();
+    }
+
+    @Override
+    public void eventLoop(final EventLoop eventLoop) {
+        eventLoop.addHandler(statusMonitorEventHandler);
     }
 
     @Override
@@ -167,7 +173,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             throw new InvalidEventHandlerException("socket is closed");
         }
 
-        socketPollCount++;
+        statusMonitorEventHandler.incrementSocketPollCount();
 
         boolean busy = false;
         if (fair || oneInTen++ >= 8) {
@@ -188,7 +194,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             //   int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
             final long elapsedNs = System.nanoTime() - beginNs;
             if (nbWarningEnabled && elapsedNs > NBR_WARNING_NANOS)
-                Jvm.warn().on(getClass(), "Non blocking read took " + elapsedNs / 1000 + " us.");
+                statusMonitorEventHandler.add(new ThreadLogTypeElapsedRecord(Thread.currentThread(), LogType.READ, elapsedNs));
 
             if (read == Integer.MAX_VALUE)
                 onInBBFul();
@@ -220,9 +226,6 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                         }
                     }
                 }
-
-                if (!busy)
-                    monitorStats();
             } else {
                 // read == -1, socketChannel has reached end-of-stream
                 close();
@@ -327,7 +330,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
          * Reads content from the provided {@code socketChannel} into the provided {@code bytes}.
          *
          * @param socketChannel to read from
-         * @param bytes to which content from the {@code socketChannel} is put
+         * @param bytes         to which content from the {@code socketChannel} is put
          * @return the number of bytes read from the provided {@code socketChannel}.
          * @throws IOException if there is a problem reading form the provided {@code socketChannel}.
          */
@@ -355,26 +358,6 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         LOG.trace("inBB is full, can't read from socketChannel");
     }
 
-    private void monitorStats() {
-        // TODO: consider installing this on EventLoop using Timer
-        long now = System.currentTimeMillis();
-        if (now > lastMonitor + (MONITOR_POLL_EVERY_SEC * 1000)) {
-            final NetworkStatsListener<T> networkStatsListener = nc.networkStatsListener();
-            if (networkStatsListener != null && !networkStatsListener.isClosed()) {
-                if (lastMonitor == 0) {
-                    networkStatsListener.onNetworkStats(0, 0, 0);
-                } else {
-                    networkStatsListener.onNetworkStats(
-                            bytesWriteCount / MONITOR_POLL_EVERY_SEC,
-                            bytesReadCount / MONITOR_POLL_EVERY_SEC,
-                            socketPollCount / MONITOR_POLL_EVERY_SEC);
-                    bytesWriteCount = bytesReadCount = socketPollCount = 0;
-                }
-            }
-            lastMonitor = now;
-        }
-    }
-
     @PackageLocal
     boolean invokeHandler() throws IOException {
         Jvm.optionalSafepoint();
@@ -387,7 +370,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         do {
             lastInBBBReadPosition = inBBB.readPosition();
             tcpHandler.process(inBBB, outBBB, nc);
-            bytesReadCount += (inBBB.readPosition() - lastInBBBReadPosition);
+
+            statusMonitorEventHandler.addBytesRead(inBBB.readPosition() - lastInBBBReadPosition);
 
             // process method might change the underlying ByteBuffer by resizing it.
             ByteBuffer outBB = outBBB.underlyingObject();
@@ -491,10 +475,11 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         int wrote = sc.write(outBB);
         long elapsedNs = System.nanoTime() - beginNs;
         if (nbWarningEnabled && elapsedNs > NBW_WARNING_NANOS)
-            Jvm.warn().on(getClass(), "Non blocking write took " + elapsedNs / 1000 + " us.");
+            statusMonitorEventHandler.add(new ThreadLogTypeElapsedRecord(Thread.currentThread(), LogType.WRITE, elapsedNs));
+
         tcpHandler.onWriteTime(beginNs, outBB, start, outBB.position());
 
-        bytesWriteCount += (outBB.position() - start);
+        statusMonitorEventHandler.addBytesWritten(outBB.position() - start);
         writeLog.log(outBB, start, outBB.position());
 
         if (wrote < 0) {
@@ -546,4 +531,121 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         }
         return busy;
     }
+
+    private static final class ThreadLogTypeElapsedRecord {
+
+        private final Thread thread;
+        private final LogType logType;
+        private final long elapsedNs;
+
+        public ThreadLogTypeElapsedRecord(@NotNull final Thread thread,
+                                          @NotNull final LogType logType,
+                                          final long elapsedNs) {
+            this.thread = thread;
+            this.logType = logType;
+            this.elapsedNs = elapsedNs;
+        }
+    }
+
+    private enum LogType {
+        READ("read"), WRITE("write");
+
+        LogType(@NotNull final String label) {
+            this.label = label;
+        }
+
+        private final String label;
+
+        private String label() {
+            return label;
+        }
+
+    }
+
+    /**
+     * EventHandler that handles both network stats listening
+     * and printing of messages that otherwise might impact performance.
+     */
+    private final class StatusMonitorEventHandler implements EventHandler {
+
+        private final String className;
+        private final StringBuilder messageBuilder = new StringBuilder();
+        private final AtomicInteger socketPollCount = new AtomicInteger();
+        private final AtomicLong bytesReadCount = new AtomicLong();
+        private final AtomicLong bytesWriteCount = new AtomicLong();
+        private final Queue<ThreadLogTypeElapsedRecord> logs = new ConcurrentLinkedQueue<>();
+
+        private long lastMonitor;
+
+        public StatusMonitorEventHandler(@NotNull final Class<?> clazz) {
+            this.className = clazz.getSimpleName();
+        }
+
+        @Override
+        public boolean action() throws InvalidEventHandlerException {
+            if (TcpEventHandler.this.isClosed())
+                throw InvalidEventHandlerException.reusable();
+
+            if (!logs.isEmpty()) {
+                ThreadLogTypeElapsedRecord msg;
+                while ((msg = logs.poll()) != null) {
+                    messageBuilder.setLength(0);
+                    messageBuilder
+                            .append("Non blocking ")
+                            .append(className)
+                            .append(" (")
+                            .append(msg.thread.getName())
+                            .append(") ")
+                            .append(msg.logType.label())
+                            .append(" took ")
+                            .append(msg.elapsedNs / 1000)
+                            .append(" us");
+
+                    Jvm.warn().on(getClass(), messageBuilder.toString());
+                }
+            }
+
+            final long now = System.currentTimeMillis();
+            if (now > lastMonitor + (MONITOR_POLL_EVERY_SEC * 1000)) {
+                final NetworkStatsListener<T> networkStatsListener = nc.networkStatsListener();
+                if (networkStatsListener != null && !networkStatsListener.isClosed()) {
+                    if (lastMonitor == 0) {
+                        networkStatsListener.onNetworkStats(0, 0, 0);
+                    } else {
+                        networkStatsListener.onNetworkStats(
+                                bytesWriteCount.get() / MONITOR_POLL_EVERY_SEC,
+                                bytesReadCount.get() / MONITOR_POLL_EVERY_SEC,
+                                socketPollCount.get() / MONITOR_POLL_EVERY_SEC);
+                        bytesWriteCount.set(0);
+                        bytesReadCount.set(0);
+                        socketPollCount.set(0);
+                    }
+                }
+                lastMonitor = now;
+            }
+            return false;
+        }
+
+        private void incrementSocketPollCount() {
+            socketPollCount.incrementAndGet();
+        }
+
+        private void addBytesRead(long delta) {
+            bytesReadCount.addAndGet(delta);
+        }
+
+        private void addBytesWritten(long delta) {
+            bytesReadCount.addAndGet(delta);
+        }
+
+        private void add(@NotNull TcpEventHandler.ThreadLogTypeElapsedRecord logTypeTimeRecord) {
+            logs.add(logTypeTimeRecord);
+        }
+
+        @Override
+        public @NotNull HandlerPriority priority() {
+            return HandlerPriority.MONITOR;
+        }
+    }
+
 }
