@@ -156,7 +156,9 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     public synchronized boolean action() throws InvalidEventHandlerException {
         Jvm.optionalSafepoint();
 
-        if (((AbstractCloseable) this).isClosed() || sc.isClosed())
+        if (this.isClosed())
+            throw new InvalidEventHandlerException();
+        if (sc.isClosed())
             throw new InvalidEventHandlerException();
 
         if (tcpHandler == null)
