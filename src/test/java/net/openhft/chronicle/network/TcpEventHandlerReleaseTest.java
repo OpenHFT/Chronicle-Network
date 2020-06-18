@@ -5,12 +5,14 @@ import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.network.api.TcpHandler;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
 
 import static junit.framework.TestCase.fail;
 
+@Ignore("see https://github.com/OpenHFT/Chronicle-Network/issues/75")
 public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
     private static final String hostPort = "host.port";
 
