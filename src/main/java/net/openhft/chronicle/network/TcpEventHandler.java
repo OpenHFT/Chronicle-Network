@@ -51,8 +51,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         implements EventHandler, TcpEventHandlerManager<T> {
 
     private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
-    private static final long NBR_WARNING_NANOS = Long.getLong("tcp.nbr.warning.nanos", 2_000_000);
-    private static final long NBW_WARNING_NANOS = Long.getLong("tcp.nbw.warning.nanos", 2_000_000);
+    private static final long NBR_WARNING_NANOS = Long.getLong("tcp.nbr.warning.nanos", 50_000_000);
+    private static final long NBW_WARNING_NANOS = Long.getLong("tcp.nbw.warning.nanos", 50_000_000);
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
     private static final AtomicBoolean FIRST_HANDLER = new AtomicBoolean();
     public static final int TARGET_WRITE_SIZE = Integer.getInteger("TcpEventHandler.targetWriteSize", 1024);
