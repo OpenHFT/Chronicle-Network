@@ -30,16 +30,16 @@ public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
 
     @Test
     public void testBuffersReleasedWhenSocketChannelClosed() throws IOException {
-        TcpEventHandler t = createTcpEventHandler();
-        t.socketChannel().close();
-        try {
-            t.action();
-            fail();
-        } catch (InvalidEventHandlerException e) {
-            // expected.
+        try (TcpEventHandler t = createTcpEventHandler()) {
+            t.socketChannel().close();
+            try {
+                t.action();
+                fail();
+            } catch (InvalidEventHandlerException e) {
+                // expected.
+            }
+            t.loopFinished();
         }
-        t.loopFinished();
-        t.close();
     }
 
     public TcpEventHandler createTcpEventHandler() throws IOException {
