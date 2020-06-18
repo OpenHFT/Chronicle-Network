@@ -25,7 +25,6 @@ import net.openhft.chronicle.core.annotation.PackageLocal;
 import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
-import net.openhft.chronicle.core.io.QueryCloseable;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
@@ -159,7 +158,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
         if (this.isClosed())
             throw new InvalidEventHandlerException();
-        QueryCloseable c = sc;
+        ISocketChannel c = sc;
         if (c.isClosed())
             throw new InvalidEventHandlerException();
 
