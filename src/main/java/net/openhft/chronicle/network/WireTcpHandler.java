@@ -140,7 +140,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
         if (now > lastMonitor + 10000) {
             final NetworkStatsListener<T> networkStatsListener = this.nc.networkStatsListener();
 
-            if (networkStatsListener != null) {
+            if (networkStatsListener != null && !networkStatsListener.isClosed()) {
                 if (lastMonitor == 0) {
                     networkStatsListener.onNetworkStats(0, 0, 0);
                 } else {
