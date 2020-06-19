@@ -101,6 +101,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     public TcpEventHandler(@NotNull final T nc, final boolean fair) {
 
         this.sc = ISocketChannel.wrapUnsafe(nc.socketChannel());
+        nc.iSocketChannel(this.sc);
         this.scToString = sc.toString();
         this.nc = nc;
         this.fair = fair;

@@ -20,6 +20,7 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.bytes.MappedUniqueMicroTimeProvider;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.cluster.TerminationEventHandler;
@@ -44,6 +45,14 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
     T socketChannel(SocketChannel sc);
 
     SocketChannel socketChannel();
+
+    default T iSocketChannel(@NotNull ISocketChannel sc) {
+        return (T) this;
+    }
+
+    default ISocketChannel iSocketChannel() {
+        return null;
+    }
 
     WireOutPublisher wireOutPublisher();
 

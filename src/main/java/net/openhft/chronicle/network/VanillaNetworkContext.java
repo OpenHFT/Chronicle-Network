@@ -19,6 +19,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.cluster.TerminationEventHandler;
@@ -34,6 +35,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
         implements NetworkContext<T> {
 
     private SocketChannel socketChannel;
+    private ISocketChannel iSocketChannel;
     private boolean isAcceptor = true;
     private HeartbeatListener heartbeatListener;
     private SessionDetailsProvider sessionDetails;
@@ -58,6 +60,17 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
         throwExceptionIfClosed();
 
         this.socketChannel = socketChannel;
+        return (T) this;
+    }
+
+    @Override
+    public ISocketChannel iSocketChannel() {
+        return iSocketChannel;
+    }
+
+    @Override
+    public T iSocketChannel(ISocketChannel iSocketChannel) {
+        this.iSocketChannel = iSocketChannel;
         return (T) this;
     }
 
