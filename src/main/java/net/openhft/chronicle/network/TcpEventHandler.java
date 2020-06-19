@@ -21,6 +21,7 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.core.OS;
+import net.openhft.chronicle.core.StackTrace;
 import net.openhft.chronicle.core.annotation.PackageLocal;
 import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
@@ -32,6 +33,7 @@ import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.network.api.TcpHandler;
+import net.openhft.chronicle.threads.MediumEventLoop;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -90,6 +92,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     @Nullable
     private volatile TcpHandler<T> tcpHandler;
     private long lastTickReadTime = System.currentTimeMillis();
+    private Thread actionThread;
 
     public TcpEventHandler(@NotNull final T nc) {
         this(nc, false);
@@ -138,6 +141,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
     @Override
     public void eventLoop(final EventLoop eventLoop) {
+        if (eventLoop instanceof MediumEventLoop)
+            return;
         eventLoop.addHandler(statusMonitorEventHandler);
     }
 
@@ -154,11 +159,13 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     }
 
     @Override
-    public synchronized boolean action() throws InvalidEventHandlerException {
+    public boolean action() throws InvalidEventHandlerException {
         Jvm.optionalSafepoint();
 
         if (this.isClosed())
             throw new InvalidEventHandlerException();
+        if (actionThread == null)
+            actionThread = Thread.currentThread();
         QueryCloseable c = sc;
         if (c.isClosed())
             throw new InvalidEventHandlerException();
@@ -166,6 +173,16 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         if (tcpHandler == null)
             return false;
 
+        try {
+            return action0();
+        } catch (Throwable t) {
+            if (this.isClosed())
+                throw new InvalidEventHandlerException();
+            throw Jvm.rethrow(t);
+        }
+    }
+
+    private synchronized boolean action0() throws InvalidEventHandlerException {
         if (!sc.isOpen()) {
             tcpHandler.onEndOfConnection(false);
             Closeable.closeQuietly(nc);
@@ -439,12 +456,16 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
         // NOTE Do not release buffers here as they might be in use. loopFinished() releases them and
         // is called from event loop when it knows that the thread calling "action" is done
+        if (Thread.currentThread() == actionThread)
+            return;
         for (int i = 50; i >= 0; i--) {
             if (inBBB.refCount() + outBBB.refCount() == 0)
                 break;
-            Jvm.pause(5);
-            if (i == 0)
-                Jvm.debug().on(getClass(), "loopFinished failed to release buffers");
+            Jvm.pause(2);
+            if (i == 0) {
+                Throwable thrown = actionThread == null ? null : StackTrace.forThread(actionThread);
+                Jvm.warn().on(getClass(), "loopFinished failed to release buffers", thrown);
+            }
         }
     }
 
