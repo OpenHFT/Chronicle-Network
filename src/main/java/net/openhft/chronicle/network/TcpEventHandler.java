@@ -49,6 +49,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
 import static java.lang.Math.max;
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
@@ -627,6 +628,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                             .append(" took ")
                             .append(msg.elapsedNs / 1000)
                             .append(" us");
+
+                    Jvm.trimStackTrace(messageBuilder, msg.thread.getStackTrace());
 
                     Jvm.warn().on(getClass(), messageBuilder.toString());
                 }
