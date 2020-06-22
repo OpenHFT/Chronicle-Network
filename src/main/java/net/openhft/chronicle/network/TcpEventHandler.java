@@ -183,7 +183,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         }
     }
 
-    private synchronized boolean action0() throws InvalidEventHandlerException {
+    private boolean action0() throws InvalidEventHandlerException {
         if (!sc.isOpen()) {
             tcpHandler.onEndOfConnection(false);
             Closeable.closeQuietly(nc);
