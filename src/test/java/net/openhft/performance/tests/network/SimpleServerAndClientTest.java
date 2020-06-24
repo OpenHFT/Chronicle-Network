@@ -138,7 +138,7 @@ public class SimpleServerAndClientTest extends NetworkTestCommon {
     private TcpChannelHub createClient(@NotNull EventLoop eg, String desc) {
         return new TcpChannelHub(null,
                 eg, WireType.TEXT, "/", uri(desc), false,
-                null, HandlerPriority.TIMER, new FatalFailureConnectionStrategy(3));
+                null, HandlerPriority.TIMER, new FatalFailureConnectionStrategy(3, false));
     }
 
     private void createServer(@NotNull String desc, @NotNull EventLoop eg) throws IOException {

@@ -58,14 +58,16 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
 
     private static final long PAUSE = TimeUnit.MILLISECONDS.toNanos(300);
     private final int attempts;
+    private final boolean blocking;
     private int tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
     private boolean hasSentFatalFailure;
 
     /**
      * @param attempts the number of attempts before a onFatalFailure() reported
      */
-    public FatalFailureConnectionStrategy(int attempts) {
+    public FatalFailureConnectionStrategy(int attempts, boolean blocking) {
         this.attempts = attempts;
+        this.blocking = blocking;
     }
 
     @Nullable
@@ -120,6 +122,7 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
                     LockSupport.parkNanos(PAUSE);
                     continue;
                 }
+                socketChannel.configureBlocking(blocking);
 
                 if (Jvm.isDebugEnabled(getClass()))
                     Jvm.debug().on(getClass(), "successfully connected to " + socketAddressSupplier);
