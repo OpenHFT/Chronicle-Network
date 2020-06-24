@@ -520,29 +520,20 @@ public final class TcpChannelHub extends AbstractCloseable {
      */
     @Override
     protected void performClose() {
-        tcpSocketConsumer.prepareToShutdown();
+        boolean sentClose = false;
 
         if (shouldSendCloseMessage) {
-            eventLoop.addHandler(new EventHandler() {
-                @Override
-                public boolean action() throws InvalidEventHandlerException {
-                    try {
-                        TcpChannelHub.this.sendCloseMessage();
-                    } catch (ConnectionDroppedException e) {
-                        throw new InvalidEventHandlerException(e);
-                    }
+            try {
+                eventLoop.addHandler(new SendCloseEventHandler());
+                sentClose = true;
+            } catch (IllegalStateException e) {
+                // expected
+            }
+        }
 
-                    // we just want this to run once
-                    throw InvalidEventHandlerException.reusable();
-                }
+        tcpSocketConsumer.prepareToShutdown();
 
-                @NotNull
-                @Override
-                public String toString() {
-                    return TcpChannelHub.class.getSimpleName() + ".close()";
-                }
-            });
-
+        if (sentClose) {
             awaitAckOfClosedMessage();
         }
 
@@ -578,9 +569,9 @@ public final class TcpChannelHub extends AbstractCloseable {
     }
 
     private void awaitAckOfClosedMessage() {
-        // wait up to 250 ms to receive an close request acknowledgment from the server
+        // wait up to 25 ms to receive an close request acknowledgment from the server
         try {
-            final boolean await = receivedClosedAcknowledgement.await(250, MILLISECONDS);
+            final boolean await = receivedClosedAcknowledgement.await(25, MILLISECONDS);
             if (!await)
                 if (DEBUG_ENABLED)
                     Jvm.debug().on(TcpChannelHub.class, "SERVER IGNORED CLOSE REQUEST: shutting down the client anyway as the " +
@@ -1933,13 +1924,16 @@ public final class TcpChannelHub extends AbstractCloseable {
 
         void prepareToShutdown() {
             this.prepareToShutdown = true;
+            service.shutdown();
+            if (readThread != null)
+                readThread.interrupt();
             try {
-                service.awaitTermination(100, MILLISECONDS);
+                if (readThread != Thread.currentThread())
+                    service.awaitTermination(100, MILLISECONDS);
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            service.shutdown();
         }
 
         private void tidReader(WireIn w) {
@@ -1962,5 +1956,25 @@ public final class TcpChannelHub extends AbstractCloseable {
             }
         }
 
+    }
+
+    class SendCloseEventHandler implements EventHandler {
+        @Override
+        public boolean action() throws InvalidEventHandlerException {
+            try {
+                TcpChannelHub.this.sendCloseMessage();
+            } catch (ConnectionDroppedException e) {
+                throw new InvalidEventHandlerException(e);
+            }
+
+            // we just want this to run once
+            throw InvalidEventHandlerException.reusable();
+        }
+
+        @NotNull
+        @Override
+        public String toString() {
+            return TcpChannelHub.class.getSimpleName() + ".close()";
+        }
     }
 }
