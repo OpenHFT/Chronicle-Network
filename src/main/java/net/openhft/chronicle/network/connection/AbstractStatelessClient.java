@@ -316,17 +316,18 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
 
             tid = writeMetaDataStartTime(startTime);
 
-            hub.outWire().writeDocument(false, wireOut -> {
+            Wire wire = hub.outWire();
+            try (DocumentContext dc = wire.writingDocument()) {
 
-                @NotNull final ValueOut valueOut = wireOut.writeEventName(eventId);
+                @NotNull final ValueOut valueOut = wire.writeEventName(eventId);
 
                 if (consumer == null)
                     valueOut.marshallable(WriteMarshallable.EMPTY);
                 else
                     consumer.writeValue(valueOut);
-            });
+            }
 
-            hub.writeSocket(hub.outWire(), true, false);
+            hub.writeSocket(wire, true, false);
         } finally {
             hub.outBytesLock().unlock();
         }

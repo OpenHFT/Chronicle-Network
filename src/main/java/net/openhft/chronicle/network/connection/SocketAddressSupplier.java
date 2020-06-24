@@ -48,6 +48,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
     @Nullable
     private RemoteAddressSupplier current;
     private int addressCount = 0;
+    private String toString;
 
     /**
      * @param connectURIs the socket connections defined in order with the primary first
@@ -137,7 +138,9 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
     @Override
     @NotNull
     public String toString() {
-        return log(this.current);
+        if (toString == null)
+            toString = log(this.current);
+        return toString;
     }
 
     public String remoteAddresses() {
@@ -156,8 +159,10 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
         if (socketAddress == null)
             return "(none)";
 
-        return socketAddress.toString().replaceAll("0:0:0:0:0:0:0:0", "localhost") + " - " +
-                current.toString();
+        String s = socketAddress.toString();
+        if (s.contains("0:0:0:0:0:0:0:0"))
+            s = "localhost";
+        return s + " - " + current;
     }
 
     private class RemoteAddressSupplier implements Supplier<SocketAddress> {
