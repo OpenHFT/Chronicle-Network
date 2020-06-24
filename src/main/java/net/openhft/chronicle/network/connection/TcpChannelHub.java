@@ -74,8 +74,10 @@ import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
 public final class TcpChannelHub extends AbstractCloseable {
 
     public static final int TCP_BUFFER = getTcpBufferSize();
-    static final int SAFE_TCP_SIZE = TCP_BUFFER * 3 / 4;
-    public static final boolean DEBUG_ENABLED = LOG.isDebugEnabled();
+    public static final int SAFE_TCP_SIZE = TCP_BUFFER * 3 / 4;
+    private static final boolean LOG_TCP_MESSAGES = Jvm.getBoolean("log.tcp.messages");
+    private static final Logger LOG = LoggerFactory.getLogger(TcpChannelHub.class);
+    private static final boolean DEBUG_ENABLED = LOG.isDebugEnabled();
     private static final boolean hasAssert;
     private static final int HEATBEAT_PING_PERIOD =
             getInteger("heartbeat.ping.period",
@@ -85,8 +87,6 @@ public final class TcpChannelHub extends AbstractCloseable {
                     Jvm.isDebug() ? 120_000 : 15_000);
     private static final int SIZE_OF_SIZE = 4;
     private static final Set<TcpChannelHub> hubs = new CopyOnWriteArraySet<>();
-    private static final Logger LOG = LoggerFactory.getLogger(TcpChannelHub.class);
-    static final boolean LOG_TCP_MESSAGES = Jvm.getBoolean("log.tcp.messages");
 
     static {
         boolean x = false;
