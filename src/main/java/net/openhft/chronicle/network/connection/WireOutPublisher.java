@@ -82,9 +82,6 @@ public interface WireOutPublisher extends Closeable {
         throw new UnsupportedOperationException();
     }
 
-    default boolean canTakeMoreData() {
-        throw new UnsupportedOperationException();
-    }
 
     default boolean isEmpty() {
         throw new UnsupportedOperationException();

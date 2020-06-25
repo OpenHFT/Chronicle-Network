@@ -96,7 +96,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     public void applyAction(@NotNull WireOut outWire) {
         throwExceptionIfClosed();
 
- applyAction(outWire.bytes());
+        applyAction(outWire.bytes());
 
         for (int y = 1; y < 1000; y++) {
 
@@ -104,7 +104,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
 
             for (int i = 0; i < consumers.size(); i++) {
 
-                if (outWire.bytes().writePosition() > TcpChannelHub.SAFE_TCP_SIZE)
+                if (outWire.bytes().writePosition() >= TcpChannelHub.TCP_SAFE_SIZE)
                     return;
 
                 if (isClosed())
@@ -203,21 +203,6 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     protected void performClose() {
         bytes.releaseLast();
         clear();
-    }
-
-    @Override
-    public boolean canTakeMoreData() {
-        throwExceptionIfClosed();
-
-        synchronized (lock()) {
-            assert wire.startUse();
-            try {
-                return wire.bytes().writePosition() < TcpChannelHub.SAFE_TCP_SIZE; // don't attempt
-                // to fill the buffer completely.
-            } finally {
-                assert wire.endUse();
-            }
-        }
     }
 
     @Override

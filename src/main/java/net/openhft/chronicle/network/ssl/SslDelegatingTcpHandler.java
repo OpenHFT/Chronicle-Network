@@ -175,6 +175,6 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
 
     private void doHandshake(final N nc) {
         stateMachine = new SslEngineStateMachine(bufferHandler, nc.isAcceptor());
-        stateMachine.initialise(nc.sslContext(), nc.socketChannel());
+        stateMachine.initialise(nc.sslContext(), nc.socketChannel().socketChannel());
     }
 }

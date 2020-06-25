@@ -18,6 +18,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.wire.SelfDescribingMarshallable;
@@ -27,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -51,10 +51,10 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
 
     @Nullable
     @Override
-    public SocketChannel connect(@NotNull String name,
-                                 @NotNull SocketAddressSupplier socketAddressSupplier,
-                                 boolean didLogIn,
-                                 @Nullable FatalFailureMonitor fatalFailureMonitor) throws InterruptedException {
+    public ISocketChannel connect(@NotNull String name,
+                                  @NotNull SocketAddressSupplier socketAddressSupplier,
+                                  boolean didLogIn,
+                                  @Nullable FatalFailureMonitor fatalFailureMonitor) throws InterruptedException {
 
         if (socketAddressSupplier.get() == null || didLogIn)
             socketAddressSupplier.resetToPrimary();
@@ -63,7 +63,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
 
         for (; ; ) {
 
-            SocketChannel socketChannel = null;
+            ISocketChannel socketChannel = null;
             try {
 
                 @Nullable final InetSocketAddress socketAddress = socketAddressSupplier.get();

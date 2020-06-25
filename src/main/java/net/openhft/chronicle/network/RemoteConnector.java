@@ -22,6 +22,7 @@ import net.openhft.chronicle.core.annotation.PackageLocal;
 import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -160,9 +161,10 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
                 if (sc == null)
                     return false;
 
-                nc.socketChannel(sc);
+                ISocketChannel isc = ISocketChannel.wrap(sc);
+                nc.socketChannel(isc);
                 nc.isAcceptor(false);
-                notifyHostPort(sc, nc.networkStatsListener());
+                notifyHostPort(isc, nc.networkStatsListener());
                 if (!nc.socketChannel().isOpen())
                     throw new InvalidEventHandlerException();
                 eventHandler = tcpHandlerSupplier.apply(nc);

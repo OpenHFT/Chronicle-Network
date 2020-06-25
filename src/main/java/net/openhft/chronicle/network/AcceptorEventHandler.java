@@ -20,6 +20,7 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -89,10 +90,11 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractC
                     throw new InvalidEventHandlerException("closed");
                 }
                 final T nc = ncFactory.get();
-                nc.socketChannel(sc);
+                ISocketChannel isc = ISocketChannel.wrap(sc);
+                nc.socketChannel(isc);
                 nc.isAcceptor(true);
                 NetworkStatsListener<T> nl = nc.networkStatsListener();
-                notifyHostPort(sc, nl);
+                notifyHostPort(isc, nl);
                 TcpEventHandler<T> apply = handlerFactory.apply(nc);
                 eventLoop.addHandler(apply);
             }

@@ -1,6 +1,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.network.api.TcpHandler;
 import org.jetbrains.annotations.NotNull;
@@ -45,7 +46,9 @@ public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
 
     public TcpEventHandler createTcpEventHandler() throws IOException {
         NetworkContext nc = new VanillaNetworkContext();
-        nc.socketChannel(TCPRegistry.createSocketChannel(hostPort));
+        nc.socketChannel(
+                ISocketChannel.wrap(
+                        TCPRegistry.createSocketChannel(hostPort)));
         TcpEventHandler tcpEventHandler = new TcpEventHandler(nc);
         tcpEventHandler.tcpHandler(NullTcpHandler.INSTANCE);
         return tcpEventHandler;

@@ -49,7 +49,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 
 import static java.lang.Math.max;
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
@@ -101,8 +100,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
     public TcpEventHandler(@NotNull final T nc, final boolean fair) {
 
-        this.sc = ISocketChannel.wrapUnsafe(nc.socketChannel());
-        nc.iSocketChannel(this.sc);
+        this.sc = ISocketChannel.wrapUnsafe(nc.socketChannel().socketChannel());
         this.scToString = sc.toString();
         this.nc = nc;
         this.fair = fair;

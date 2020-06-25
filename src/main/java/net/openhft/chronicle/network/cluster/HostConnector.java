@@ -19,6 +19,7 @@ package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.NetworkStatsListener;
 import net.openhft.chronicle.network.RemoteConnector;
@@ -27,7 +28,6 @@ import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.WriteMarshallable;
 import org.jetbrains.annotations.NotNull;
 
-import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -69,7 +69,7 @@ public class HostConnector<T extends ClusteredNetworkContext<T>> extends Abstrac
     protected synchronized void performClose() {
         WireOutPublisher wp = wireOutPublisher.getAndSet(null);
 
-        SocketChannel socketChannel = nc.socketChannel();
+        ISocketChannel socketChannel = nc.socketChannel();
         if (socketChannel != null) {
             Closeable.closeQuietly(socketChannel);
             Closeable.closeQuietly(socketChannel.socket());

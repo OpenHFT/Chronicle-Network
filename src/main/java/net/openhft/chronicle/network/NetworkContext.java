@@ -30,8 +30,6 @@ import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.nio.channels.SocketChannel;
-
 public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
 
     void onHandlerChanged(TcpHandler<T> handler);
@@ -42,17 +40,9 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
     boolean isAcceptor();
 
     @NotNull
-    T socketChannel(SocketChannel sc);
+    T socketChannel(ISocketChannel sc);
 
-    SocketChannel socketChannel();
-
-    default T iSocketChannel(@NotNull ISocketChannel sc) {
-        return (T) this;
-    }
-
-    default ISocketChannel iSocketChannel() {
-        return null;
-    }
+    ISocketChannel socketChannel();
 
     WireOutPublisher wireOutPublisher();
 

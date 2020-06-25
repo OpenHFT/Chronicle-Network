@@ -18,12 +18,12 @@
 package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.network.ConnectionStrategy;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.InetSocketAddress;
-import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -72,10 +72,10 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
 
     @Nullable
     @Override
-    public SocketChannel connect(@NotNull String name,
-                                 @NotNull SocketAddressSupplier socketAddressSupplier,
-                                 boolean didLogIn,
-                                 @Nullable FatalFailureMonitor fatalFailureMonitor) throws InterruptedException {
+    public ISocketChannel connect(@NotNull String name,
+                                  @NotNull SocketAddressSupplier socketAddressSupplier,
+                                  boolean didLogIn,
+                                  @Nullable FatalFailureMonitor fatalFailureMonitor) throws InterruptedException {
 
         if (socketAddressSupplier.size() == 0 && !hasSentFatalFailure && fatalFailureMonitor != null) {
             hasSentFatalFailure = true;
@@ -102,7 +102,7 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
                 return null;
             }
 
-            SocketChannel socketChannel = null;
+            ISocketChannel socketChannel = null;
             try {
                 @Nullable final InetSocketAddress socketAddress = socketAddressSupplier.get();
                 if (socketAddress == null) {

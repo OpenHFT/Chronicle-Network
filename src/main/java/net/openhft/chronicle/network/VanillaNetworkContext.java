@@ -28,14 +28,11 @@ import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.nio.channels.SocketChannel;
-
 public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
         extends AbstractCloseable
         implements NetworkContext<T> {
 
-    private SocketChannel socketChannel;
-    private ISocketChannel iSocketChannel;
+    private ISocketChannel socketChannel;
     private boolean isAcceptor = true;
     private HeartbeatListener heartbeatListener;
     private SessionDetailsProvider sessionDetails;
@@ -50,27 +47,16 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
     private ServerThreadingStrategy serverThreadingStrategy = ServerThreadingStrategy.SINGLE_THREADED;
 
     @Override
-    public SocketChannel socketChannel() {
+    public ISocketChannel socketChannel() {
         return socketChannel;
     }
 
     @NotNull
     @Override
-    public T socketChannel(SocketChannel socketChannel) {
+    public T socketChannel(ISocketChannel socketChannel) {
         throwExceptionIfClosed();
 
         this.socketChannel = socketChannel;
-        return (T) this;
-    }
-
-    @Override
-    public ISocketChannel iSocketChannel() {
-        return iSocketChannel;
-    }
-
-    @Override
-    public T iSocketChannel(ISocketChannel iSocketChannel) {
-        this.iSocketChannel = iSocketChannel;
         return (T) this;
     }
 

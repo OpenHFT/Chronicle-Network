@@ -3,6 +3,7 @@ package net.openhft.chronicle.network.ssl;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.SimpleCloseable;
+import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.threads.EventGroup;
@@ -14,7 +15,6 @@ import org.junit.runners.Parameterized;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
-import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
@@ -247,7 +247,7 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
 
         @NotNull
         @Override
-        public StubNetworkContext socketChannel(final SocketChannel socketChannel) {
+        public StubNetworkContext socketChannel(final ISocketChannel socketChannel) {
             return super.socketChannel(socketChannel);
         }
 
