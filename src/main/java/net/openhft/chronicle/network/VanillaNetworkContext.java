@@ -53,7 +53,10 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
 
     @Override
     protected boolean performCloseInBackground() {
-        socketChannel.close();
+
+        ISocketChannel socketChannel = this.socketChannel;
+        if (socketChannel != null)
+            socketChannel.close();
         return super.performCloseInBackground();
     }
 
