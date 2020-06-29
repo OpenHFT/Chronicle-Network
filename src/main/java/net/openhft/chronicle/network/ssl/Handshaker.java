@@ -1,5 +1,6 @@
 package net.openhft.chronicle.network.ssl;
 
+import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,7 +9,6 @@ import javax.net.ssl.SSLEngineResult;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 
 final class Handshaker {
     private static final int HANDSHAKE_BUFFER_CAPACITY = 32768;
@@ -25,12 +25,12 @@ final class Handshaker {
         this.peerNetworkData = ByteBuffer.allocateDirect(HANDSHAKE_BUFFER_CAPACITY);
     }
 
-    private static String socketToString(final SocketChannel channel) {
+    private static String socketToString(final ChronicleSocketChannel channel) {
         return channel.socket().getLocalPort() + "->" +
                 ((InetSocketAddress) channel.socket().getRemoteSocketAddress()).getPort();
     }
 
-    void performHandshake(final SSLEngine engine, final SocketChannel channel) throws IOException {
+    void performHandshake(final SSLEngine engine, final ChronicleSocketChannel channel) throws IOException {
         while (!channel.finishConnect()) {
             Thread.yield();
         }

@@ -18,6 +18,7 @@
 package net.openhft.performance.tests.vanilla.tcp;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
 import org.jetbrains.annotations.NotNull;
 
@@ -27,7 +28,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -137,7 +137,7 @@ public class EchoReconnectingClientMain {
 
     private static void openConnections(@NotNull String[] hostname, int port, @NotNull ISocketChannel... sockets) throws IOException {
         for (int j = 0; j < sockets.length; j++) {
-            sockets[j] = ISocketChannel.wrap(SocketChannel.open(new InetSocketAddress(hostname[j % hostname.length], port)));
+            sockets[j] = ISocketChannel.wrap(ChronicleSocketChannel.open(new InetSocketAddress(hostname[j % hostname.length], port)));
             sockets[j].socket().setTcpNoDelay(true);
             sockets[j].configureBlocking(false);
         }
@@ -168,7 +168,7 @@ public class EchoReconnectingClientMain {
             long next = now;
             for (int j = 0; j < sockets.length; j++) {
                 String hostname = hostnames[j % hostnames.length];
-                sockets[j] = ISocketChannel.wrap(SocketChannel.open(new InetSocketAddress(hostname, PORT)));
+                sockets[j] = ISocketChannel.wrap(ChronicleSocketChannel.open(new InetSocketAddress(hostname, PORT)));
                 sockets[j].socket().setTcpNoDelay(true);
                 sockets[j].configureBlocking(false);
                 start[j] = next;

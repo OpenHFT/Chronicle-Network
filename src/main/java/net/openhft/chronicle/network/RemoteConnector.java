@@ -22,6 +22,9 @@ import net.openhft.chronicle.core.annotation.PackageLocal;
 import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.core.tcp.ChronicleSocket;
+import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
+import net.openhft.chronicle.core.tcp.ChronicleSocketChannelFactory;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
@@ -33,9 +36,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.channels.AlreadyConnectedException;
-import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -60,7 +61,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
         this.tcpHandlerSupplier = tcpEventHandlerFactory;
     }
 
-    private static void closeSocket(SocketChannel socketChannel) {
+    private static void closeSocket(Closeable socketChannel) {
         Closeable.closeQuietly(socketChannel);
     }
 
@@ -75,7 +76,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
                         final long retryInterval) {
         throwExceptionIfClosed();
 
- final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
+        final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
 
         @NotNull final RCEventHandler handler = new RCEventHandler(
                 remoteHostPort,
@@ -92,10 +93,10 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
     }
 
     @PackageLocal
-    SocketChannel openSocketChannel(InetSocketAddress socketAddress) throws IOException {
-        final SocketChannel result = SocketChannel.open(socketAddress);
+    ChronicleSocketChannel openSocketChannel(InetSocketAddress socketAddress) throws IOException {
+        final ChronicleSocketChannel result = ChronicleSocketChannelFactory.open(socketAddress);
         result.configureBlocking(false);
-        Socket socket = result.socket();
+        ChronicleSocket socket = result.socket();
         if (!TcpEventHandler.DISABLE_TCP_NODELAY) socket.setTcpNoDelay(true);
         socket.setReceiveBufferSize(tcpBufferSize);
         socket.setSendBufferSize(tcpBufferSize);
@@ -152,7 +153,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
                 return false;
             }
 
-            final SocketChannel sc;
+            final ChronicleSocketChannel sc;
             final TcpEventHandler<T> eventHandler;
 
             try {

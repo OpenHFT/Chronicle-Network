@@ -27,6 +27,7 @@ import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.io.QueryCloseable;
+import net.openhft.chronicle.core.tcp.ChronicleSocket;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
@@ -40,7 +41,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
@@ -108,7 +108,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         this.bias = bias.get();
         try {
             sc.configureBlocking(false);
-            Socket sock = sc.socket();
+            ChronicleSocket sock = sc.socket();
             // TODO: should have a strategy for this like ConnectionNotifier
             if (!DISABLE_TCP_NODELAY)
                 sock.setTcpNoDelay(true);

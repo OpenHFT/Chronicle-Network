@@ -1,13 +1,14 @@
 package net.openhft.chronicle.network.ssl;
 
+import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 
 abstract class AbstractSocketBufferHandler implements BufferHandler {
-    private final SocketChannel channel;
+    private final ChronicleSocketChannel channel;
 
-    AbstractSocketBufferHandler(final SocketChannel socketChannel) {
+    AbstractSocketBufferHandler(final ChronicleSocketChannel socketChannel) {
         this.channel = socketChannel;
     }
 

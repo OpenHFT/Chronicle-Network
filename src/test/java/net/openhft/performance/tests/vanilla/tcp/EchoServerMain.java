@@ -18,14 +18,14 @@
 package net.openhft.performance.tests.vanilla.tcp;
 
 import net.openhft.affinity.Affinity;
+import net.openhft.chronicle.core.tcp.ChronicleServerSocketChannel;
+import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -36,11 +36,11 @@ import java.util.concurrent.atomic.AtomicReference;
 public class EchoServerMain {
     public static void main(@NotNull String... args) throws IOException {
         int port = args.length < 1 ? EchoClientMain.PORT : Integer.parseInt(args[0]);
-        ServerSocketChannel ssc = ServerSocketChannel.open();
+        ChronicleServerSocketChannel ssc = ChronicleServerSocketChannel.open();
         ssc.bind(new InetSocketAddress(port));
         System.out.println("listening on " + ssc);
 
-        @NotNull AtomicReference<SocketChannel> nextSocket = new AtomicReference<>();
+        @NotNull AtomicReference<ChronicleSocketChannel> nextSocket = new AtomicReference<>();
 
         new Thread(() -> {
             Affinity.acquireCore();
@@ -52,7 +52,7 @@ public class EchoServerMain {
             for (; ; ) {
                 if (sockets.isEmpty())
                     Thread.yield();
-                SocketChannel sc = nextSocket.getAndSet(null);
+                ChronicleSocketChannel sc = nextSocket.getAndSet(null);
                 if (sc != null) {
 //                    System.out.println("Connected " + sc);
                     sockets.add(ISocketChannel.wrap(sc));
@@ -89,7 +89,7 @@ public class EchoServerMain {
                         }
                     } catch (IOException ioe) {
                         System.out.println("... closed " + socket + " on " + ioe);
-                            socket.close();
+                        socket.close();
                         sockets.remove(i--);
 
                     }
@@ -98,7 +98,7 @@ public class EchoServerMain {
         }).start();
 
         while (true) {
-            final SocketChannel socket = ssc.accept();
+            final ChronicleSocketChannel socket = ssc.accept();
             socket.socket().setTcpNoDelay(true);
             socket.configureBlocking(false);
             while (!nextSocket.compareAndSet(null, socket)) {

@@ -19,7 +19,6 @@ package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
-import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.NetworkStatsListener;
 import net.openhft.chronicle.network.RemoteConnector;
@@ -68,13 +67,7 @@ public class HostConnector<T extends ClusteredNetworkContext<T>> extends Abstrac
     @Override
     protected synchronized void performClose() {
         WireOutPublisher wp = wireOutPublisher.getAndSet(null);
-
-        ISocketChannel socketChannel = nc.socketChannel();
-        if (socketChannel != null) {
-            Closeable.closeQuietly(socketChannel);
-            Closeable.closeQuietly(socketChannel.socket());
-        }
-
+        Closeable.closeQuietly(nc.socketChannel());
         if (wp != null)
             wp.close();
 

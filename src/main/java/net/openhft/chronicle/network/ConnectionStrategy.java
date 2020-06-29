@@ -18,6 +18,9 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.tcp.ChronicleSocket;
+import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
+import net.openhft.chronicle.core.tcp.ChronicleSocketChannelFactory;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
@@ -27,10 +30,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -42,12 +43,12 @@ public interface ConnectionStrategy extends Marshallable {
     @Nullable
     static ISocketChannel socketChannel(@NotNull InetSocketAddress socketAddress, int tcpBufferSize, int socketConnectionTimeoutMs) throws IOException {
 
-        final SocketChannel result = SocketChannel.open();
+        final ChronicleSocketChannel result = ChronicleSocketChannelFactory.open();
         @Nullable Selector selector = null;
         boolean failed = true;
         try {
             result.configureBlocking(false);
-            Socket socket = result.socket();
+            ChronicleSocket socket = result.socket();
             if (!TcpEventHandler.DISABLE_TCP_NODELAY) socket.setTcpNoDelay(true);
             socket.setReceiveBufferSize(tcpBufferSize);
             socket.setSendBufferSize(tcpBufferSize);

@@ -20,6 +20,9 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.tcp.ChronicleServerSocket;
+import net.openhft.chronicle.core.tcp.ChronicleServerSocketChannel;
+import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
@@ -28,11 +31,8 @@ import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -43,7 +43,7 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractC
     private final Function<T, TcpEventHandler<T>> handlerFactory;
     @NotNull
 
-    private final ServerSocketChannel ssc;
+    private final ChronicleServerSocketChannel ssc;
     @NotNull
     private final Supplier<T> ncFactory;
     private final String hostPort;
@@ -82,7 +82,7 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractC
             if (Jvm.isDebugEnabled(getClass()))
                 Jvm.debug().on(getClass(), "accepting " + ssc);
 
-            final SocketChannel sc = acceptStrategy.accept(ssc);
+            final ChronicleSocketChannel sc = acceptStrategy.accept(ssc);
 
             if (sc != null) {
                 if (isClosed() || eventLoop.isClosed()) {
@@ -112,7 +112,7 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractC
                 Exception e) {
 
             if (!isClosed() && !eventLoop.isClosed()) {
-                final ServerSocket socket = ssc.socket();
+                final ChronicleServerSocket socket = ssc.socket();
                 if (socket != null)
                     Jvm.warn().on(getClass(), hostPort + ", port=" + socket.getLocalPort(), e);
                 else
@@ -125,17 +125,17 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractC
     }
 
     private void closeSocket() {
-        try {
-            ssc.socket().close();
-        } catch (IOException e) {
-            Jvm.debug().on(getClass(), e);
-        }
+        //  try {
+        ssc.socket().close();
+        //  } catch (IOException e) {
+        //      Jvm.debug().on(getClass(), e);
+        // }
 
-        try {
-            ssc.close();
-        } catch (IOException e) {
-            Jvm.debug().on(getClass(), e);
-        }
+        // try {
+        ssc.close();
+        // } catch (IOException e) {
+        //     Jvm.debug().on(getClass(), e);
+        // }
     }
 
     @NotNull

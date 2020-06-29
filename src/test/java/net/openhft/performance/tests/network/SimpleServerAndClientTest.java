@@ -19,6 +19,7 @@ package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.io.AbstractReferenceCounted;
+import net.openhft.chronicle.core.tcp.ChronicleServerSocketChannel;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.ThreadDump;
@@ -43,7 +44,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.TimeoutException;
 
 import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri;
@@ -147,7 +147,7 @@ public class SimpleServerAndClientTest extends NetworkTestCommon {
                 VanillaNetworkContext::new);
 
         eg.addHandler(eah);
-        ServerSocketChannel sc = TCPRegistry.acquireServerSocketChannel(desc);
+        ChronicleServerSocketChannel sc = TCPRegistry.acquireServerSocketChannel(desc);
         sc.configureBlocking(false);
     }
 }

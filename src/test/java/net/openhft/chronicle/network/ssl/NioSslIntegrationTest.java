@@ -2,6 +2,8 @@ package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.tcp.ChronicleServerSocketChannel;
+import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.network.NetworkTestCommon;
 import net.openhft.chronicle.threads.NamedThreadFactory;
 import org.junit.After;
@@ -12,8 +14,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -44,12 +44,12 @@ public final class NioSslIntegrationTest extends NetworkTestCommon {
         final ExecutorService threadPool = Executors.newFixedThreadPool(2,
                 new NamedThreadFactory("test"));
 
-        final ServerSocketChannel serverChannel = ServerSocketChannel.open();
+        final ChronicleServerSocketChannel serverChannel = ChronicleServerSocketChannel.open();//ServerSocketChannel.open();
         serverChannel.bind(new InetSocketAddress("0.0.0.0", 13337));
         serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         serverChannel.configureBlocking(true);
 
-        final SocketChannel channel = SocketChannel.open();
+        final ChronicleSocketChannel channel = ChronicleSocketChannel.open();
         channel.configureBlocking(false);
         channel.connect(new InetSocketAddress("127.0.0.1", serverChannel.socket().getLocalPort()));
 
@@ -60,7 +60,7 @@ public final class NioSslIntegrationTest extends NetworkTestCommon {
             final StateMachineProcessor clientProcessor = new StateMachineProcessor(channel, false,
                     SSLContextLoader.getInitialisedContext(), client);
 
-            final SocketChannel serverConnection = serverChannel.accept();
+            final ChronicleSocketChannel serverConnection = serverChannel.accept();
             serverConnection.configureBlocking(false);
 
             final Server server = new Server(serverConnection);
@@ -89,7 +89,7 @@ public final class NioSslIntegrationTest extends NetworkTestCommon {
         assertTrue(threadPool.awaitTermination(10, TimeUnit.SECONDS));
     }
 
-    private void testDataConnection(final SocketChannel channel, final SocketChannel serverConnection) throws IOException {
+    private void testDataConnection(final ChronicleSocketChannel channel, final ChronicleSocketChannel serverConnection) throws IOException {
         final ByteBuffer message = ByteBuffer.wrap("test message".getBytes(StandardCharsets.US_ASCII));
 
         while (message.hasRemaining()) {
@@ -111,7 +111,7 @@ public final class NioSslIntegrationTest extends NetworkTestCommon {
         private int counter = 0;
         private int responseCount = 0;
 
-        Client(final SocketChannel socketChannel) {
+        Client(final ChronicleSocketChannel socketChannel) {
             super(socketChannel);
         }
 
@@ -137,7 +137,7 @@ public final class NioSslIntegrationTest extends NetworkTestCommon {
     private static final class Server extends AbstractSocketBufferHandler {
         private final ByteBuffer lastReceivedMessage = ByteBuffer.allocateDirect(64);
 
-        Server(final SocketChannel channel) {
+        Server(final ChronicleSocketChannel channel) {
             super(channel);
         }
 

@@ -18,6 +18,7 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
@@ -29,7 +30,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
@@ -42,7 +42,7 @@ public class PingPongWithMains {
 
     private final String serverHostPort = "localhost:8097"; // localhost:8080
 
-    private static void testLatency(String desc, @NotNull Function<Bytes, Wire> wireWrapper, @NotNull SocketChannel... sockets) throws IOException {
+    private static void testLatency(String desc, @NotNull Function<Bytes, Wire> wireWrapper, @NotNull ChronicleSocketChannel... sockets) throws IOException {
         int tests = 40000;
         @NotNull long[] times = new long[tests * sockets.length];
         int count = 0;
@@ -57,7 +57,7 @@ public class PingPongWithMains {
         @NotNull TestData td2 = new TestData();
         for (int i = -12000; i < tests; i++) {
             long now = System.nanoTime();
-            for (@NotNull SocketChannel socket : sockets) {
+            for (@NotNull ChronicleSocketChannel socket : sockets) {
                 out.clear();
                 outBytes.clear();
                 td.value3 = td.value2 = td.value1 = i;
@@ -70,7 +70,7 @@ public class PingPongWithMains {
                     throw new AssertionError("Unable to write in one go.");
             }
 
-            for (@NotNull SocketChannel socket : sockets) {
+            for (@NotNull ChronicleSocketChannel socket : sockets) {
                 in.clear();
                 inBytes.clear();
                 while (true) {
@@ -119,7 +119,7 @@ public class PingPongWithMains {
 
     private void testClient() throws IOException {
 
-        SocketChannel sc = TCPRegistry.createSocketChannel(serverHostPort);
+        ChronicleSocketChannel sc = TCPRegistry.createSocketChannel(serverHostPort);
         sc.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         sc.configureBlocking(false);
 
