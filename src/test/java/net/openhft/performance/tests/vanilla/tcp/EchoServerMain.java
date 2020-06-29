@@ -21,6 +21,7 @@ import net.openhft.affinity.Affinity;
 import net.openhft.chronicle.core.tcp.ChronicleServerSocketChannel;
 import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
+import net.openhft.chronicle.core.tcp.factory.ChronicleServerSocketFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -36,7 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class EchoServerMain {
     public static void main(@NotNull String... args) throws IOException {
         int port = args.length < 1 ? EchoClientMain.PORT : Integer.parseInt(args[0]);
-        ChronicleServerSocketChannel ssc = ChronicleServerSocketChannel.open();
+        ChronicleServerSocketChannel ssc = ChronicleServerSocketFactory.open();
         ssc.bind(new InetSocketAddress(port));
         System.out.println("listening on " + ssc);
 

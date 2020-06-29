@@ -22,8 +22,9 @@ import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.pool.ClassAliasPool;
 import net.openhft.chronicle.core.tcp.ChronicleServerSocketChannel;
 import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
-import net.openhft.chronicle.core.tcp.ChronicleSocketChannelFactory;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
+import net.openhft.chronicle.core.tcp.factory.ChronicleServerSocketFactory;
+import net.openhft.chronicle.core.tcp.factory.ChronicleSocketChannelFactory;
 import net.openhft.chronicle.network.api.NetworkStats;
 import org.jetbrains.annotations.NotNull;
 
@@ -105,7 +106,7 @@ public enum TCPRegistry {
     }
 
     private static void createSSC(String description, InetSocketAddress address) throws IOException {
-        ChronicleServerSocketChannel ssc = ChronicleServerSocketChannel.open();
+        ChronicleServerSocketChannel ssc = ChronicleServerSocketFactory.open();
         ssc.socket().setReuseAddress(true);
         ssc.bind(address);
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.put(description, ssc);
@@ -117,7 +118,7 @@ public enum TCPRegistry {
         if (ssc != null && ssc.isOpen())
             return ssc;
         InetSocketAddress address = lookup(description);
-        ssc = ChronicleServerSocketChannel.open();
+        ssc = ChronicleServerSocketFactory.open();
 
         // PLEASE DON'T CHANGE THIS TO FALSE AS IT CAUSES RESTART ISSUES ON TCP/IP TIMED_WAIT
         ssc.socket().setReuseAddress(true);

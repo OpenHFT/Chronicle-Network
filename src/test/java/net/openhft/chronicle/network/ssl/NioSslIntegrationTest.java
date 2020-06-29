@@ -4,6 +4,7 @@ import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.tcp.ChronicleServerSocketChannel;
 import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
+import net.openhft.chronicle.core.tcp.factory.ChronicleServerSocketFactory;
 import net.openhft.chronicle.network.NetworkTestCommon;
 import net.openhft.chronicle.threads.NamedThreadFactory;
 import org.junit.After;
@@ -44,7 +45,7 @@ public final class NioSslIntegrationTest extends NetworkTestCommon {
         final ExecutorService threadPool = Executors.newFixedThreadPool(2,
                 new NamedThreadFactory("test"));
 
-        final ChronicleServerSocketChannel serverChannel = ChronicleServerSocketChannel.open();//ServerSocketChannel.open();
+        final ChronicleServerSocketChannel serverChannel = ChronicleServerSocketFactory.open();//ServerSocketChannel.open();
         serverChannel.bind(new InetSocketAddress("0.0.0.0", 13337));
         serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         serverChannel.configureBlocking(true);
