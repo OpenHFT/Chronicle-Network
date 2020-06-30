@@ -18,12 +18,12 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.tcp.ChronicleSocket;
-import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
-import net.openhft.chronicle.core.tcp.factory.ChronicleSocketChannelFactory;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
+import net.openhft.chronicle.network.tcp.ChronicleSocket;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory;
 import net.openhft.chronicle.wire.Marshallable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -43,7 +43,7 @@ public interface ConnectionStrategy extends Marshallable {
     @Nullable
     static ISocketChannel socketChannel(@NotNull InetSocketAddress socketAddress, int tcpBufferSize, int socketConnectionTimeoutMs) throws IOException {
 
-        final ChronicleSocketChannel result = ChronicleSocketChannelFactory.open();
+        final ChronicleSocketChannel result = ChronicleSocketChannelFactory.wrap();
         @Nullable Selector selector = null;
         boolean failed = true;
         try {
@@ -77,7 +77,7 @@ public interface ConnectionStrategy extends Marshallable {
             }
 
             failed = false;
-            return ISocketChannel.wrap(result);
+            return result.toISocketChannel();
 
         } catch (Exception e) {
             return null;

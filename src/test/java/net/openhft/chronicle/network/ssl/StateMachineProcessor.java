@@ -1,6 +1,6 @@
 package net.openhft.chronicle.network.ssl;
 
-import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.threads.Pauser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

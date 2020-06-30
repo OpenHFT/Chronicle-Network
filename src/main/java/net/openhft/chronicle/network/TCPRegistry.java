@@ -20,12 +20,12 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.pool.ClassAliasPool;
-import net.openhft.chronicle.core.tcp.ChronicleServerSocketChannel;
-import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
-import net.openhft.chronicle.core.tcp.factory.ChronicleServerSocketFactory;
-import net.openhft.chronicle.core.tcp.factory.ChronicleSocketChannelFactory;
 import net.openhft.chronicle.network.api.NetworkStats;
+import net.openhft.chronicle.network.tcp.ChronicleServerSocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleServerSocketFactory;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -186,7 +186,7 @@ public enum TCPRegistry {
     }
 
     public static ISocketChannel createISocketChannel(@NotNull String description) throws IOException {
-        return ISocketChannel.wrap(ChronicleSocketChannelFactory.open(lookup(description)));
+        return ChronicleSocketChannelFactory.wrap(lookup(description)).toISocketChannel();
     }
 
     public static void dumpAllSocketChannels() {

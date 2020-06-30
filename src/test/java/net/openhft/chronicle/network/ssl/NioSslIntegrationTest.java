@@ -2,10 +2,10 @@ package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
-import net.openhft.chronicle.core.tcp.ChronicleServerSocketChannel;
-import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
-import net.openhft.chronicle.core.tcp.factory.ChronicleServerSocketFactory;
 import net.openhft.chronicle.network.NetworkTestCommon;
+import net.openhft.chronicle.network.tcp.ChronicleServerSocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleServerSocketFactory;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.threads.NamedThreadFactory;
 import org.junit.After;
 import org.junit.Before;

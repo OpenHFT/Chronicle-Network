@@ -22,16 +22,16 @@ import net.openhft.chronicle.core.annotation.PackageLocal;
 import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
-import net.openhft.chronicle.core.tcp.ChronicleSocket;
-import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
-import net.openhft.chronicle.core.tcp.factory.ChronicleSocketChannelFactory;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
+import net.openhft.chronicle.network.tcp.ChronicleSocket;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -94,7 +94,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
 
     @PackageLocal
     ChronicleSocketChannel openSocketChannel(InetSocketAddress socketAddress) throws IOException {
-        final ChronicleSocketChannel result = ChronicleSocketChannelFactory.open(socketAddress);
+        final ChronicleSocketChannel result = ChronicleSocketChannelFactory.wrap(socketAddress);
         result.configureBlocking(false);
         ChronicleSocket socket = result.socket();
         if (!TcpEventHandler.DISABLE_TCP_NODELAY) socket.setTcpNoDelay(true);
@@ -162,7 +162,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
                 if (sc == null)
                     return false;
 
-                ISocketChannel isc = ISocketChannel.wrap(sc);
+                ISocketChannel isc = sc.toISocketChannel();
                 nc.socketChannel(isc);
                 nc.isAcceptor(false);
                 notifyHostPort(isc, nc.networkStatsListener());

@@ -27,13 +27,14 @@ import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.io.QueryCloseable;
-import net.openhft.chronicle.core.tcp.ChronicleSocket;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.network.api.TcpHandler;
+import net.openhft.chronicle.network.tcp.ChronicleSocket;
+import net.openhft.chronicle.network.tcp.ChronicleSocketFactory;
 import net.openhft.chronicle.threads.MediumEventLoop;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -108,7 +109,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         this.bias = bias.get();
         try {
             sc.configureBlocking(false);
-            ChronicleSocket sock = sc.socket();
+            ChronicleSocket sock = ChronicleSocketFactory.toChronicleSocket(sc.socket());
             // TODO: should have a strategy for this like ConnectionNotifier
             if (!DISABLE_TCP_NODELAY)
                 sock.setTcpNoDelay(true);

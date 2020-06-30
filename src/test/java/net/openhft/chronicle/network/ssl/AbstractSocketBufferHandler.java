@@ -1,6 +1,6 @@
 package net.openhft.chronicle.network.ssl;
 
-import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

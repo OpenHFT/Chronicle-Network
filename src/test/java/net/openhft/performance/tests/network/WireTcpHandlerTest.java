@@ -19,10 +19,10 @@ package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.io.AbstractReferenceCounted;
-import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;

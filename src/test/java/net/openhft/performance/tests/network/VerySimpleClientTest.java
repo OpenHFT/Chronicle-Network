@@ -33,8 +33,6 @@ package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.io.AbstractReferenceCounted;
-import net.openhft.chronicle.core.tcp.ChronicleSocket;
-import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.ThreadDump;
 import net.openhft.chronicle.network.AcceptorEventHandler;
@@ -42,6 +40,8 @@ import net.openhft.chronicle.network.NetworkTestCommon;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
+import net.openhft.chronicle.network.tcp.ChronicleSocket;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.WireType;

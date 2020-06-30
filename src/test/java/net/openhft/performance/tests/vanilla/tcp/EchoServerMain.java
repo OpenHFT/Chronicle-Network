@@ -18,10 +18,10 @@
 package net.openhft.performance.tests.vanilla.tcp;
 
 import net.openhft.affinity.Affinity;
-import net.openhft.chronicle.core.tcp.ChronicleServerSocketChannel;
-import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
-import net.openhft.chronicle.core.tcp.factory.ChronicleServerSocketFactory;
+import net.openhft.chronicle.network.tcp.ChronicleServerSocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleServerSocketFactory;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -56,7 +56,7 @@ public class EchoServerMain {
                 ChronicleSocketChannel sc = nextSocket.getAndSet(null);
                 if (sc != null) {
 //                    System.out.println("Connected " + sc);
-                    sockets.add(ISocketChannel.wrap(sc));
+                    sockets.add(sc.toISocketChannel());
                 }
                 for (int i = 0; i < sockets.size(); i++) {
                     ISocketChannel socket = sockets.get(i);

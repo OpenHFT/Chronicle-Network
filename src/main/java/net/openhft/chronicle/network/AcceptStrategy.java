@@ -17,8 +17,8 @@
  */
 package net.openhft.chronicle.network;
 
-import net.openhft.chronicle.core.tcp.ChronicleServerSocketChannel;
-import net.openhft.chronicle.core.tcp.ChronicleSocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleServerSocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.wire.Marshallable;
 
 import java.io.IOException;
