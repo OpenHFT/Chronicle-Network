@@ -162,7 +162,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
     @Override
     public boolean action() throws InvalidEventHandlerException {
-        Jvm.optionalSafepoint();
+        Jvm.safepoint();
 
         if (this.isClosed())
             throw new InvalidEventHandlerException();
@@ -282,8 +282,6 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     }
 
     public void warmUp() {
-        throwExceptionIfClosed();
-
         System.out.println(TcpEventHandler.class.getSimpleName() + " - Warming up...");
         final int runs = 12000;
         long beginNs = System.nanoTime();
@@ -332,14 +330,14 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
     @Override
     public void tcpHandler(final TcpHandler<T> tcpHandler) {
-        throwExceptionIfClosed();
+        throwExceptionIfClosedInSetter();
 
         nc.onHandlerChanged(tcpHandler);
         this.tcpHandler = tcpHandler;
     }
 
     @Override
-    protected boolean threadSafetyCheck() {
+    protected boolean threadSafetyCheck(boolean isUsed) {
         // assume thread safe
         return true;
     }
@@ -357,7 +355,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
     @PackageLocal
     boolean invokeHandler() throws IOException {
-        Jvm.optionalSafepoint();
+        Jvm.safepoint();
         boolean busy = false;
         final int position = inBBB.underlyingObject().position();
         inBBB.readLimit(position);
@@ -391,7 +389,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             busy |= tryWrite(outBB);
         }
 
-        Jvm.optionalSafepoint();
+        Jvm.safepoint();
 
         if (inBBB.readRemaining() == 0) {
             clearBuffer();
@@ -415,10 +413,10 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         @Nullable final ByteBuffer inBB = inBBB.underlyingObject();
         inBB.position((int) inBBB.readPosition());
         inBB.limit((int) inBBB.readLimit());
-        Jvm.optionalSafepoint();
+        Jvm.safepoint();
 
         inBB.compact();
-        Jvm.optionalSafepoint();
+        Jvm.safepoint();
         inBBB.readPosition(0);
         inBBB.readLimit(inBB.remaining());
     }

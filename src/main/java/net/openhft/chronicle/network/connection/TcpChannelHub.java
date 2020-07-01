@@ -850,6 +850,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         return outWire;
     }
 
+    @Deprecated
     public boolean isOutBytesLocked() {
         throwExceptionIfClosed();
 
@@ -1053,7 +1054,7 @@ public final class TcpChannelHub extends AbstractCloseable {
     }
 
     @Override
-    protected boolean threadSafetyCheck() {
+    protected boolean threadSafetyCheck(boolean isUsed) {
         // Assume it is thread safe.
         return true;
     }
@@ -1273,8 +1274,6 @@ public final class TcpChannelHub extends AbstractCloseable {
          * @param tid the unique identifier for the subscription
          */
         public void unsubscribe(final long tid) {
-            throwExceptionIfClosed();
-
             map.remove(tid);
         }
 
@@ -1947,12 +1946,9 @@ public final class TcpChannelHub extends AbstractCloseable {
             return wire;
         }
 
-        private final class TidReader implements ReadMarshallable {
-
+        final class TidReader implements ReadMarshallable {
             @Override
             public void readMarshallable(@NotNull final WireIn wire) throws IORuntimeException {
-                throwExceptionIfClosed();
-
                 tid = CoreFields.tid(wire);
             }
         }

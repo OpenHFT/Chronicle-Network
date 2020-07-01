@@ -30,7 +30,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 
-abstract public class Cluster<E extends HostDetails, T extends ClusteredNetworkContext<T>, C extends ClusterContext<T>> extends SimpleCloseable implements Marshallable {
+abstract public class Cluster<E extends HostDetails,
+        T extends ClusteredNetworkContext<T>,
+        C extends ClusterContext<T>>
+        extends SimpleCloseable
+        implements Marshallable {
 
     @NotNull
     public final Map<String, E> hostDetails;

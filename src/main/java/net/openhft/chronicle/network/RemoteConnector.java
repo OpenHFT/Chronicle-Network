@@ -65,7 +65,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
     }
 
     @Override
-    protected boolean threadSafetyCheck() {
+    protected boolean threadSafetyCheck(boolean isUsed) {
         return true;
     }
 
