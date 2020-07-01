@@ -70,6 +70,11 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
     }
 
     @Override
+    public void throwExceptionIfClosedInSetter() throws IllegalStateException {
+        super.throwExceptionIfClosedInSetter();
+    }
+
+    @Override
     public void onHandlerChanged(TcpHandler<T> handler) {
     }
 
