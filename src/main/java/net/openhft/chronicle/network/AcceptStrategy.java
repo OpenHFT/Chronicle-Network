@@ -30,7 +30,7 @@ import java.nio.channels.SocketChannel;
 @FunctionalInterface
 public interface AcceptStrategy extends Marshallable {
 
-    AcceptStrategy ACCEPT_ALL = ssc -> ssc.accept();
+    AcceptStrategy ACCEPT_ALL = AcceptStrategies.ACCEPT_ALL;
 
     /**
      * Determine whether to accept the incoming connection
