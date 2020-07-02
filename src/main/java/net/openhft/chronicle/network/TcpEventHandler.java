@@ -342,12 +342,6 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     }
 
     @Override
-    protected boolean threadSafetyCheck() {
-        // assume thread safe
-        return true;
-    }
-
-    @Override
     public void loopFinished() {
         // Release unless already released
         inBBB.releaseLast();

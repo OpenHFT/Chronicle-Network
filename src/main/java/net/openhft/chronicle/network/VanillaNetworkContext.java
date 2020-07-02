@@ -218,9 +218,4 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
         return (T) this;
     }
 
-    @Override
-    protected boolean threadSafetyCheck() {
-        // assume thread safe.
-        return true;
-    }
 }

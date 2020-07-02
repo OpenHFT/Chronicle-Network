@@ -1052,12 +1052,6 @@ public final class TcpChannelHub extends AbstractCloseable {
         return outWire.bytes().readRemaining() == 0;
     }
 
-    @Override
-    protected boolean threadSafetyCheck() {
-        // Assume it is thread safe.
-        return true;
-    }
-
     @FunctionalInterface
     public interface Task {
         void run();

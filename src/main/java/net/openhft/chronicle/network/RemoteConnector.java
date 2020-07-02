@@ -65,11 +65,6 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
         Closeable.closeQuietly(socketChannel);
     }
 
-    @Override
-    protected boolean threadSafetyCheck() {
-        return true;
-    }
-
     public void connect(@NotNull final String remoteHostPort,
                         @NotNull final EventLoop eventLoop,
                         @NotNull T nc,
