@@ -91,7 +91,9 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
     @Nullable
     private volatile TcpHandler<T> tcpHandler;
-    private long lastTickReadTime = System.currentTimeMillis();
+
+    // allow for 20 seconds of slowness at startup
+    private long lastTickReadTime = System.currentTimeMillis() + 20_000;
     private Thread actionThread;
 
     public TcpEventHandler(@NotNull final T nc) {
