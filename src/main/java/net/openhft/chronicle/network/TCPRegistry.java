@@ -22,12 +22,14 @@ import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.pool.ClassAliasPool;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.network.api.NetworkStats;
+import net.openhft.chronicle.network.tcp.ChronicleServerSocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleServerSocketFactory;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
@@ -47,7 +49,7 @@ import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 public enum TCPRegistry {
     ;
     static final Map<String, InetSocketAddress> HOSTNAME_PORT_ALIAS = new ConcurrentSkipListMap<>();
-    static final Map<String, ServerSocketChannel> DESC_TO_SERVER_SOCKET_CHANNEL_MAP = new ConcurrentSkipListMap<>();
+    static final Map<String, ChronicleServerSocketChannel> DESC_TO_SERVER_SOCKET_CHANNEL_MAP = new ConcurrentSkipListMap<>();
 
     static {
         ClassAliasPool.CLASS_ALIASES.addAlias(
@@ -68,7 +70,7 @@ public enum TCPRegistry {
 
     public static void assertAllServersStopped() {
         @NotNull List<String> closed = new ArrayList<>();
-        for (@NotNull Map.Entry<String, ServerSocketChannel> entry : DESC_TO_SERVER_SOCKET_CHANNEL_MAP.entrySet()) {
+        for (@NotNull Map.Entry<String, ChronicleServerSocketChannel> entry : DESC_TO_SERVER_SOCKET_CHANNEL_MAP.entrySet()) {
             if (entry.getValue().isOpen())
                 closed.add(entry.toString());
             closeQuietly(entry.getValue());
@@ -104,19 +106,19 @@ public enum TCPRegistry {
     }
 
     private static void createSSC(String description, InetSocketAddress address) throws IOException {
-        ServerSocketChannel ssc = ServerSocketChannel.open();
+        ChronicleServerSocketChannel ssc = ChronicleServerSocketFactory.open();
         ssc.socket().setReuseAddress(true);
         ssc.bind(address);
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.put(description, ssc);
         HOSTNAME_PORT_ALIAS.put(description, (InetSocketAddress) ssc.socket().getLocalSocketAddress());
     }
 
-    public static ServerSocketChannel acquireServerSocketChannel(@NotNull String description) throws IOException {
-        ServerSocketChannel ssc = DESC_TO_SERVER_SOCKET_CHANNEL_MAP.get(description);
+    public static ChronicleServerSocketChannel acquireServerSocketChannel(@NotNull String description) throws IOException {
+        ChronicleServerSocketChannel ssc = DESC_TO_SERVER_SOCKET_CHANNEL_MAP.get(description);
         if (ssc != null && ssc.isOpen())
             return ssc;
         InetSocketAddress address = lookup(description);
-        ssc = ServerSocketChannel.open();
+        ssc = ChronicleServerSocketFactory.open();
 
         // PLEASE DON'T CHANGE THIS TO FALSE AS IT CAUSES RESTART ISSUES ON TCP/IP TIMED_WAIT
         ssc.socket().setReuseAddress(true);
@@ -179,12 +181,12 @@ public enum TCPRegistry {
         return hostname.isEmpty() || hostname.equals("*") ? new InetSocketAddress(port) : new InetSocketAddress(hostname, port);
     }
 
-    public static SocketChannel createSocketChannel(@NotNull String description) throws IOException {
-        return SocketChannel.open(lookup(description));
+    public static ChronicleSocketChannel createSocketChannel(@NotNull String description) throws IOException {
+        return ChronicleSocketChannel.open(lookup(description));
     }
 
     public static ISocketChannel createISocketChannel(@NotNull String description) throws IOException {
-        return ISocketChannel.wrap(SocketChannel.open(lookup(description)));
+        return ChronicleSocketChannelFactory.wrap(lookup(description)).toISocketChannel();
     }
 
     public static void dumpAllSocketChannels() {
@@ -193,8 +195,8 @@ public enum TCPRegistry {
 
     public static void assertAllServersStopped(final long timeout, final TimeUnit unit) {
         long endtime = System.currentTimeMillis() + unit.toMillis(timeout);
-        @NotNull List<ServerSocketChannel> closed = new ArrayList<>();
-        for (@NotNull Map.Entry<String, ServerSocketChannel> entry : DESC_TO_SERVER_SOCKET_CHANNEL_MAP.entrySet()) {
+        @NotNull List<ChronicleServerSocketChannel> closed = new ArrayList<>();
+        for (@NotNull Map.Entry<String, ChronicleServerSocketChannel> entry : DESC_TO_SERVER_SOCKET_CHANNEL_MAP.entrySet()) {
             if (entry.getValue().isOpen())
                 closed.add(entry.getValue());
 
@@ -207,9 +209,9 @@ public enum TCPRegistry {
         do {
             Jvm.pause(1);
 
-            Iterator<ServerSocketChannel> iterator = closed.iterator();
+            Iterator<ChronicleServerSocketChannel> iterator = closed.iterator();
             while (iterator.hasNext()) {
-                ServerSocketChannel next = iterator.next();
+                ChronicleServerSocketChannel next = iterator.next();
                 if (!next.isOpen()) {
 
                     iterator.remove();
@@ -224,7 +226,7 @@ public enum TCPRegistry {
         Closeable.closeQuietly(closed);
 
         StringBuilder e = new StringBuilder();
-        for (final ServerSocketChannel serverSocketChannel : closed) {
+        for (final ChronicleServerSocketChannel serverSocketChannel : closed) {
             try {
                 e.append(serverSocketChannel.getLocalAddress().toString()).append(",");
             } catch (IOException ioException) {

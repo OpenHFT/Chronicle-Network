@@ -33,6 +33,8 @@ import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.network.api.TcpHandler;
+import net.openhft.chronicle.network.tcp.ChronicleSocket;
+import net.openhft.chronicle.network.tcp.ChronicleSocketFactory;
 import net.openhft.chronicle.threads.MediumEventLoop;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,7 +42,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
@@ -90,7 +91,9 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
     @Nullable
     private volatile TcpHandler<T> tcpHandler;
-    private long lastTickReadTime = System.currentTimeMillis();
+
+    // allow for 20 seconds of slowness at startup
+    private long lastTickReadTime = System.currentTimeMillis() + 20_000;
     private Thread actionThread;
 
     public TcpEventHandler(@NotNull final T nc) {
@@ -108,7 +111,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         this.bias = bias.get();
         try {
             sc.configureBlocking(false);
-            Socket sock = sc.socket();
+            ChronicleSocket sock = ChronicleSocketFactory.toChronicleSocket(sc.socket());
             // TODO: should have a strategy for this like ConnectionNotifier
             if (!DISABLE_TCP_NODELAY)
                 sock.setTcpNoDelay(true);
@@ -343,6 +346,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     }
 
     @Override
+
     public void loopFinished() {
         // Release unless already released
         inBBB.releaseLast();

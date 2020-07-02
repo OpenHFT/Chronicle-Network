@@ -1053,6 +1053,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         return outWire.bytes().readRemaining() == 0;
     }
 
+ 
     @Override
     protected boolean threadSafetyCheck(boolean isUsed) {
         // Assume it is thread safe.

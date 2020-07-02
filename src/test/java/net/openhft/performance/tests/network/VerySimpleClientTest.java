@@ -40,6 +40,8 @@ import net.openhft.chronicle.network.NetworkTestCommon;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
+import net.openhft.chronicle.network.tcp.ChronicleSocket;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.Wire;
 import net.openhft.chronicle.wire.WireType;
@@ -52,9 +54,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 
 public class VerySimpleClientTest extends NetworkTestCommon {
 
@@ -64,7 +64,7 @@ public class VerySimpleClientTest extends NetworkTestCommon {
 
     private EventLoop eg;
     private String expectedMessage;
-    private SocketChannel client;
+    private ChronicleSocketChannel client;
 
     /*
      * And, check the benchmark went fine afterwards:
@@ -149,11 +149,11 @@ public class VerySimpleClientTest extends NetworkTestCommon {
     }
 
     @NotNull
-    private SocketChannel createClient(EventLoop eg, @NotNull String desc) throws IOException {
+    private ChronicleSocketChannel createClient(EventLoop eg, @NotNull String desc) throws IOException {
 
-        SocketChannel result = TCPRegistry.createSocketChannel(desc);
+        ChronicleSocketChannel result = TCPRegistry.createSocketChannel(desc);
         int tcpBufferSize = 2 << 20;
-        Socket socket = result.socket();
+        ChronicleSocket socket = result.socket();
         socket.setTcpNoDelay(true);
         socket.setReceiveBufferSize(tcpBufferSize);
         socket.setSendBufferSize(tcpBufferSize);
@@ -168,7 +168,7 @@ public class VerySimpleClientTest extends NetworkTestCommon {
                 VanillaNetworkContext::new);
 
         eg.addHandler(eah);
-        SocketChannel sc = TCPRegistry.createSocketChannel(desc);
+        ChronicleSocketChannel sc = TCPRegistry.createSocketChannel(desc);
         sc.configureBlocking(false);
     }
 }

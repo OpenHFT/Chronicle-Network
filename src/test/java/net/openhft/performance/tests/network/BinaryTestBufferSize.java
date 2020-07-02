@@ -39,6 +39,8 @@ import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.TcpEventHandler;
 import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
+import net.openhft.chronicle.network.tcp.ChronicleSocket;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.threads.EventGroup;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
@@ -47,9 +49,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 
 public class BinaryTestBufferSize {
     private static final @NotNull
@@ -101,7 +101,7 @@ public class BinaryTestBufferSize {
     }
 
     private void sendAndReceive(String expectedMessage, int tcpBufferSize) throws IOException {
-        final SocketChannel client = createClient(desc, tcpBufferSize);
+        final ChronicleSocketChannel client = createClient(desc, tcpBufferSize);
 
         assert System.getProperty("TcpEventHandler.tcpBufferSize") == null;
         System.setProperty("TcpEventHandler.tcpBufferSize", Integer.toString(tcpBufferSize));
@@ -147,10 +147,10 @@ public class BinaryTestBufferSize {
     }
 
     @NotNull
-    private SocketChannel createClient(@NotNull String desc, int tcpBufferSize) throws IOException {
+    private ChronicleSocketChannel createClient(@NotNull String desc, int tcpBufferSize) throws IOException {
 
-        SocketChannel result = TCPRegistry.createSocketChannel(desc);
-        Socket socket = result.socket();
+        ChronicleSocketChannel result = TCPRegistry.createSocketChannel(desc);
+        ChronicleSocket socket = result.socket();
         socket.setTcpNoDelay(true);
         socket.setReceiveBufferSize(tcpBufferSize);
         socket.setSendBufferSize(tcpBufferSize);
@@ -168,7 +168,7 @@ public class BinaryTestBufferSize {
                 () -> (T) new VanillaNetworkContext());
 
         eg.addHandler(eah);
-        SocketChannel sc = TCPRegistry.createSocketChannel(desc);
+        ChronicleSocketChannel sc = TCPRegistry.createSocketChannel(desc);
         sc.configureBlocking(false);
     }
 }

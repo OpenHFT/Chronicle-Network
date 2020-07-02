@@ -1,6 +1,7 @@
 package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,7 +11,6 @@ import javax.net.ssl.SSLEngineResult;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.time.Instant;
 
 /**
@@ -43,7 +43,7 @@ final class SslEngineStateMachine {
         this.isAcceptor = isAcceptor;
     }
 
-    void initialise(SSLContext ctx, SocketChannel channel) {
+    void initialise(SSLContext ctx, ChronicleSocketChannel channel) {
         try {
             channel.configureBlocking(false);
             engine = ctx.createSSLEngine();

@@ -22,6 +22,7 @@ import net.openhft.chronicle.core.io.AbstractReferenceCounted;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
@@ -31,7 +32,6 @@ import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Function;
@@ -68,7 +68,7 @@ public class WireTcpHandlerTest extends NetworkTestCommon {
         );
     }
 
-    private static void testLatency(String desc, @NotNull Function<Bytes, Wire> wireWrapper, @NotNull SocketChannel... sockets) throws IOException {
+    private static void testLatency(String desc, @NotNull Function<Bytes, Wire> wireWrapper, @NotNull ChronicleSocketChannel... sockets) throws IOException {
         int tests = 40000;
         @NotNull long[] times = new long[tests * sockets.length];
         int count = 0;
@@ -83,7 +83,7 @@ public class WireTcpHandlerTest extends NetworkTestCommon {
         @NotNull TestData td2 = new TestData();
         for (int i = -12000; i < tests; i++) {
             long now = System.nanoTime();
-            for (@NotNull SocketChannel socket : sockets) {
+            for (@NotNull ChronicleSocketChannel socket : sockets) {
                 out.clear();
                 outBytes.clear();
                 td.value3 = td.value2 = td.value1 = i;
@@ -96,7 +96,7 @@ public class WireTcpHandlerTest extends NetworkTestCommon {
                     throw new AssertionError("Unable to write in one go.");
             }
 
-            for (@NotNull SocketChannel socket : sockets) {
+            for (@NotNull ChronicleSocketChannel socket : sockets) {
                 in.clear();
                 inBytes.clear();
                 while (true) {
@@ -146,7 +146,7 @@ public class WireTcpHandlerTest extends NetworkTestCommon {
                     VanillaNetworkContext::new);
             eg.addHandler(eah);
 
-            SocketChannel sc = TCPRegistry.createSocketChannel(desc);
+            ChronicleSocketChannel sc = TCPRegistry.createSocketChannel(desc);
             sc.configureBlocking(false);
 
             //       testThroughput(sc);

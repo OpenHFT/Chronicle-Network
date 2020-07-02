@@ -29,6 +29,7 @@ import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.connection.FatalFailureConnectionStrategy;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.network.connection.TryLock;
+import net.openhft.chronicle.network.tcp.ChronicleServerSocketChannel;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.TextWire;
 import net.openhft.chronicle.wire.Wire;
@@ -43,7 +44,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.TimeoutException;
 
 import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri;
@@ -147,7 +147,7 @@ public class SimpleServerAndClientTest extends NetworkTestCommon {
                 VanillaNetworkContext::new);
 
         eg.addHandler(eah);
-        ServerSocketChannel sc = TCPRegistry.acquireServerSocketChannel(desc);
+        ChronicleServerSocketChannel sc = TCPRegistry.acquireServerSocketChannel(desc);
         sc.configureBlocking(false);
     }
 }

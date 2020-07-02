@@ -19,6 +19,7 @@ package net.openhft.performance.tests.vanilla.tcp;
 
 import net.openhft.affinity.Affinity;
 import net.openhft.chronicle.core.tcp.ISocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
@@ -28,7 +29,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -150,7 +150,7 @@ public class EchoClientMain {
 
     private static void openConnections(@NotNull String[] hostname, int port, @NotNull ISocketChannel... sockets) throws IOException {
         for (int j = 0; j < sockets.length; j++) {
-            sockets[j] = ISocketChannel.wrap(SocketChannel.open(new InetSocketAddress(hostname[j % hostname.length], port)));
+            sockets[j] = ChronicleSocketChannel.open(new InetSocketAddress(hostname[j % hostname.length], port)).toISocketChannel();
             sockets[j].socket().setTcpNoDelay(true);
             sockets[j].configureBlocking(false);
         }

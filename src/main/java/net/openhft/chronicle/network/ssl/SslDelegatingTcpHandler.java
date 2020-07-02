@@ -5,11 +5,13 @@ import net.openhft.chronicle.network.NetworkContextManager;
 import net.openhft.chronicle.network.TcpEventHandler;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.time.Instant;
 
 /**
@@ -171,6 +173,7 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
 
     private void doHandshake(final N nc) {
         stateMachine = new SslEngineStateMachine(bufferHandler, nc.isAcceptor());
-        stateMachine.initialise(nc.sslContext(), nc.socketChannel().socketChannel());
+        SocketChannel socketChannel = nc.socketChannel().socketChannel();
+        stateMachine.initialise(nc.sslContext(), ChronicleSocketChannelFactory.wrap(socketChannel));
     }
 }

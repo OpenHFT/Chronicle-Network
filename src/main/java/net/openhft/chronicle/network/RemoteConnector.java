@@ -29,13 +29,14 @@ import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
+import net.openhft.chronicle.network.tcp.ChronicleSocket;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.channels.AlreadyConnectedException;
-import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -60,7 +61,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
         this.tcpHandlerSupplier = tcpEventHandlerFactory;
     }
 
-    private static void closeSocket(SocketChannel socketChannel) {
+    private static void closeSocket(Closeable socketChannel) {
         Closeable.closeQuietly(socketChannel);
     }
 
@@ -75,7 +76,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
                         final long retryInterval) {
         throwExceptionIfClosed();
 
- final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
+        final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
 
         @NotNull final RCEventHandler handler = new RCEventHandler(
                 remoteHostPort,
@@ -92,10 +93,10 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
     }
 
     @PackageLocal
-    SocketChannel openSocketChannel(InetSocketAddress socketAddress) throws IOException {
-        final SocketChannel result = SocketChannel.open(socketAddress);
+    ChronicleSocketChannel openSocketChannel(InetSocketAddress socketAddress) throws IOException {
+        final ChronicleSocketChannel result = ChronicleSocketChannelFactory.wrap(socketAddress);
         result.configureBlocking(false);
-        Socket socket = result.socket();
+        ChronicleSocket socket = result.socket();
         if (!TcpEventHandler.DISABLE_TCP_NODELAY) socket.setTcpNoDelay(true);
         socket.setReceiveBufferSize(tcpBufferSize);
         socket.setSendBufferSize(tcpBufferSize);
@@ -152,7 +153,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
                 return false;
             }
 
-            final SocketChannel sc;
+            final ChronicleSocketChannel sc;
             final TcpEventHandler<T> eventHandler;
 
             try {
@@ -161,7 +162,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
                 if (sc == null)
                     return false;
 
-                ISocketChannel isc = ISocketChannel.wrap(sc);
+                ISocketChannel isc = sc.toISocketChannel();
                 nc.socketChannel(isc);
                 nc.isAcceptor(false);
                 notifyHostPort(isc, nc.networkStatsListener());
