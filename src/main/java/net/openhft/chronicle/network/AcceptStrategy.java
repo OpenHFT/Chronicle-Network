@@ -29,6 +29,7 @@ import java.io.IOException;
 @FunctionalInterface
 public interface AcceptStrategy extends Marshallable {
 
+
     AcceptStrategy ACCEPT_ALL = new AcceptStrategy() {
         @Override
         public ChronicleSocketChannel accept(final ChronicleServerSocketChannel ssc) throws IOException {

@@ -63,10 +63,15 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
     @NotNull
     @Override
     public T socketChannel(ISocketChannel socketChannel) {
-        throwExceptionIfClosed();
+        throwExceptionIfClosedInSetter();
 
         this.socketChannel = socketChannel;
         return (T) this;
+    }
+
+    @Override
+    public void throwExceptionIfClosedInSetter() throws IllegalStateException {
+        super.throwExceptionIfClosedInSetter();
     }
 
     @Override
@@ -80,7 +85,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
     @NotNull
     @Override
     public T isAcceptor(boolean isAcceptor) {
-        throwExceptionIfClosed();
+        throwExceptionIfClosedInSetter();
 
         this.isAcceptor = isAcceptor;
         return (T) this;
@@ -101,7 +106,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
 
     @Override
     public T wireOutPublisher(WireOutPublisher wireOutPublisher) {
-        throwExceptionIfClosed();
+        throwExceptionIfClosedInSetter();
 
         this.wireOutPublisher = wireOutPublisher;
         return (T) this;
@@ -115,7 +120,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
     @Override
     @NotNull
     public T wireType(WireType wireType) {
-        throwExceptionIfClosed();
+        throwExceptionIfClosedInSetter();
 
         this.wireType = wireType;
         return (T) this;
@@ -129,7 +134,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
     @NotNull
     @Override
     public T sessionDetails(SessionDetailsProvider sessionDetails) {
-        throwExceptionIfClosed();
+        throwExceptionIfClosedInSetter();
 
         this.sessionDetails = sessionDetails;
         return (T) this;
@@ -143,14 +148,14 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
 
     @Override
     public void terminationEventHandler(@Nullable TerminationEventHandler<T> terminationEventHandler) {
-        throwExceptionIfClosed();
+        throwExceptionIfClosedInSetter();
 
         this.terminationEventHandler = terminationEventHandler;
     }
 
     @Override
     public T heartbeatTimeoutMs(long heartbeatTimeoutMs) {
-        throwExceptionIfClosed();
+        throwExceptionIfClosedInSetter();
 
         this.heartbeatTimeoutMs = heartbeatTimeoutMs;
         return (T) this;
@@ -168,7 +173,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
 
     @Override
     public void heartbeatListener(@NotNull HeartbeatListener heartbeatListener) {
-        throwExceptionIfClosed();
+        throwExceptionIfClosedInSetter();
 
         this.heartbeatListener = heartbeatListener;
     }
@@ -186,7 +191,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
     @Override
     @NotNull
     public T socketReconnector(Runnable socketReconnector) {
-        throwExceptionIfClosed();
+        throwExceptionIfClosedInSetter();
 
         this.socketReconnector = socketReconnector;
         return (T) this;
@@ -194,7 +199,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
 
     @Override
     public void networkStatsListener(@NotNull NetworkStatsListener<T> networkStatsListener) {
-        throwExceptionIfClosed();
+        throwExceptionIfClosedInSetter();
 
         this.networkStatsListener = networkStatsListener;
     }
@@ -212,10 +217,16 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
 
     @Override
     public T serverThreadingStrategy(ServerThreadingStrategy serverThreadingStrategy) {
-        throwExceptionIfClosed();
+        throwExceptionIfClosedInSetter();
 
         this.serverThreadingStrategy = serverThreadingStrategy;
         return (T) this;
+    }
+
+    @Override
+    protected boolean threadSafetyCheck(boolean isUsed) {
+        // assume thread safe.
+        return true;
     }
 
 }
