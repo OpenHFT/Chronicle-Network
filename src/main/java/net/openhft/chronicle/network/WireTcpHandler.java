@@ -173,7 +173,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
 
     @Override
     public void onEndOfConnection(final boolean heartbeatTimeOut) {
-        throwExceptionIfClosed();
+        // throwExceptionIfClosed(); - knows we might be shutting down.
 
         final NetworkStatsListener<T> networkStatsListener = this.nc.networkStatsListener();
 

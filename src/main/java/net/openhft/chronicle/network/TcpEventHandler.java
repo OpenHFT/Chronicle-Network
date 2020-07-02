@@ -500,7 +500,6 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     }
 
     public boolean writeAction() {
-        resetUsedByThread();
 
         boolean busy = false;
         try {

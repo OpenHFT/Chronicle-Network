@@ -76,7 +76,7 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
      */
     @Override
     public void onEndOfConnection(final boolean heartbeatTimeOut) {
-        throwExceptionIfClosed();
+        // throwExceptionIfClosed();
 
         delegate.onEndOfConnection(heartbeatTimeOut);
     }

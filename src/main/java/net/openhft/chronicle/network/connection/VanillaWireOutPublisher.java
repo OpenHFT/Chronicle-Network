@@ -53,8 +53,6 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
      */
     @Override
     public void applyAction(@NotNull Bytes bytes) {
-        resetUsedByThread();
-
         if (this.bytes.readRemaining() > 0) {
 
             synchronized (lock()) {
