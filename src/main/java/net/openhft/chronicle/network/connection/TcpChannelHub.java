@@ -1393,7 +1393,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                             }*/
 
                         }
-                    } catch (@NotNull Exception e) {
+                    } catch (Exception e) {
                         start = Long.MAX_VALUE;
 
                         if (Jvm.isDebug() && DEBUG_ENABLED)
