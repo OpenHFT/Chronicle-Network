@@ -19,11 +19,12 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.RandomDataInput;
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.tcp.ISocketChannel;
+import net.openhft.chronicle.network.tcp.ISocketChannel;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 class NetworkLog {
@@ -34,11 +35,19 @@ class NetworkLog {
     private long lastOut = System.currentTimeMillis();
 
     public NetworkLog(@NotNull ISocketChannel channel, String op) {
-        if (channel.isOpen())
-            this.desc = op
-                    + " " + channel.getLocalAddress().getPort()
-                    + " " + channel.getRemoteAddress().getPort();
-        else
+        if (channel.isOpen()) {
+            String desc0 = "unknown";
+            try {
+                desc0 = op
+                        + " " + channel.getLocalAddress().getPort()
+                        + " " + channel.getRemoteAddress().getPort();
+            } catch (IOException e) {
+                desc0 = "unknown";
+            } finally {
+                desc = desc0;
+            }
+
+        } else
             this.desc = "";
     }
 

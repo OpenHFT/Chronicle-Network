@@ -18,12 +18,12 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.network.tcp.ChronicleSocket;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory;
+import net.openhft.chronicle.network.tcp.ISocketChannel;
 import net.openhft.chronicle.wire.Marshallable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

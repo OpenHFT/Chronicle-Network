@@ -20,7 +20,6 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
-import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -28,6 +27,7 @@ import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.network.tcp.ChronicleServerSocket;
 import net.openhft.chronicle.network.tcp.ChronicleServerSocketChannel;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
+import net.openhft.chronicle.network.tcp.ISocketChannel;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;

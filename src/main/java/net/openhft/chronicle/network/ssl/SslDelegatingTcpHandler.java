@@ -5,26 +5,21 @@ import net.openhft.chronicle.network.NetworkContextManager;
 import net.openhft.chronicle.network.TcpEventHandler;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
-import net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.time.Instant;
 
 /**
- * This class is designed to wrap a standard {@link TcpHandler}, providing
- * symmetric encryption/decryption transparently to the underlying handler.
+ * This class is designed to wrap a standard {@link TcpHandler}, providing symmetric encryption/decryption transparently to the underlying handler.
  * <p>
- * When <code>process</code> is called by the {@link TcpEventHandler},
- * this class will first attempt to perform an SSL handshake with the remote
- * connection. This is a blocking operation, and the <code>process</code>
- * call will not return until the handshake is successful, or fails.
+ * When <code>process</code> is called by the {@link TcpEventHandler}, this class will first attempt to perform an SSL handshake with the remote
+ * connection. This is a blocking operation, and the <code>process</code> call will not return until the handshake is successful, or fails.
  * <p>
- * Further operation is delegated to the {@link SslEngineStateMachine} class,
- * which manages the conversion of data between plain-text and cipher-text
+ * Further operation is delegated to the {@link SslEngineStateMachine} class, which manages the conversion of data between plain-text and cipher-text
  * either end of the network connection.
  *
  * @param <N> the type of NetworkContext
@@ -173,7 +168,7 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
 
     private void doHandshake(final N nc) {
         stateMachine = new SslEngineStateMachine(bufferHandler, nc.isAcceptor());
-        SocketChannel socketChannel = nc.socketChannel().socketChannel();
-        stateMachine.initialise(nc.sslContext(), ChronicleSocketChannelFactory.wrap(socketChannel));
+        ChronicleSocketChannel socketChannel = nc.socketChannel().socketChannel();
+        stateMachine.initialise(nc.sslContext(), socketChannel);
     }
 }

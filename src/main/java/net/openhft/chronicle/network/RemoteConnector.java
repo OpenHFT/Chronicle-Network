@@ -22,7 +22,6 @@ import net.openhft.chronicle.core.annotation.PackageLocal;
 import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
-import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -32,6 +31,7 @@ import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.network.tcp.ChronicleSocket;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory;
+import net.openhft.chronicle.network.tcp.ISocketChannel;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;

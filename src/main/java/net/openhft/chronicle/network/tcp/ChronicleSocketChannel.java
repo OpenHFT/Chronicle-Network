@@ -1,7 +1,6 @@
 package net.openhft.chronicle.network.tcp;
 
 import net.openhft.chronicle.core.io.Closeable;
-import net.openhft.chronicle.core.tcp.ISocketChannel;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -10,7 +9,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.Selector;
 
-public interface ChronicleSocketChannel extends Closeable {
+public interface ChronicleSocketChannel extends Closeable, ISocketChannel {
 
     static ChronicleSocketChannel open() throws IOException {
         return ChronicleSocketChannelFactory.wrap();

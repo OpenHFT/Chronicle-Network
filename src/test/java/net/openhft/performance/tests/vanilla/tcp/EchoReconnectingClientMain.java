@@ -18,8 +18,8 @@
 package net.openhft.performance.tests.vanilla.tcp;
 
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
+import net.openhft.chronicle.network.tcp.ISocketChannel;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;

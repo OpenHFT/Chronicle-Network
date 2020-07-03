@@ -1,7 +1,6 @@
 package net.openhft.chronicle.network.tcp;
 
 import net.openhft.chronicle.core.io.Closeable;
-import net.openhft.chronicle.core.tcp.ISocketChannel;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -38,6 +37,11 @@ public enum ChronicleSocketChannelFactory {
             @Override
             public void close() {
                 Closeable.closeQuietly(sc);
+            }
+
+            @Override
+            public @NotNull ChronicleSocketChannel socketChannel() {
+                return ChronicleSocketChannelFactory.newInstance(sc);
             }
 
             @Override
@@ -112,7 +116,7 @@ public enum ChronicleSocketChannelFactory {
 
             @Override
             public ISocketChannel toISocketChannel() {
-                return ISocketChannel.wrap(sc);
+                return ISocketChannel.wrap(socketChannel());
             }
 
         };

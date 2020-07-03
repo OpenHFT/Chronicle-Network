@@ -19,11 +19,11 @@ package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
-import net.openhft.chronicle.core.tcp.ISocketChannel;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.NetworkStatsListener;
 import net.openhft.chronicle.network.RemoteConnector;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
+import net.openhft.chronicle.network.tcp.ISocketChannel;
 import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.WriteMarshallable;
 import org.jetbrains.annotations.NotNull;
