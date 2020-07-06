@@ -46,15 +46,16 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseab
     }
 
     @Override
-    public void process(@NotNull Bytes in, @NotNull Bytes out, T nc) {
+    public void process(@NotNull final Bytes in,
+                        @NotNull final Bytes out,
+                        @NotNull final T nc) {
         throwExceptionIfClosed();
 
- assert nc.wireType() != null;
+        assert nc.wireType() != null;
 
         // the type of the header
         final Wire inWire = nc.wireType().apply(in);
-
-        long start = in.readPosition();
+        final long start = in.readPosition();
 
         Object o = null;
         try (final DocumentContext dc = inWire.readingDocument()) {
@@ -65,7 +66,7 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseab
             if (YamlLogging.showServerReads())
                 LOG.info("nc.isAcceptor=" + nc.isAcceptor() +
                         ", read:\n" + Wires.fromSizePrefixedBlobs(in, start, in.readLimit() - start));
-            final TcpHandler handler;
+
             final long readPosition = inWire.bytes().readPosition();
             @NotNull final ValueIn read = inWire.read(() -> HANDLER);
 
@@ -76,7 +77,7 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseab
                 o = toSessionDetails(inWire);
             }
 
-            handler = handlerFunction.apply(o);
+            final TcpHandler handler = handlerFunction.apply(o);
 
             if (handler instanceof NetworkContextManager)
                 ((NetworkContextManager<T>) handler).nc(nc);
@@ -100,8 +101,8 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseab
     }
 
     @NotNull
-    private SessionDetailsProvider toSessionDetails(@NotNull Wire inWire) {
-        @NotNull VanillaSessionDetails sd = new VanillaSessionDetails();
+    private SessionDetailsProvider toSessionDetails(@NotNull final Wire inWire) {
+        @NotNull final VanillaSessionDetails sd = new VanillaSessionDetails();
         sd.readMarshallable(inWire);
         return sd;
     }
