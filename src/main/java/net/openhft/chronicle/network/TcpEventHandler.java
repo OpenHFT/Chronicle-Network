@@ -145,7 +145,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
     @Override
     public void eventLoop(final EventLoop eventLoop) {
-        if (eventLoop instanceof MediumEventLoop)
+        if (eventLoop == null || eventLoop instanceof MediumEventLoop)
             return;
         eventLoop.addHandler(statusMonitorEventHandler);
     }
