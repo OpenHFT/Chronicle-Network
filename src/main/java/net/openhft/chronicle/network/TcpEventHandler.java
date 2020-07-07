@@ -21,10 +21,8 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.core.OS;
-import net.openhft.chronicle.core.StackTrace;
 import net.openhft.chronicle.core.annotation.PackageLocal;
 import net.openhft.chronicle.core.io.AbstractCloseable;
-import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.io.QueryCloseable;
 import net.openhft.chronicle.core.threads.EventHandler;
@@ -51,6 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.Math.max;
+import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 
 public class TcpEventHandler<T extends NetworkContext<T>>
@@ -189,7 +188,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     private boolean action0() throws InvalidEventHandlerException {
         if (!sc.isOpen()) {
             tcpHandler.onEndOfConnection(false);
-            Closeable.closeQuietly(nc);
+            closeQuietly(nc);
             throw new InvalidEventHandlerException("socket is closed");
         }
 
@@ -455,24 +454,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
     @Override
     protected void performClose() {
-        Closeable.closeQuietly(tcpHandler);
-        Closeable.closeQuietly(this.nc.networkStatsListener());
-        Closeable.closeQuietly(sc);
-        Closeable.closeQuietly(nc);
-
-        // NOTE Do not release buffers here as they might be in use. loopFinished() releases them and
-        // is called from event loop when it knows that the thread calling "action" is done
-        if (Thread.currentThread() == actionThread)
-            return;
-        for (int i = 50; i >= 0; i--) {
-            if (inBBB.refCount() + outBBB.refCount() == 0)
-                break;
-            Jvm.pause(2);
-            if (i == 0) {
-                Throwable thrown = actionThread == null ? null : StackTrace.forThread(actionThread);
-                Jvm.warn().on(getClass(), "loopFinished failed to release buffers", thrown);
-            }
-        }
+        closeQuietly(tcpHandler, this.nc.networkStatsListener(), sc, nc);
     }
 
     @PackageLocal
