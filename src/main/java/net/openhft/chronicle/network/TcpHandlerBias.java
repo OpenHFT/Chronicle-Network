@@ -32,12 +32,29 @@ public enum TcpHandlerBias implements Supplier<TcpHandlerBias.BiasController> {
     };
 
     interface BiasController {
+
+        /**
+         * Returns if a read operation is permitted according
+         * to this BiasController.
+         *
+         * @return if a read operation is permitted according
+         *         to this BiasController
+         */
         boolean canRead();
 
+        /**
+         * Returns if a write operation is permitted according
+         * to this BiasController.
+         *
+         * @return if a write operation is permitted according
+         *         to this BiasController
+         */
         boolean canWrite();
     }
 
-    private static class ReadBiasController implements BiasController {
+    private static final int RATIO = 8;
+
+    private static final class ReadBiasController implements BiasController {
         private int reads = 0;
 
         @Override
@@ -48,7 +65,7 @@ public enum TcpHandlerBias implements Supplier<TcpHandlerBias.BiasController> {
 
         @Override
         public boolean canWrite() {
-            if (reads >= 8) {
+            if (reads >= RATIO) {
                 reads = 0;
                 return true;
             }
@@ -56,7 +73,7 @@ public enum TcpHandlerBias implements Supplier<TcpHandlerBias.BiasController> {
         }
     }
 
-    private static class WriteBiasController implements BiasController {
+    private static final class WriteBiasController implements BiasController {
         private int writes = 0;
 
         @Override
@@ -67,7 +84,7 @@ public enum TcpHandlerBias implements Supplier<TcpHandlerBias.BiasController> {
 
         @Override
         public boolean canRead() {
-            if (writes >= 8) {
+            if (writes >= RATIO) {
                 writes = 0;
                 return true;
             }
@@ -75,7 +92,7 @@ public enum TcpHandlerBias implements Supplier<TcpHandlerBias.BiasController> {
         }
     }
 
-    private static class FairBiasController implements BiasController {
+    private static final class FairBiasController implements BiasController {
         @Override
         public boolean canRead() {
             return true;
