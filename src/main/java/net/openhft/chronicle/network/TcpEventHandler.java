@@ -234,7 +234,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         //   int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
         final long elapsedNs = System.nanoTime() - beginNs;
         if (nbWarningEnabled && elapsedNs > NBR_WARNING_NANOS)
-            statusMonitorEventHandler.add(new ThreadLogTypeElapsedRecord(Thread.currentThread(), LogType.READ, elapsedNs));
+            statusMonitorEventHandler.add(new ThreadLogTypeElapsedRecord(LogType.READ, elapsedNs));
 
         if (read == Integer.MAX_VALUE)
             onInBBFul();
@@ -467,7 +467,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         int wrote = sc.write(outBB);
         long elapsedNs = System.nanoTime() - beginNs;
         if (nbWarningEnabled && elapsedNs > NBW_WARNING_NANOS)
-            statusMonitorEventHandler.add(new ThreadLogTypeElapsedRecord(Thread.currentThread(), LogType.WRITE, elapsedNs));
+            statusMonitorEventHandler.add(new ThreadLogTypeElapsedRecord(LogType.WRITE, elapsedNs));
 
         tcpHandler.onWriteTime(beginNs, outBB, start, outBB.position());
 
@@ -562,14 +562,11 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
     private static final class ThreadLogTypeElapsedRecord {
 
-        private final Thread thread;
         private final LogType logType;
         private final long elapsedNs;
 
-        public ThreadLogTypeElapsedRecord(@NotNull final Thread thread,
-                                          @NotNull final LogType logType,
+        public ThreadLogTypeElapsedRecord(@NotNull final LogType logType,
                                           final long elapsedNs) {
-            this.thread = thread;
             this.logType = logType;
             this.elapsedNs = elapsedNs;
         }
@@ -605,15 +602,13 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                     messageBuilder
                             .append("Non blocking ")
                             .append(className)
-                            .append(" (")
-                            .append(msg.thread.getName())
-                            .append(") ")
+                            .append(" ")
                             .append(msg.logType.label())
                             .append(" took ")
                             .append(msg.elapsedNs / 1000)
                             .append(" us");
 
-                    Jvm.trimStackTrace(messageBuilder, msg.thread.getStackTrace());
+                    // no point grabbing stack trace as thread has moved on
 
                     Jvm.warn().on(getClass(), messageBuilder.toString());
                 }
