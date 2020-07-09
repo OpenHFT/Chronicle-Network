@@ -83,6 +83,7 @@ public final class NioSslIntegrationTest extends NetworkTestCommon {
             client.waitForResponse(10, TimeUnit.SECONDS);
             serverProcessor.stop();
             clientProcessor.stop();
+            serverConnection.close();
         } finally {
             Closeable.closeQuietly(channel, serverChannel);
         }
