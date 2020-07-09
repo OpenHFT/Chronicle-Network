@@ -17,8 +17,6 @@
  */
 package net.openhft.chronicle.network.cluster;
 
-import net.openhft.chronicle.core.io.AbstractCloseable;
-import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.NetworkStatsListener;
 import net.openhft.chronicle.network.RemoteConnector;
@@ -28,12 +26,15 @@ import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.WriteMarshallable;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Closeable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-public class HostConnector<T extends ClusteredNetworkContext<T>> extends AbstractCloseable {
+import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
+
+public class HostConnector<T extends ClusteredNetworkContext<T>> implements Closeable {
 
     private final WireType wireType;
 
@@ -66,13 +67,12 @@ public class HostConnector<T extends ClusteredNetworkContext<T>> extends Abstrac
     }
 
     @Override
-    protected synchronized void performClose() {
+    public synchronized void close() {
         WireOutPublisher wp = wireOutPublisher.getAndSet(null);
 
         ISocketChannel socketChannel = nc.socketChannel();
         if (socketChannel != null) {
-            Closeable.closeQuietly(socketChannel);
-            Closeable.closeQuietly(socketChannel.socket());
+            closeQuietly(socketChannel, socketChannel.socket());
         }
 
         if (wp != null)
@@ -124,7 +124,7 @@ public class HostConnector<T extends ClusteredNetworkContext<T>> extends Abstrac
 
     synchronized void reconnect() {
         close();
-        if (!nc.isAcceptor() && !isClosed())
+        if (!nc.isAcceptor())
             HostConnector.this.connect();
     }
 
