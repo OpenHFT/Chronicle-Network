@@ -12,7 +12,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
-public class ChronicleSocketChannelImpl extends AbstractCloseable implements ChronicleSocketChannel {
+public class ChronicleSocketChannelImpl  implements ChronicleSocketChannel {
 
     private final SocketChannel sc;
 
@@ -20,10 +20,7 @@ public class ChronicleSocketChannelImpl extends AbstractCloseable implements Chr
         this.sc = sc;
     }
 
-    @Override
-    public void performClose() {
-        Closeable.closeQuietly(sc);
-    }
+
 
     @Override
     public @NotNull ChronicleSocketChannel socketChannel() {
@@ -110,4 +107,8 @@ public class ChronicleSocketChannelImpl extends AbstractCloseable implements Chr
         return ISocketChannel.wrap(socketChannel());
     }
 
+    @Override
+    public void close() {
+        Closeable.closeQuietly(sc);
+    }
 };

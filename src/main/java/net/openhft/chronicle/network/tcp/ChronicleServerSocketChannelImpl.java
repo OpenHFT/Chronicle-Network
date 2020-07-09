@@ -1,6 +1,5 @@
 package net.openhft.chronicle.network.tcp;
 
-import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
 
 import java.io.IOException;
@@ -11,7 +10,7 @@ import java.net.SocketOption;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
-public class ChronicleServerSocketChannelImpl extends AbstractCloseable implements ChronicleServerSocketChannel {
+public class ChronicleServerSocketChannelImpl implements ChronicleServerSocketChannel {
 
     ServerSocketChannel ssc;
 
@@ -34,6 +33,8 @@ public class ChronicleServerSocketChannelImpl extends AbstractCloseable implemen
     public boolean isOpen() {
         return ssc.isOpen();
     }
+
+
 
     @Override
     public ChronicleServerSocket socket() {
@@ -63,7 +64,7 @@ public class ChronicleServerSocketChannelImpl extends AbstractCloseable implemen
     }
 
     @Override
-    protected void performClose() {
+    public void close() {
         Closeable.closeQuietly(ssc);
     }
 
