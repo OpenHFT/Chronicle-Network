@@ -3,6 +3,6 @@ package net.openhft.chronicle.network.tcp;
 public class ChronicleServerSocketFactory {
 
     public static ChronicleServerSocketChannel open() {
-        return new ChronicleServerSocketChannelImpl();
+        return new VanillaChronicleServerSocketChannel();
     }
 }

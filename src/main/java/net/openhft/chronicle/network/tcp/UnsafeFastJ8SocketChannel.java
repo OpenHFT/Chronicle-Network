@@ -24,12 +24,13 @@ import sun.nio.ch.IOStatus;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
+import java.nio.channels.SocketChannel;
 
 /**
  * Doesn't do any locking so can only be used in a single-threaded manner
  */
 public class UnsafeFastJ8SocketChannel extends FastJ8SocketChannel {
-    public UnsafeFastJ8SocketChannel(ChronicleSocketChannel socketChannel) {
+    public UnsafeFastJ8SocketChannel(SocketChannel socketChannel) {
         super(socketChannel);
     }
 

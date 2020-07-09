@@ -18,7 +18,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.io.Closeable;
-import net.openhft.chronicle.network.tcp.ISocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,7 +32,7 @@ public interface NetworkStatsListener<N extends NetworkContext<N>> extends Close
      * @param sc SocketChannel
      * @param nl NetworkStatsListener
      */
-    static <N extends NetworkContext<N>> void notifyHostPort(@Nullable final ISocketChannel sc, @Nullable final NetworkStatsListener<N> nl) {
+    static <N extends NetworkContext<N>> void notifyHostPort(@Nullable final ChronicleSocketChannel sc, @Nullable final NetworkStatsListener<N> nl) {
         if (nl != null && sc != null && sc.socket() != null
                 && sc.socket().getRemoteSocketAddress() instanceof InetSocketAddress) {
             @NotNull final InetSocketAddress remoteSocketAddress = (InetSocketAddress) sc.socket()

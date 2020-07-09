@@ -21,7 +21,7 @@ import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.NetworkStatsListener;
 import net.openhft.chronicle.network.RemoteConnector;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
-import net.openhft.chronicle.network.tcp.ISocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.WriteMarshallable;
 import org.jetbrains.annotations.NotNull;
@@ -70,7 +70,7 @@ public class HostConnector<T extends ClusteredNetworkContext<T>> implements Clos
     public synchronized void close() {
         WireOutPublisher wp = wireOutPublisher.getAndSet(null);
 
-        ISocketChannel socketChannel = nc.socketChannel();
+        ChronicleSocketChannel socketChannel = nc.socketChannel();
         if (socketChannel != null) {
             closeQuietly(socketChannel, socketChannel.socket());
         }

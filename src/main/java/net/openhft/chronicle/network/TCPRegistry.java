@@ -178,11 +178,7 @@ public enum TCPRegistry {
     }
 
     public static ChronicleSocketChannel createSocketChannel(@NotNull String description) throws IOException {
-        return ChronicleSocketChannel.open(lookup(description));
-    }
-
-    public static ISocketChannel createISocketChannel(@NotNull String description) throws IOException {
-        return ChronicleSocketChannelFactory.wrap(lookup(description)).toISocketChannel();
+        return ChronicleSocketChannelFactory.wrap(lookup(description));
     }
 
     public static void dumpAllSocketChannels() {

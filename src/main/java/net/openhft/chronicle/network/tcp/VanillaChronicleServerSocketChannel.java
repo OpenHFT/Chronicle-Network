@@ -10,7 +10,7 @@ import java.net.SocketOption;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
-public class ChronicleServerSocketChannelImpl implements ChronicleServerSocketChannel {
+public class VanillaChronicleServerSocketChannel implements ChronicleServerSocketChannel {
 
     ServerSocketChannel ssc;
 

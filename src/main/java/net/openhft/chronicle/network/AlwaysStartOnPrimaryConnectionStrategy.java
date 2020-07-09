@@ -20,7 +20,7 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
-import net.openhft.chronicle.network.tcp.ISocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.wire.SelfDescribingMarshallable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -51,10 +51,10 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
 
     @Nullable
     @Override
-    public ISocketChannel connect(@NotNull String name,
-                                  @NotNull SocketAddressSupplier socketAddressSupplier,
-                                  boolean didLogIn,
-                                  @Nullable FatalFailureMonitor fatalFailureMonitor) throws InterruptedException {
+    public ChronicleSocketChannel connect(@NotNull String name,
+                                          @NotNull SocketAddressSupplier socketAddressSupplier,
+                                          boolean didLogIn,
+                                          @Nullable FatalFailureMonitor fatalFailureMonitor) throws InterruptedException {
 
         if (socketAddressSupplier.get() == null || didLogIn)
             socketAddressSupplier.resetToPrimary();
@@ -63,7 +63,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
 
         for (; ; ) {
 
-            ISocketChannel socketChannel = null;
+            ChronicleSocketChannel socketChannel = null;
             try {
 
                 @Nullable final InetSocketAddress socketAddress = socketAddressSupplier.get();

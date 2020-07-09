@@ -27,7 +27,6 @@ import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.network.tcp.ChronicleServerSocket;
 import net.openhft.chronicle.network.tcp.ChronicleServerSocketChannel;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
-import net.openhft.chronicle.network.tcp.ISocketChannel;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -90,11 +89,10 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractC
                     throw new InvalidEventHandlerException("closed");
                 }
                 final T nc = ncFactory.get();
-                ISocketChannel isc = sc.toISocketChannel();
-                nc.socketChannel(isc);
+                nc.socketChannel(sc);
                 nc.isAcceptor(true);
                 NetworkStatsListener<T> nl = nc.networkStatsListener();
-                notifyHostPort(isc, nl);
+                notifyHostPort(sc, nl);
                 TcpEventHandler<T> apply = handlerFactory.apply(nc);
                 eventLoop.addHandler(apply);
             }

@@ -23,17 +23,21 @@ import net.openhft.chronicle.core.io.IORuntimeException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketOption;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 
-public class VanillaSocketChannel extends AbstractCloseable implements ISocketChannel {
-    protected final ChronicleSocketChannel socketChannel;
+public class VanillaSocketChannel extends AbstractCloseable implements ChronicleSocketChannel {
+    protected final SocketChannel socketChannel;
 
-    public VanillaSocketChannel(ChronicleSocketChannel socketChannel) {
+    public VanillaSocketChannel(SocketChannel socketChannel) {
         this.socketChannel = socketChannel;
     }
 
     @Override
-    public ChronicleSocketChannel socketChannel() {
+    public SocketChannel socketChannel() {
         return socketChannel;
     }
 
@@ -54,12 +58,32 @@ public class VanillaSocketChannel extends AbstractCloseable implements ISocketCh
 
     @Override
     public ChronicleSocket socket() {
-        return socketChannel.socket();
+        return ChronicleSocketFactory.toChronicleSocket(socketChannel.socket());
     }
 
     @Override
     public void configureBlocking(boolean blocking) throws IOException {
         socketChannel.configureBlocking(blocking);
+    }
+
+    @Override
+    public void connect(final InetSocketAddress socketAddress) throws IOException {
+        socketChannel.connect(socketAddress);
+    }
+
+    @Override
+    public void register(final Selector selector, final int opConnect) throws ClosedChannelException {
+        socketChannel.register(selector, opConnect);
+    }
+
+    @Override
+    public boolean finishConnect() throws IOException {
+        return socketChannel.finishConnect();
+    }
+
+    @Override
+    public void setOption(final SocketOption<Boolean> soReuseaddr, final boolean b) throws IOException {
+        socketChannel.setOption(soReuseaddr, b);
     }
 
     @Override

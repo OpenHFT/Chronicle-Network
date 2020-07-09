@@ -45,7 +45,7 @@ public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
 
     public TcpEventHandler createTcpEventHandler() throws IOException {
         NetworkContext nc = new VanillaNetworkContext();
-        nc.socketChannel(TCPRegistry.createSocketChannel(hostPort).toISocketChannel());
+        nc.socketChannel(TCPRegistry.createSocketChannel(hostPort));
         TcpEventHandler tcpEventHandler = new TcpEventHandler(nc);
         tcpEventHandler.tcpHandler(NullTcpHandler.INSTANCE);
         return tcpEventHandler;

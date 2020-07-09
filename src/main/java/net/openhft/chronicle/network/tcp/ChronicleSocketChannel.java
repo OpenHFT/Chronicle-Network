@@ -1,24 +1,16 @@
 package net.openhft.chronicle.network.tcp;
 
+import net.openhft.chronicle.core.io.Closeable;
 
-
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 
-public interface ChronicleSocketChannel extends Closeable, ISocketChannel {
-
-    static ChronicleSocketChannel open() throws IOException {
-        return ChronicleSocketChannelFactory.wrap();
-    }
-
-    static ChronicleSocketChannel open(InetSocketAddress inetSocketAddress) throws IOException {
-        return ChronicleSocketChannelFactory.wrap(inetSocketAddress);
-    }
+public interface ChronicleSocketChannel extends Closeable {
 
     int read(ByteBuffer byteBuffer) throws IOException;
 
@@ -46,5 +38,5 @@ public interface ChronicleSocketChannel extends Closeable, ISocketChannel {
 
     void setOption(SocketOption<Boolean> soReuseaddr, boolean b) throws IOException;
 
-    ISocketChannel toISocketChannel();
+    SocketChannel socketChannel();
 }

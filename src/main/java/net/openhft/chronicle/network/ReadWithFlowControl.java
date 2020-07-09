@@ -1,7 +1,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.network.tcp.ISocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -27,7 +27,7 @@ public final class ReadWithFlowControl implements TcpEventHandler.SocketReader {
     /**
      * reads just a single message from the socket
      */
-    public int read(@NotNull final ISocketChannel socketChannel, @NotNull final Bytes<ByteBuffer> bytes) throws IOException {
+    public int read(@NotNull final ChronicleSocketChannel socketChannel, @NotNull final Bytes<ByteBuffer> bytes) throws IOException {
         ByteBuffer bb = requireNonNull(bytes.underlyingObject());
         bb.limit(limit);
         bb.position(position);

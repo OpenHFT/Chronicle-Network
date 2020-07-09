@@ -31,7 +31,6 @@ import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.network.tcp.ChronicleSocket;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory;
-import net.openhft.chronicle.network.tcp.ISocketChannel;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -162,10 +161,9 @@ public class RemoteConnector<T extends NetworkContext<T>> extends AbstractClosea
                 if (sc == null)
                     return false;
 
-                ISocketChannel isc = sc.toISocketChannel();
-                nc.socketChannel(isc);
+                nc.socketChannel(sc);
                 nc.isAcceptor(false);
-                notifyHostPort(isc, nc.networkStatsListener());
+                notifyHostPort(sc, nc.networkStatsListener());
                 if (!nc.socketChannel().isOpen())
                     throw new InvalidEventHandlerException();
                 eventHandler = tcpHandlerSupplier.apply(nc);

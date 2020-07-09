@@ -19,7 +19,7 @@ package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.network.ConnectionStrategy;
-import net.openhft.chronicle.network.tcp.ISocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -72,10 +72,10 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
 
     @Nullable
     @Override
-    public ISocketChannel connect(@NotNull String name,
-                                  @NotNull SocketAddressSupplier socketAddressSupplier,
-                                  boolean didLogIn,
-                                  @Nullable FatalFailureMonitor fatalFailureMonitor) throws InterruptedException {
+    public ChronicleSocketChannel connect(@NotNull String name,
+                                          @NotNull SocketAddressSupplier socketAddressSupplier,
+                                          boolean didLogIn,
+                                          @Nullable FatalFailureMonitor fatalFailureMonitor) throws InterruptedException {
 
         if (socketAddressSupplier.size() == 0 && !hasSentFatalFailure && fatalFailureMonitor != null) {
             hasSentFatalFailure = true;
@@ -102,7 +102,7 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
                 return null;
             }
 
-            ISocketChannel socketChannel = null;
+            ChronicleSocketChannel socketChannel = null;
             try {
                 @Nullable final InetSocketAddress socketAddress = socketAddressSupplier.get();
                 if (socketAddress == null) {
@@ -146,6 +146,6 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
                 LockSupport.parkNanos(PAUSE);
             }
         }
- }
+    }
 
 }

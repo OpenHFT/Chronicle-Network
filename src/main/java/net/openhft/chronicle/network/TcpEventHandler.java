@@ -31,7 +31,8 @@ import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.tcp.ChronicleSocket;
-import net.openhft.chronicle.network.tcp.ISocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory;
 import net.openhft.chronicle.threads.MediumEventLoop;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -72,7 +73,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     private TcpEventHandler.SocketReader reader = new DefaultSocketReader();
 
     @NotNull
-    private final ISocketChannel sc;
+    private final ChronicleSocketChannel sc;
     private final String scToString;
     @NotNull
     private final T nc;
@@ -103,7 +104,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     }
 
     public TcpEventHandler(@NotNull final T nc, final TcpHandlerBias bias) {
-        this.sc = ISocketChannel.wrapUnsafe(nc.socketChannel().socketChannel());
+        this.sc = ChronicleSocketChannelFactory.wrapUnsafe(nc.socketChannel().socketChannel());
         this.scToString = sc.toString();
         this.nc = nc;
         this.bias = bias.get();
@@ -301,7 +302,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         }
     }
 
-    public ISocketChannel socketChannel() {
+    public ChronicleSocketChannel socketChannel() {
         return sc;
     }
 
@@ -538,13 +539,13 @@ public class TcpEventHandler<T extends NetworkContext<T>>
          * @return the number of bytes read from the provided {@code socketChannel}.
          * @throws IOException if there is a problem reading form the provided {@code socketChannel}.
          */
-        int read(@NotNull ISocketChannel socketChannel, @NotNull Bytes<ByteBuffer> bytes) throws IOException;
+        int read(@NotNull ChronicleSocketChannel socketChannel, @NotNull Bytes<ByteBuffer> bytes) throws IOException;
     }
 
     public static final class DefaultSocketReader implements SocketReader {
 
         @Override
-        public int read(@NotNull final ISocketChannel socketChannel, @NotNull final Bytes<ByteBuffer> bytes) throws IOException {
+        public int read(@NotNull final ChronicleSocketChannel socketChannel, @NotNull final Bytes<ByteBuffer> bytes) throws IOException {
             return socketChannel.read(bytes.underlyingObject());
         }
     }

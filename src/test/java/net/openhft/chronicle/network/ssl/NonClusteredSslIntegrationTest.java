@@ -5,7 +5,7 @@ import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.SimpleCloseable;
 import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.api.TcpHandler;
-import net.openhft.chronicle.network.tcp.ISocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.threads.Pauser;
 import org.jetbrains.annotations.NotNull;
@@ -247,7 +247,7 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
 
         @NotNull
         @Override
-        public StubNetworkContext socketChannel(final ISocketChannel socketChannel) {
+        public StubNetworkContext socketChannel(final ChronicleSocketChannel socketChannel) {
             return super.socketChannel(socketChannel);
         }
 

@@ -23,7 +23,7 @@ import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.cluster.TerminationEventHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
-import net.openhft.chronicle.network.tcp.ISocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -32,7 +32,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
         extends AbstractCloseable
         implements NetworkContext<T> {
 
-    private ISocketChannel socketChannel;
+    private ChronicleSocketChannel socketChannel;
     private boolean isAcceptor = true;
     private HeartbeatListener heartbeatListener;
     private SessionDetailsProvider sessionDetails;
@@ -47,14 +47,14 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
     private ServerThreadingStrategy serverThreadingStrategy = ServerThreadingStrategy.SINGLE_THREADED;
 
     @Override
-    public ISocketChannel socketChannel() {
+    public ChronicleSocketChannel socketChannel() {
         return socketChannel;
     }
 
     @Override
     protected boolean performCloseInBackground() {
 
-        ISocketChannel socketChannel = this.socketChannel;
+        ChronicleSocketChannel socketChannel = this.socketChannel;
         if (socketChannel != null)
             socketChannel.close();
         return super.performCloseInBackground();
@@ -62,7 +62,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
 
     @NotNull
     @Override
-    public T socketChannel(ISocketChannel socketChannel) {
+    public T socketChannel(ChronicleSocketChannel socketChannel) {
         throwExceptionIfClosedInSetter();
 
         this.socketChannel = socketChannel;

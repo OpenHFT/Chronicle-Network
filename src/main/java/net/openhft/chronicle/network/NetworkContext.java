@@ -25,7 +25,7 @@ import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.cluster.TerminationEventHandler;
 import net.openhft.chronicle.network.connection.ConnectionListeners;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
-import net.openhft.chronicle.network.tcp.ISocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,9 +40,9 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
     boolean isAcceptor();
 
     @NotNull
-    T socketChannel(ISocketChannel sc);
+    T socketChannel(ChronicleSocketChannel sc);
 
-    ISocketChannel socketChannel();
+    ChronicleSocketChannel socketChannel();
 
     WireOutPublisher wireOutPublisher();
 

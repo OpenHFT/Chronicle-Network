@@ -25,6 +25,7 @@ import sun.nio.ch.IOStatus;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class FastJ8SocketChannel extends VanillaSocketChannel {
@@ -33,7 +34,7 @@ public class FastJ8SocketChannel extends VanillaSocketChannel {
     volatile boolean open;
     private volatile boolean blocking;
 
-    public FastJ8SocketChannel(ChronicleSocketChannel socketChannel) {
+    public FastJ8SocketChannel(SocketChannel socketChannel) {
         super(socketChannel);
         fd = Jvm.getValue(socketChannel, "fd");
         open = socketChannel.isOpen();

@@ -19,7 +19,7 @@ package net.openhft.performance.tests.vanilla.tcp;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
-import net.openhft.chronicle.network.tcp.ISocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
@@ -130,25 +130,25 @@ public class EchoReconnectingClientMain {
     public static void main(@NotNull String... args) throws IOException {
         @NotNull String[] hostnames = args.length > 0 ? args : "localhost".split(",");
 
-        @NotNull ISocketChannel[] sockets = new ISocketChannel[CLIENTS];
+        @NotNull ChronicleSocketChannel[] sockets = new ChronicleSocketChannel[CLIENTS];
         for (int i : new int[]{200,/* 200, 500, 1000, */2000, 3500, 5000})
             testByteLatency(hostnames, i, sockets);
     }
 
-    private static void openConnections(@NotNull String[] hostname, int port, @NotNull ISocketChannel... sockets) throws IOException {
+    private static void openConnections(@NotNull String[] hostname, int port, @NotNull ChronicleSocketChannel... sockets) throws IOException {
         for (int j = 0; j < sockets.length; j++) {
-            sockets[j] = ChronicleSocketChannel.open(new InetSocketAddress(hostname[j % hostname.length], port)).toISocketChannel();
+            sockets[j] = ChronicleSocketChannelFactory.wrap(new InetSocketAddress(hostname[j % hostname.length], port));
             sockets[j].socket().setTcpNoDelay(true);
             sockets[j].configureBlocking(false);
         }
     }
 
-    private static void closeConnections(@NotNull ISocketChannel... sockets) throws IOException {
+    private static void closeConnections(@NotNull ChronicleSocketChannel... sockets) throws IOException {
         for (@NotNull Closeable socket : sockets)
             socket.close();
     }
 
-    private static void testByteLatency(String[] hostnames, int targetThroughput, @NotNull ISocketChannel... sockets) throws IOException {
+    private static void testByteLatency(String[] hostnames, int targetThroughput, @NotNull ChronicleSocketChannel... sockets) throws IOException {
         System.out.println("Starting latency test rate: " + targetThroughput);
         int tests = Math.max(1000, Math.min(10 * targetThroughput, 20_000));
         @NotNull long[] times = new long[tests * sockets.length];
@@ -168,13 +168,13 @@ public class EchoReconnectingClientMain {
             long next = now;
             for (int j = 0; j < sockets.length; j++) {
                 String hostname = hostnames[j % hostnames.length];
-                sockets[j] = ChronicleSocketChannel.open(new InetSocketAddress(hostname, PORT)).toISocketChannel();
+                sockets[j] = ChronicleSocketChannelFactory.wrap(new InetSocketAddress(hostname, PORT));
                 sockets[j].socket().setTcpNoDelay(true);
                 sockets[j].configureBlocking(false);
                 start[j] = next;
                 long start0 = System.nanoTime();
                 bb.position(0);
-                ISocketChannel socket = sockets[j];
+                ChronicleSocketChannel socket = sockets[j];
                 while (bb.remaining() > 0)
                     if (socket.write(bb) < 0)
                         throw new EOFException();
@@ -182,7 +182,7 @@ public class EchoReconnectingClientMain {
             }
 
             for (int j = 0; j < sockets.length; j++) {
-                ISocketChannel socket = sockets[j];
+                ChronicleSocketChannel socket = sockets[j];
                 bb.position(0);
                 while (bb.remaining() > 0)
                     if (socket.read(bb) < 0)

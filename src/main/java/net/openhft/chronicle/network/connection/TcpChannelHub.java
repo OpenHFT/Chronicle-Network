@@ -34,7 +34,7 @@ import net.openhft.chronicle.network.ConnectionStrategy;
 import net.openhft.chronicle.network.WanSimulator;
 import net.openhft.chronicle.network.api.session.SessionDetails;
 import net.openhft.chronicle.network.api.session.SessionProvider;
-import net.openhft.chronicle.network.tcp.ISocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.threads.*;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
@@ -123,7 +123,7 @@ public final class TcpChannelHub extends AbstractCloseable {
     // private final String description;
     private long largestChunkSoFar = 0;
     @Nullable
-    private volatile ISocketChannel clientChannel;
+    private volatile ChronicleSocketChannel clientChannel;
     @NotNull
     private final CountDownLatch receivedClosedAcknowledgement = new CountDownLatch(1);
     // set up in the header
@@ -430,7 +430,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         return outBytesLock;
     }
 
-    void doHandShaking(@NotNull final ISocketChannel socketChannel) throws IOException {
+    void doHandShaking(@NotNull final ChronicleSocketChannel socketChannel) throws IOException {
 
         assert outBytesLock.isHeldByCurrentThread();
         @Nullable final SessionDetails sessionDetails = sessionDetails();
@@ -467,7 +467,7 @@ public final class TcpChannelHub extends AbstractCloseable {
      */
     synchronized void closeSocket() {
 
-        @Nullable final ISocketChannel clientChannel = this.clientChannel;
+        @Nullable final ChronicleSocketChannel clientChannel = this.clientChannel;
 
         if (clientChannel != null) {
 
@@ -619,7 +619,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
         try {
             assert wire.startUse();
-            @Nullable ISocketChannel clientChannel = this.clientChannel;
+            @Nullable ChronicleSocketChannel clientChannel = this.clientChannel;
 
             // wait for the channel to be non null
             if (clientChannel == null) {
@@ -694,7 +694,7 @@ public final class TcpChannelHub extends AbstractCloseable {
      * @param outWire the data that you wish to write
      * @throws IOException if the channel cannot be closed
      */
-    private void writeSocket1(@NotNull final WireOut outWire, @Nullable final ISocketChannel clientChannel) throws IOException {
+    private void writeSocket1(@NotNull final WireOut outWire, @Nullable final ChronicleSocketChannel clientChannel) throws IOException {
 
         if (LOG_TCP_MESSAGES && DEBUG_ENABLED)
             Jvm.debug().on(TcpChannelHub.class, "sending :" + Wires.fromSizePrefixedBlobs((Wire) outWire));
@@ -1053,7 +1053,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         return outWire.bytes().readRemaining() == 0;
     }
 
- 
+
     @Override
     protected boolean threadSafetyCheck(boolean isUsed) {
         // Assume it is thread safe.
@@ -1479,7 +1479,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                 processServerSystemMessage(header, messageSize);
                 return false;
             } else {
-                @Nullable final ISocketChannel c = clientChannel;
+                @Nullable final ChronicleSocketChannel c = clientChannel;
 
                 // this can occur if we received a shutdown
                 if (c == null)
@@ -1654,7 +1654,7 @@ public final class TcpChannelHub extends AbstractCloseable {
             //  long start = System.currentTimeMillis();
             boolean emptyRead = true;
             while (buffer.remaining() > 0) {
-                @Nullable final ISocketChannel clientChannel = TcpChannelHub.this.clientChannel;
+                @Nullable final ChronicleSocketChannel clientChannel = TcpChannelHub.this.clientChannel;
                 if (clientChannel == null)
                     throw new IOException("Disconnection to server=" + socketAddressSupplier +
                             " channel is closed, name=" + name);
@@ -1844,7 +1844,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                 else if (i >= socketAddressSupplier.all().size() && !isShuttingdown())
                     LOG.info("attemptConnect remoteAddress=" + socketAddressSupplier);
 
-                @Nullable ISocketChannel socketChannel;
+                @Nullable ChronicleSocketChannel socketChannel;
                 try {
 
                     if (isShuttingdown())

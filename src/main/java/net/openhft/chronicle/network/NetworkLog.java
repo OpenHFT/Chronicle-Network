@@ -19,7 +19,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.RandomDataInput;
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.network.tcp.ISocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +34,7 @@ class NetworkLog {
     private final String desc;
     private long lastOut = System.currentTimeMillis();
 
-    public NetworkLog(@NotNull ISocketChannel channel, String op) {
+    public NetworkLog(@NotNull ChronicleSocketChannel channel, String op) {
         if (channel.isOpen()) {
             String desc0 = "unknown";
             try {

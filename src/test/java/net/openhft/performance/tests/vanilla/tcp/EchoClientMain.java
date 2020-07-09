@@ -19,7 +19,7 @@ package net.openhft.performance.tests.vanilla.tcp;
 
 import net.openhft.affinity.Affinity;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
-import net.openhft.chronicle.network.tcp.ISocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
@@ -138,7 +138,7 @@ public class EchoClientMain {
         }
         @NotNull String[] hostnames = args.length > 0 ? args : "localhost".split(",");
 
-        @NotNull ISocketChannel[] sockets = new ISocketChannel[CLIENTS];
+        @NotNull ChronicleSocketChannel[] sockets = new ChronicleSocketChannel[CLIENTS];
         openConnections(hostnames, PORT, sockets);
         testThroughput(sockets);
         closeConnections(sockets);
@@ -148,40 +148,40 @@ public class EchoClientMain {
         closeConnections(sockets);
     }
 
-    private static void openConnections(@NotNull String[] hostname, int port, @NotNull ISocketChannel... sockets) throws IOException {
+    private static void openConnections(@NotNull String[] hostname, int port, @NotNull ChronicleSocketChannel... sockets) throws IOException {
         for (int j = 0; j < sockets.length; j++) {
-            sockets[j] = ChronicleSocketChannel.open(new InetSocketAddress(hostname[j % hostname.length], port)).toISocketChannel();
+            sockets[j] = ChronicleSocketChannelFactory.wrap(new InetSocketAddress(hostname[j % hostname.length], port));
             sockets[j].socket().setTcpNoDelay(true);
             sockets[j].configureBlocking(false);
         }
     }
 
-    private static void closeConnections(@NotNull ISocketChannel... sockets) throws IOException {
+    private static void closeConnections(@NotNull ChronicleSocketChannel... sockets) throws IOException {
         for (@NotNull Closeable socket : sockets)
             socket.close();
     }
 
-    private static void testThroughput(@NotNull ISocketChannel... sockets) throws IOException {
+    private static void testThroughput(@NotNull ChronicleSocketChannel... sockets) throws IOException {
         System.out.println("Starting throughput test, clients=" + CLIENTS);
         int bufferSize = 16 * 1024;
         ByteBuffer bb = ByteBuffer.allocateDirect(bufferSize).order(ByteOrder.LITTLE_ENDIAN);
         int count = 0, window = 8;
         long start = System.nanoTime();
         while (System.nanoTime() - start < 10e9) {
-            for (@NotNull ISocketChannel socket : sockets) {
+            for (@NotNull ChronicleSocketChannel socket : sockets) {
                 bb.clear();
                 bb.putInt(0, bb.limit());
                 if (socket.write(bb) < 0)
                     throw new AssertionError("Socket " + socket + " unable to write in one go.");
             }
             if (count >= window)
-                for (@NotNull ISocketChannel socket : sockets) {
+                for (@NotNull ChronicleSocketChannel socket : sockets) {
                     bb.clear();
                     while (socket.read(bb) >= 0 && bb.remaining() > 0) ;
                 }
             count++;
         }
-        for (@NotNull ISocketChannel socket : sockets) {
+        for (@NotNull ChronicleSocketChannel socket : sockets) {
             try {
                 do {
                     bb.clear();
@@ -194,7 +194,7 @@ public class EchoClientMain {
                 1e3 * count * bufferSize * sockets.length / time, CLIENTS);
     }
 
-    private static void testByteLatency(int targetThroughput, @NotNull ISocketChannel... sockets) throws IOException {
+    private static void testByteLatency(int targetThroughput, @NotNull ChronicleSocketChannel... sockets) throws IOException {
         System.out.println("Starting latency test rate: " + targetThroughput);
         int tests = Math.max(1000, Math.min(300 * targetThroughput, 5_000_000));
         @NotNull long[] times = new long[tests * sockets.length];
@@ -213,7 +213,7 @@ public class EchoClientMain {
                 ;
             long next = now;
             for (int j = 0; j < sockets.length; j++) {
-                ISocketChannel socket = sockets[j];
+                ChronicleSocketChannel socket = sockets[j];
                 start[j] = next;
                 long start0 = System.nanoTime();
                 bb.position(0);
@@ -224,7 +224,7 @@ public class EchoClientMain {
             }
 
             for (int j = 0; j < sockets.length; j++) {
-                ISocketChannel socket = sockets[j];
+                ChronicleSocketChannel socket = sockets[j];
                 bb.position(0);
                 while (bb.remaining() > 0)
                     if (socket.read(bb) < 0)

@@ -23,7 +23,6 @@ import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.network.tcp.ChronicleSocket;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory;
-import net.openhft.chronicle.network.tcp.ISocketChannel;
 import net.openhft.chronicle.wire.Marshallable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -41,7 +40,7 @@ import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 public interface ConnectionStrategy extends Marshallable {
 
     @Nullable
-    static ISocketChannel socketChannel(@NotNull InetSocketAddress socketAddress, int tcpBufferSize, int socketConnectionTimeoutMs) throws IOException {
+    static ChronicleSocketChannel socketChannel(@NotNull InetSocketAddress socketAddress, int tcpBufferSize, int socketConnectionTimeoutMs) throws IOException {
 
         final ChronicleSocketChannel result = ChronicleSocketChannelFactory.wrap();
         @Nullable Selector selector = null;
@@ -77,7 +76,7 @@ public interface ConnectionStrategy extends Marshallable {
             }
 
             failed = false;
-            return result.toISocketChannel();
+            return result;
 
         } catch (Exception e) {
             return null;
@@ -98,13 +97,13 @@ public interface ConnectionStrategy extends Marshallable {
      * @return the SocketChannel
      * @throws InterruptedException if the channel is interrupted.
      */
-    ISocketChannel connect(@NotNull String name,
+    ChronicleSocketChannel connect(@NotNull String name,
                            @NotNull SocketAddressSupplier socketAddressSupplier,
                            boolean didLogIn,
                            @NotNull FatalFailureMonitor fatalFailureMonitor) throws InterruptedException;
 
     @Nullable
-    default ISocketChannel openSocketChannel(@NotNull InetSocketAddress socketAddress,
+    default ChronicleSocketChannel openSocketChannel(@NotNull InetSocketAddress socketAddress,
                                              int tcpBufferSize,
                                              long timeoutMs) throws IOException, InterruptedException {
 
@@ -118,13 +117,13 @@ public interface ConnectionStrategy extends Marshallable {
      * the reason for this method is that unlike the selector it uses tick time
      */
     @Nullable
-    default ISocketChannel openSocketChannel(@NotNull InetSocketAddress socketAddress,
-                                             int tcpBufferSize,
-                                             long timeoutMs,
-                                             int socketConnectionTimeoutMs) throws IOException, InterruptedException {
+    default ChronicleSocketChannel openSocketChannel(@NotNull InetSocketAddress socketAddress,
+                                                     int tcpBufferSize,
+                                                     long timeoutMs,
+                                                     int socketConnectionTimeoutMs) throws IOException, InterruptedException {
         assert timeoutMs > 0;
         long start = System.currentTimeMillis();
-        ISocketChannel sc = socketChannel(socketAddress, tcpBufferSize, socketConnectionTimeoutMs);
+        ChronicleSocketChannel sc = socketChannel(socketAddress, tcpBufferSize, socketConnectionTimeoutMs);
         if (sc != null)
             return sc;
 
