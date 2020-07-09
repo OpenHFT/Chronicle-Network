@@ -53,6 +53,11 @@ public class ChronicleSocketChannelImpl extends AbstractCloseable implements Chr
     }
 
     @Override
+    public boolean isClosed() {
+        return !isOpen();
+    }
+
+    @Override
     public InetSocketAddress getLocalAddress() throws IOException {
         return (InetSocketAddress) sc.getLocalAddress();
     }
