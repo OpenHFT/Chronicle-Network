@@ -144,8 +144,8 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     }
 
     /**
-     * round robins - the consumers, we should only write when the buffer is empty, as we can't
-     * guarantee that we will have enough space to add more data to the out wire.
+     * round robins - the consumers, we should only write when the buffer is empty, as we can't guarantee that we will have enough space to add more
+     * data to the out wire.
      *
      * @return the  Marshallable that you are writing to
      */
@@ -162,7 +162,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
 
         } catch (IllegalStateException ise) {
             Jvm.debug().on(getClass(), "message ignored as closed", ise);
-            return;
+            throw Jvm.rethrow(new InvalidEventHandlerException("closed"));
         }
 
         // writes the data and its size

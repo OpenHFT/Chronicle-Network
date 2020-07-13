@@ -365,7 +365,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
 
     @Override
     protected void performClose() {
-        Closeable.closeQuietly(nc);
+        Closeable.closeQuietly(publisher,nc);
     }
 
     protected void publish(final WriteMarshallable w) {
