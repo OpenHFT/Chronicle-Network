@@ -131,14 +131,14 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
 
     @Override
     public void addWireConsumer(WireOutConsumer wireOutConsumer) {
-//        throwExceptionIfClosedInSetter();
+        throwExceptionIfClosedInSetter();
 
         consumers.add(wireOutConsumer);
     }
 
     @Override
     public boolean removeBytesConsumer(WireOutConsumer wireOutConsumer) {
-//        throwExceptionIfClosedInSetter();
+        throwExceptionIfClosedInSetter();
 
         return consumers.remove(wireOutConsumer);
     }
@@ -203,7 +203,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
 
     @Override
     public void wireType(@NotNull WireType wireType) {
-//        throwExceptionIfClosedInSetter();
+        throwExceptionIfClosedInSetter();
 
         final WireType wireType0 = wireType == WireType.DELTA_BINARY ? WireType.BINARY : wireType;
         if (WireType.valueOf(wire) == wireType0)
@@ -237,10 +237,10 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
                 '}';
     }
 
-/*    @Override
+    @Override
     protected boolean threadSafetyCheck(boolean isUsed) {
         // assume thread safe
         return true;
-    }*/
+    }
 }
 
