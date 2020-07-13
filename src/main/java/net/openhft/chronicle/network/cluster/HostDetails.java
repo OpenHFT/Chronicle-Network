@@ -17,16 +17,18 @@
  */
 package net.openhft.chronicle.network.cluster;
 
+import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.wire.SelfDescribingMarshallable;
 import org.jetbrains.annotations.NotNull;
 
-public class HostDetails extends SelfDescribingMarshallable {
+public class HostDetails extends SelfDescribingMarshallable implements Closeable {
 
     private int hostId;
     private int tcpBufferSize;
     private String connectUri;
     private String region;
     private int timeoutMs;
+    private transient boolean closed = false;
     private transient ClusterNotifier clusterNotifier;
     private transient ConnectionNotifier connectionNotifier;
     private transient ConnectionManager connectionManager;
@@ -112,5 +114,24 @@ public class HostDetails extends SelfDescribingMarshallable {
 
     public void clusterNotifier(ClusterNotifier clusterHandler) {
         this.clusterNotifier = clusterHandler;
+    }
+
+    @Override
+    public void close() {
+        if (closed)
+            return;
+        closed = true;
+
+        Closeable.closeQuietly(
+                clusterNotifier,
+                connectionNotifier,
+                connectionManager,
+                terminationEventHandler,
+                hostConnector);
+    }
+
+    @Override
+    public boolean isClosed() {
+        return closed;
     }
 }
