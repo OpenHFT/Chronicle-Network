@@ -177,7 +177,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     private void notifyConnectionListeners(@NotNull final Cluster cluster) {
         connectionChangedNotifier = cluster.findClusterNotifier(remoteIdentifier);
         if (connectionChangedNotifier != null)
-            connectionChangedNotifier.onConnectionChanged(true, nc());
+            connectionChangedNotifier.onConnectionChanged(true, nc(), isClosed());
     }
 
     private boolean checkConnectionStrategy(@NotNull final Cluster cluster) {
@@ -213,8 +213,9 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     @Override
     protected void performClose() {
         T nc = nc();
-        if (!isClosing.getAndSet(true) && connectionChangedNotifier != null)
-            connectionChangedNotifier.onConnectionChanged(false, nc);
+        if (!isClosing.getAndSet(true) && connectionChangedNotifier != null) {
+            connectionChangedNotifier.onConnectionChanged(false, nc, true);
+        }
 
         try {
             if (nc != null) {

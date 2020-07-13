@@ -97,7 +97,7 @@ public final class SslTestClusterContext extends ClusterContext<SslTestClustered
         private final List<ConnectionListener<T>> listeners = new CopyOnWriteArrayList<>();
 
         @Override
-        public void onConnectionChanged(final boolean isConnected, final T nc) {
+        public void onConnectionChanged(final boolean isConnected, final T nc, boolean terminated) {
             for (ConnectionListener<T> listener : listeners) {
                 listener.onConnectionChange(nc, isConnected);
             }

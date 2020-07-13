@@ -18,8 +18,8 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.io.SimpleCloseable;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.*;
@@ -34,7 +34,7 @@ import static net.openhft.chronicle.wire.WireType.DELTA_BINARY;
 import static net.openhft.chronicle.wire.WriteMarshallable.EMPTY;
 
 public abstract class WireTcpHandler<T extends NetworkContext<T>>
-        extends AbstractCloseable
+        extends SimpleCloseable
         implements TcpHandler<T>, NetworkContextManager<T> {
 
     private static final int SIZE_OF_SIZE = 4;
@@ -85,8 +85,6 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
     }
 
     public void wireType(@NotNull WireType wireType) {
-        throwExceptionIfClosedInSetter();
-
         if (wireType == BINARY)
             wireType = DELTA_BINARY.isAvailable() ? DELTA_BINARY : BINARY;
         this.wireType = wireType;
@@ -100,16 +98,12 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
     }
 
     public void publisher(@NotNull final WireOutPublisher publisher) {
-        throwExceptionIfClosedInSetter();
-
         this.publisher = publisher;
         if (wireType() != null)
             publisher.wireType(wireType());
     }
 
     public void isAcceptor(final boolean isAcceptor) {
-        throwExceptionIfClosedInSetter();
-
         this.isAcceptor = isAcceptor;
     }
 
