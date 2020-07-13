@@ -19,7 +19,7 @@ package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.io.SimpleCloseable;
+import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
@@ -30,7 +30,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class VanillaWireOutPublisher extends SimpleCloseable implements WireOutPublisher {
+public class VanillaWireOutPublisher extends AbstractCloseable implements WireOutPublisher {
 
     private static final Logger LOG = LoggerFactory.getLogger(VanillaWireOutPublisher.class);
     private final Bytes<ByteBuffer> bytes;
