@@ -17,6 +17,7 @@
  */
 package net.openhft.chronicle.network.cluster;
 
+import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.util.ThrowingFunction;
@@ -42,7 +43,7 @@ import java.util.function.Supplier;
 
 public abstract class ClusterContext<T extends ClusteredNetworkContext<T>>
         extends SelfDescribingMarshallable
-        implements Consumer<HostDetails> {
+        implements Consumer<HostDetails>, Closeable {
 
     private transient Factory<T> handlerFactory;
     private transient Function<WireType, WireOutPublisher> wireOutPublisherFactory;
@@ -51,6 +52,7 @@ public abstract class ClusterContext<T extends ClusteredNetworkContext<T>>
     private transient Function<ClusterContext<T>, NetworkStatsListener<T>> networkStatsListenerFactory;
     private transient Supplier<ConnectionManager<T>> connectionEventHandler;
     private transient EventLoop eventLoop;
+    private transient boolean closed = false;
     private long heartbeatTimeoutMs = 40_000;
     private long heartbeatIntervalMs = 20_000;
     private ConnectionNotifier connectionNotifier;
@@ -63,6 +65,31 @@ public abstract class ClusterContext<T extends ClusteredNetworkContext<T>>
 
     public ClusterContext() {
         defaults();
+    }
+
+    @Override
+    public void close() {
+        if (closed)
+            return;
+        closed = true;
+        performClose();
+    }
+
+    protected void performClose() {
+        Closeable.closeQuietly(
+                connectionNotifier,
+                handlerFactory,
+                wireOutPublisherFactory,
+                networkContextFactory,
+                heartbeatFactory,
+                networkStatsListenerFactory,
+                connectionEventHandler,
+                eventLoop);
+    }
+
+    @Override
+    public boolean isClosed() {
+        return closed;
     }
 
     public String procPrefix() {
@@ -127,13 +154,6 @@ public abstract class ClusterContext<T extends ClusteredNetworkContext<T>>
     public ClusterContext<T> eventLoop(EventLoop eventLoop) {
         this.eventLoop = eventLoop;
         return this;
-    }
-
-    protected void closeEventLoop() {
-        if (eventLoop != null) {
-            eventLoop.close();
-            eventLoop = null;
-        }
     }
 
     protected abstract void defaults();
@@ -241,8 +261,7 @@ public abstract class ClusterContext<T extends ClusteredNetworkContext<T>>
                 .connectionEventHandler().get();
         hd.connectionManager(connectionManager);
 
-        @NotNull
-        final HostConnector<T> hostConnector = new HostConnector<>(this,
+        @NotNull final HostConnector<T> hostConnector = new HostConnector<>(this,
                 new RemoteConnector<>(this.tcpEventHandlerFactory()),
                 hd);
 
