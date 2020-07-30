@@ -21,7 +21,9 @@ import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.pool.ClassAliasPool;
 import net.openhft.chronicle.network.api.NetworkStats;
-import net.openhft.chronicle.network.tcp.*;
+import net.openhft.chronicle.network.tcp.ChronicleServerSocketChannel;
+import net.openhft.chronicle.network.tcp.ChronicleServerSocketFactory;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -31,6 +33,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
+import static net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory.wrap;
 
 /**
  * The TCPRegistry allows you to either provide a true host and port for example "localhost:8080" or if you would rather let the application allocate
@@ -87,6 +90,10 @@ public enum TCPRegistry {
      * @throws IOException
      */
     public static void createServerSocketChannelFor(@NotNull String... descriptions) throws IOException {
+        createServerSocketChannelFor(false, descriptions);
+    }
+
+    public static void createServerSocketChannelFor(boolean isNative, @NotNull String... descriptions) throws IOException {
         for (@NotNull String description : descriptions) {
             InetSocketAddress address;
             if (description.contains(":")) {
@@ -97,14 +104,17 @@ public enum TCPRegistry {
             } else {
                 address = new InetSocketAddress("localhost", 0);
             }
-            createSSC(description, address);
+            createSSC(isNative, description, address);
         }
     }
 
-    private static void createSSC(String description, InetSocketAddress address) throws IOException {
-        ChronicleServerSocketChannel ssc = ChronicleServerSocketFactory.open();
+    private static void createSSC(boolean isNative, String description, InetSocketAddress address) throws IOException {
+        ChronicleServerSocketChannel ssc = isNative ? ChronicleServerSocketFactory.openNative() : ChronicleServerSocketFactory.open();
         ssc.socket().setReuseAddress(true);
         ssc.bind(address);
+
+        assert ssc.isOpen();
+        
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.put(description, ssc);
         HOSTNAME_PORT_ALIAS.put(description, (InetSocketAddress) ssc.socket().getLocalSocketAddress());
     }
@@ -178,7 +188,11 @@ public enum TCPRegistry {
     }
 
     public static ChronicleSocketChannel createSocketChannel(@NotNull String description) throws IOException {
-        return ChronicleSocketChannelFactory.wrap(lookup(description));
+        return createSocketChannel(false, description);
+    }
+
+    public static ChronicleSocketChannel createSocketChannel(boolean isNative, @NotNull String description) throws IOException {
+        return wrap(isNative, lookup(description));
     }
 
     public static void dumpAllSocketChannels() {
