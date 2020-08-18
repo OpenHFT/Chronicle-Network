@@ -114,7 +114,7 @@ public enum TCPRegistry {
         ssc.bind(address);
 
         assert ssc.isOpen();
-        
+
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.put(description, ssc);
         HOSTNAME_PORT_ALIAS.put(description, (InetSocketAddress) ssc.socket().getLocalSocketAddress());
     }
@@ -230,17 +230,20 @@ public enum TCPRegistry {
         while (System.currentTimeMillis() < endtime);
 
         Closeable.closeQuietly(closed);
+        Jvm.pause(50);
 
         StringBuilder e = new StringBuilder();
+        String sep = "";
         for (final ChronicleServerSocketChannel serverSocketChannel : closed) {
             try {
-                e.append(serverSocketChannel.getLocalAddress().toString()).append(",");
+                e.append(sep)
+                        .append(serverSocketChannel.getLocalAddress());
+                sep = ",";
             } catch (IOException ioException) {
                 ioException.printStackTrace();
             }
         }
-        e.setLength(e.length() - 1);
-        throw new AssertionError("Had to stop " + e);
-
+        if (e.length() > 0)
+            throw new AssertionError("Had to stop " + e);
     }
 }
