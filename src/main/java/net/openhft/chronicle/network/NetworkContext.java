@@ -22,7 +22,6 @@ import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
-import net.openhft.chronicle.network.cluster.TerminationEventHandler;
 import net.openhft.chronicle.network.connection.ConnectionListeners;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
@@ -57,11 +56,6 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
 
     @NotNull
     T sessionDetails(SessionDetailsProvider sessionDetails);
-
-    @Nullable
-    TerminationEventHandler<T> terminationEventHandler();
-
-    void terminationEventHandler(TerminationEventHandler<T> terminationEventHandler);
 
     long heartbeatTimeoutMs();
 

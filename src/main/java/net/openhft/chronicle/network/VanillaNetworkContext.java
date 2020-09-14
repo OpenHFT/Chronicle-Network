@@ -21,23 +21,18 @@ import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
-import net.openhft.chronicle.network.cluster.TerminationEventHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
-        extends AbstractCloseable
-        implements NetworkContext<T> {
+public class VanillaNetworkContext<T extends NetworkContext<T>> extends AbstractCloseable implements NetworkContext<T> {
 
     private ChronicleSocketChannel socketChannel;
     private boolean isAcceptor = true;
     private HeartbeatListener heartbeatListener;
     private SessionDetailsProvider sessionDetails;
-    @Nullable
-    private TerminationEventHandler<T> terminationEventHandler;
     private long heartbeatTimeoutMs;
     private WireOutPublisher wireOutPublisher;
     private WireType wireType = WireType.TEXT;
@@ -55,8 +50,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
     protected boolean performCloseInBackground() {
 
         ChronicleSocketChannel socketChannel = this.socketChannel;
-        if (socketChannel != null)
-            socketChannel.close();
+        if (socketChannel != null) socketChannel.close();
         return super.performCloseInBackground();
     }
 
@@ -140,19 +134,6 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
         return (T) this;
     }
 
-    @Nullable
-    @Override
-    public TerminationEventHandler<T> terminationEventHandler() {
-        return terminationEventHandler;
-    }
-
-    @Override
-    public void terminationEventHandler(@Nullable TerminationEventHandler<T> terminationEventHandler) {
-        throwExceptionIfClosedInSetter();
-
-        this.terminationEventHandler = terminationEventHandler;
-    }
-
     @Override
     public T heartbeatTimeoutMs(long heartbeatTimeoutMs) {
         throwExceptionIfClosedInSetter();
@@ -180,9 +161,7 @@ public class VanillaNetworkContext<T extends VanillaNetworkContext<T>>
 
     @Override
     protected void performClose() {
-        Closeable.closeQuietly(
-                wireOutPublisher,
-                networkStatsListener);
+        Closeable.closeQuietly(wireOutPublisher, networkStatsListener);
     }
 
     @Override

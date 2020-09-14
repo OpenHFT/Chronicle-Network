@@ -17,23 +17,14 @@
  */
 package net.openhft.chronicle.network.cluster;
 
-import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.wire.SelfDescribingMarshallable;
 import org.jetbrains.annotations.NotNull;
 
-public class HostDetails extends SelfDescribingMarshallable implements Closeable {
+public class HostDetails extends SelfDescribingMarshallable {
 
     private int hostId;
     private int tcpBufferSize;
     private String connectUri;
-    private String region;
-    private int timeoutMs;
-    private transient boolean closed = false;
-    private transient ClusterNotifier clusterNotifier;
-    private transient ConnectionNotifier connectionNotifier;
-    private transient ConnectionManager connectionManager;
-    private transient TerminationEventHandler terminationEventHandler;
-    private transient HostConnector hostConnector;
 
     public HostDetails() {
     }
@@ -66,72 +57,5 @@ public class HostDetails extends SelfDescribingMarshallable implements Closeable
     public HostDetails connectUri(@NotNull String connectUri) {
         this.connectUri = connectUri;
         return this;
-    }
-
-    public String region() {
-        return region;
-    }
-
-    public int timeoutMs() {
-        return timeoutMs;
-    }
-
-    public ConnectionNotifier connectionNotifier() {
-        return connectionNotifier;
-    }
-
-    public ConnectionManager connectionManager() {
-        return connectionManager;
-    }
-
-    public TerminationEventHandler terminationEventHandler() {
-        return terminationEventHandler;
-    }
-
-    public void connectionNotifier(ConnectionNotifier connectionStrategy) {
-        this.connectionNotifier = connectionStrategy;
-    }
-
-    public void connectionManager(@NotNull ConnectionManager connectionEventManagerHandler) {
-        this.connectionManager = connectionEventManagerHandler;
-    }
-
-    public void terminationEventHandler(@NotNull TerminationEventHandler terminationEventHandler) {
-        this.terminationEventHandler = terminationEventHandler;
-    }
-
-    public void hostConnector(HostConnector hostConnector) {
-        this.hostConnector = hostConnector;
-    }
-
-    public HostConnector hostConnector() {
-        return hostConnector;
-    }
-
-    public ClusterNotifier clusterNotifier() {
-        return clusterNotifier;
-    }
-
-    public void clusterNotifier(ClusterNotifier clusterHandler) {
-        this.clusterNotifier = clusterHandler;
-    }
-
-    @Override
-    public void close() {
-        if (closed)
-            return;
-        closed = true;
-
-        Closeable.closeQuietly(
-                clusterNotifier,
-                connectionNotifier,
-                connectionManager,
-                terminationEventHandler,
-                hostConnector);
-    }
-
-    @Override
-    public boolean isClosed() {
-        return closed;
     }
 }

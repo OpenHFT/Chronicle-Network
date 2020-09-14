@@ -111,7 +111,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         try {
             sc.configureBlocking(false);
             ChronicleSocket sock = sc.socket();
-            // TODO: should have a strategy for this like ConnectionNotifier
+            // TODO: should have a strategy for this
             if (!DISABLE_TCP_NODELAY)
                 sock.setTcpNoDelay(true);
 

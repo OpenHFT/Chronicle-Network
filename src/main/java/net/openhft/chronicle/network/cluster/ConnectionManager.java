@@ -18,17 +18,44 @@
 package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.network.NetworkContext;
+import org.jetbrains.annotations.NotNull;
 
-public interface ConnectionManager<T extends NetworkContext<T>> extends ConnectionChangedNotifier<T> {
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
-    /**
-     * notifies the strategy that a message has been received, ( any message is assumed to be a
-     * heartbeat )
-     */
-    void addListener(ConnectionListener<T> connectionListener);
+public class ConnectionManager<T extends NetworkContext<T>> {
+
+    private final Set<ConnectionListener<T>> connectionListeners = Collections.newSetFromMap(new IdentityHashMap<>());
+
+    @NotNull
+    private final IdentityHashMap<T, AtomicBoolean> isConnected = new IdentityHashMap<>();
+
+    public synchronized void addListener(@NotNull ConnectionListener<T> connectionListener) {
+
+        connectionListeners.add(connectionListener);
+
+        isConnected.forEach((wireOutPublisher, connected) -> connectionListener.onConnectionChange(wireOutPublisher, connected.get()));
+    }
+
+    public synchronized void onConnectionChanged(boolean isConnected, @NotNull final T nc) {
+        @NotNull final Function<T, AtomicBoolean> f = v -> new AtomicBoolean();
+        boolean wasConnected = this.isConnected.computeIfAbsent(nc, f).getAndSet(isConnected);
+        if (wasConnected != isConnected) connectionListeners.forEach(l -> {
+            try {
+                l.onConnectionChange(nc, isConnected);
+            } catch (IllegalStateException ignore) {
+                // this is already logged
+            }
+        });
+
+        if (!isConnected && !nc.isAcceptor()) nc.socketReconnector().run();
+    }
 
     @FunctionalInterface
-    interface ConnectionListener<T extends NetworkContext<T>> {
+    public interface ConnectionListener<T extends NetworkContext<T>> {
         void onConnectionChange(T nc, boolean isConnected);
     }
 }

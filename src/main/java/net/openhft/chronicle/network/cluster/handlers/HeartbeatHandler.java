@@ -24,7 +24,9 @@ import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.core.threads.Timer;
 import net.openhft.chronicle.core.threads.VanillaEventHandler;
 import net.openhft.chronicle.network.ConnectionListener;
-import net.openhft.chronicle.network.cluster.*;
+import net.openhft.chronicle.network.cluster.AbstractSubHandler;
+import net.openhft.chronicle.network.cluster.ClusteredNetworkContext;
+import net.openhft.chronicle.network.cluster.HeartbeatEventHandler;
 import net.openhft.chronicle.network.connection.CoreFields;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.Demarshallable;
@@ -35,7 +37,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 
 public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extends AbstractSubHandler<T> implements
         Demarshallable, WriteMarshallable, HeartbeatEventHandler {
@@ -74,7 +75,7 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
                 "heartbeatIntervalMs=" + heartbeatIntervalMs + ", this is too small";
     }
 
-    private static WriteMarshallable heartbeatHandler(final long heartbeatTimeoutMs,
+    public static WriteMarshallable heartbeatHandler(final long heartbeatTimeoutMs,
                                                       final long heartbeatIntervalMs,
                                                       final long cid) {
         return new WriteHeartbeatHandler(cid, heartbeatTimeoutMs, heartbeatIntervalMs);
@@ -166,26 +167,6 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
         return result;
     }
 
-    public static class Factory<T extends ClusteredNetworkContext<T>> implements Function<ClusterContext<T>, WriteMarshallable>,
-            Demarshallable {
-
-        @UsedViaReflection
-        private Factory(WireIn w) {
-        }
-
-        public Factory() {
-        }
-
-        @NotNull
-        @Override
-        public WriteMarshallable apply(@NotNull ClusterContext clusterContext) {
-            long heartbeatTimeoutMs = clusterContext.heartbeatTimeoutMs();
-            long heartbeatIntervalMs = clusterContext.heartbeatIntervalMs();
-            return heartbeatHandler(heartbeatTimeoutMs, heartbeatIntervalMs,
-                    HeartbeatHandler.class.hashCode());
-        }
-    }
-
     public String name() {
         return "rid=" + HeartbeatHandler.this.remoteIdentifier() + ", " +
                 "lid=" + HeartbeatHandler.this.localIdentifier();
@@ -239,14 +220,8 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
                     connectionMonitor.onDisconnected(HeartbeatHandler.this.localIdentifier(),
                             HeartbeatHandler.this.remoteIdentifier(), HeartbeatHandler.this.nc().isAcceptor());
 
+                    HeartbeatHandler.this.nc().socketReconnector().run();
                     HeartbeatHandler.this.close();
-
-                    final Runnable socketReconnector = HeartbeatHandler.this.nc().socketReconnector();
-
-                    // if we have been terminated then we should not attempt to reconnect
-                    TerminationEventHandler<T> teHandler = HeartbeatHandler.this.nc().terminationEventHandler();
-                    if (teHandler != null && teHandler.isTerminated() && socketReconnector != null)
-                        socketReconnector.run();
 
                     throw new InvalidEventHandlerException("closed");
                 } else

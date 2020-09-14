@@ -20,47 +20,51 @@ package net.openhft.chronicle.network.cluster;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.NetworkStatsListener;
 import net.openhft.chronicle.network.RemoteConnector;
+import net.openhft.chronicle.network.cluster.handlers.HeartbeatHandler;
+import net.openhft.chronicle.network.cluster.handlers.UberHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.wire.WireType;
-import net.openhft.chronicle.wire.WriteMarshallable;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
-public class HostConnector<T extends ClusteredNetworkContext<T>> implements Closeable {
+public class HostConnector<T extends ClusteredNetworkContext<T>, C extends ClusterContext<C, T>> implements Closeable {
+    @NotNull
+    private final ConnectionManager<T> connectionManager;
 
     private final WireType wireType;
 
     private final Function<WireType, WireOutPublisher> wireOutPublisherFactory;
-    private final List<WriteMarshallable> bootstraps = new LinkedList<>();
 
     private final RemoteConnector<T> remoteConnector;
     private final String connectUri;
-    private final Function<ClusterContext<T>, T> networkContextFactory;
+    private final Function<C, T> networkContextFactory;
     @NotNull
-    private final ClusterContext<T> clusterContext;
-    private final Function<ClusterContext<T>, NetworkStatsListener<T>> networkStatsListenerFactory;
+    private final C clusterContext;
+    private final Function<C, NetworkStatsListener<T>> networkStatsListenerFactory;
+    private final int remoteId;
     private T nc;
     @NotNull
     private final AtomicReference<WireOutPublisher> wireOutPublisher = new AtomicReference<>();
     @NotNull
     private final EventLoop eventLoop;
 
-    HostConnector(@NotNull ClusterContext<T> clusterContext,
-                  final RemoteConnector<T> remoteConnector,
-                  @NotNull final HostDetails hostdetails) {
+    HostConnector(@NotNull final C clusterContext,
+                  @NotNull final RemoteConnector<T> remoteConnector,
+                  final int remoteId,
+                  final String connectUri) {
+        this.connectionManager = clusterContext.connectionManager(remoteId);
         this.clusterContext = clusterContext;
+        this.remoteId = remoteId;
         this.remoteConnector = remoteConnector;
         this.networkStatsListenerFactory = clusterContext.networkStatsListenerFactory();
         this.networkContextFactory = clusterContext.networkContextFactory();
-        this.connectUri = hostdetails.connectUri();
+        this.connectUri = connectUri;
         this.wireType = clusterContext.wireType();
         this.wireOutPublisherFactory = clusterContext.wireOutPublisherFactory();
         this.eventLoop = clusterContext.eventLoop();
@@ -80,16 +84,13 @@ public class HostConnector<T extends ClusteredNetworkContext<T>> implements Clos
 
     }
 
-    public synchronized void bootstrap(WriteMarshallable subscription) {
-        bootstraps.add(subscription);
-        WireOutPublisher wp = wireOutPublisher.get();
-        if (wp != null) {
-            wp.publish(subscription);
-            wp.wireType(this.wireType);
-        }
+    public ConnectionManager<T> connectionManager() {
+        return connectionManager;
     }
 
     public synchronized void connect() {
+        if (connectUri == null || connectUri.isEmpty())
+            return;
 
         WireOutPublisher wireOutPublisher = wireOutPublisherFactory.apply(clusterContext.wireType());
 
@@ -97,6 +98,9 @@ public class HostConnector<T extends ClusteredNetworkContext<T>> implements Clos
             wireOutPublisher.close();
             return;
         }
+
+        if (eventLoop.isClosed())
+            return;
 
         // we will send the initial header as text wire, then the rest will be sent in
         // what ever wire is configured
@@ -114,21 +118,21 @@ public class HostConnector<T extends ClusteredNetworkContext<T>> implements Clos
             networkStatsListener.networkContext(nc);
         }
 
-        for (WriteMarshallable bootstrap : bootstraps) {
-            wireOutPublisher.publish(bootstrap);
-            wireOutPublisher.wireType(this.wireType);
-        }
+        wireOutPublisher.publish(UberHandler.uberHandler(
+                clusterContext.localIdentifier(),
+                remoteId,
+                wireType));
+        wireOutPublisher.publish(HeartbeatHandler.heartbeatHandler(
+                clusterContext.heartbeatTimeoutMs(),
+                clusterContext.heartbeatIntervalMs(),
+                HeartbeatHandler.class.hashCode()));
+        wireOutPublisher.wireType(this.wireType);
 
         remoteConnector.connect(connectUri, eventLoop, nc, clusterContext.retryInterval());
     }
 
     synchronized void reconnect() {
         close();
-        if (!nc.isAcceptor())
-            HostConnector.this.connect();
-    }
-
-    public String connectUri() {
-        return connectUri;
+        connect();
     }
 }

@@ -17,7 +17,6 @@
  */
 package net.openhft.chronicle.network.cluster;
 
-import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.SimpleCloseable;
 import net.openhft.chronicle.wire.*;
@@ -26,29 +25,20 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.stream.Collectors;
 
-abstract public class Cluster<E extends HostDetails,
-        T extends ClusteredNetworkContext<T>,
-        C extends ClusterContext<T>>
+abstract public class Cluster<T extends ClusteredNetworkContext<T>, C extends ClusterContext<C, T>>
         extends SimpleCloseable
         implements Marshallable {
 
     @NotNull
-    public final Map<String, E> hostDetails;
-    private final String clusterName;
+    public final Map<String, HostDetails> hostDetails;
 
     private C context;
 
-    public Cluster(String clusterName) {
+    public Cluster() {
         hostDetails = new ConcurrentSkipListMap<>();
-        this.clusterName = clusterName;
-    }
-
-    public String clusterName() {
-        return clusterName;
     }
 
     public C clusterContext() {
@@ -59,7 +49,6 @@ abstract public class Cluster<E extends HostDetails,
         throwExceptionIfClosed();
 
         this.context = clusterContext;
-        clusterContext.clusterName(clusterName);
     }
 
     @Override
@@ -75,104 +64,61 @@ abstract public class Cluster<E extends HostDetails,
             if ("context".contentEquals(sb)) {
                 context = (C) valueIn.object(ClusterContext.class);
                 assert context != null;
-                context.clusterName(clusterName);
                 continue;
             }
 
             valueIn.marshallable(details -> {
-                @NotNull final E hd = newHostDetails();
+                @NotNull final HostDetails hd = new HostDetails();
                 hd.readMarshallable(details);
                 hostDetails.put(sb.toString(), hd);
             });
 
         }
-
-        // commented out as this causes issues with the chronicle-engine gui
-        //  if (context == null)
-        //       throw new IllegalStateException("required field 'context' is missing.");
     }
 
     @Override
     public void writeMarshallable(@NotNull WireOut wire) {
         wire.write("context").typedMarshallable(context);
 
-        for (@NotNull Map.Entry<String, E> entry2 : hostDetails.entrySet()) {
+        for (@NotNull Map.Entry<String, HostDetails> entry2 : hostDetails.entrySet()) {
             wire.writeEventName(entry2::getKey).marshallable(entry2.getValue());
         }
     }
 
     @Nullable
-    public E findHostDetails(int id) {
+    public HostDetails findHostDetails(int id) {
         throwExceptionIfClosed();
 
-        for (@NotNull E hd : hostDetails.values()) {
+        for (@NotNull HostDetails hd : hostDetails.values()) {
             if (hd.hostId() == id)
                 return hd;
         }
         return null;
     }
 
-    @Nullable
-    public ConnectionNotifier findConnectionNotifier(int remoteIdentifier) {
-        throwExceptionIfClosed();
-
-        @Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
-        if (hostDetails == null) return null;
-        return hostDetails.connectionNotifier();
-    }
-
-    @Nullable
-    public ConnectionManager<T> findConnectionManager(int remoteIdentifier) {
-        throwExceptionIfClosed();
-
-        @Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
-        if (hostDetails == null) return null;
-        return hostDetails.connectionManager();
-    }
-
-    @Nullable
-    public TerminationEventHandler<T> findTerminationEventHandler(int remoteIdentifier) {
-        throwExceptionIfClosed();
-
-        @Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
-        if (hostDetails == null) return null;
-        return hostDetails.terminationEventHandler();
-
-    }
-
-    @Nullable
-    public ConnectionChangedNotifier<T> findClusterNotifier(int remoteIdentifier) {
-        throwExceptionIfClosed();
-
-        @Nullable HostDetails hostDetails = findHostDetails(remoteIdentifier);
-        if (hostDetails == null) return null;
-        return hostDetails.clusterNotifier();
-    }
-
     @NotNull
-    abstract protected E newHostDetails();
-
-    @NotNull
-    public Collection<E> hostDetails() {
+    public Collection<HostDetails> hostDetails() {
         return hostDetails.values();
     }
 
     @Override
     protected void performClose() {
-        Closeable.closeQuietly(hostDetails());
+        Closeable.closeQuietly(hostDetails(), context);
     }
 
-    public void install() {
-        Set<Integer> hostIds = hostDetails.values().stream().map(HostDetails::hostId).collect(Collectors.toSet());
+    public void start(int localHostId) {
+        final Optional<HostDetails> acceptOn = hostDetails.values().stream().filter(hd -> hd.hostId() == localHostId).findAny();
 
-        int local = context.localIdentifier();
-        if (!hostIds.contains(local)) {
-            if (Jvm.isDebugEnabled(getClass()))
-                Jvm.debug().on(getClass(), "cluster='" + context.clusterName() + "' ignored as localIdentifier=" + context.localIdentifier() + " is in this cluster");
-            return;
-        }
+        if (!acceptOn.isPresent())
+            throw new IllegalArgumentException("Cannot start cluster member as provided hostid=" + localHostId + " is not found in the cluster");
 
-        if (context != null)
-            hostDetails.values().forEach(context);
+        if (context == null)
+            throw new IllegalStateException("Cannot start cluster member as the cluster context is null");
+
+        context.localIdentifier((byte) localHostId);
+
+        hostDetails.values().stream().filter(hd -> hd.hostId() != localHostId).forEach(context::connect);
+        context.eventLoop().start();
+        context.accept(acceptOn.get());
     }
 }

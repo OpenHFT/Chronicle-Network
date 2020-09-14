@@ -2,9 +2,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.cluster.Cluster;
-import net.openhft.chronicle.network.cluster.ClusterContext;
 import net.openhft.chronicle.network.cluster.ClusteredNetworkContext;
-import net.openhft.chronicle.network.cluster.HostDetails;
 import net.openhft.chronicle.wire.Marshallable;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
@@ -16,42 +14,37 @@ import java.io.IOException;
 public class ClusterTest extends NetworkTestCommon {
 
     @Test
-    public void testDeepCopy() {
-        MyClusterContext cc = (MyClusterContext) new MyClusterContext().value(22).wireType(WireType.TEXT);
+    public <T extends ClusteredNetworkContext<T>> void testDeepCopy() {
+        MyClusterContext<T> cc = new MyClusterContext<T>().value(22).wireType(WireType.TEXT);
         String s = Marshallable.$toString(cc);
-        MyClusterContext o = Marshallable.fromString(s);
+        MyClusterContext<T> o = Marshallable.fromString(s);
         Assert.assertEquals(cc.value, o.value);
-        MyClusterContext cc2 = cc.deepCopy();
+        MyClusterContext<T> cc2 = cc.deepCopy();
         Assert.assertEquals(cc.value, cc2.value);
 
-        try (Cluster<HostDetails, ?, MyClusterContext<?>> c = new MyCluster("mine")) {
+        try (Cluster<T, MyClusterContext<T>> c = new MyCluster()) {
             c.clusterContext(cc);
-            try (Cluster<HostDetails, ?, MyClusterContext<?>> c2 = c.deepCopy()) {
-                MyClusterContext mcc = c2.clusterContext();
+            try (Cluster<T, MyClusterContext<T>> c2 = c.deepCopy()) {
+                MyClusterContext<T> mcc = c2.clusterContext();
                 Assert.assertNotNull(mcc);
                 Assert.assertEquals(22, mcc.value);
             }
         }
     }
 
-    private static class MyCluster<T extends ClusteredNetworkContext<T>> extends Cluster<HostDetails, T, MyClusterContext<T>> {
+    private static class MyCluster<T extends ClusteredNetworkContext<T>> extends Cluster<T, MyClusterContext<T>> {
         public MyCluster() {
-            this("dummy");
-        }
-
-        MyCluster(String clusterName) {
-            super(clusterName);
-        }
-
-        @Override
-        @NotNull
-        protected HostDetails newHostDetails() {
-            return new HostDetails();
+            super();
         }
     }
 
-    static class MyClusterContext<T extends ClusteredNetworkContext<T>> extends net.openhft.chronicle.network.cluster.ClusterContext<T> {
+    static class MyClusterContext<T extends ClusteredNetworkContext<T>> extends net.openhft.chronicle.network.cluster.ClusterContext<MyClusterContext<T>, T> {
         int value;
+
+        @Override
+        protected String clusterNamePrefix() {
+            return "";
+        }
 
         @NotNull
         @Override
@@ -59,7 +52,7 @@ public class ClusterTest extends NetworkTestCommon {
             return null;
         }
 
-        public ClusterContext<T> value(int v) {
+        public MyClusterContext<T> value(int v) {
             this.value = v;
             return this;
         }

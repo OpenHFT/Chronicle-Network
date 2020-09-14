@@ -27,7 +27,5 @@ public interface ClusteredNetworkContext<T extends ClusteredNetworkContext<T>> e
 
     byte getLocalHostIdentifier();
 
-    boolean isValidCluster(final String clusterName);
-
-    <R extends HostDetails, C extends ClusterContext<T>> Cluster<R, T, C> getCluster(final String clusterName);
+    <C extends ClusterContext<C, T>> C clusterContext();
 }

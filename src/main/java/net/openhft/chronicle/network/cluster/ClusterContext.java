@@ -17,6 +17,8 @@
  */
 package net.openhft.chronicle.network.cluster;
 
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.threads.EventLoop;
@@ -25,39 +27,44 @@ import net.openhft.chronicle.network.NetworkStatsListener;
 import net.openhft.chronicle.network.RemoteConnector;
 import net.openhft.chronicle.network.ServerThreadingStrategy;
 import net.openhft.chronicle.network.TcpEventHandler;
-import net.openhft.chronicle.network.cluster.handlers.UberHandler;
-import net.openhft.chronicle.network.cluster.handlers.UberHandler.Factory;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
+import net.openhft.chronicle.threads.BlockingEventLoop;
+import net.openhft.chronicle.threads.EventGroup;
+import net.openhft.chronicle.threads.Pauser;
+import net.openhft.chronicle.threads.PauserMode;
 import net.openhft.chronicle.wire.SelfDescribingMarshallable;
 import net.openhft.chronicle.wire.WireIn;
 import net.openhft.chronicle.wire.WireType;
-import net.openhft.chronicle.wire.WriteMarshallable;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public abstract class ClusterContext<T extends ClusteredNetworkContext<T>>
-        extends SelfDescribingMarshallable
-        implements Consumer<HostDetails>, Closeable {
+import static java.util.EnumSet.of;
+import static net.openhft.chronicle.core.threads.HandlerPriority.*;
+import static net.openhft.chronicle.threads.EventGroup.CONC_THREADS;
 
-    private transient Factory<T> handlerFactory;
+public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends ClusteredNetworkContext<T>>
+        extends SelfDescribingMarshallable
+        implements Closeable {
+    public static PauserMode DEFAULT_PAUSER_MODE = PauserMode.busy;
     private transient Function<WireType, WireOutPublisher> wireOutPublisherFactory;
-    private transient Function<ClusterContext<T>, T> networkContextFactory;
-    private transient Function<ClusterContext<T>, WriteMarshallable> heartbeatFactory;
-    private transient Function<ClusterContext<T>, NetworkStatsListener<T>> networkStatsListenerFactory;
-    private transient Supplier<ConnectionManager<T>> connectionEventHandler;
+    private transient Function<C, NetworkStatsListener<T>> networkStatsListenerFactory;
     private transient EventLoop eventLoop;
+    private transient Cluster<T, C> cluster;
+    private transient EventLoop acceptorLoop;
+    private transient ClusterAcceptorEventHandler<C, T> acceptorEventHandler;
+    private final transient TIntObjectMap<HostConnector<T, C>> hostConnectors = new TIntObjectHashMap<>();
+    private final transient TIntObjectMap<ConnectionManager<T>> connManagers = new TIntObjectHashMap<>();
     private transient boolean closed = false;
+
+    private Function<C, T> networkContextFactory;
     private long heartbeatTimeoutMs = 40_000;
     private long heartbeatIntervalMs = 20_000;
-    private ConnectionNotifier connectionNotifier;
+    private Supplier<Pauser> pauserSupplier = DEFAULT_PAUSER_MODE;
+    private String affinityCPU;
     private WireType wireType;
-    private String clusterName;
     private byte localIdentifier;
     private ServerThreadingStrategy serverThreadingStrategy;
     private long retryInterval = 1_000L;
@@ -65,6 +72,214 @@ public abstract class ClusterContext<T extends ClusteredNetworkContext<T>>
 
     public ClusterContext() {
         defaults();
+    }
+
+    /**
+     * Connect to the host specified by the provided {@link HostDetails}. Only attempt connection if the remote host has
+     * lower host ID than local - this is required to avoid bidirectional connection establishment
+     * @param hd remote host details
+     */
+    public void connect(HostDetails hd) {
+
+        final ConnectionManager<T> connectionManager = new ConnectionManager<>();
+        connManagers.put(hd.hostId(), connectionManager);
+
+        if (localIdentifier <= hd.hostId())
+            return;
+
+        @NotNull final HostConnector<T, C> hostConnector = new HostConnector<>(castThis(),
+                new RemoteConnector<>(tcpEventHandlerFactory()),
+                hd.hostId(),
+                hd.connectUri());
+
+        hostConnectors.put(hd.hostId(), hostConnector);
+
+        hostConnector.connect();
+    }
+
+    /**
+     * Start accepting incoming connections
+     * @param hd local host details to accept on
+     */
+    public void accept(HostDetails hd) {
+        acceptorLoop = new BlockingEventLoop(eventLoop(), clusterNamePrefix() + "acceptor-" + localIdentifier);
+        try {
+            acceptorEventHandler = new ClusterAcceptorEventHandler<>(hd.connectUri(), castThis());
+
+            acceptorLoop.addHandler(acceptorEventHandler);
+        } catch (IOException ex) {
+            throw new IORuntimeException("Couldn't start replication", ex);
+        }
+        acceptorLoop.start();
+    }
+
+    public ConnectionManager<T> connectionManager(int hostId) {
+        return connManagers.get(hostId);
+    }
+
+    /**
+     * Lazily created if not supplier by user
+     *
+     * @return event loop
+     */
+    @NotNull
+    public synchronized EventLoop eventLoop() {
+
+        if (eventLoop == null) {
+            eventLoop = new EventGroup(true, pauserSupplier.get(), null, affinityCPU, clusterNamePrefix(), CONC_THREADS,
+                    of(MEDIUM, TIMER, BLOCKING, REPLICATION));
+            this.eventLoop(eventLoop);
+        }
+        return eventLoop;
+    }
+
+    @NotNull
+    public C eventLoop(EventLoop eventLoop) {
+        this.eventLoop = eventLoop;
+        return castThis();
+    }
+
+    public String procPrefix() {
+        return procPrefix;
+    }
+
+    public void procPrefix(String procPrefix) {
+        this.procPrefix = procPrefix;
+    }
+
+    public Function<C, NetworkStatsListener<T>> networkStatsListenerFactory() {
+        return networkStatsListenerFactory;
+    }
+
+    @NotNull
+    public C networkStatsListenerFactory(Function<C, NetworkStatsListener<T>> networkStatsListenerFactory) {
+        this.networkStatsListenerFactory = networkStatsListenerFactory;
+        return castThis();
+    }
+
+    @NotNull
+    public abstract ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpEventHandlerFactory();
+
+    public C serverThreadingStrategy(ServerThreadingStrategy serverThreadingStrategy) {
+        this.serverThreadingStrategy = serverThreadingStrategy;
+        return castThis();
+    }
+
+    public ServerThreadingStrategy serverThreadingStrategy() {
+        return serverThreadingStrategy;
+    }
+
+    public Cluster<T, C> cluster() {
+        return cluster;
+    }
+
+    public void cluster(Cluster<T, C> cluster) {
+        this.cluster = cluster;
+    }
+
+    protected abstract void defaults();
+
+    @NotNull
+    public C localIdentifier(byte localIdentifier) {
+        this.localIdentifier = localIdentifier;
+        return castThis();
+    }
+
+    public byte localIdentifier() {
+        return localIdentifier;
+    }
+
+    @NotNull
+    public C wireType(WireType wireType) {
+        this.wireType = wireType;
+        return castThis();
+    }
+
+    public WireType wireType() {
+        return wireType;
+    }
+
+    @NotNull
+    public C heartbeatIntervalMs(long heartbeatIntervalMs) {
+        this.heartbeatIntervalMs = heartbeatIntervalMs;
+        return castThis();
+    }
+
+    public long heartbeatIntervalMs() {
+        return heartbeatIntervalMs;
+    }
+
+    @NotNull
+    public C heartbeatTimeoutMs(long heartbeatTimeoutMs) {
+        this.heartbeatTimeoutMs = heartbeatTimeoutMs;
+        return castThis();
+    }
+
+    public long heartbeatTimeoutMs() {
+        return heartbeatTimeoutMs;
+    }
+
+    /**
+     * Sets the {@link Pauser} Supplier to the provided {@code pauserSupplier}. If the user does not supply an {@link #eventLoop()} then the {@code
+     * pauserSupplier} is used when lazily creating the {@link EventGroup}.
+     *
+     * @param pauserSupplier to be used by the event loop
+     * @return this ClusterContext
+     */
+    @NotNull
+    public C pauserSupplier(@NotNull Supplier<Pauser> pauserSupplier) {
+        this.pauserSupplier = pauserSupplier;
+        return castThis();
+    }
+
+    public String affinityCPU() {
+        return affinityCPU;
+    }
+
+    public C affinityCPU(final String affinityCPU) {
+        this.affinityCPU = affinityCPU;
+        return castThis();
+    }
+
+    @NotNull
+    public C wireOutPublisherFactory(Function<WireType, WireOutPublisher> wireOutPublisherFactory) {
+        this.wireOutPublisherFactory = wireOutPublisherFactory;
+        return castThis();
+    }
+
+    public Function<WireType, WireOutPublisher> wireOutPublisherFactory() {
+        return wireOutPublisherFactory;
+    }
+
+    @NotNull
+    public C networkContextFactory(Function<C, T> networkContextFactory) {
+        this.networkContextFactory = networkContextFactory;
+        return castThis();
+    }
+
+    public Function<C, T> networkContextFactory() {
+        return networkContextFactory;
+    }
+
+    public C retryInterval(final long retryInterval) {
+        this.retryInterval = retryInterval;
+        return castThis();
+    }
+
+    public long retryInterval() {
+        return retryInterval;
+    }
+
+    @Override
+    public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
+        wire.read("networkStatsListenerFactory").object(networkStatsListenerFactory, Function.class);
+        defaults();
+        super.readMarshallable(wire);
+    }
+
+    @Override
+    public boolean isClosed() {
+        return closed;
     }
 
     @Override
@@ -77,223 +292,19 @@ public abstract class ClusterContext<T extends ClusteredNetworkContext<T>>
 
     protected void performClose() {
         Closeable.closeQuietly(
-                connectionNotifier,
-                handlerFactory,
                 wireOutPublisherFactory,
                 networkContextFactory,
-                heartbeatFactory,
                 networkStatsListenerFactory,
-                connectionEventHandler,
-                eventLoop);
+                eventLoop,
+                acceptorEventHandler,
+                acceptorLoop);
     }
 
-    @Override
-    public boolean isClosed() {
-        return closed;
-    }
+    protected abstract String clusterNamePrefix();
 
-    public String procPrefix() {
-        return procPrefix;
-    }
-
-    public void procPrefix(String procPrefix) {
-        this.procPrefix = procPrefix;
-    }
-
-    @Override
-    public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
-        wire.read("networkStatsListenerFactory").object(networkStatsListenerFactory, Function.class);
-        defaults();
-        super.readMarshallable(wire);
-    }
-
-    public Function<ClusterContext<T>, NetworkStatsListener<T>> networkStatsListenerFactory() {
-        return networkStatsListenerFactory;
-    }
-
-    @NotNull
-    public ClusterContext<T> networkStatsListenerFactory(Function<ClusterContext<T>, NetworkStatsListener<T>> networkStatsListenerFactory) {
-        this.networkStatsListenerFactory = networkStatsListenerFactory;
-        return this;
-    }
-
-    public long heartbeatIntervalMs() {
-        return heartbeatIntervalMs;
-    }
-
-    @NotNull
-    public abstract ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpEventHandlerFactory();
-
-    public ClusterContext<T> serverThreadingStrategy(ServerThreadingStrategy serverThreadingStrategy) {
-        this.serverThreadingStrategy = serverThreadingStrategy;
-        return this;
-    }
-
-    public ServerThreadingStrategy serverThreadingStrategy() {
-        return serverThreadingStrategy;
-    }
-
-    private UberHandler.Factory<T> handlerFactory() {
-        return handlerFactory;
-    }
-
-    public ClusterContext<T> handlerFactory(UberHandler.Factory<T> handlerFactory) {
-        this.handlerFactory = handlerFactory;
-        return this;
-    }
-
-    public void clusterName(String clusterName) {
-        this.clusterName = clusterName;
-    }
-
-    public EventLoop eventLoop() {
-        return eventLoop;
-    }
-
-    @NotNull
-    public ClusterContext<T> eventLoop(EventLoop eventLoop) {
-        this.eventLoop = eventLoop;
-        return this;
-    }
-
-    protected abstract void defaults();
-
-    @NotNull
-    public ClusterContext<T> localIdentifier(byte localIdentifier) {
-        this.localIdentifier = localIdentifier;
-        return this;
-    }
-
-    @NotNull
-    public ClusterContext<T> wireType(WireType wireType) {
-        this.wireType = wireType;
-        return this;
-    }
-
-    @NotNull
-    public ClusterContext<T> heartbeatFactory(Function<ClusterContext<T>, WriteMarshallable>
-                                                      heartbeatFactor) {
-        this.heartbeatFactory = heartbeatFactor;
-        return this;
-    }
-
-    @NotNull
-    public ClusterContext<T> heartbeatIntervalMs(long heartbeatIntervalMs) {
-        this.heartbeatIntervalMs = heartbeatIntervalMs;
-        return this;
-    }
-
-    @NotNull
-    public ClusterContext<T> heartbeatTimeoutMs(long heartbeatTimeoutMs) {
-        this.heartbeatTimeoutMs = heartbeatTimeoutMs;
-        return this;
-    }
-
-    @NotNull
-    public ClusterContext<T> wireOutPublisherFactory(Function<WireType, WireOutPublisher> wireOutPublisherFactory) {
-        this.wireOutPublisherFactory = wireOutPublisherFactory;
-        return this;
-    }
-
-    @NotNull
-    public ClusterContext<T> networkContextFactory(Function<ClusterContext<T>, T> networkContextFactory) {
-        this.networkContextFactory = networkContextFactory;
-        return this;
-    }
-
-    public WireType wireType() {
-        return wireType;
-    }
-
-    public Function<WireType, WireOutPublisher> wireOutPublisherFactory() {
-        return wireOutPublisherFactory;
-    }
-
-    public long heartbeatTimeoutMs() {
-        return heartbeatTimeoutMs;
-    }
-
-    public String clusterName() {
-        return clusterName;
-    }
-
-    public byte localIdentifier() {
-        return localIdentifier;
-    }
-
-    public Function<ClusterContext<T>, T> networkContextFactory() {
-        return networkContextFactory;
-    }
-
-    @NotNull
-    public ClusterContext<T> connectionNotifier(ConnectionNotifier connectionNotifier) {
-        this.connectionNotifier = connectionNotifier;
-        return this;
-    }
-
-    private ConnectionNotifier connectionNotifier() {
-        return this.connectionNotifier;
-    }
-
-    private Supplier<ConnectionManager<T>> connectionEventHandler() {
-        return connectionEventHandler;
-    }
-
-    @NotNull
-    public ClusterContext<T> connectionEventHandler(Supplier<ConnectionManager<T>> connectionEventHandler) {
-        this.connectionEventHandler = connectionEventHandler;
-        return this;
-    }
-
-    private Function<ClusterContext<T>, WriteMarshallable> heartbeatFactory() {
-        return heartbeatFactory;
-    }
-
-    @Override
-    public void accept(@NotNull HostDetails hd) {
-        if (this.localIdentifier == hd.hostId())
-            return;
-
-        final ConnectionNotifier connectionNotifier = this.connectionNotifier();
-        hd.connectionNotifier(connectionNotifier);
-
-        final ConnectionManager<T> connectionManager = this
-                .connectionEventHandler().get();
-        hd.connectionManager(connectionManager);
-
-        @NotNull final HostConnector<T> hostConnector = new HostConnector<>(this,
-                new RemoteConnector<>(this.tcpEventHandlerFactory()),
-                hd);
-
-        hd.hostConnector(hostConnector);
-
-        @NotNull ClusterNotifier clusterNotifier = new ClusterNotifier(connectionManager,
-                hostConnector, bootstraps(hd));
-
-        hd.clusterNotifier(clusterNotifier);
-        hd.terminationEventHandler(clusterNotifier);
-
-        clusterNotifier.connect();
-    }
-
-    @NotNull
-    private List<WriteMarshallable> bootstraps(HostDetails hd) {
-        final UberHandler.Factory<T> handler = this.handlerFactory();
-        final Function<ClusterContext<T>, WriteMarshallable> heartbeat = this.heartbeatFactory();
-
-        @NotNull ArrayList<WriteMarshallable> result = new ArrayList<>();
-        result.add(handler.apply(this, hd));
-        result.add(heartbeat.apply(this));
-        return result;
-    }
-
-    public long retryInterval() {
-        return retryInterval;
-    }
-
-    public ClusterContext<T> retryInterval(final long retryInterval) {
-        this.retryInterval = retryInterval;
-        return this;
+    @SuppressWarnings("unchecked")
+    private C castThis() {
+        return (C) this;
     }
 }
 
