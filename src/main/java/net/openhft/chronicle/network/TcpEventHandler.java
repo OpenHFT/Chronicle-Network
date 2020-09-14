@@ -215,15 +215,19 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                 close();
                 throw new InvalidEventHandlerException(e);
             } catch (IOException e) {
-                close();
-                handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
+                if (!isClosed()) {
+                    close();
+                    handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
+                }
                 throw new InvalidEventHandlerException();
             } catch (InvalidEventHandlerException e) {
                 close();
                 throw e;
             } catch (Exception e) {
-                close();
-                Jvm.warn().on(getClass(), "", e);
+                if (!isClosed()) {
+                    close();
+                    Jvm.warn().on(getClass(), "", e);
+                }
                 throw new InvalidEventHandlerException(e);
             }
 
