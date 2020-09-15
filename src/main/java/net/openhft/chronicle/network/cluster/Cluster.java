@@ -35,7 +35,7 @@ abstract public class Cluster<T extends ClusteredNetworkContext<T>, C extends Cl
     @NotNull
     public final Map<String, HostDetails> hostDetails;
 
-    private C context;
+    private transient C context;
 
     public Cluster() {
         hostDetails = new ConcurrentSkipListMap<>();
