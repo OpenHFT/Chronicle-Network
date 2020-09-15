@@ -232,6 +232,10 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
         return castThis();
     }
 
+    public Supplier<Pauser> pauserSupplier() {
+        return pauserSupplier;
+    }
+
     public String affinityCPU() {
         return affinityCPU;
     }
