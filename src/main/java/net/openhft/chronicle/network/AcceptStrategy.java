@@ -30,7 +30,7 @@ import java.io.IOException;
 public interface AcceptStrategy extends Marshallable {
 
 
-    AcceptStrategy ACCEPT_ALL = ChronicleServerSocketChannel::accept;
+    AcceptStrategy ACCEPT_ALL = AcceptStrategies.ACCEPT_ALL;
 
     /**
      * Determine whether to accept the incoming connection
