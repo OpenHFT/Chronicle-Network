@@ -133,6 +133,7 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
 
     synchronized void reconnect() {
         close();
-        connect();
+        if (!eventLoop.isClosed())
+            connect();
     }
 }
