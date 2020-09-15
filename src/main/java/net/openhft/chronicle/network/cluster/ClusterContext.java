@@ -59,7 +59,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     private final transient TIntObjectMap<ConnectionManager<T>> connManagers = new TIntObjectHashMap<>();
     private transient boolean closed = false;
 
-    private transient Function<C, T> networkContextFactory;
+    private Function<C, T> networkContextFactory;
     private long heartbeatTimeoutMs = 40_000;
     private long heartbeatIntervalMs = 20_000;
     private Supplier<Pauser> pauserSupplier = DEFAULT_PAUSER_MODE;
