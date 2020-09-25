@@ -16,6 +16,8 @@
 
 package net.openhft.performance.tests.network;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.nio.channels.SelectionKey;
 import java.util.AbstractSet;
 import java.util.Iterator;
@@ -104,7 +106,7 @@ final class SelectedSelectionKeySet extends AbstractSet<SelectionKey> {
     }
 
     @Override
-    public Iterator<SelectionKey> iterator() {
+    public @NotNull Iterator<SelectionKey> iterator() {
         throw new UnsupportedOperationException();
     }
 }

@@ -130,7 +130,6 @@ public class PingPongWithMains {
         TCPRegistry.reset();
     }
 
-    @NotNull
     public void testServer() throws IOException {
         @NotNull EventLoop eg = new EventGroup(true, Pauser.busy(), true);
 
