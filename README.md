@@ -11,7 +11,7 @@ This library is designed to be lower latency and support higher throughputs
     by employing techniques used in low latency trading systems.
     
 # Transports
-Network current support TCP only. 
+Network currently support TCP only. 
  
 Planned support for
 * Shared Memory
