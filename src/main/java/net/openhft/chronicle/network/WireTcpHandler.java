@@ -302,7 +302,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
                     LOG.info("While reading " + inBytes.toDebugString(),
                             " processing wire " + c, t);
                 outWire.bytes().writePosition(position);
-                outWire.writeEventName(() -> "exception").throwable(t);
+                outWire.writeEventName("exception").throwable(t);
             }
 
             // write 'reply : {} ' if no data was sent
@@ -332,7 +332,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
                     LOG.info("While reading " + inBytes.toDebugString(),
                             " processing wire " + c, t);
                 outWire.bytes().writePosition(position);
-                outWire.writeEventName(() -> "exception").throwable(t);
+                outWire.writeEventName("exception").throwable(t);
             }
 
             // write 'reply : {} ' if no data was sent

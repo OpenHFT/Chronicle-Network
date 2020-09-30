@@ -103,11 +103,11 @@ public class WireEchoRequestHandler extends WireTcpHandler {
                            @NotNull SessionDetailsProvider sd) {
 
         inWire.readDocument(m -> {
-            outWire.writeDocument(true, meta -> meta.write(() -> "tid")
-                    .int64(inWire.read(() -> "tid").int64()));
+            outWire.writeDocument(true, meta -> meta.write("tid")
+                    .int64(inWire.read("tid").int64()));
         }, d -> {
-            outWire.writeDocument(false, data -> data.write(() -> "payloadResponse")
-                    .text(inWire.read(() -> "payload").text()));
+            outWire.writeDocument(false, data -> data.write("payloadResponse")
+                    .text(inWire.read("payload").text()));
         });
     }
 }
@@ -143,8 +143,8 @@ final long tid = tcpChannelHub.nextUniqueTransaction(System.currentTimeMillis())
 // we will use a text wire backed by a elasticByteBuffer
 final Wire wire = new TextWire(Bytes.elasticByteBuffer());
 
-wire.writeDocument(true, w -> w.write(() -> "tid").int64(tid));
-wire.writeDocument(false, w -> w.write(() -> "payload").text(expectedMessage));
+wire.writeDocument(true, w -> w.write("tid").int64(tid));
+wire.writeDocument(false, w -> w.write("payload").text(expectedMessage));
 ```
 
 #### Write the Data to the Socket
@@ -163,7 +163,7 @@ Wire reply = tcpChannelHub.proxyReply(TimeUnit.SECONDS.toMillis(1), tid);
 ```java
 // read the reply and check the result
 reply.readDocument(null, data -> {
-    final String text = data.read(() -> "payloadResponse").text();
+    final String text = data.read("payloadResponse").text();
     Assert.assertEquals(expectedMessage, text);
 });
 ```

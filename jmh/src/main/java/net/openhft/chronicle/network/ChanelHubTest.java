@@ -117,8 +117,8 @@ public class ChanelHubTest {
         // create the message to send§
         final long tid = tcpChannelHub.nextUniqueTransaction(System.currentTimeMillis());
         wire.clear();
-        wire.writeDocument(true, w -> w.writeEventName(() -> "tid").int64(tid));
-        wire.writeDocument(false, w -> w.writeEventName(() -> "payload").text(expectedMessage));
+        wire.writeDocument(true, w -> w.writeEventName("tid").int64(tid));
+        wire.writeDocument(false, w -> w.writeEventName("payload").text(expectedMessage));
 
         // write the data to the socket
         tcpChannelHub.lock(() -> tcpChannelHub.writeSocket(wire));

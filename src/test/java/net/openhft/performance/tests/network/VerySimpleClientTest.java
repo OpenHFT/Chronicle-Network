@@ -110,8 +110,8 @@ public class VerySimpleClientTest extends NetworkTestCommon {
         // create the message to send§
         final long tid = 0;
         outWire.clear();
-        outWire.writeDocument(true, w -> w.write(() -> "tid").int64(tid));
-        outWire.writeDocument(false, w -> w.write(() -> "payload").text(expectedMessage));
+        outWire.writeDocument(true, w -> w.write("tid").int64(tid));
+        outWire.writeDocument(false, w -> w.write("payload").text(expectedMessage));
 
         @Nullable final ByteBuffer outBuff = (ByteBuffer) outWire.bytes().underlyingObject();
 
@@ -129,7 +129,7 @@ public class VerySimpleClientTest extends NetworkTestCommon {
         readDocument(inWire);
 
         inWire.readDocument(null, data -> {
-            Assert.assertEquals(expectedMessage, data.read(() -> "payloadResponse").text());
+            Assert.assertEquals(expectedMessage, data.read("payloadResponse").text());
         });
 
     }

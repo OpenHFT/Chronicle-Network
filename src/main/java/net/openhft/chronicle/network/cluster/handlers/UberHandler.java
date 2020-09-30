@@ -52,9 +52,9 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
 
     @UsedViaReflection
     private UberHandler(@NotNull final WireIn wire) {
-        remoteIdentifier = wire.read(() -> "remoteIdentifier").int32();
-        localIdentifier = wire.read(() -> "localIdentifier").int32();
-        @NotNull final WireType wireType = Objects.requireNonNull(wire.read(() -> "wireType").object(WireType.class));
+        remoteIdentifier = wire.read("remoteIdentifier").int32();
+        localIdentifier = wire.read("localIdentifier").int32();
+        @NotNull final WireType wireType = Objects.requireNonNull(wire.read("wireType").object(WireType.class));
         wireType(wireType);
     }
 
@@ -90,9 +90,9 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
 
     @Override
     public void writeMarshallable(@NotNull final WireOut wire) {
-        wire.write(() -> "remoteIdentifier").int32(localIdentifier);
-        wire.write(() -> "localIdentifier").int32(remoteIdentifier);
-        wire.write(() -> "wireType").object(wireType);
+        wire.write("remoteIdentifier").int32(localIdentifier);
+        wire.write("localIdentifier").int32(remoteIdentifier);
+        wire.write("wireType").object(wireType);
     }
 
     @Override

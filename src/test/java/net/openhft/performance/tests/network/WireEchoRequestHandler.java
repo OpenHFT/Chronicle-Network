@@ -44,11 +44,11 @@ public class WireEchoRequestHandler extends WireTcpHandler {
                           @NotNull WireOut outWire) {
 
         if (in.isMetaData())
-            outWire.writeDocument(true, meta -> meta.write(() -> "tid")
-                    .int64(in.wire().read(() -> "tid").int64()));
+            outWire.writeDocument(true, meta -> meta.write("tid")
+                    .int64(in.wire().read("tid").int64()));
         else
-            outWire.writeDocument(false, data -> data.write(() -> "payloadResponse")
-                    .text(in.wire().read(() -> "payload").text()));
+            outWire.writeDocument(false, data -> data.write("payloadResponse")
+                    .text(in.wire().read("payload").text()));
 
     }
 

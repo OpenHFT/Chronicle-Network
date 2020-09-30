@@ -95,8 +95,8 @@ public class SimpleServerAndClientTest extends NetworkTestCommon {
                     // we will use a text wire backed by a elasticByteBuffer
                     @NotNull final Wire wire = new TextWire(bytes).useTextDocuments();
 
-                    wire.writeDocument(true, w -> w.write(() -> "tid").int64(tid));
-                    wire.writeDocument(false, w -> w.write(() -> "payload").text(expectedMessage));
+                    wire.writeDocument(true, w -> w.write("tid").int64(tid));
+                    wire.writeDocument(false, w -> w.write("payload").text(expectedMessage));
 
                     // write the data to the socket
                     tcpChannelHub.lock2(() -> tcpChannelHub.writeSocket(wire, true, false),
@@ -109,7 +109,7 @@ public class SimpleServerAndClientTest extends NetworkTestCommon {
 
                         // read the reply and check the result
                         reply.readDocument(null, data -> {
-                            @Nullable final String text = data.read(() -> "payloadResponse").text();
+                            @Nullable final String text = data.read("payloadResponse").text();
                             Assert.assertEquals(expectedMessage, text);
                         });
 

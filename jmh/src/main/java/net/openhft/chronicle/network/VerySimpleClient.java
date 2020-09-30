@@ -129,8 +129,8 @@ public class VerySimpleClient {
         ((ByteBuffer) inWire.bytes().underlyingObject()).clear();
         ((ByteBuffer) outWire.bytes().underlyingObject()).clear();
 
-        outWire.writeDocument(true, w -> w.write(() -> "tid").int64(tid));
-        outWire.writeDocument(false, w -> w.write(() -> "payload").text(expectedMessage));
+        outWire.writeDocument(true, w -> w.write("tid").int64(tid));
+        outWire.writeDocument(false, w -> w.write("payload").text(expectedMessage));
 
         final ByteBuffer outBuff = (ByteBuffer) outWire.bytes().underlyingObject();
         outBuff.limit((int) outWire.bytes().writePosition());
@@ -150,7 +150,7 @@ public class VerySimpleClient {
         String[] text = {null};
         // read the reply and check the result
         inWire.readDocument(null, data -> {
-            text[0] = data.read(() -> "payloadResponse").text();
+            text[0] = data.read("payloadResponse").text();
         });
         return text[0];
     }

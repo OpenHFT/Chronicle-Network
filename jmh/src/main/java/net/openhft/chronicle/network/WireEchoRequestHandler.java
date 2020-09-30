@@ -44,13 +44,13 @@ public class WireEchoRequestHandler extends WireTcpHandler {
                            @NotNull SessionDetailsProvider sd) {
 
         inWire.readDocument(m -> {
-            long tid = inWire.read(() -> "tid").int64();
-            outWire.writeDocument(true, meta -> meta.write(() -> "tid")
+            long tid = inWire.read("tid").int64();
+            outWire.writeDocument(true, meta -> meta.write("tid")
                     .int64(tid));
 
         }, d -> {
-            outWire.writeDocument(false, data -> data.write(() -> "payloadResponse")
-                    .text(inWire.read(() -> "payload").text()));
+            outWire.writeDocument(false, data -> data.write("payloadResponse")
+                    .text(inWire.read("payload").text()));
         });
     }
 }
