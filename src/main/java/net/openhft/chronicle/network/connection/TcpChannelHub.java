@@ -24,10 +24,7 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.bytes.ConnectionDroppedException;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.StackTrace;
-import net.openhft.chronicle.core.io.AbstractCloseable;
-import net.openhft.chronicle.core.io.AbstractReferenceCounted;
-import net.openhft.chronicle.core.io.Closeable;
-import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.core.io.*;
 import net.openhft.chronicle.core.threads.*;
 import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.ConnectionStrategy;
@@ -298,6 +295,16 @@ public final class TcpChannelHub extends AbstractCloseable {
                 " and reads are on the same thread this can lead " +
                 "to deadlocks with the server, if the server buffer becomes full";
         return true;
+    }
+
+    static void releaseWire(Wire w) {
+        // TODO make more stable so this isn't needed.
+        Bytes<?> bytes = w.bytes();
+        try {
+            bytes.releaseLast();
+        } catch (ClosedIllegalStateException e) {
+            Jvm.debug().on(TcpChannelHub.class, "Duplicate release on cleanup of buffer");
+        }
     }
 
     void clear(@NotNull final Wire wire) {
@@ -1053,7 +1060,6 @@ public final class TcpChannelHub extends AbstractCloseable {
         return outWire.bytes().readRemaining() == 0;
     }
 
-
     @Override
     protected boolean threadSafetyCheck(boolean isUsed) {
         // Assume it is thread safe.
@@ -1063,13 +1069,6 @@ public final class TcpChannelHub extends AbstractCloseable {
     @FunctionalInterface
     public interface Task {
         void run();
-    }
-
-    static void releaseWire(Wire w) {
-        // TODO make more stable so this isn't needed.
-        Bytes<?> bytes = w.bytes();
-        if (bytes.refCount() > 0)
-            bytes.releaseLast();
     }
 
     /**
