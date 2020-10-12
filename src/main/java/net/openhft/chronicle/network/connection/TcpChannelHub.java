@@ -1065,6 +1065,13 @@ public final class TcpChannelHub extends AbstractCloseable {
         void run();
     }
 
+    static void releaseWire(Wire w) {
+        // TODO make more stable so this isn't needed.
+        Bytes<?> bytes = w.bytes();
+        if (bytes.refCount() > 0)
+            bytes.releaseLast();
+    }
+
     /**
      * uses a single read thread, to process messages to waiting threads based on their {@code tid}
      */
@@ -1079,7 +1086,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         @NotNull
         private final ExecutorService service;
         @NotNull
-        private final ThreadLocal<Wire> syncInWireThreadLocal = CleaningThreadLocal.withCleanup(this::createWire, w -> w.bytes().releaseLast());
+        private final ThreadLocal<Wire> syncInWireThreadLocal = CleaningThreadLocal.withCleanup(this::createWire, w -> releaseWire(w));
 
         long lastheartbeatSentTime = 0;
         volatile long start = Long.MAX_VALUE;
