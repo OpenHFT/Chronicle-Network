@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ClosedChannelException;
 
+import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
 public class ClusterAcceptorEventHandler<C extends ClusterContext<C, T>, T extends ClusteredNetworkContext<T>> extends AbstractCloseable implements EventHandler {
@@ -86,8 +87,7 @@ public class ClusterAcceptorEventHandler<C extends ClusterContext<C, T>, T exten
     }
 
     private void closeSocket() {
-        ssc.socket().close();
-        ssc.close();
+        closeQuietly(ssc);
     }
 
     @NotNull
