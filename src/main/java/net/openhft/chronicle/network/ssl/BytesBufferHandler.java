@@ -1,7 +1,7 @@
 package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.core.io.AbstractReferenceCounted;
+import net.openhft.chronicle.core.io.IOTools;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.api.TcpHandler;
 
@@ -56,7 +56,7 @@ public final class BytesBufferHandler<N extends NetworkContext<N>> implements Bu
         if (input.position() != 0) {
             input.flip();
             applicationInput = Bytes.wrapForRead(input);
-            AbstractReferenceCounted.unmonitor(applicationInput); // temporary wrapper
+            IOTools.unmonitor(applicationInput); // temporary wrapper
         } else {
             applicationInput = EMPTY_APPLICATION_INPUT;
         }

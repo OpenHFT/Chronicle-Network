@@ -1166,7 +1166,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
             final long beginMs = Time.currentTimeMillis();
             final Wire wire = syncInWireThreadLocal.get();
-            AbstractReferenceCounted.unmonitor(wire.bytes());
+            IOTools.unmonitor(wire.bytes());
             wire.clear();
 
             @NotNull final Bytes<?> bytes = wire.bytes();
