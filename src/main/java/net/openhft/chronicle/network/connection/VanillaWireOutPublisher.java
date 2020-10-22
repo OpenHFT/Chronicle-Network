@@ -20,15 +20,12 @@ package net.openhft.chronicle.network.connection;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.AbstractCloseable;
-import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 public class VanillaWireOutPublisher extends AbstractCloseable implements WireOutPublisher {
 
@@ -36,9 +33,6 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     private final Bytes<ByteBuffer> bytes;
 
     private Wire wire;
-    @NotNull
-    private List<WireOutConsumer> consumers = new CopyOnWriteArrayList<>();
-    private int consumerIndex;
 
     public VanillaWireOutPublisher(@NotNull WireType wireType) {
         bytes = Bytes.elasticByteBuffer(TcpChannelHub.TCP_BUFFER);
@@ -52,7 +46,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
      * @param bytes buffer to write to.
      */
     @Override
-    public void applyAction(@NotNull Bytes bytes) {
+    public void applyAction(@NotNull Bytes<?> bytes) {
         if (this.bytes.readRemaining() > 0) {
 
             synchronized (lock()) {
@@ -93,66 +87,6 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     @Override
     public void applyAction(@NotNull WireOut outWire) {
         applyAction(outWire.bytes());
-
-        for (int y = 1; y < 1000; y++) {
-
-            long pos = outWire.bytes().writePosition();
-
-            for (int i = 0; i < consumers.size(); i++) {
-
-                if (outWire.bytes().writePosition() >= TcpChannelHub.TCP_SAFE_SIZE)
-                    return;
-
-                if (isClosed())
-                    return;
-
-                WireOutConsumer c = next();
-
-                try {
-                    c.accept(outWire);
-                } catch (InvalidEventHandlerException e) {
-                    consumers.remove(c);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    Jvm.warn().on(getClass(), e);
-                    return;
-                }
-            }
-
-            if (pos == outWire.bytes().writePosition())
-                return;
-            if (y >= 100)
-                Jvm.pause(y / 100);
-        }
-
-        Jvm.warn().on(getClass(), new IllegalStateException("looped for too long"));
-
-    }
-
-    @Override
-    public void addWireConsumer(WireOutConsumer wireOutConsumer) {
-        throwExceptionIfClosedInSetter();
-
-        consumers.add(wireOutConsumer);
-    }
-
-    @Override
-    public boolean removeBytesConsumer(WireOutConsumer wireOutConsumer) {
-        throwExceptionIfClosedInSetter();
-
-        return consumers.remove(wireOutConsumer);
-    }
-
-    /**
-     * round robins - the consumers, we should only write when the buffer is empty, as we can't
-     * guarantee that we will have enough space to add more data to the out wire.
-     *
-     * @return the  Marshallable that you are writing to
-     */
-    private WireOutConsumer next() {
-        if (consumerIndex >= consumers.size())
-            consumerIndex = 0;
-        return consumers.get(consumerIndex++);
     }
 
     @Override

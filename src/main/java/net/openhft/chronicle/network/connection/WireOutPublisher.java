@@ -54,7 +54,7 @@ public interface WireOutPublisher extends Closeable {
         }
     }
 
-    default void applyAction(@NotNull Bytes out) {
+    default void applyAction(@NotNull Bytes<?> out) {
         throw new UnsupportedOperationException();
     }
 
