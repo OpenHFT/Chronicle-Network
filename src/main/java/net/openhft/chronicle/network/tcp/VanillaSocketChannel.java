@@ -115,7 +115,7 @@ public class VanillaSocketChannel extends AbstractCloseable implements Chronicle
     }
 
     @Override
-    protected boolean performCloseInBackground() {
+    protected boolean shouldPerformCloseInBackground() {
         return true;
     }
 

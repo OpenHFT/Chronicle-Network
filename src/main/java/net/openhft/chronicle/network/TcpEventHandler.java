@@ -171,12 +171,12 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     public boolean action() throws InvalidEventHandlerException {
         Jvm.safepoint();
 
-        if (this.isClosed())
+        if (this.isClosing())
             throw new InvalidEventHandlerException();
         if (actionThread == null)
             actionThread = Thread.currentThread();
         QueryCloseable c = sc;
-        if (c.isClosed())
+        if (c.isClosing())
             throw new InvalidEventHandlerException();
 
         if (tcpHandler == null)

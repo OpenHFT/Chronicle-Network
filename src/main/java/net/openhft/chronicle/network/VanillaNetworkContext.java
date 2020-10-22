@@ -47,11 +47,8 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
     }
 
     @Override
-    protected boolean performCloseInBackground() {
-
-        ChronicleSocketChannel socketChannel = this.socketChannel;
-        if (socketChannel != null) socketChannel.close();
-        return super.performCloseInBackground();
+    protected boolean shouldPerformCloseInBackground() {
+        return true;
     }
 
     @NotNull
@@ -161,7 +158,7 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
 
     @Override
     protected void performClose() {
-        Closeable.closeQuietly(wireOutPublisher, networkStatsListener);
+        Closeable.closeQuietly(socketChannel, wireOutPublisher, networkStatsListener);
     }
 
     @Override
