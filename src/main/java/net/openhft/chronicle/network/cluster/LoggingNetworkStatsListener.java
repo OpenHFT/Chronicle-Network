@@ -1,12 +1,11 @@
 /*
- * Copyright (c) 2016-2019 Chronicle Software Ltd
+ * Copyright (c) 2016-2020 chronicle.software
  */
 package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.NetworkStatsListener;
-import net.openhft.chronicle.network.VanillaNetworkContext;
 
 @SuppressWarnings("rawtypes")
 public enum LoggingNetworkStatsListener implements NetworkStatsListener {

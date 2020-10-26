@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 Chronicle Software
+ * Copyright 2016-2020 chronicle.software
  *
  * https://chronicle.software
  *
@@ -19,7 +19,6 @@ package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.io.AbstractCloseable;
-import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.VanillaNetworkContext;
 import net.openhft.chronicle.network.api.TcpHandler;
 import org.jetbrains.annotations.NotNull;
