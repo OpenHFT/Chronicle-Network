@@ -133,7 +133,7 @@ public enum TCPRegistry {
             ssc.bind(address);
         } catch (Exception e) {
             Jvm.warn().on(TCPRegistry.class, "Error when attempting to bind to address " + address, e);
-            Jvm.rethrow(e);
+            throw Jvm.rethrow(e);
         }
 
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.put(description, ssc);
