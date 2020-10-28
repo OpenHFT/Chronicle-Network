@@ -34,9 +34,7 @@ public class VanillaChronicleServerSocketChannel implements ChronicleServerSocke
         return ssc.isOpen();
     }
 
-
-
-    @Override
+@Override
     public ChronicleServerSocket socket() {
 
         return new ChronicleServerSocket() {

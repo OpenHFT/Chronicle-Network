@@ -29,8 +29,7 @@ import java.io.IOException;
 @FunctionalInterface
 public interface AcceptStrategy extends Marshallable {
 
-
-    AcceptStrategy ACCEPT_ALL = AcceptStrategies.ACCEPT_ALL;
+AcceptStrategy ACCEPT_ALL = AcceptStrategies.ACCEPT_ALL;
 
     /**
      * Determine whether to accept the incoming connection
