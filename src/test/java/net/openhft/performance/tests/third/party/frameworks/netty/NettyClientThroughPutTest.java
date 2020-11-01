@@ -45,8 +45,7 @@ public final class NettyClientThroughPutTest extends NetworkTestCommon {
 
     static final boolean SSL = System.getProperty("ssl") != null;
     static final String HOST = System.getProperty("host", "127.0.0.1");
-    static final int PORT = Integer.parseInt(System.getProperty("port", Integer.toString(EchoClientMain
-            .PORT)));
+    static final int PORT = Integer.getInteger("port", EchoClientMain.PORT);
 
     public static void main(String[] args) throws SSLException, InterruptedException {
         // Configure SSL.git
