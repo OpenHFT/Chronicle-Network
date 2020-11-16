@@ -21,6 +21,7 @@ import net.openhft.chronicle.core.Jvm;
 
 import java.util.Random;
 
+@Deprecated(/* to be removed in x.21*/)
 public enum WanSimulator {
     ;
     private static final int NET_BANDWIDTH = Integer.getInteger("wanMB", 0);
