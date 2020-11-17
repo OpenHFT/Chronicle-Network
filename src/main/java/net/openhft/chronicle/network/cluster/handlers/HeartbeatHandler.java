@@ -76,8 +76,8 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
     }
 
     public static WriteMarshallable heartbeatHandler(final long heartbeatTimeoutMs,
-                                                      final long heartbeatIntervalMs,
-                                                      final long cid) {
+                                                     final long heartbeatIntervalMs,
+                                                     final long cid) {
         return new WriteHeartbeatHandler(cid, heartbeatTimeoutMs, heartbeatIntervalMs);
     }
 
@@ -220,7 +220,12 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
                     connectionMonitor.onDisconnected(HeartbeatHandler.this.localIdentifier(),
                             HeartbeatHandler.this.remoteIdentifier(), HeartbeatHandler.this.nc().isAcceptor());
 
-                    HeartbeatHandler.this.nc().socketReconnector().run();
+                    final Runnable socketReconnector = HeartbeatHandler.this.nc().socketReconnector();
+                    if (socketReconnector == null)
+                        Jvm.warn().on(getClass(), "socketReconnector == null");
+                    else
+                        socketReconnector.run();
+
                     HeartbeatHandler.this.close();
 
                     throw new InvalidEventHandlerException("closed");
