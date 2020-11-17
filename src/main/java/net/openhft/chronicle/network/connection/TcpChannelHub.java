@@ -713,7 +713,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
         assert outBytesLock.isHeldByCurrentThread();
 
-        long start = Time.currentTimeMillis();
+        long start = System.currentTimeMillis();
         assert outWire.startUse();
         try {
             @NotNull final Bytes<?> bytes = outWire.bytes();
@@ -751,7 +751,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
                     // reset the timer if we wrote something.
                     if (prevRemaining != outBuffer.remaining()) {
-                        start = Time.currentTimeMillis();
+                        start = System.currentTimeMillis();
                         isOutBufferFull = false;
                         //  if (Jvm.isDebug() && outBuffer.remaining() == 0)
                         //    System.out.println("W: " + (prevRemaining - outBuffer
@@ -767,7 +767,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                                     " remaining.");
                         isOutBufferFull = true;
 
-                        long writeTime = Time.currentTimeMillis() - start;
+                        long writeTime = System.currentTimeMillis() - start;
 
                         // the reason that this is so large is that results from a bootstrap can
                         // take a very long time to send all the data from the server to the client
@@ -1028,13 +1028,13 @@ public final class TcpChannelHub extends AbstractCloseable {
      * blocks until there is a connection
      */
     public void checkConnection() {
-        long start = Time.currentTimeMillis();
+        long start = System.currentTimeMillis();
 
         while (clientChannel == null) {
 
             tcpSocketConsumer.checkNotShuttingDown();
 
-            if (start + timeoutMs > Time.currentTimeMillis())
+            if (start + timeoutMs > System.currentTimeMillis())
                 try {
                     condition.await(1, TimeUnit.MILLISECONDS);
 
@@ -1093,7 +1093,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         private final Bytes serverHeartBeatHandler = Bytes.elasticByteBuffer();
         private final TidReader tidReader = new TidReader();
 
-        private volatile long lastTimeMessageReceivedOrSent = Time.currentTimeMillis();
+        private volatile long lastTimeMessageReceivedOrSent = System.currentTimeMillis();
         private volatile boolean isShutdown;
         @Nullable
         private volatile Throwable shutdownHere = null;
@@ -1164,7 +1164,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         Wire syncBlockingReadSocket(final long timeoutTimeMs, final long tid)
                 throws TimeoutException, ConnectionDroppedException {
 
-            final long beginMs = Time.currentTimeMillis();
+            final long beginMs = System.currentTimeMillis();
             final Wire wire = syncInWireThreadLocal.get();
             IOTools.unmonitor(wire.bytes());
             wire.clear();
@@ -1206,7 +1206,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
             logToStandardOutMessageReceived(wire);
 
-            if (Time.currentTimeMillis() - beginMs >= timeoutTimeMs) {
+            if (System.currentTimeMillis() - beginMs >= timeoutTimeMs) {
                 throw new TimeoutException("timeoutTimeMs=" + timeoutTimeMs);
             }
 
@@ -1527,11 +1527,11 @@ public final class TcpChannelHub extends AbstractCloseable {
                     // listen to it
 
                     if (startTime == 0)
-                        startTime = Time.currentTimeMillis();
+                        startTime = System.currentTimeMillis();
                     else
                         Jvm.pause(1);
 
-                    if (Time.currentTimeMillis() - startTime > TIME_OUT_MS) {
+                    if (System.currentTimeMillis() - startTime > TIME_OUT_MS) {
 
                         blockingRead(inWire, messageSize);
                         logToStandardOutMessageReceived(inWire);
@@ -1733,7 +1733,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         }
 
         private void onMessageReceived() {
-            lastTimeMessageReceivedOrSent = Time.currentTimeMillis();
+            lastTimeMessageReceivedOrSent = System.currentTimeMillis();
         }
 
         /**
@@ -1757,8 +1757,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                     @Override
                     public void onSubscribe(@NotNull WireOut wireOut) {
                         LOG.debug("sending heartbeat");
-                        wireOut.writeEventName(EventId.heartbeat).int64(Time
-                                .currentTimeMillis());
+                        wireOut.writeEventName(EventId.heartbeat).int64(System.currentTimeMillis());
                     }
 
                     @Override
@@ -1814,13 +1813,13 @@ public final class TcpChannelHub extends AbstractCloseable {
 
             // a heartbeat only gets sent out if we have not received any data in the last
             // HEATBEAT_PING_PERIOD milliseconds
-            final long currentTime = Time.currentTimeMillis();
+            final long currentTime = System.currentTimeMillis();
             final long millisecondsSinceLastMessageReceived = currentTime - lastTimeMessageReceivedOrSent;
             final long millisecondsSinceLastHeatbeatSend = currentTime - lastheartbeatSentTime;
 
             if (millisecondsSinceLastMessageReceived >= HEATBEAT_PING_PERIOD &&
                     millisecondsSinceLastHeatbeatSend >= HEATBEAT_PING_PERIOD) {
-                lastheartbeatSentTime = Time.currentTimeMillis();
+                lastheartbeatSentTime = System.currentTimeMillis();
                 sendHeartbeat();
             }
 

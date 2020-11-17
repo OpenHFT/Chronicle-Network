@@ -269,7 +269,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
 
     protected <T> T proxyReturnWireConsumer(@NotNull final WireKey eventId,
                                             @NotNull final Function<ValueIn, T> consumer) {
-        final long startTime = Time.currentTimeMillis();
+        final long startTime = System.currentTimeMillis();
         return attempt(() -> readWire(sendEvent(startTime, eventId, null), startTime, CoreFields
                 .reply, consumer));
     }
@@ -278,7 +278,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
                                                  @NotNull final WireKey reply,
                                                  @Nullable final WriteValue consumerOut,
                                                  @NotNull final Function<ValueIn, T> consumerIn) {
-        final long startTime = Time.currentTimeMillis();
+        final long startTime = System.currentTimeMillis();
         return attempt(() -> readWire(sendEvent(startTime, eventId, consumerOut), startTime,
                 reply, consumerIn));
     }
@@ -286,7 +286,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
     @SuppressWarnings("SameParameterValue")
     protected void proxyReturnVoid(@NotNull final WireKey eventId,
                                    @Nullable final WriteValue consumer) {
-        final long startTime = Time.currentTimeMillis();
+        final long startTime = System.currentTimeMillis();
 
         attempt(() -> readWire(sendEvent(startTime, eventId, consumer), startTime, CoreFields
                 .reply, v -> v.marshallable(ReadMarshallable.DISCARD)));
@@ -512,7 +512,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
     protected boolean proxyReturnBooleanWithArgs(
             @NotNull final E eventId,
             @NotNull final Object... args) {
-        final long startTime = Time.currentTimeMillis();
+        final long startTime = System.currentTimeMillis();
         return attempt(() -> readBoolean(
                 sendEvent(startTime, eventId, toParameters(eventId, args)),
                 startTime));
@@ -522,7 +522,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
     protected long proxyReturnLongWithArgs(
             @NotNull final E eventId,
             @NotNull final Object... args) {
-        final long startTime = Time.currentTimeMillis();
+        final long startTime = System.currentTimeMillis();
         return attempt(() -> readLong(
                 sendEvent(startTime, eventId, toParameters(eventId, args)),
                 startTime));
@@ -531,14 +531,14 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
     protected boolean proxyReturnBooleanWithSequence(
             @NotNull final E eventId,
             @NotNull final Collection sequence) {
-        final long startTime = Time.currentTimeMillis();
+        final long startTime = System.currentTimeMillis();
         return attempt(() -> readBoolean(sendEvent(startTime, eventId, out ->
                 sequence.forEach(out::object)), startTime));
     }
 
     @SuppressWarnings("SameParameterValue")
     protected boolean proxyReturnBoolean(@NotNull final WireKey eventId) {
-        final long startTime = Time.currentTimeMillis();
+        final long startTime = System.currentTimeMillis();
         return attempt(() -> readBoolean(sendEvent(startTime, eventId, null), startTime));
     }
 
