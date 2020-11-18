@@ -118,6 +118,9 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
             this.eventLoop = eventLoop;
             this.address = address;
             this.retryInterval = retryInterval;
+            // add an initial delay to reduce the possibility of successfull connecting to a process which is shutting down
+            // this does not eliminate the issue, but is rather a tactical work around.
+            nextPeriod.set(System.currentTimeMillis() + 500);
         }
 
         @NotNull
@@ -157,11 +160,15 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
                 if (sc == null)
                     return false;
 
+                if (!sc.isOpen())
+                    // this can happen if the acceptor is in the process of shutting down
+                    return false;
+
                 nc.socketChannel(sc);
                 nc.isAcceptor(false);
                 notifyHostPort(sc, nc.networkStatsListener());
                 if (!nc.socketChannel().isOpen())
-                    throw new InvalidEventHandlerException();
+                    return false;
                 eventHandler = tcpHandlerSupplier.apply(nc);
 
             } catch (AlreadyConnectedException e) {

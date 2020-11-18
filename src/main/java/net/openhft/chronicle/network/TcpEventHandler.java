@@ -278,6 +278,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         } else {
             // read == -1, socketChannel has reached end-of-stream
             close();
+
             throw new InvalidEventHandlerException("socket closed " + sc);
         }
         return busy;
