@@ -103,7 +103,7 @@ abstract public class Cluster<T extends ClusteredNetworkContext<T>, C extends Cl
 
     @Override
     protected void performClose() {
-        Closeable.closeQuietly(hostDetails(), context);
+        Closeable.closeQuietly(context, hostDetails());
     }
 
     public void start(int localHostId) {

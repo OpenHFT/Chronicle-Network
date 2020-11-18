@@ -296,11 +296,11 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
 
     protected void performClose() {
         Closeable.closeQuietly(
+                acceptorEventHandler,
                 wireOutPublisherFactory,
                 networkContextFactory,
                 networkStatsListenerFactory,
                 eventLoop,
-                acceptorEventHandler,
                 acceptorLoop);
     }
 

@@ -166,9 +166,12 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
 
                 nc.socketChannel(sc);
                 nc.isAcceptor(false);
-                notifyHostPort(sc, nc.networkStatsListener());
+
                 if (!nc.socketChannel().isOpen())
                     return false;
+
+                notifyHostPort(sc, nc.networkStatsListener());
+
                 eventHandler = tcpHandlerSupplier.apply(nc);
 
             } catch (AlreadyConnectedException e) {
