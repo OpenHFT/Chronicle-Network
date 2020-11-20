@@ -42,6 +42,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.util.EnumSet.of;
+import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.core.threads.HandlerPriority.*;
 import static net.openhft.chronicle.threads.EventGroup.CONC_THREADS;
 
@@ -295,7 +296,8 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     }
 
     protected void performClose() {
-        Closeable.closeQuietly(
+        closeQuietly(
+                hostConnectors.values(),
                 acceptorEventHandler,
                 wireOutPublisherFactory,
                 networkContextFactory,

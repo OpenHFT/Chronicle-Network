@@ -44,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
+import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
 public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseable {
@@ -62,7 +63,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
     }
 
     private static void closeSocket(Closeable socketChannel) {
-        Closeable.closeQuietly(socketChannel);
+        closeQuietly(socketChannel);
     }
 
     public void connect(@NotNull final String remoteHostPort,
@@ -70,6 +71,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
                         @NotNull T nc,
                         final long retryInterval) {
         throwExceptionIfClosed();
+        eventLoop.throwExceptionIfClosed();
 
         final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
 
@@ -84,7 +86,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
 
     @Override
     protected void performClose() {
-        Closeable.closeQuietly(closeables);
+        closeQuietly(closeables);
     }
 
     @PackageLocal
@@ -183,7 +185,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
             }
             if (isClosed() || eventLoop.isClosed() || Thread.currentThread().isInterrupted())
                 // we have died.
-                Closeable.closeQuietly(eventHandler);
+                closeQuietly(eventHandler);
             else {
                 eventLoop.addHandler(eventHandler);
                 closeables.add(() -> closeSocket(sc));

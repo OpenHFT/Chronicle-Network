@@ -30,16 +30,18 @@ import net.openhft.chronicle.wire.Wires;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static net.openhft.chronicle.network.connection.CoreFields.csp;
 
 public abstract class CspTcpHandler<T extends NetworkContext<T>> extends WireTcpHandler<T> {
 
-    protected final List<WritableSubHandler<T>> writers = new ArrayList<>();
+    // because close() is called in another thread this must be a concurrent structure
+    protected final List<WritableSubHandler<T>> writers = new CopyOnWriteArrayList<>();
+
     @NotNull
     private final Map<Long, SubHandler<T>> cidToHandle = new HashMap<>();
     private final Map<Object, SubHandler<T>> registry = new HashMap<>();
