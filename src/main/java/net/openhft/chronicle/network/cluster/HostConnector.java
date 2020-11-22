@@ -31,6 +31,7 @@ import java.io.Closeable;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import static net.openhft.chronicle.core.io.Closeable.*;
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
 public class HostConnector<T extends ClusteredNetworkContext<T>, C extends ClusterContext<C, T>> implements Closeable {
@@ -101,6 +102,8 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
 
         if (eventLoop.isClosed())
             return;
+
+        closeQuietly(nc);
 
         // we will send the initial header as text wire, then the rest will be sent in
         // what ever wire is configured
