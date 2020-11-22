@@ -80,9 +80,8 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
             closeQuietly(socketChannel, socketChannel.socket());
         }
 
-        if (wp != null)
-            wp.close();
 
+        closeQuietly(wp,nc);
     }
 
     public ConnectionManager<T> connectionManager() {
