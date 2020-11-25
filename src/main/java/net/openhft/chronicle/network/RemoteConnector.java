@@ -120,7 +120,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
             this.eventLoop = eventLoop;
             this.address = address;
             this.retryInterval = retryInterval;
-            // add an initial delay to reduce the possibility of successfull connecting to a process which is shutting down
+            // add an initial delay to reduce the possibility of successful connecting to a process which is shutting down
             // this does not eliminate the issue, but is rather a tactical work around.
             nextPeriod.set(System.currentTimeMillis() + 500);
         }
