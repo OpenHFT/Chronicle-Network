@@ -278,6 +278,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         } else {
             // read == -1, socketChannel has reached end-of-stream
             close();
+            if (!nc.isAcceptor())
+                nc.socketReconnector().run();
 
             throw new InvalidEventHandlerException("socket closed " + sc);
         }

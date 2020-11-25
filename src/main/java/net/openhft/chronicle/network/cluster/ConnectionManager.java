@@ -51,7 +51,7 @@ public class ConnectionManager<T extends NetworkContext<T>> {
             }
         });
 
-        if (!isConnected && !nc.isAcceptor()) nc.socketReconnector().run();
+
     }
 
     @FunctionalInterface
