@@ -623,7 +623,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
                     // no point grabbing stack trace as thread has moved on
 
-                    Jvm.warn().on(getClass(), messageBuilder.toString());
+                    Jvm.perf().on(getClass(), messageBuilder.toString());
                 }
             }
 
