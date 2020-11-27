@@ -73,14 +73,19 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
     @Override
     public synchronized void close() {
         WireOutPublisher wp = wireOutPublisher.getAndSet(null);
+        closeQuietly(wp);
 
-        ChronicleSocketChannel socketChannel = nc.socketChannel();
+        final T nc = this.nc;
+        if (nc == null)
+            return;
+
+        ChronicleSocketChannel socketChannel = this.nc.socketChannel();
         if (socketChannel != null) {
             closeQuietly(socketChannel, socketChannel.socket());
         }
 
-        closeQuietly(wp, nc);
-        nc = null;
+        closeQuietly(this.nc);
+        this.nc = null;
     }
 
     public ConnectionManager<T> connectionManager() {
