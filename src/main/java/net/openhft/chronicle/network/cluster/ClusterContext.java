@@ -78,9 +78,10 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     /**
      * Connect to the host specified by the provided {@link HostDetails}. Only attempt connection if the remote host has
      * lower host ID than local - this is required to avoid bidirectional connection establishment
+     *
      * @param hd remote host details
      */
-    public void connect(HostDetails hd) {
+    public synchronized void connect(HostDetails hd) {
 
         final ConnectionManager<T> connectionManager = new ConnectionManager<>();
         connManagers.put(hd.hostId(), connectionManager);
@@ -295,7 +296,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
         performClose();
     }
 
-    protected void performClose() {
+    protected synchronized void performClose() {
         closeQuietly(
                 hostConnectors.values(),
                 acceptorEventHandler,
