@@ -80,6 +80,7 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
         }
 
         closeQuietly(wp, nc);
+        nc = null;
     }
 
     public ConnectionManager<T> connectionManager() {
