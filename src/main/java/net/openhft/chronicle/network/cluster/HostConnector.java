@@ -31,7 +31,6 @@ import java.io.Closeable;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-import static net.openhft.chronicle.core.io.Closeable.*;
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
 public class HostConnector<T extends ClusteredNetworkContext<T>, C extends ClusterContext<C, T>> implements Closeable {
@@ -49,7 +48,7 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
     private final C clusterContext;
     private final Function<C, NetworkStatsListener<T>> networkStatsListenerFactory;
     private final int remoteId;
-    private T nc;
+    private volatile T nc;
     @NotNull
     private final AtomicReference<WireOutPublisher> wireOutPublisher = new AtomicReference<>();
     @NotNull
@@ -80,8 +79,7 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
             closeQuietly(socketChannel, socketChannel.socket());
         }
 
-
-        closeQuietly(wp,nc);
+        closeQuietly(wp, nc);
     }
 
     public ConnectionManager<T> connectionManager() {
