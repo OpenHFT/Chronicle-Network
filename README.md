@@ -3,6 +3,9 @@ Chronicle-Network
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/net.openhft/chronicle-network/badge.svg)](https://maven-badges.herokuapp.com/maven-central/net.openhft/chronicle-network)
 
+[![Maven Central](image:https://javadoc.io/badge2/net.openhft/chronicle-network/javadoc.svg](https://www.javadoc.io/doc/net.openhft/chronicle-network/latest/index.html")
+
+
 # About
 A High Performance Network library
 
