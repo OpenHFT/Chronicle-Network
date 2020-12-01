@@ -83,7 +83,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
      *
      * @param hd remote host details
      */
-    public synchronized void connect(HostDetails hd) {
+    public void connect(HostDetails hd) {
 
         final ConnectionManager<T> connectionManager = new ConnectionManager<>();
         connManagers.put(hd.hostId(), connectionManager);
