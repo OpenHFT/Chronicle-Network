@@ -52,7 +52,8 @@ abstract public class Cluster<T extends ClusteredNetworkContext<T>, C extends Cl
     }
 
     @Override
-    public void readMarshallable(@NotNull WireIn wire) throws IllegalStateException {
+    // synchronized guarding hostDetails
+    public synchronized void readMarshallable(@NotNull WireIn wire) throws IllegalStateException {
         hostDetails.clear();
 
         if (wire.isEmpty())
@@ -67,14 +68,16 @@ abstract public class Cluster<T extends ClusteredNetworkContext<T>, C extends Cl
                 continue;
             }
 
+
             valueIn.marshallable(details -> {
                 @NotNull final HostDetails hd = new HostDetails();
                 hd.readMarshallable(details);
                 hostDetails.put(sb.toString(), hd);
             });
-
         }
+
     }
+
 
     @Override
     public void writeMarshallable(@NotNull WireOut wire) {
@@ -102,11 +105,13 @@ abstract public class Cluster<T extends ClusteredNetworkContext<T>, C extends Cl
     }
 
     @Override
-    protected void performClose() {
+    // synchronized guarding hostDetails
+    protected synchronized void performClose() {
         Closeable.closeQuietly(context, hostDetails());
     }
 
-    public void start(int localHostId) {
+    // synchronized guarding hostDetails
+    public synchronized void start(int localHostId) {
         final Optional<HostDetails> acceptOn = hostDetails.values().stream().filter(hd -> hd.hostId() == localHostId).findAny();
 
         if (!acceptOn.isPresent())
