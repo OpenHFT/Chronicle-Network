@@ -79,12 +79,12 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
         if (nc == null)
             return;
 
-        ChronicleSocketChannel socketChannel = this.nc.socketChannel();
+        ChronicleSocketChannel socketChannel = nc.socketChannel();
         if (socketChannel != null) {
             closeQuietly(socketChannel, socketChannel.socket());
         }
 
-        closeQuietly(this.nc);
+        closeQuietly(nc);
         this.nc = null;
     }
 
