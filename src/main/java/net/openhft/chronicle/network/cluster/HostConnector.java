@@ -31,15 +31,9 @@ import java.io.Closeable;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-import static java.io.Closeable.*;
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
 public class HostConnector<T extends ClusteredNetworkContext<T>, C extends ClusterContext<C, T>> implements Closeable {
-
-    interface ClosableRunnable extends  Runnable, net.openhft.chronicle.core.io.Closeable {
-
-    }
-
     @NotNull
     private final ConnectionManager<T> connectionManager;
 
@@ -120,19 +114,7 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
                 .wireOutPublisher(wireOutPublisher)
                 .isAcceptor(false)
                 .heartbeatTimeoutMs(clusterContext.heartbeatTimeoutMs() * 2)
-                .socketReconnector(new ClosableRunnable(){
-                    @Override
-                    public void run() {
-                        close();
-                        if (!eventLoop.isClosing())
-                            connect();
-                    }
-
-                    @Override
-                    public void close() {
-                         closeQuietly(HostConnector.this.close());
-                    }
-                })
+                .socketReconnector(this::reconnect)
                 .serverThreadingStrategy(clusterContext.serverThreadingStrategy())
                 .wireType(this.wireType);
 
@@ -155,4 +137,9 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
         remoteConnector.connect(connectUri, eventLoop, nc, clusterContext.retryInterval());
     }
 
+    synchronized void reconnect() {
+        close();
+        if (!eventLoop.isClosing())
+            connect();
+    }
 }
