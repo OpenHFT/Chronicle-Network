@@ -61,7 +61,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     private final transient TIntObjectMap<HostConnector<T, C>> hostConnectors = new TIntObjectHashMap<>();
     private final transient TIntObjectMap<ConnectionManager<T>> connManagers = new TIntObjectHashMap<>();
     private transient boolean closed = false;
-    private final List<java.io.Closeable> closeables = new CopyOnWriteArrayList<>();
+    private final transient List<java.io.Closeable> closeables = new CopyOnWriteArrayList<>();
     private Function<C, T> networkContextFactory;
     private long heartbeatTimeoutMs = 40_000;
     private long heartbeatIntervalMs = 20_000;
