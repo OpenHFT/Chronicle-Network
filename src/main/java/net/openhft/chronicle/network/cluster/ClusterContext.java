@@ -101,6 +101,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
 
     /**
      * Start accepting incoming connections
+     *
      * @param hd local host details to accept on
      */
     public void accept(HostDetails hd) {
@@ -296,9 +297,14 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
         performClose();
     }
 
-    protected synchronized void performClose() {
+    protected void performClose() {
+
+        synchronized (this) {
+            closeQuietly(hostConnectors.values());
+        }
+
         closeQuietly(
-                hostConnectors.values(),
+
                 acceptorEventHandler,
                 wireOutPublisherFactory,
                 networkContextFactory,
