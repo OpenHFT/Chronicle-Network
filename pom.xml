@@ -14,7 +14,8 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -22,7 +23,7 @@
         <groupId>net.openhft</groupId>
         <artifactId>java-parent-pom</artifactId>
         <version>1.1.24</version>
-        <relativePath />
+        <relativePath/>
     </parent>
 
     <artifactId>chronicle-network</artifactId>
@@ -74,7 +75,7 @@
             <groupId>net.openhft</groupId>
             <artifactId>chronicle-wire</artifactId>
         </dependency>
-        
+
         <dependency>
             <groupId>net.sf.trove4j</groupId>
             <artifactId>core</artifactId>
@@ -129,17 +130,17 @@
 
     </dependencies>
 
-<repositories>
-    <repository>
-        <id>chronicle-enterprise-snapshots</id>
-        <name>Snapshot Repository</name>
-        <url>
-            https://nexus.chronicle.software/content/repositories/snapshots
-        </url>
-        <snapshots>
-            <enabled>true</enabled>
-        </snapshots>
-    </repository>
+    <repositories>
+        <repository>
+            <id>chronicle-enterprise-snapshots</id>
+            <name>Snapshot Repository</name>
+            <url>
+                https://nexus.chronicle.software/content/repositories/snapshots
+            </url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
         <repository>
             <id>chronicle-enterprise-release</id>
             <url>
@@ -153,7 +154,24 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>net.openhft</groupId>
+                <artifactId>binary-compatibility-enforcer-plugin</artifactId>
+                <version>1.0.3-SNAPSHOT</version>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>enforcer</goal>
+                        </goals>
+                        <configuration>
+                            <referenceVersion>2.20.0</referenceVersion>
 
+                            <!--<referenceVersion>2.20.105</referenceVersion>-->
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-scm-publish-plugin</artifactId>
