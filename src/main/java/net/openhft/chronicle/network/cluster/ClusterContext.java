@@ -38,6 +38,8 @@ import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -59,7 +61,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     private final transient TIntObjectMap<HostConnector<T, C>> hostConnectors = new TIntObjectHashMap<>();
     private final transient TIntObjectMap<ConnectionManager<T>> connManagers = new TIntObjectHashMap<>();
     private transient boolean closed = false;
-
+    private final List<java.io.Closeable> closeables = new CopyOnWriteArrayList<>();
     private Function<C, T> networkContextFactory;
     private long heartbeatTimeoutMs = 40_000;
     private long heartbeatIntervalMs = 20_000;
@@ -93,7 +95,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
                 new RemoteConnector<>(tcpEventHandlerFactory()),
                 hd.hostId(),
                 hd.connectUri());
-
+        closeables.add(hostConnector);
         hostConnectors.put(hd.hostId(), hostConnector);
 
         hostConnector.connect();
@@ -298,13 +300,8 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     }
 
     protected void performClose() {
-
-        synchronized (this) {
-            closeQuietly(hostConnectors.values());
-        }
-
         closeQuietly(
-
+                closeables,
                 acceptorEventHandler,
                 wireOutPublisherFactory,
                 networkContextFactory,
