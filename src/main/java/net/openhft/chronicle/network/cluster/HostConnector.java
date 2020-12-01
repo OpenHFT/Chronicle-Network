@@ -71,7 +71,7 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
     }
 
     @Override
-    public synchronized void close() {
+    public void close() {
         WireOutPublisher wp = wireOutPublisher.getAndSet(null);
         closeQuietly(wp);
 
