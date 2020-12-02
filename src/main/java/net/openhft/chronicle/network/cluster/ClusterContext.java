@@ -51,7 +51,8 @@ import static net.openhft.chronicle.threads.EventGroup.CONC_THREADS;
 public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends ClusteredNetworkContext<T>>
         extends SelfDescribingMarshallable
         implements Closeable {
-    public static final PauserMode DEFAULT_PAUSER_MODE = PauserMode.busy;
+    // todo should be final
+    public static PauserMode DEFAULT_PAUSER_MODE = PauserMode.busy;
     private transient Function<WireType, WireOutPublisher> wireOutPublisherFactory;
     private transient Function<C, NetworkStatsListener<T>> networkStatsListenerFactory;
     private transient EventLoop eventLoop;
