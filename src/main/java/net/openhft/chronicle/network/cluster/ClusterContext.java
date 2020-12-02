@@ -51,7 +51,7 @@ import static net.openhft.chronicle.threads.EventGroup.CONC_THREADS;
 public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends ClusteredNetworkContext<T>>
         extends SelfDescribingMarshallable
         implements Closeable {
-    public static PauserMode DEFAULT_PAUSER_MODE = PauserMode.busy;
+    public static final PauserMode DEFAULT_PAUSER_MODE = PauserMode.busy;
     private transient Function<WireType, WireOutPublisher> wireOutPublisherFactory;
     private transient Function<C, NetworkStatsListener<T>> networkStatsListenerFactory;
     private transient EventLoop eventLoop;
@@ -96,6 +96,10 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
                 hd.hostId(),
                 hd.connectUri());
         closeables.add(hostConnector);
+        if (isClosed()) {
+            Closeable.closeQuietly(hostConnector);
+            return;
+        }
         hostConnectors.put(hd.hostId(), hostConnector);
 
         hostConnector.connect();
@@ -128,14 +132,20 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
      * @return event loop
      */
     @NotNull
-    public synchronized EventLoop eventLoop() {
+    public EventLoop eventLoop() {
+        final EventLoop el = this.eventLoop;
+        if (el != null)
+            return el;
+        return synchronizedEventLoop();
+    }
 
-        if (eventLoop == null) {
-            eventLoop = new EventGroup(true, pauserSupplier.get(), null, affinityCPU, clusterNamePrefix(), CONC_THREADS,
-                    of(MEDIUM, TIMER, BLOCKING, REPLICATION));
-            this.eventLoop(eventLoop);
-        }
-        return eventLoop;
+    private synchronized EventLoop synchronizedEventLoop() {
+        final EventLoop el = this.eventLoop;
+        if (el != null)
+            return el;
+
+        return this.eventLoop = new EventGroup(true, pauserSupplier.get(), null, affinityCPU, clusterNamePrefix(), CONC_THREADS,
+                of(MEDIUM, TIMER, BLOCKING, REPLICATION));
     }
 
     @NotNull

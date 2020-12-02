@@ -26,9 +26,11 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
+import static java.util.Collections.*;
+
 public class ConnectionManager<T extends NetworkContext<T>> {
 
-    private final Set<ConnectionListener<T>> connectionListeners = Collections.newSetFromMap(new IdentityHashMap<>());
+    private final Set<ConnectionListener<T>> connectionListeners = newSetFromMap(new IdentityHashMap<>());
 
     @NotNull
     private final IdentityHashMap<T, AtomicBoolean> isConnected = new IdentityHashMap<>();

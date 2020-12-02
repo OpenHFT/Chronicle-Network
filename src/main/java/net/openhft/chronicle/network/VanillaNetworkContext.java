@@ -27,6 +27,8 @@ import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static net.openhft.chronicle.core.io.Closeable.*;
+
 public class VanillaNetworkContext<T extends NetworkContext<T>> extends AbstractCloseable implements NetworkContext<T> {
 
     private ChronicleSocketChannel socketChannel;
@@ -158,7 +160,7 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
 
     @Override
     protected void performClose() {
-        Closeable.closeQuietly(socketChannel, wireOutPublisher, networkStatsListener);
+        closeQuietly(socketChannel, wireOutPublisher, networkStatsListener);
     }
 
     @Override
@@ -170,6 +172,9 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
     @NotNull
     public T socketReconnector(Runnable socketReconnector) {
         throwExceptionIfClosedInSetter();
+
+        // if already set, close it first
+        closeQuietly(this.socketReconnector);
 
         this.socketReconnector = socketReconnector;
         return (T) this;

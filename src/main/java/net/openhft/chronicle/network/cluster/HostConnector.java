@@ -34,6 +34,10 @@ import java.util.function.Function;
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
 public class HostConnector<T extends ClusteredNetworkContext<T>, C extends ClusterContext<C, T>> implements Closeable {
+
+    private interface ClosableRunnable extends Runnable, Closeable {
+    }
+
     @NotNull
     private final ConnectionManager<T> connectionManager;
 
@@ -70,8 +74,10 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
         this.eventLoop = clusterContext.eventLoop();
     }
 
+
     @Override
-    public void close() {
+    public synchronized void close() {
+
         WireOutPublisher wp = wireOutPublisher.getAndSet(null);
         closeQuietly(wp);
 
@@ -85,14 +91,15 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
         }
 
         closeQuietly(nc);
-        this.nc = null;
     }
+
 
     public ConnectionManager<T> connectionManager() {
         return connectionManager;
     }
 
     public synchronized void connect() {
+
         if (connectUri == null || connectUri.isEmpty())
             return;
 
@@ -114,7 +121,19 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
                 .wireOutPublisher(wireOutPublisher)
                 .isAcceptor(false)
                 .heartbeatTimeoutMs(clusterContext.heartbeatTimeoutMs() * 2)
-                .socketReconnector(this::reconnect)
+                .socketReconnector(new ClosableRunnable() {
+                    @Override
+                    public void run() {
+                        close();
+                        if (!eventLoop.isClosing())
+                            connect();
+                    }
+
+                    @Override
+                    public void close() {
+                        HostConnector.this.close();
+                    }
+                })
                 .serverThreadingStrategy(clusterContext.serverThreadingStrategy())
                 .wireType(this.wireType);
 
@@ -137,9 +156,4 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
         remoteConnector.connect(connectUri, eventLoop, nc, clusterContext.retryInterval());
     }
 
-    synchronized void reconnect() {
-        close();
-        if (!eventLoop.isClosing())
-            connect();
-    }
 }

@@ -19,7 +19,11 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ClosedChannelException;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
+import static net.openhft.chronicle.core.io.Closeable.*;
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
@@ -30,7 +34,7 @@ public class ClusterAcceptorEventHandler<C extends ClusterContext<C, T>, T exten
     @NotNull
     private final C context;
     private final String hostPort;
-
+    private final Collection<Closeable> closeables = new CopyOnWriteArrayList<>();
     private EventLoop eventLoop;
 
     public ClusterAcceptorEventHandler(@NotNull final String hostPort,
@@ -56,16 +60,21 @@ public class ClusterAcceptorEventHandler<C extends ClusterContext<C, T>, T exten
 
             if (sc != null) {
                 if (isClosed() || eventLoop.isClosed()) {
-                    Closeable.closeQuietly(sc);
+                    closeQuietly(sc);
                     throw new InvalidEventHandlerException("closed");
                 }
                 final T nc = context.networkContextFactory().apply(context);
+                closeables.add(nc);
                 nc.socketChannel(sc);
                 nc.isAcceptor(true);
                 NetworkStatsListener<T> nl = nc.networkStatsListener();
                 notifyHostPort(sc, nl);
                 TcpEventHandler<T> apply = context.tcpEventHandlerFactory().apply(nc);
-                eventLoop.addHandler(apply);
+
+                if (isClosed())
+                    closeQuietly(nc);
+                else
+                    eventLoop.addHandler(apply);
             }
         } catch (AsynchronousCloseException e) {
             closeSocket();
@@ -98,6 +107,7 @@ public class ClusterAcceptorEventHandler<C extends ClusterContext<C, T>, T exten
 
     @Override
     protected void performClose() {
+        closeQuietly(closeables);
         closeSocket();
     }
 }

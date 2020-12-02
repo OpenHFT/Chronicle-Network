@@ -467,7 +467,10 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
     @Override
     protected void performClose() {
-        closeQuietly(tcpHandler, this.nc.networkStatsListener(), sc, nc);
+        final T nc = this.nc;
+        if (nc != null)
+            closeQuietly(nc, nc.socketReconnector(), nc.networkStatsListener());
+        closeQuietly(tcpHandler, sc);
     }
 
     @PackageLocal
