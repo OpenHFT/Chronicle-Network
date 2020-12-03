@@ -26,7 +26,6 @@ import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.StackTrace;
 import net.openhft.chronicle.core.io.*;
 import net.openhft.chronicle.core.threads.*;
-import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.network.ConnectionStrategy;
 import net.openhft.chronicle.network.WanSimulator;
 import net.openhft.chronicle.network.api.session.SessionDetails;
@@ -857,7 +856,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         return outWire;
     }
 
-    @Deprecated
+    @Deprecated(/* to be removed in x.22 */)
     public boolean isOutBytesLocked() {
         throwExceptionIfClosed();
 
