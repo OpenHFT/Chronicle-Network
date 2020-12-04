@@ -92,7 +92,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     private volatile TcpHandler<T> tcpHandler;
 
     // allow for 20 seconds of slowness at startup
-    private long lastTickReadTime = System.currentTimeMillis() + 20_000;
+    private long lastTickReadTime;
     private Thread actionThread;
 
     public TcpEventHandler(@NotNull final T nc) {
@@ -108,6 +108,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         this.scToString = sc.toString();
         this.nc = nc;
         this.bias = bias.get();
+        lastTickReadTime = nc.timeProvider().currentTimeMillis() + 20_000;
         try {
             sc.configureBlocking(false);
             ChronicleSocket sock = sc.socket();
@@ -251,7 +252,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         if (read > 0) {
             WanSimulator.dataRead(read);
             tcpHandler.onReadTime(System.nanoTime(), inBB, start, inBB.position());
-            lastTickReadTime = System.currentTimeMillis();
+            lastTickReadTime = nc.timeProvider().currentTimeMillis();
             readLog.log(inBB, start, inBB.position());
             invokeHandler();
             busy = true;
@@ -262,7 +263,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
             // check for timeout only here - in other branches we either just read something or are about to close socket anyway
             if (nc.heartbeatTimeoutMs() > 0) {
-                final long tickTime = System.currentTimeMillis();
+                final long tickTime = nc.timeProvider().currentTimeMillis();
                 if (tickTime > lastTickReadTime + nc.heartbeatTimeoutMs()) {
                     final HeartbeatListener heartbeatListener = nc.heartbeatListener();
                     if (heartbeatListener != null && heartbeatListener.onMissedHeartbeat()) {
@@ -630,7 +631,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                 }
             }
 
-            final long now = System.currentTimeMillis();
+            final long now = nc.timeProvider().currentTimeMillis();
             if (now > lastMonitor + (MONITOR_POLL_EVERY_SEC * 1000)) {
                 final NetworkStatsListener<T> networkStatsListener = nc.networkStatsListener();
                 if (networkStatsListener != null && !networkStatsListener.isClosed()) {

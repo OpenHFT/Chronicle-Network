@@ -20,6 +20,8 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.bytes.MappedUniqueMicroTimeProvider;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.time.SystemTimeProvider;
+import net.openhft.chronicle.core.time.TimeProvider;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.connection.ConnectionListeners;
@@ -94,6 +96,10 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
 
     default void addConnectionListener(ConnectionListener connectionListener) {
         // do nothing
+    }
+
+    default TimeProvider timeProvider() {
+        return SystemTimeProvider.INSTANCE;
     }
 }
 
