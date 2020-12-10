@@ -104,7 +104,7 @@ public final class NettyClientLatencyTest extends NetworkTestCommon {
             startTime = System.nanoTime();
             ctx.writeAndFlush(firstMessage);
 
-            System.out.print("Running latency test ( for about 25 seconds ) ");
+           // System.out.print("Running latency test ( for about 25 seconds ) ");
         }
 
         @Override
@@ -113,7 +113,7 @@ public final class NettyClientLatencyTest extends NetworkTestCommon {
 
                 if (((ByteBuf) msg).readableBytes() >= 8) {
                     if (count % 10000 == 0)
-                        System.out.print(".");
+                       // System.out.print(".");
 
                     if (count >= 0) {
                         times[count] = System.nanoTime() - ((ByteBuf) msg).readLong();

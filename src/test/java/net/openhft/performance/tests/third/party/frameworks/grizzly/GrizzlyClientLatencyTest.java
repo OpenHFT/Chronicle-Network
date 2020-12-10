@@ -47,7 +47,7 @@ public class GrizzlyClientLatencyTest extends NetworkTestCommon {
     public static void main(String[] args) throws IOException,
             ExecutionException, InterruptedException, TimeoutException {
 
-        System.out.println("Starting Grizzly latency test");
+       // System.out.println("Starting Grizzly latency test");
 
         @NotNull final CountDownLatch finished = new CountDownLatch(1);
         final Buffer buffer = MemoryManager.DEFAULT_MEMORY_MANAGER.allocate(8);
@@ -89,7 +89,7 @@ public class GrizzlyClientLatencyTest extends NetworkTestCommon {
                 Buffer msg = ctx.<Buffer>getMessage();
                 if (msg.remaining() >= 8) {
                     if (count % 10000 == 0)
-                        System.out.print(".");
+                       // System.out.print(".");
 
                     if (count >= 0) {
                         times[count] = System.nanoTime() - msg.getLong();

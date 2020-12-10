@@ -133,7 +133,7 @@ public class BinaryTestBufferSize {
                 ++count;
             }
             if (count > 1)
-                System.out.println("count=" + count);
+               // System.out.println("count=" + count);
 
             inBytes.readLimit(totalRead);
             Assert.assertEquals(expectedMessage, inBytes.readUtf8());

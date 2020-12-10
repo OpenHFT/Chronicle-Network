@@ -76,7 +76,7 @@ public class MinaClientThroughPutTest extends NetworkTestCommon {
                 ((IoBuffer) message).clear();
 
                 if (i++ % 10000 == 0)
-                    System.out.print(".");
+                   // System.out.print(".");
 
                 ((IoBuffer) message).put(payload);
                 session.write(message);

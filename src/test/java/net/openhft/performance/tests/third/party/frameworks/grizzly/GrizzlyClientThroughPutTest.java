@@ -51,7 +51,7 @@ public class GrizzlyClientThroughPutTest extends NetworkTestCommon {
     public static void main(String[] args) throws IOException,
             ExecutionException, InterruptedException, TimeoutException {
 
-        System.out.println("Starting Grizzly throughput test");
+       // System.out.println("Starting Grizzly throughput test");
 
         final int bufferSize = 64 * 1024;
         @NotNull final byte[] payload = new byte[bufferSize];
@@ -91,7 +91,7 @@ public class GrizzlyClientThroughPutTest extends NetworkTestCommon {
                 bytesReceived.addAndGet((ctx.<Buffer>getMessage()).remaining());
 
                 if (i++ % 10000 == 0)
-                    System.out.print(".");
+                   // System.out.print(".");
 
                 buffer2.clear();
                 buffer2.put(payload);

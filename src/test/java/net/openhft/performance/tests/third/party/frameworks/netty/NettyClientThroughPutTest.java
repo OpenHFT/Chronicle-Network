@@ -107,7 +107,7 @@ public final class NettyClientThroughPutTest extends NetworkTestCommon {
             startTime = System.nanoTime();
             ctx.writeAndFlush(firstMessage);
 
-            System.out.print("Running throughput test ( for 10 seconds ) ");
+           // System.out.print("Running throughput test ( for 10 seconds ) ");
         }
 
         @Override
@@ -115,8 +115,8 @@ public final class NettyClientThroughPutTest extends NetworkTestCommon {
             try {
                 bytesReceived += ((ByteBuf) msg).readableBytes();
 
-                if (i++ % 10000 == 0)
-                    System.out.print(".");
+//                if (i++ % 10000 == 0)
+                   // System.out.print(".");
                 if (TimeUnit.NANOSECONDS.toSeconds(System
                         .nanoTime() - startTime) >= 10) {
                     long time = System.nanoTime() - startTime;

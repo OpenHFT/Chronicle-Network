@@ -110,7 +110,7 @@ public class VerySimpleClient {
 
     @TearDown
     public void tearDown() throws IOException {
-        System.out.println("closing");
+       // System.out.println("closing");
         eg.stop();
 
         TCPRegistry.reset();
@@ -145,7 +145,7 @@ public class VerySimpleClient {
         // data
         readDocument(inWire);
 
-        //    System.out.println(Wires.fromSizePrefixedBlobs(inWire.bytes()));
+        //    //  System.out.println(Wires.fromSizePrefixedBlobs(inWire.bytes()));
 
         String[] text = {null};
         // read the reply and check the result

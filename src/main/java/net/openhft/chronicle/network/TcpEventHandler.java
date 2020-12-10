@@ -297,7 +297,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     }
 
     public void warmUp() {
-        System.out.println(TcpEventHandler.class.getSimpleName() + " - Warming up...");
+       // System.out.println(TcpEventHandler.class.getSimpleName() + " - Warming up...");
         final int runs = 12000;
         long beginNs = System.nanoTime();
         for (int i = 0; i < runs; i++) {
@@ -306,7 +306,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             clearBuffer();
         }
         long elapsedNs = System.nanoTime() - beginNs;
-        System.out.println(TcpEventHandler.class.getSimpleName() + " - ... warmed up - took " + (elapsedNs / runs / 1e3) + " us avg");
+       // System.out.println(TcpEventHandler.class.getSimpleName() + " - ... warmed up - took " + (elapsedNs / runs / 1e3) + " us avg");
     }
 
     private void checkBufSize(final int bufSize, final String name) {

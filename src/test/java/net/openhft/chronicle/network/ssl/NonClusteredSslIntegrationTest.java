@@ -200,10 +200,10 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
                     in.read(tmp);
                     if (DEBUG) {
                         if (len > 10) {
-                            System.out.printf("%s received payload of length %d%n", label, len);
-                            System.out.println(in);
+                           // System.out.printf("%s received payload of length %d%n", label, len);
+                           // System.out.println(in);
                         } else {
-                            System.out.printf("%s received [%d] %d/%s%n", label, tmp.length, received, new String(tmp, StandardCharsets.US_ASCII));
+                           // System.out.printf("%s received [%d] %d/%s%n", label, tmp.length, received, new String(tmp, StandardCharsets.US_ASCII));
                         }
                     }
                     operationCount++;
@@ -215,7 +215,7 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
                         out.writeInt(payload.length());
                         out.write(payload.getBytes(StandardCharsets.US_ASCII));
                         if (DEBUG) {
-                            System.out.printf("%s sent [%d] %d/%s%n", label, payload.length(), counter - 1, payload);
+                           // System.out.printf("%s sent [%d] %d/%s%n", label, payload.length(), counter - 1, payload);
                         }
                         operationCount++;
                         lastSent = System.currentTimeMillis();

@@ -71,7 +71,7 @@ public class MinaClientLatencyTest extends NetworkTestCommon {
             public void messageReceived(@NotNull IoSession session, @NotNull Object msg) {
                 if (((IoBuffer) msg).remaining() >= 8) {
                     if (count % 10000 == 0)
-                        System.out.print(".");
+                       // System.out.print(".");
 
                     if (count >= 0) {
                         times[count] = System.nanoTime() - ((IoBuffer) msg).getLong();
