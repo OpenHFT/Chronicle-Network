@@ -292,7 +292,7 @@
         <connection>scm:git:git@github.com:OpenHFT/Chronicle-Network.git</connection>
         <developerConnection>scm:git:git@github.com:OpenHFT/Chronicle-Network.git
         </developerConnection>
-        <tag>master</tag>
+        <tag>ea</tag>
     </scm>
 
 </project>
