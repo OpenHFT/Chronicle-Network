@@ -18,7 +18,6 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.io.AbstractCloseable;
-import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
@@ -27,7 +26,7 @@ import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static net.openhft.chronicle.core.io.Closeable.*;
+import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
 public class VanillaNetworkContext<T extends NetworkContext<T>> extends AbstractCloseable implements NetworkContext<T> {
 
@@ -59,7 +58,7 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
         throwExceptionIfClosedInSetter();
 
         this.socketChannel = socketChannel;
-        return (T) this;
+        return self();
     }
 
     @Override
@@ -81,7 +80,7 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
         throwExceptionIfClosedInSetter();
 
         this.isAcceptor = isAcceptor;
-        return (T) this;
+        return self();
     }
 
     /**
@@ -102,7 +101,7 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
         throwExceptionIfClosedInSetter();
 
         this.wireOutPublisher = wireOutPublisher;
-        return (T) this;
+        return self();
     }
 
     @Override
@@ -116,7 +115,7 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
         throwExceptionIfClosedInSetter();
 
         this.wireType = wireType;
-        return (T) this;
+        return self();
     }
 
     @Override
@@ -130,7 +129,7 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
         throwExceptionIfClosedInSetter();
 
         this.sessionDetails = sessionDetails;
-        return (T) this;
+        return self();
     }
 
     @Override
@@ -138,7 +137,7 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
         throwExceptionIfClosedInSetter();
 
         this.heartbeatTimeoutMs = heartbeatTimeoutMs;
-        return (T) this;
+        return self();
     }
 
     @Override
@@ -177,7 +176,7 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
         closeQuietly(this.socketReconnector);
 
         this.socketReconnector = socketReconnector;
-        return (T) this;
+        return self();
     }
 
     @Override
@@ -203,6 +202,10 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
         throwExceptionIfClosedInSetter();
 
         this.serverThreadingStrategy = serverThreadingStrategy;
+        return self();
+    }
+
+    private T self() {
         return (T) this;
     }
 
