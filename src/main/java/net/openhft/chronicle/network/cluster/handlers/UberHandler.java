@@ -157,7 +157,8 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                     listener.onDisconnected(localIdentifier, remoteIdentifier(), nc.isAcceptor());
             }
         } catch (Exception e) {
-            Jvm.fatal().on(getClass(), "close:", e);
+            Jvm.error().on(getClass(), "close:", e);
+            throw Jvm.rethrow(e);
         }
         Closeable.closeQuietly(writers);
         super.performClose();
@@ -230,7 +231,8 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                 if (w != null)
                     w.onWrite(outWire);
             } catch (Exception e) {
-                Jvm.fatal().on(getClass(), "onWrite:", e);
+                Jvm.error().on(getClass(), "onWrite:", e);
+                throw Jvm.rethrow(e);
             }
     }
 
