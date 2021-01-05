@@ -27,7 +27,7 @@ import net.openhft.chronicle.core.StackTrace;
 import net.openhft.chronicle.core.io.*;
 import net.openhft.chronicle.core.threads.*;
 import net.openhft.chronicle.network.ConnectionStrategy;
-import net.openhft.chronicle.network.WanSimulator;
+
 import net.openhft.chronicle.network.api.session.SessionDetails;
 import net.openhft.chronicle.network.api.session.SessionProvider;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
@@ -1668,8 +1668,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                 // we dont want to call isInterrupted every time so will only call it if we have read no bytes
                 if (numberOfBytesRead == 0 && Thread.currentThread().isInterrupted())
                     isShutdown = true;
-
-                WanSimulator.dataRead(numberOfBytesRead);
+                
                 if (numberOfBytesRead == -1)
                     throw new ConnectionDroppedException("Disconnection to server=" + socketAddressSupplier +
                             " read=-1 "

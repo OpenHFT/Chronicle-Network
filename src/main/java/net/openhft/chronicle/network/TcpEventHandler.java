@@ -250,7 +250,6 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         if (read == Integer.MAX_VALUE)
             onInBBFul();
         if (read > 0) {
-            WanSimulator.dataRead(read);
             tcpHandler.onReadTime(System.nanoTime(), inBB, start, inBB.position());
             lastTickReadTime = nc.timeProvider().currentTimeMillis();
             readLog.log(inBB, start, inBB.position());
