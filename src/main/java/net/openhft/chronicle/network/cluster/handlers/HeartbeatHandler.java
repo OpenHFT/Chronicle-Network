@@ -251,7 +251,7 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
         }
 
         @Override
-        public boolean action() throws InvalidEventHandlerException, InterruptedException {
+        public boolean action() throws InvalidEventHandlerException {
             if (HeartbeatHandler.this.isClosed())
                 throw new InvalidEventHandlerException("closed");
             // we will only publish a heartbeat if the wire out publisher is empty
