@@ -93,7 +93,6 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
     // allow for 20 seconds of slowness at startup
     private long lastTickReadTime;
-    private Thread actionThread;
 
     public TcpEventHandler(@NotNull final T nc) {
         this(nc, false);
@@ -174,8 +173,6 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
         if (this.isClosing())
             throw new InvalidEventHandlerException();
-        if (actionThread == null)
-            actionThread = Thread.currentThread();
         QueryCloseable c = sc;
         if (c.isClosing())
             throw new InvalidEventHandlerException();
