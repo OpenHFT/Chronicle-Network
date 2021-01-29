@@ -210,11 +210,11 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                 busy = readAction(busy);
 
             } catch (ClosedChannelException e) {
-                close();
+                closeAndStartReconnector();
                 throw new InvalidEventHandlerException(e);
             } catch (IOException e) {
                 if (!isClosed()) {
-                    close();
+                    closeAndStartReconnector();
                     handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
                 }
                 throw new InvalidEventHandlerException();
@@ -274,13 +274,21 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             }
         } else {
             // read == -1, socketChannel has reached end-of-stream
-            close();
-            if (!nc.isAcceptor())
-                nc.socketReconnector().run();
+            closeAndStartReconnector();
 
             throw new InvalidEventHandlerException("socket closed " + sc);
         }
         return busy;
+    }
+
+    /**
+     * Closes the channel and triggers asynchronous reconnecting if it's a connector.
+     */
+    private void closeAndStartReconnector() {
+        close();
+        Jvm.warn().on(getClass(), "Starting reconnector");
+        if (!nc.isAcceptor())
+            nc.socketReconnector().run();
     }
 
     @Override
