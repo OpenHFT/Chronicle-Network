@@ -51,5 +51,21 @@ public interface SubHandler<T extends NetworkContext<T>> extends NetworkContextM
      */
     void onInitialize(WireOut outWire) throws RejectedExecutionException;
 
+    /**
+     * Some events may result in long-lived actions, which must yield periodically to allow (eg) buffers to clear (out messages to be sent)
+     * A busy handler can indicate a long-lived action by returning true from inProgress
+     * The caller should then use this to invoke onTouch to give the handler another slice
+     *
+     * @param outWire
+     * @return - true if the long-lived action is complete; false if there's more to do
+     */
+    default boolean onTouch(WireOut outWire) { return true; }
+
+    /**
+     * Is a long-lived action (see above) in progress?
+     * @return - true if long-lived action in progress; else false
+     */
+    default boolean inProgress() { return false; }
+
     void closeable(Closeable closeable);
 }

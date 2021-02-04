@@ -170,6 +170,23 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
             if (isClosing.get())
                 return;
 
+            // divert to onTouch (block further reads) if a message is already in progress
+            {
+                final SubHandler<T> handler = handler();
+                if( handler != null && handler.inProgress())
+                {
+                    try{
+                        if( false == handler.onTouch(outWire) ) {
+                            dc.rollbackOnClose();
+                            return;
+                        }
+                    }catch( Exception e ) {
+                        removeHandler(handler);
+                    }
+                    return;
+                }
+            }
+
             onMessageReceivedOrWritten();
 
             final Wire inWire = dc.wire();
@@ -182,6 +199,12 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                 handler.localIdentifier(localIdentifier);
                 try {
                     handler.onInitialize(outWire);
+
+                    // trip another read (on the same event) if we're not done yet
+                    if(handler.inProgress()) {
+                        dc.rollbackOnClose();
+                        return;
+                    }
                 } catch (RejectedExecutionException e) {
                     Jvm.warn().on(getClass(), "EventGroup shutdown", e);
                     removeHandler(handler);
