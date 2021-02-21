@@ -94,7 +94,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
                     continue;
                 }
 
-                Jvm.warn().on(getClass(), "successfully connected to " + socketAddressSupplier);
+                Jvm.debug().on(getClass(), "successfully connected to " + socketAddressSupplier);
 
                 // success
                 return socketChannel;
