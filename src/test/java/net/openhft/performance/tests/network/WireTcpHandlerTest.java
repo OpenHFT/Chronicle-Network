@@ -135,6 +135,7 @@ public class WireTcpHandlerTest extends NetworkTestCommon {
 
     @Test
     public void testProcess() throws IOException {
+        expectException("Reference tracing disabled");
 // TODO FIX
         AbstractReferenceCounted.disableReferenceTracing();
 
