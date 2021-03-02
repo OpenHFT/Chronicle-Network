@@ -54,6 +54,9 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
                 if (YamlLogging.showServerWrites())
                     logBuffer();
 
+                if (bytes.writePosition() > TcpChannelHub.TCP_BUFFER)
+                    return; // Write next time to prevent TCP buffer overflow.
+
                 bytes.write(this.bytes);
                 this.bytes.clear();
             }

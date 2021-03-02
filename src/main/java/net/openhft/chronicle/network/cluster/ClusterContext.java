@@ -55,7 +55,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     public static PauserMode DEFAULT_PAUSER_MODE = PauserMode.busy;
     private transient Function<WireType, WireOutPublisher> wireOutPublisherFactory;
     private transient Function<C, NetworkStatsListener<T>> networkStatsListenerFactory;
-    private transient EventLoop eventLoop;
+    protected transient EventLoop eventLoop;
     private transient Cluster<T, C> cluster;
     private transient EventLoop acceptorLoop;
     private transient ClusterAcceptorEventHandler<C, T> acceptorEventHandler;
@@ -140,7 +140,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
         return synchronizedEventLoop();
     }
 
-    private synchronized EventLoop synchronizedEventLoop() {
+    protected synchronized EventLoop synchronizedEventLoop() {
         final EventLoop el = this.eventLoop;
         if (el != null)
             return el;
