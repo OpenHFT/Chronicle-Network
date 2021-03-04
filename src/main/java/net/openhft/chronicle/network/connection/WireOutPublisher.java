@@ -70,6 +70,8 @@ public interface WireOutPublisher extends Closeable {
         throw new UnsupportedOperationException();
     }
 
+    boolean canTakeMoreData();
+
     /**
      * @param key   the key to the event, only used when throttling, otherwise NULL if the
      *              throttling is not required

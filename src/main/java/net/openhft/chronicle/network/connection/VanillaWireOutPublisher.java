@@ -90,6 +90,22 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     }
 
     @Override
+    public boolean canTakeMoreData() {
+        throwExceptionIfClosed();
+
+        synchronized (lock()) {
+            assert wire.startUse();
+            try {
+                return wire.bytes().writePosition() < TcpChannelHub.TCP_SAFE_SIZE; // don't attempt
+                // to fill the buffer completely.
+            } finally {
+                assert wire.endUse();
+            }
+        }
+    }
+
+
+    @Override
     public void put(final Object key, @NotNull WriteMarshallable event) {
         try {
             throwExceptionIfClosed();
