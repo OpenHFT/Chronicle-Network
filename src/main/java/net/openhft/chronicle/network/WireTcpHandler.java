@@ -191,11 +191,20 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
 
         try {
 
+            long index = -1;
             while (!inWire.bytes().isEmpty()) {
 
                 try (DocumentContext dc = inWire.readingDocument()) {
                     if (!dc.isPresent())
                         return;
+
+                    // if the last iteration didn't consume anything (rolled back) then break
+                    if(dc.index() == index)
+                    {
+                        dc.rollbackOnClose();
+                        return;
+                    }
+                    index = dc.index();
 
                     try {
                         if (YamlLogging.showServerReads())
@@ -283,6 +292,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
     /**
      * @param in  the wire to be processed
      * @param out the result of processing the {@code in}
+     * @return - true if can be called again (if in a loop); false if the loop should yield
      */
     protected abstract void onRead(@NotNull DocumentContext in,
                                    @NotNull WireOut out);

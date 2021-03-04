@@ -58,6 +58,12 @@ public class ConnectionManager<T extends NetworkContext<T>> {
 
     @FunctionalInterface
     public interface ConnectionListener<T extends NetworkContext<T>> {
+        /**
+         * Callback which is triggered on connection state change: connect or disconnect.
+         *
+         * @param nc Network context.
+         * @param isConnected <tt>true</tt> for connect events, <tt>false</tt> for disconnects.
+         */
         void onConnectionChange(T nc, boolean isConnected);
     }
 }

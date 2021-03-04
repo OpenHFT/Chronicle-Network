@@ -21,7 +21,6 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.io.AbstractReferenceCounted;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
-import net.openhft.chronicle.core.threads.ThreadDump;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.NetworkTestCommon;
 import net.openhft.chronicle.network.TCPRegistry;
@@ -37,9 +36,7 @@ import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.YamlLogging;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -49,18 +46,6 @@ import java.util.concurrent.TimeoutException;
 import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri;
 
 public class SimpleServerAndClientTest extends NetworkTestCommon {
-    private ThreadDump threadDump;
-
-    @Before
-    public void threadDump() {
-        threadDump = new ThreadDump();
-    }
-
-    @After
-    public void checkThreadDump() {
-        threadDump.assertNoNewThreads();
-    }
-
     @Test
     public void test() throws IOException {
         // TODO FIX
@@ -149,5 +134,14 @@ public class SimpleServerAndClientTest extends NetworkTestCommon {
         eg.addHandler(eah);
         ChronicleServerSocketChannel sc = TCPRegistry.acquireServerSocketChannel(desc);
         sc.configureBlocking(false);
+    }
+
+    @Override
+    public void checkExceptions() {
+        try {
+            super.checkExceptions();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -104,6 +104,7 @@ public class VerySimpleClientTest extends NetworkTestCommon {
 
     @Test
     public void test() throws IOException {
+        expectException("Reference tracing disabled");
 // TODO FIX
         AbstractReferenceCounted.disableReferenceTracing();
 
