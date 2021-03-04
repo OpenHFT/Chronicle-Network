@@ -112,6 +112,8 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
      * @param hd local host details to accept on
      */
     public void accept(HostDetails hd) {
+        if (hd.connectUri() == null)
+            return;
         acceptorLoop = new BlockingEventLoop(eventLoop(), clusterNamePrefix() + "acceptor-" + localIdentifier);
         try {
             acceptorEventHandler = new ClusterAcceptorEventHandler<>(hd.connectUri(), castThis());
