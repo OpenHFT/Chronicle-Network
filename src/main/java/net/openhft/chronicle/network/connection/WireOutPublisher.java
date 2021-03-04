@@ -70,7 +70,9 @@ public interface WireOutPublisher extends Closeable {
         throw new UnsupportedOperationException();
     }
 
-    boolean canTakeMoreData();
+    default boolean canTakeMoreData() {
+        return false;
+    }
 
     /**
      * @param key   the key to the event, only used when throttling, otherwise NULL if the
@@ -84,9 +86,9 @@ public interface WireOutPublisher extends Closeable {
         throw new UnsupportedOperationException();
     }
 
-default boolean isEmpty() {
-    throw new UnsupportedOperationException();
-}
+    default boolean isEmpty() {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     default void close() {
