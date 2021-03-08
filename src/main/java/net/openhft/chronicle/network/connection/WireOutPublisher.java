@@ -41,6 +41,7 @@ public interface WireOutPublisher extends Closeable {
      * @param delegate the  WireOutPublisher the events will get delegated to
      * @return a throttled WireOutPublisher
      */
+    @Deprecated // For removal in x.22. software.chronicle.enterprise.throttle.ThrottledWireOutPublisher is no longer available since it is located in an archived project.
     static WireOutPublisher newThrottledWireOutPublisher(int periodMs, @NotNull WireOutPublisher delegate) {
 
         try {
