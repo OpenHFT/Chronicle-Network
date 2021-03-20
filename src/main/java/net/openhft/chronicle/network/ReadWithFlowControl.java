@@ -94,5 +94,4 @@ public final class ReadWithFlowControl implements TcpEventHandler.SocketReader {
     private void position(final int position) {
         this.position = position;
     }
-
 }

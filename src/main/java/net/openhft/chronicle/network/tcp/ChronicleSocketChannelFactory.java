@@ -66,5 +66,4 @@ public enum ChronicleSocketChannelFactory {
     private static ChronicleSocketChannel newFastUnsafeInstance(@NotNull final SocketChannel sc) {
         return new UnsafeFastJ8SocketChannel(sc);
     }
-
 }

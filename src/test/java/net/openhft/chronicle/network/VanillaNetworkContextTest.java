@@ -18,5 +18,4 @@ public class VanillaNetworkContextTest extends NetworkTestCommon {
         v.close();
         assertEquals(true, v.isClosed());
     }
-
 }

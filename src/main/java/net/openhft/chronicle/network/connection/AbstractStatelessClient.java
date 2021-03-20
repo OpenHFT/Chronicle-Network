@@ -606,5 +606,4 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
             return valueIn.object(using, resultType);
         }
     }
-
 }

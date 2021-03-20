@@ -74,7 +74,6 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
         this.eventLoop = clusterContext.eventLoop();
     }
 
-
     @Override
     public synchronized void close() {
 
@@ -92,7 +91,6 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
 
         closeQuietly(nc);
     }
-
 
     public ConnectionManager<T> connectionManager() {
         return connectionManager;
@@ -155,5 +153,4 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
 
         remoteConnector.connect(connectUri, eventLoop, nc, clusterContext.retryInterval());
     }
-
 }

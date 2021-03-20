@@ -72,5 +72,4 @@ public interface SessionDetailsProvider extends SessionDetails, Marshallable {
     static SessionDetailsProvider create() {
         return new VanillaSessionDetails();
     }
-
 }

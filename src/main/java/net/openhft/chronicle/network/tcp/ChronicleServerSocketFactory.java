@@ -15,5 +15,4 @@ public class ChronicleServerSocketFactory {
             throw Jvm.rethrow(e);
         }
     }
-
 }

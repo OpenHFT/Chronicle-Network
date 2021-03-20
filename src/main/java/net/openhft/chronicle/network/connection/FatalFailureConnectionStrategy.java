@@ -147,5 +147,4 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
             }
         }
     }
-
 }

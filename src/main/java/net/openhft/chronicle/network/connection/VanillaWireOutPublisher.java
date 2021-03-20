@@ -107,7 +107,6 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
         }
     }
 
-
     @Override
     public void put(final Object key, @NotNull WriteMarshallable event) {
         try {

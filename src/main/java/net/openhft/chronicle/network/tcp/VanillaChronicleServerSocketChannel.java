@@ -85,5 +85,4 @@ public class VanillaChronicleServerSocketChannel implements ChronicleServerSocke
     public void configureBlocking(final boolean configureBlocking) throws IOException {
         ssc.configureBlocking(configureBlocking);
     }
-
 };

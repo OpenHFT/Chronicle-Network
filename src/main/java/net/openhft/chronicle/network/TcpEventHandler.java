@@ -676,5 +676,4 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             return HandlerPriority.MONITOR;
         }
     }
-
 }

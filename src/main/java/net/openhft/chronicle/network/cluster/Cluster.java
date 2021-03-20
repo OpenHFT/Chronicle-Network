@@ -68,7 +68,6 @@ abstract public class Cluster<T extends ClusteredNetworkContext<T>, C extends Cl
                 continue;
             }
 
-
             valueIn.marshallable(details -> {
                 @NotNull final HostDetails hd = new HostDetails();
                 hd.readMarshallable(details);
@@ -77,7 +76,6 @@ abstract public class Cluster<T extends ClusteredNetworkContext<T>, C extends Cl
         }
 
     }
-
 
     @Override
     public void writeMarshallable(@NotNull WireOut wire) {

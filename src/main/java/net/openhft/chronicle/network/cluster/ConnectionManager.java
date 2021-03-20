@@ -53,7 +53,6 @@ public class ConnectionManager<T extends NetworkContext<T>> {
             }
         });
 
-
     }
 
     @FunctionalInterface

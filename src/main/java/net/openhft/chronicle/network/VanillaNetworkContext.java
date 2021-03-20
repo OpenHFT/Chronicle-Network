@@ -214,5 +214,4 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
         // assume thread safe.
         return true;
     }
-
 }
