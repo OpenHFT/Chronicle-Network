@@ -1,5 +1,6 @@
 package net.openhft.chronicle.network.tcp;
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 
 import java.io.IOException;
@@ -14,11 +15,11 @@ public class VanillaChronicleServerSocketChannel implements ChronicleServerSocke
 
     ServerSocketChannel ssc;
 
-    {
+    { // instance initialiser
         try {
             ssc = ServerSocketChannel.open();
         } catch (IOException e) {
-            e.printStackTrace();
+            throw Jvm.rethrow(e);
         }
     }
 
@@ -34,7 +35,7 @@ public class VanillaChronicleServerSocketChannel implements ChronicleServerSocke
         return ssc.isOpen();
     }
 
-@Override
+    @Override
     public ChronicleServerSocket socket() {
 
         return new ChronicleServerSocket() {
@@ -85,4 +86,11 @@ public class VanillaChronicleServerSocketChannel implements ChronicleServerSocke
     public void configureBlocking(final boolean configureBlocking) throws IOException {
         ssc.configureBlocking(configureBlocking);
     }
-};
+
+    @Override
+    public String toString() {
+        return "VanillaChronicleServerSocketChannel{" +
+                "ssc=" + ssc +
+                '}';
+    }
+}

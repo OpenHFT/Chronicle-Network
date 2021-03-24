@@ -292,7 +292,6 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
     /**
      * @param in  the wire to be processed
      * @param out the result of processing the {@code in}
-     * @return - true if can be called again (if in a loop); false if the loop should yield
      */
     protected abstract void onRead(@NotNull DocumentContext in,
                                    @NotNull WireOut out);
