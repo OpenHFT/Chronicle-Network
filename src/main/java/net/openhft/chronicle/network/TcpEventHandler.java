@@ -338,7 +338,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
     @NotNull
     public HandlerPriority singleThreadedPriority() {
-        return HandlerPriority.MEDIUM;
+        return nc.priority();
     }
 
     @Nullable

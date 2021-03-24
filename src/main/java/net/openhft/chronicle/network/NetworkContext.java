@@ -20,6 +20,7 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.bytes.MappedUniqueMicroTimeProvider;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.time.SystemTimeProvider;
 import net.openhft.chronicle.core.time.TimeProvider;
 import net.openhft.chronicle.network.api.TcpHandler;
@@ -100,6 +101,10 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
 
     default TimeProvider timeProvider() {
         return SystemTimeProvider.INSTANCE;
+    }
+
+    default HandlerPriority priority() {
+        return HandlerPriority.MEDIUM;
     }
 }
 
