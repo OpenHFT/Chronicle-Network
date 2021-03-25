@@ -20,6 +20,7 @@ package net.openhft.chronicle.network.cluster.handlers;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.core.threads.Timer;
 import net.openhft.chronicle.core.threads.VanillaEventHandler;
@@ -103,7 +104,7 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
 
         @NotNull final VanillaEventHandler task = new PeriodicallySendingHeartbeatsHandler(heartbeatMessage);
 
-        timer.scheduleAtFixedRate(task, this.heartbeatIntervalMs, this.heartbeatIntervalMs);
+        timer.scheduleAtFixedRate(task, this.heartbeatIntervalMs, this.heartbeatIntervalMs, nc().periodicPriority());
     }
 
     @Override
@@ -149,7 +150,7 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
      * periodically check that messages have been received, ie heartbeats
      */
     private void startPeriodicHeartbeatCheck() {
-        timer.scheduleAtFixedRate(heartbeatCheck(), 0, heartbeatTimeoutMs);
+        timer.scheduleAtFixedRate(heartbeatCheck(), 0, heartbeatTimeoutMs, nc().periodicPriority());
     }
 
     /**

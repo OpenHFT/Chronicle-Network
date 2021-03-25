@@ -148,7 +148,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
             return el;
 
         return this.eventLoop = new EventGroup(true, pauserSupplier.get(), null, affinityCPU, clusterNamePrefix(), CONC_THREADS,
-                of(MEDIUM, TIMER, BLOCKING, REPLICATION));
+                of(MEDIUM, TIMER, BLOCKING, REPLICATION, REPLICATION_TIMER));
     }
 
     @NotNull

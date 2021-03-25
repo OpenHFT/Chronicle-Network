@@ -103,8 +103,18 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
         return SystemTimeProvider.INSTANCE;
     }
 
+    /**
+     * Priority for general activities on this context; eg connect, accept, send/recv
+     */
     default HandlerPriority priority() {
         return HandlerPriority.MEDIUM;
+    }
+
+    /**
+     * Priority for periodic activies on this context; eg heartbeats
+     */
+    default HandlerPriority periodicPriority() {
+        return HandlerPriority.TIMER;
     }
 }
 
