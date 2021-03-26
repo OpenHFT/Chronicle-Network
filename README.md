@@ -13,7 +13,7 @@ This library is designed to be lower latency and support higher throughputs
     by employing techniques used in low latency trading systems.
     
 # Transports
-Network currently support TCP only. 
+Network uses TCP. 
  
 Planned support for
 * Shared Memory
@@ -184,13 +184,13 @@ By default the Chronicle-Network server uses a single thread, to process all mes
 However, if you wish to dedicate each client connection to its own thread.
 Then you can change the server threading strategy, to :
 ```
--DServerThreadingStrategy= CONCURRENT
+-DServerThreadingStrategy=CONCURRENT
 ```
 
 see the following enum for more details net.openhft.chronicle.network.ServerThreadingStrategy
 
 # Java Version
-This library will require Java 8
+This library requires Java 8
 
 # Testing
 The target environment is to support TCP over 10 Gig-E ethernet.  In prototype
