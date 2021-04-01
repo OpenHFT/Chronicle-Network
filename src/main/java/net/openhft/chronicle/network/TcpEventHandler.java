@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
-import java.nio.channels.ClosedChannelException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -209,14 +208,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             try {
                 busy = readAction(busy);
 
-            } catch (ClosedChannelException e) {
-                closeAndStartReconnector();
-                throw new InvalidEventHandlerException(e);
             } catch (IOException e) {
-                if (!isClosed()) {
-                    closeAndStartReconnector();
-                    handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
-                }
+                handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
                 throw new InvalidEventHandlerException();
             } catch (InvalidEventHandlerException e) {
                 close();
@@ -267,7 +260,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                         lastTickReadTime += heartbeatListener.lingerTimeBeforeDisconnect();
                     } else {
                         tcpHandler.onEndOfConnection(true);
-                        close();
+                        closeAndStartReconnector();
                         throw new InvalidEventHandlerException("heartbeat timeout");
                     }
                 }
@@ -443,10 +436,10 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     private void handleIOE(@NotNull final IOException e,
                            final boolean clientIntentionallyClosed,
                            @Nullable final HeartbeatListener heartbeatListener) {
-        try {
+        if (isClosed() || clientIntentionallyClosed)
+            return;
 
-            if (clientIntentionallyClosed)
-                return;
+        try {
             if (e.getMessage() != null && e.getMessage().startsWith("Connection reset by peer"))
                 LOG.trace(e.getMessage(), e);
             else if (e.getMessage() != null && e.getMessage().startsWith("An existing connection " +
@@ -465,7 +458,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                 heartbeatListener.onMissedHeartbeat();
 
         } finally {
-            close();
+            closeAndStartReconnector();
         }
     }
 
@@ -495,7 +488,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         writeLog.log(outBB, start, outBB.position());
 
         if (wrote < 0) {
-            close();
+            closeAndStartReconnector();
         } else if (wrote > 0) {
             outBB.compact().flip();
             outBBB.writePosition(outBB.limit());
@@ -522,12 +515,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                 if (!busy)
                     busy = tryWrite(outBB);
             }
-        } catch (ClosedChannelException cce) {
-            close();
-
         } catch (IOException e) {
-            if (!isClosed())
-                handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
+            handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
         }
         return busy;
     }
