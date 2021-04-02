@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ClosedChannelException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -208,6 +209,9 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             try {
                 busy = readAction(busy);
 
+            } catch (ClosedChannelException e) {
+                closeAndStartReconnector();
+                throw new InvalidEventHandlerException(e);
             } catch (IOException e) {
                 handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
                 throw new InvalidEventHandlerException();
@@ -515,6 +519,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                 if (!busy)
                     busy = tryWrite(outBB);
             }
+        } catch (ClosedChannelException cce) {
+            closeAndStartReconnector();
         } catch (IOException e) {
             handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
         }
