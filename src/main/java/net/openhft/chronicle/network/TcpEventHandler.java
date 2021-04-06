@@ -659,7 +659,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         }
 
         private void addBytesWritten(long delta) {
-            bytesReadCount.addAndGet(delta);
+            bytesWriteCount.addAndGet(delta);
         }
 
         private void add(@NotNull TcpEventHandler.ThreadLogTypeElapsedRecord logTypeTimeRecord) {
