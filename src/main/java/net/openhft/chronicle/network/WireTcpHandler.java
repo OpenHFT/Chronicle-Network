@@ -43,10 +43,6 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
 
     protected Wire outWire;
     long lastWritePosition = 0;
-    long writeBps;
-    long bytesReadCount;
-    int socketPollCount;
-    volatile long lastMonitor;
     private Wire inWire;
     private boolean recreateWire;
     @Nullable
@@ -54,7 +50,6 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
     private WireOutPublisher publisher;
     private T nc;
     private boolean isAcceptor;
-    private long lastReadRemaining;
 
     private static void logYaml(@NotNull final DocumentContext dc) {
         if (YamlLogging.showServerWrites() || YamlLogging.showServerReads())
@@ -121,33 +116,8 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
 
         // we assume that if any bytes were in lastOutBytesRemaining the sc.write() would have been
         // called and this will fail, if the other end has lost its connection
-        if (outWire.bytes().writePosition() != lastWritePosition) {
+        if (outWire.bytes().writePosition() != lastWritePosition)
             onBytesWritten();
-
-            // NOTE you can not use remaining as the buffer maybe resized
-            writeBps += (lastWritePosition - outWire.bytes().writePosition());
-        }
-
-        socketPollCount++;
-
-        bytesReadCount += (in.readRemaining() - lastReadRemaining);
-
-        final long now = System.currentTimeMillis();
-        if (now > lastMonitor + 10000) {
-            final NetworkStatsListener<T> networkStatsListener = this.nc.networkStatsListener();
-
-            if (networkStatsListener != null && !networkStatsListener.isClosed()) {
-                if (lastMonitor == 0) {
-                    networkStatsListener.onNetworkStats(0, 0, 0);
-                } else {
-                    networkStatsListener.onNetworkStats(writeBps / 10, bytesReadCount / 10,
-                            socketPollCount / 10);
-
-                    writeBps = bytesReadCount = socketPollCount = 0;
-                }
-            }
-            lastMonitor = now;
-        }
 
         if (publisher != null)
             publisher.applyAction(outWire);
@@ -158,8 +128,6 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
             onWrite(outWire);
 
         lastWritePosition = outWire.bytes().writePosition();
-        lastReadRemaining = inWire.bytes().readRemaining();
-
     }
 
     protected void onBytesWritten() {
