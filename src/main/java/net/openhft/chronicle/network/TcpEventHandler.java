@@ -283,8 +283,13 @@ public class TcpEventHandler<T extends NetworkContext<T>>
      */
     private void closeAndStartReconnector() {
         close();
-        if (!nc.isAcceptor())
-            nc.socketReconnector().run();
+        if (!nc.isAcceptor()) {
+            final Runnable socketReconnector = nc.socketReconnector();
+            if (socketReconnector == null)
+                Jvm.warn().on(getClass(), "socketReconnector == null");
+            else
+                socketReconnector.run();
+        }
     }
 
     @Override
