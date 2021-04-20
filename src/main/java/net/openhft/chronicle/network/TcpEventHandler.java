@@ -17,6 +17,7 @@
  */
 package net.openhft.chronicle.network;
 
+import net.openhft.affinity.Affinity;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.Maths;
@@ -302,7 +303,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     }
 
     public void warmUp() {
-       // System.out.println(TcpEventHandler.class.getSimpleName() + " - Warming up...");
+        // System.out.println(TcpEventHandler.class.getSimpleName() + " - Warming up...");
         final int runs = 12000;
         long beginNs = System.nanoTime();
         for (int i = 0; i < runs; i++) {
@@ -311,7 +312,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             clearBuffer();
         }
         long elapsedNs = System.nanoTime() - beginNs;
-       // System.out.println(TcpEventHandler.class.getSimpleName() + " - ... warmed up - took " + (elapsedNs / runs / 1e3) + " us avg");
+        // System.out.println(TcpEventHandler.class.getSimpleName() + " - ... warmed up - took " + (elapsedNs / runs / 1e3) + " us avg");
     }
 
     private void checkBufSize(final int bufSize, final String name) {
@@ -626,7 +627,10 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                             .append(msg.logType.label())
                             .append(" took ")
                             .append(msg.elapsedNs / 1000)
-                            .append(" us");
+                            .append(" us, CPU: ")
+                            .append(Affinity.getCpu())
+                            .append(" us, affinity ")
+                            .append(Affinity.getAffinity());
 
                     // no point grabbing stack trace as thread has moved on
 
@@ -635,7 +639,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             }
 
             final long now = nc.timeProvider().currentTimeMillis();
-            if (now > lastMonitor + (MONITOR_POLL_EVERY_SEC * 1000)) {
+            if (now > lastMonitor + (MONITOR_POLL_EVERY_SEC * 1000L)) {
                 final NetworkStatsListener<T> networkStatsListener = nc.networkStatsListener();
                 if (networkStatsListener != null && !networkStatsListener.isClosed()) {
                     if (lastMonitor == 0) {

@@ -80,13 +80,12 @@
             <artifactId>core</artifactId>
         </dependency>
 
-        <!-- test dependencies -->
-
         <dependency>
             <groupId>net.openhft</groupId>
             <artifactId>affinity</artifactId>
-            <scope>test</scope>
         </dependency>
+
+        <!-- test dependencies -->
 
         <dependency>
             <groupId>junit</groupId>
