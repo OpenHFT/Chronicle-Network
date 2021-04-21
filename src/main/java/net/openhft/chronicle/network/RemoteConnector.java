@@ -19,10 +19,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.PackageLocal;
-import net.openhft.chronicle.core.io.AbstractCloseable;
-import net.openhft.chronicle.core.io.Closeable;
-import net.openhft.chronicle.core.io.IORuntimeException;
-import net.openhft.chronicle.core.io.SimpleCloseable;
+import net.openhft.chronicle.core.io.*;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -71,7 +68,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
                         @NotNull T nc,
                         final long retryInterval) {
         throwExceptionIfClosed();
-        eventLoop.throwExceptionIfClosed();
+        ((ManagedCloseable) eventLoop).throwExceptionIfClosed();
 
         final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
 

@@ -13,14 +13,11 @@ public enum LoggingNetworkStatsListener implements NetworkStatsListener {
 
     @Override
     public void networkContext(final NetworkContext networkContext) {
-        throwExceptionIfClosed();
 
     }
 
     @Override
     public void onNetworkStats(final long writeBps, final long readBps, final long socketPollCountPerSecond) {
-        throwExceptionIfClosed();
-
         if (Jvm.isDebugEnabled(LoggingNetworkStatsListener.class))
             Jvm.debug().on(LoggingNetworkStatsListener.class, String.format(
                     "networkStats: writeBps %d, readBps %d, pollCount/sec %d",
@@ -30,8 +27,6 @@ public enum LoggingNetworkStatsListener implements NetworkStatsListener {
 
     @Override
     public void onHostPort(final String hostName, final int port) {
-        throwExceptionIfClosed();
-
         if (Jvm.isDebugEnabled(LoggingNetworkStatsListener.class))
             Jvm.debug().on(LoggingNetworkStatsListener.class, String.format("onHostPort %s, %d",
                     hostName, port));
@@ -39,8 +34,6 @@ public enum LoggingNetworkStatsListener implements NetworkStatsListener {
 
     @Override
     public void onRoundTripLatency(final long latencyNanos) {
-        throwExceptionIfClosed();
-
         if (Jvm.isDebugEnabled(LoggingNetworkStatsListener.class))
             Jvm.debug().on(LoggingNetworkStatsListener.class, String.format("onRoundTripLatency %d", latencyNanos));
     }

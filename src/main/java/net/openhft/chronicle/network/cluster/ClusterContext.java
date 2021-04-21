@@ -21,6 +21,7 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.core.io.ManagedCloseable;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.NetworkStatsListener;
@@ -50,7 +51,7 @@ import static net.openhft.chronicle.threads.EventGroup.CONC_THREADS;
 
 public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends ClusteredNetworkContext<T>>
         extends SelfDescribingMarshallable
-        implements Closeable {
+        implements Closeable, ManagedCloseable {
     // todo should be final
     public static PauserMode DEFAULT_PAUSER_MODE = PauserMode.busy;
     private transient Function<WireType, WireOutPublisher> wireOutPublisherFactory;

@@ -1,6 +1,7 @@
 package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.io.ManagedCloseable;
 import net.openhft.chronicle.network.NetworkContextManager;
 import net.openhft.chronicle.network.TcpEventHandler;
 import net.openhft.chronicle.network.api.TcpHandler;
@@ -42,7 +43,8 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
      */
     @Override
     public void process(@NotNull final Bytes in, @NotNull final Bytes out, final N nc) {
-        throwExceptionIfClosed();
+        if (delegate instanceof ManagedCloseable)
+            ((ManagedCloseable) delegate).throwExceptionIfClosed();
 
         if (!handshakeComplete) {
             try {
@@ -63,8 +65,6 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
      */
     @Override
     public void sendHeartBeat(final Bytes out, final SessionDetailsProvider sessionDetails) {
-        throwExceptionIfClosed();
-
         delegate.sendHeartBeat(out, sessionDetails);
     }
 
@@ -73,8 +73,6 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
      */
     @Override
     public void onEndOfConnection(final boolean heartbeatTimeOut) {
-        // throwExceptionIfClosed();
-
         delegate.onEndOfConnection(heartbeatTimeOut);
     }
 
@@ -94,8 +92,6 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
      */
     @Override
     public void onReadTime(final long readTimeNS, final ByteBuffer inBB, final int position, final int limit) {
-        throwExceptionIfClosed();
-
         delegate.onReadTime(readTimeNS, inBB, position, limit);
     }
 
@@ -107,8 +103,6 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
                             final ByteBuffer byteBuffer,
                             final int position
             , final int limit) {
-        throwExceptionIfClosed();
-
         delegate.onWriteTime(writeTimeNS, byteBuffer, position, limit);
     }
 
@@ -117,8 +111,6 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
      */
     @Override
     public void onReadComplete() {
-        throwExceptionIfClosed();
-
         delegate.onReadComplete();
     }
 
@@ -159,8 +151,6 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
      */
     @Override
     public void nc(final N nc) {
-        throwExceptionIfClosed();
-
         if (delegate instanceof NetworkContextManager) {
             ((NetworkContextManager<N>) delegate).nc(nc);
         }
