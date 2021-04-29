@@ -173,14 +173,13 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
             // divert to onTouch (block further reads) if a message is already in progress
             {
                 final SubHandler<T> handler = handler();
-                if( handler != null && handler.inProgress())
-                {
-                    try{
-                        if( false == handler.onTouch(outWire) ) {
+                if (handler != null && handler.inProgress()) {
+                    try {
+                        if (false == handler.onTouch(outWire)) {
                             dc.rollbackOnClose();
                             return;
                         }
-                    }catch( Exception e ) {
+                    } catch (Exception e) {
                         removeHandler(handler);
                     }
                     return;
@@ -201,7 +200,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                     handler.onInitialize(outWire);
 
                     // trip another read (on the same event) if we're not done yet
-                    if(handler.inProgress()) {
+                    if (handler.inProgress()) {
                         dc.rollbackOnClose();
                         return;
                     }
@@ -230,7 +229,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                         "process the following " +
                         "YAML\n");
         } catch (Throwable e) {
-            Jvm.warn().on(getClass(), "failed to parse:" + peekContents(dc), e);
+              Jvm.warn().on(getClass(), e);
         }
     }
 
