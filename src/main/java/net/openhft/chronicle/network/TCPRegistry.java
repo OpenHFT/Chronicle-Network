@@ -47,7 +47,7 @@ import static net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory.wr
  */
 public enum TCPRegistry {
     ;
-    static final Map<String, InetSocketAddress> HOSTNAME_PORT_ALIAS = new ConcurrentSkipListMap<>();
+    static HostnamePortLookupTable lookupTable;
     static final Map<String, ChronicleServerSocketChannel> DESC_TO_SERVER_SOCKET_CHANNEL_MAP = new ConcurrentSkipListMap<>();
 
     static {
@@ -58,13 +58,14 @@ public enum TCPRegistry {
 
     public static void reset() {
         Closeable.closeQuietly(DESC_TO_SERVER_SOCKET_CHANNEL_MAP.values());
-        HOSTNAME_PORT_ALIAS.clear();
+        Closeable.closeQuietly(lookupTable);
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.clear();
+        lookupTable = null;
         Jvm.pause(50);
     }
 
     public static Set<String> aliases() {
-        return HOSTNAME_PORT_ALIAS.keySet();
+        return lookupTable().aliases();
     }
 
     public static void assertAllServersStopped() {
@@ -74,7 +75,7 @@ public enum TCPRegistry {
                 closed.add(entry.toString());
             closeQuietly(entry.getValue());
         }
-        HOSTNAME_PORT_ALIAS.clear();
+        lookupTable().clear();
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.clear();
         if (!closed.isEmpty())
             throw new AssertionError("Had to stop " + closed);
@@ -116,7 +117,7 @@ public enum TCPRegistry {
         assert ssc.isOpen();
 
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.put(description, ssc);
-        HOSTNAME_PORT_ALIAS.put(description, (InetSocketAddress) ssc.socket().getLocalSocketAddress());
+        lookupTable().put(description, (InetSocketAddress) ssc.socket().getLocalSocketAddress());
     }
 
     public static ChronicleServerSocketChannel acquireServerSocketChannel(@NotNull String description) throws IOException {
@@ -141,7 +142,7 @@ public enum TCPRegistry {
     }
 
     public static InetSocketAddress lookup(@NotNull String description) {
-        InetSocketAddress address = HOSTNAME_PORT_ALIAS.get(description);
+        InetSocketAddress address = lookupTable().lookup(description);
         if (address != null)
             return address;
         String property = System.getProperty(description);
@@ -178,7 +179,7 @@ public enum TCPRegistry {
             throw new IllegalArgumentException("Invalid port " + port);
 
         @NotNull InetSocketAddress address = createInetSocketAddress(hostname, port);
-        HOSTNAME_PORT_ALIAS.put(description, address);
+        lookupTable().put(description, address);
         return address;
     }
 
@@ -196,7 +197,7 @@ public enum TCPRegistry {
     }
 
     public static void dumpAllSocketChannels() {
-        HOSTNAME_PORT_ALIAS.forEach((s, inetSocketAddress) -> System.out.println(s + ": " + inetSocketAddress.toString()));
+        lookupTable().forEach((s, inetSocketAddress) -> System.out.println(s + ": " + inetSocketAddress.toString()));
     }
 
     public static void assertAllServersStopped(final long timeout, final TimeUnit unit) {
@@ -207,7 +208,7 @@ public enum TCPRegistry {
                 closed.add(entry.getValue());
 
         }
-        HOSTNAME_PORT_ALIAS.clear();
+        lookupTable().clear();
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.clear();
         if (closed.isEmpty())
             return;
@@ -245,5 +246,22 @@ public enum TCPRegistry {
         }
         if (e.length() > 0)
             throw new AssertionError("Had to stop " + e);
+    }
+
+    private static synchronized HostnamePortLookupTable lookupTable() {
+        if (lookupTable == null) {
+            createNewLookupTable();
+        }
+        return lookupTable;
+    }
+
+    private static void createNewLookupTable() {
+        try {
+            final Class<?> lookupTableClass = Class.forName(System.getProperty("chronicle.tcpRegistry.lookupTableImplementation",
+                    ProcessLocalHostnamePortLookupTable.class.getName()));
+            lookupTable = (HostnamePortLookupTable) lookupTableClass.getConstructor().newInstance();
+        } catch (Exception ex) {
+            throw new RuntimeException("Error creating lookup table", ex);
+        }
     }
 }
