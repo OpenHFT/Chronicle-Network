@@ -1,4 +1,6 @@
-package net.openhft.chronicle.network;
+package net.openhft.chronicle.network.internal.lookuptable;
+
+import net.openhft.chronicle.network.HostnamePortLookupTable;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

@@ -2,6 +2,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IOTools;
+import net.openhft.chronicle.network.internal.lookuptable.FileBasedHostnamePortLookupTable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

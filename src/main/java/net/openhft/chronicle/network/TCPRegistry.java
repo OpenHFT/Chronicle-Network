@@ -21,6 +21,8 @@ import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.pool.ClassAliasPool;
 import net.openhft.chronicle.network.api.NetworkStats;
+import net.openhft.chronicle.network.internal.lookuptable.FileBasedHostnamePortLookupTable;
+import net.openhft.chronicle.network.internal.lookuptable.ProcessLocalHostnamePortLookupTable;
 import net.openhft.chronicle.network.tcp.ChronicleServerSocketChannel;
 import net.openhft.chronicle.network.tcp.ChronicleServerSocketFactory;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
@@ -47,6 +49,7 @@ import static net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory.wr
  */
 public enum TCPRegistry {
     ;
+    public static final String TCP_REGISTRY_LOOKUP_TABLE_IMPLEMENTATION_PROPERTY = "chronicle.tcpRegistry.lookupTableImplementation";
     static HostnamePortLookupTable lookupTable;
     static final Map<String, ChronicleServerSocketChannel> DESC_TO_SERVER_SOCKET_CHANNEL_MAP = new ConcurrentSkipListMap<>();
 
@@ -54,6 +57,22 @@ public enum TCPRegistry {
         ClassAliasPool.CLASS_ALIASES.addAlias(
                 NetworkStats.class,
                 AlwaysStartOnPrimaryConnectionStrategy.class);
+    }
+
+    /**
+     * Configure the system property to use the cross-process lookup table, this won't come into effect until the next reset
+     */
+    public static void useCrossProcessRegistry() {
+        System.setProperty(TCP_REGISTRY_LOOKUP_TABLE_IMPLEMENTATION_PROPERTY,
+                FileBasedHostnamePortLookupTable.class.getName());
+    }
+
+    /**
+     * Configure the system property to use the in-memory lookup table, this won't come into effect until the next reset
+     */
+    public static void useInMemoryRegistry() {
+        System.setProperty(TCP_REGISTRY_LOOKUP_TABLE_IMPLEMENTATION_PROPERTY,
+                ProcessLocalHostnamePortLookupTable.class.getName());
     }
 
     public static void reset() {
@@ -257,7 +276,7 @@ public enum TCPRegistry {
 
     private static void createNewLookupTable() {
         try {
-            final Class<?> lookupTableClass = Class.forName(System.getProperty("chronicle.tcpRegistry.lookupTableImplementation",
+            final Class<?> lookupTableClass = Class.forName(System.getProperty(TCP_REGISTRY_LOOKUP_TABLE_IMPLEMENTATION_PROPERTY,
                     ProcessLocalHostnamePortLookupTable.class.getName()));
             lookupTable = (HostnamePortLookupTable) lookupTableClass.getConstructor().newInstance();
         } catch (Exception ex) {

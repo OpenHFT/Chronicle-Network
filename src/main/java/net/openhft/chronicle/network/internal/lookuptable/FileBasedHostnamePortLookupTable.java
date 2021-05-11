@@ -1,4 +1,4 @@
-package net.openhft.chronicle.network;
+package net.openhft.chronicle.network.internal.lookuptable;
 
 import net.openhft.chronicle.bytes.MappedBytes;
 import net.openhft.chronicle.core.Jvm;
@@ -6,6 +6,7 @@ import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.core.StackTrace;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.network.HostnamePortLookupTable;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 
