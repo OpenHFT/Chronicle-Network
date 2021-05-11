@@ -82,10 +82,10 @@ public class NetworkTestCommon {
         System.gc();
         AbstractCloseable.waitForCloseablesToClose(100);
 
+        TCPRegistry.reset();
+
         assertReferencesReleased();
         checkThreadDump();
         checkExceptions();
-
-        TCPRegistry.reset();
     }
 }

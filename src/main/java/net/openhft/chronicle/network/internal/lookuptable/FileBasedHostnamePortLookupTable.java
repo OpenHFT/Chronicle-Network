@@ -1,0 +1,205 @@
+package net.openhft.chronicle.network.internal.lookuptable;
+
+import net.openhft.chronicle.bytes.MappedBytes;
+import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.OS;
+import net.openhft.chronicle.core.StackTrace;
+import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.network.HostnamePortLookupTable;
+import net.openhft.chronicle.wire.*;
+import org.jetbrains.annotations.NotNull;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
+
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static net.openhft.chronicle.core.util.Time.sleep;
+
+/**
+ * Stores the mappings in a shared file, will work across processes
+ */
+public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable, java.io.Closeable {
+
+    private static final long LOCK_TIMEOUT_MS = 4_000;
+    private static final int DELETE_TABLE_FILE_TIMEOUT_MS = 1_000;
+    private static final int PID = Jvm.getProcessId();
+    private static final String DEFAULT_FILE_NAME = "shared_hostname_mappings";
+
+    private final Wire sharedTableWire;
+    private final MappedBytes sharedTableBytes;
+    private final File sharedTableFile;
+    private final ConcurrentSkipListMap<String, ProcessScopedMapping> allMappings = new ConcurrentSkipListMap<>();
+
+    public FileBasedHostnamePortLookupTable() {
+        this(DEFAULT_FILE_NAME);
+    }
+
+    public FileBasedHostnamePortLookupTable(String fileName) {
+        sharedTableFile = new File(fileName);
+        try {
+            if (sharedTableFile.createNewFile() && !sharedTableFile.canWrite()) {
+                throw new IllegalStateException("Cannot write to shared mapping file " + sharedTableFile);
+            }
+            sharedTableBytes = MappedBytes.mappedBytes(sharedTableFile, OS.SAFE_PAGE_SIZE, OS.SAFE_PAGE_SIZE, false);
+            sharedTableBytes.disableThreadSafetyCheck(true);
+            sharedTableWire = new YamlWire(sharedTableBytes);
+            sharedTableWire.consumePadding();
+        } catch (IOException e) {
+            throw new RuntimeException("Error creating shared mapping file", e);
+        }
+    }
+
+    @Override
+    public synchronized InetSocketAddress lookup(String description) {
+        return lockFileAndDo(() -> {
+            readFromTable();
+            final ProcessScopedMapping mapping = allMappings.get(description);
+            return mapping != null ? mapping.address : null;
+        }, true);
+    }
+
+    @Override
+    public synchronized void clear() {
+        lockFileAndDo(() -> {
+            readFromTable();
+            allMappings.keySet().forEach(key -> {
+                if (allMappings.get(key).pid == PID) {
+                    allMappings.remove(key);
+                }
+            });
+            writeToTable();
+        }, false);
+    }
+
+    @Override
+    public synchronized Set<String> aliases() {
+        return lockFileAndDo(() -> {
+            readFromTable();
+            return allMappings.keySet();
+        }, true);
+    }
+
+    @Override
+    public synchronized void put(String description, InetSocketAddress address) {
+        lockFileAndDo(() -> {
+            readFromTable();
+            final ProcessScopedMapping newMapping = new ProcessScopedMapping(PID, address);
+            ProcessScopedMapping oldValue = allMappings.put(description, newMapping);
+            if (oldValue != null) {
+                Jvm.error().on(FileBasedHostnamePortLookupTable.class,
+                        format("Over-wrote hostname mapping for %s, old value=%s, new value=%s", description, oldValue, newMapping));
+            }
+            writeToTable();
+        }, false);
+    }
+
+    @Override
+    public synchronized void forEach(BiConsumer<String, InetSocketAddress> consumer) {
+        lockFileAndDo(() -> {
+            readFromTable();
+            allMappings.forEach((description, mapping) -> consumer.accept(description, mapping.address));
+        }, true);
+    }
+
+    private void writeToTable() {
+        assert sharedTableWire.startUse();
+        try {
+            sharedTableWire.clear();
+            sharedTableWire.writeAllAsMap(String.class, ProcessScopedMapping.class, allMappings);
+        } finally {
+            assert sharedTableWire.endUse();
+        }
+    }
+
+    private void readFromTable() {
+        assert sharedTableWire.startUse();
+        try {
+            allMappings.clear();
+            ((YamlWire) sharedTableWire).reset();
+            sharedTableWire.readAllAsMap(String.class, ProcessScopedMapping.class, allMappings);
+        } finally {
+            assert sharedTableWire.endUse();
+        }
+    }
+
+    private void lockFileAndDo(Runnable runnable, boolean shared) {
+        this.lockFileAndDo(() -> {
+            runnable.run();
+            return null;
+        }, shared);
+    }
+
+    private <T> T lockFileAndDo(Supplier<T> supplier, boolean shared) {
+        final long timeoutAt = System.currentTimeMillis() + LOCK_TIMEOUT_MS;
+        final long startMs = System.currentTimeMillis();
+        for (int count = 1; System.currentTimeMillis() < timeoutAt; count++) {
+            try (FileLock fileLock = sharedTableBytes.mappedFile().tryLock(0, Long.MAX_VALUE, shared)) {
+                if (fileLock != null) {
+                    return supplier.get();
+                }
+            } catch (IOException | OverlappingFileLockException e) {
+                // failed to acquire the lock, wait until other operation completes
+                if (count > 9) {
+                    if (Jvm.isDebugEnabled(FileBasedHostnamePortLookupTable.class)) {
+                        final long elapsedMs = System.currentTimeMillis() - startMs;
+                        final String message = "Failed to acquire lock on the shared mappings file. Retrying, file=" + sharedTableFile + ", count=" + count + ", elapsed=" + elapsedMs + " ms";
+                        Jvm.debug().on(FileBasedHostnamePortLookupTable.class, "", new StackTrace(message));
+                    }
+                }
+            }
+            int delay = Math.min(250, count * count);
+            sleep(delay, MILLISECONDS);
+        }
+        throw new RuntimeException("Couldn't acquire lock on shared mapping file");
+    }
+
+    @Override
+    public synchronized void close() throws IOException {
+        Closeable.closeQuietly(sharedTableWire, sharedTableBytes);
+        long endTime = System.currentTimeMillis() + DELETE_TABLE_FILE_TIMEOUT_MS;
+        while (sharedTableFile.exists()) {
+            sharedTableFile.delete();
+            if (System.currentTimeMillis() > endTime) {
+                Jvm.warn().on(FileBasedHostnamePortLookupTable.class, "Error deleting the shared lookup table");
+                break;
+            }
+        }
+    }
+
+    private static class ProcessScopedMapping implements ReadMarshallable, WriteMarshallable {
+        private int pid;
+        private InetSocketAddress address;
+
+        public ProcessScopedMapping() {
+        }
+
+        private ProcessScopedMapping(int pid, InetSocketAddress address) {
+            this.pid = pid;
+            this.address = address;
+        }
+
+        @Override
+        public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
+            pid = wire.read("pid").int32();
+            address = new InetSocketAddress(
+                    wire.read("hostname").text(),
+                    wire.read("port").readInt());
+        }
+
+        @Override
+        public void writeMarshallable(@NotNull WireOut wire) {
+            wire.write("pid").int32(pid)
+                    .write("hostname").text(address.getHostName())
+                    .write("port").int32(address.getPort());
+        }
+    }
+}
