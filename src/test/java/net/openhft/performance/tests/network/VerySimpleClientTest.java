@@ -71,6 +71,11 @@ public class VerySimpleClientTest extends NetworkTestCommon {
      */
     private ThreadDump threadDump;
 
+    public VerySimpleClientTest() {
+        outWire.usePadding(false);
+        inWire.usePadding(false);
+    }
+
     @Before
     public void threadDump() {
         threadDump = new ThreadDump();

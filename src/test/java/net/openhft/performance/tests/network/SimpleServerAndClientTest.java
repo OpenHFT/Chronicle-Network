@@ -80,6 +80,7 @@ public class SimpleServerAndClientTest extends NetworkTestCommon {
 
                     // we will use a text wire backed by a elasticByteBuffer
                     @NotNull final Wire wire = new TextWire(bytes).useTextDocuments();
+                    wire.usePadding(false);
 
                     wire.writeDocument(true, w -> w.write("tid").int64(tid));
                     wire.writeDocument(false, w -> w.write("payload").text(expectedMessage));

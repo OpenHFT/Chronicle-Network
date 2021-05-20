@@ -165,6 +165,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         this.eventLoop = eventLoop;
         this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
         this.outWire = wireType.apply(elasticByteBuffer());
+        outWire.usePadding(false);
         // this.inWire = wireType.apply(elasticByteBuffer());
         this.name = name.trim();
         this.timeoutMs = Integer.getInteger("tcp.client.timeout", 10_000);
@@ -173,6 +174,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         // we are always going to send the header as text wire, the server will
         // respond in the wire define by the wireType field, all subsequent types must be in wireType
         this.handShakingWire = WireType.TEXT.apply(Bytes.elasticByteBuffer());
+        this.handShakingWire.usePadding(false);
 
         this.sessionProvider = sessionProvider;
         this.shouldSendCloseMessage = shouldSendCloseMessage;
@@ -828,7 +830,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                         "" : "\n\n") +
                         "sends:\n\n" +
                         "```yaml\n" +
-                        Wires.fromSizePrefixedBlobs(bytes) +
+                        Wires.fromSizePrefixedBlobs(bytes, false, false) +
                         "```");
             YamlLogging.title = "";
             YamlLogging.writeMessage("");
@@ -1348,6 +1350,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
         private void running() {
             final Wire inWire = wireType.apply(elasticByteBuffer());
+            inWire.usePadding(false);
 
             try {
                 assert inWire != null;
@@ -1619,6 +1622,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
             final StringBuilder eventName = Wires.acquireStringBuilder();
             final Wire inWire = TcpChannelHub.this.wireType.apply(bytes);
+            inWire.usePadding(false);
             if (YamlLogging.showHeartBeats())
                 logToStandardOutMessageReceived(inWire);
             inWire.readDocument(null, d -> {
@@ -1946,6 +1950,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
         private Wire createWire() {
             final Wire wire = wireType.apply(elasticByteBuffer());
+            wire.usePadding(false);
             assert wire.startUse();
             return wire;
         }

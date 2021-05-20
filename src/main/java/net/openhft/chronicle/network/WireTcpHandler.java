@@ -243,11 +243,15 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
     }
 
     protected Wire initialiseOutWire(final Bytes<?> out, @NotNull final WireType wireType) {
-        return outWire = wireType.apply(out);
+        final Wire wire = wireType.apply(out);
+        wire.usePadding(false);
+        return outWire = wire;
     }
 
     protected Wire initialiseInWire(@NotNull final WireType wireType, final Bytes<?> in) {
-        return inWire = wireType.apply(in);
+        final Wire wire = wireType.apply(in);
+        wire.usePadding(false);
+        return inWire = wire;
     }
 
     /**

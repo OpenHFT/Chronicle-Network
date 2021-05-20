@@ -75,6 +75,7 @@ public class WireTcpHandlerTest extends NetworkTestCommon {
         ByteBuffer out = ByteBuffer.allocateDirect(64 * 1024);
         Bytes outBytes = Bytes.wrapForWrite(out);
         Wire outWire = wireWrapper.apply(outBytes);
+        outWire.usePadding(false);
 
         ByteBuffer in = ByteBuffer.allocateDirect(64 * 1024);
         Bytes inBytes = Bytes.wrapForRead(in);

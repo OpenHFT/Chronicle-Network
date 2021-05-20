@@ -56,6 +56,7 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseab
 
         // the type of the header
         final Wire inWire = wireType.apply(in);
+        inWire.usePadding(false);
         final long start = in.readPosition();
 
         Object o = null;

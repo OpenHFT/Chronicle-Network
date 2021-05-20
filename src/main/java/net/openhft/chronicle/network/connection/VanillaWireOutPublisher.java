@@ -38,6 +38,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
         bytes = Bytes.elasticByteBuffer(TcpChannelHub.TCP_BUFFER);
         final WireType wireType0 = wireType == WireType.DELTA_BINARY ? WireType.BINARY : wireType;
         wire = wireType0.apply(bytes);
+        wire.usePadding(false);
     }
 
     /**
@@ -163,6 +164,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
 
         synchronized (lock()) {
             wire = wireType0.apply(bytes);
+            wire.usePadding(false);
         }
     }
 
