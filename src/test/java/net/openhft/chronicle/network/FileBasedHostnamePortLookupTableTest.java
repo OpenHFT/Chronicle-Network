@@ -5,14 +5,16 @@ import net.openhft.chronicle.core.io.IOTools;
 import net.openhft.chronicle.network.internal.lookuptable.FileBasedHostnamePortLookupTable;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.stream.IntStream;
 
 import static java.lang.String.format;
 import static org.junit.Assert.*;
@@ -73,37 +75,36 @@ public class FileBasedHostnamePortLookupTableTest {
         assertEquals(new HashSet<>(Arrays.asList("aaa", "bbb", "ccc")), allValues);
     }
 
-    @Test
-    public void shouldWorkConcurrently() throws InterruptedException {
-        ExecutorService es = Executors.newFixedThreadPool(10);
-        CompletionService<Integer> cs = new ExecutorCompletionService<>(es);
-        int numProcessors = Runtime.getRuntime().availableProcessors();
-        for (int i = 0; i < numProcessors; i++) {
-            cs.submit(new UpdatingThread(i), i);
-        }
-        for (int i = 0; i < numProcessors; i++) {
-            cs.take();
-        }
-        es.shutdown();
-        assertTrue(es.awaitTermination(5, TimeUnit.SECONDS));
+    @Ignore(/* on a slow connection this kills the DNS lookup*/)
+    @Test(timeout = 20_000)
+    public void shouldWorkConcurrently() {
+        int para = doShouldWorkConcurrently(true);
+        int seq = doShouldWorkConcurrently(false);
+        System.out.println(seq + " " + para);
+        assertTrue(para > seq);
     }
 
-    private class UpdatingThread implements Runnable {
-        private final int myId;
+    public int doShouldWorkConcurrently(boolean parallel) {
+        long start = System.currentTimeMillis();
+        IntStream stream = IntStream.range(0, Runtime.getRuntime().availableProcessors());
+        if (parallel)
+            stream.parallel();
 
-        private UpdatingThread(int myId) {
-            this.myId = myId;
-        }
-
-        @Override
-        public void run() {
+        return stream.map(myId -> {
             Set<String> allMyAliases = new HashSet<>();
-            for (int i = 0; i < 50; i++) {
-                String description = format("%d-%d", myId, i);
+            for (int i = 0; i < 50 && start + 2000 > System.currentTimeMillis(); i++) {
+                String description = format("0." + (parallel ? "1" : "0") + ".%d.%d", myId, i);
                 allMyAliases.add(description);
-                lookupTable.put(description, new InetSocketAddress(description, i));
+                InetSocketAddress address = new InetSocketAddress(description, i);
+                lookupTable.put(description, address);
+                InetSocketAddress lookup = lookupTable.lookup(description);
+                assertNotNull(description, lookup);
             }
-            assertTrue(lookupTable.aliases().containsAll(allMyAliases));
-        }
+            Set<String> missing = new LinkedHashSet<>(allMyAliases);
+            missing.removeAll(lookupTable.aliases());
+            if (!missing.isEmpty())
+                fail("Missing hosts " + missing);
+            return allMyAliases.size();
+        }).sum();
     }
 }
