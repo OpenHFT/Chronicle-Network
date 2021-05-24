@@ -88,7 +88,7 @@ public class FileBasedHostnamePortLookupTableTest {
         long start = System.currentTimeMillis();
         IntStream stream = IntStream.range(0, Runtime.getRuntime().availableProcessors());
         if (parallel)
-            stream.parallel();
+            stream = stream.parallel();
 
         return stream.map(myId -> {
             Set<String> allMyAliases = new HashSet<>();
