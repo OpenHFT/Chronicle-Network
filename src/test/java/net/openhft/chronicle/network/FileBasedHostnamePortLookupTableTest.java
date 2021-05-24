@@ -75,7 +75,7 @@ public class FileBasedHostnamePortLookupTableTest {
         assertEquals(new HashSet<>(Arrays.asList("aaa", "bbb", "ccc")), allValues);
     }
 
-    @Ignore(/* on a slow connection this kills the DNS lookup*/)
+    @Ignore(/* https://github.com/OpenHFT/Chronicle-Network/issues/103 */)
     @Test(timeout = 20_000)
     public void shouldWorkConcurrently() {
         int para = doShouldWorkConcurrently(true);
