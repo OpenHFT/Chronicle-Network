@@ -61,6 +61,7 @@ import static java.lang.Integer.getInteger;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.*;
 import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
+import static net.openhft.chronicle.core.logger.LoggerFactoryUtil.initialize;
 
 /**
  * The TcpChannelHub is used to send your messages to the server and then read the servers response. The TcpChannelHub ensures that each response is
@@ -73,7 +74,7 @@ public final class TcpChannelHub extends AbstractCloseable {
     public static final int TCP_BUFFER = getTcpBufferSize();
     public static final int TCP_SAFE_SIZE = Integer.getInteger("tcp.safe.size", 128 << 10);
     private static final boolean LOG_TCP_MESSAGES = Jvm.getBoolean("log.tcp.messages");
-    private static final Logger LOG = LoggerFactory.getLogger(TcpChannelHub.class);
+    private static final Logger LOG = initialize(LoggerFactory.getLogger(TcpChannelHub.class));
     private static final boolean DEBUG_ENABLED = LOG.isDebugEnabled();
     private static final boolean hasAssert;
     private static final int HEATBEAT_PING_PERIOD =

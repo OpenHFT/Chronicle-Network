@@ -30,6 +30,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static net.openhft.chronicle.core.logger.LoggerFactoryUtil.initialize;
+
 /**
  * Provides support for the client to failover TCP connections to different servers, if the primary
  * connection can not be established, after retrying up to a timeout,  see {@link
@@ -40,7 +42,7 @@ import java.util.function.Supplier;
  */
 public class SocketAddressSupplier implements Supplier<SocketAddress> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SocketAddressSupplier.class);
+    private static final Logger LOG =  initialize(LoggerFactory.getLogger(SocketAddressSupplier.class));
     @NotNull
     private final String name;
     private final List<RemoteAddressSupplier> remoteAddresses = new ArrayList<>();

@@ -19,6 +19,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.logger.LoggerFactoryUtil;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -36,10 +37,11 @@ import java.nio.channels.ClosedChannelException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static net.openhft.chronicle.core.logger.LoggerFactoryUtil.initialize;
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
 public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractCloseable implements EventHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AcceptorEventHandler.class);
+    private static final Logger LOGGER = initialize(LoggerFactory.getLogger(AcceptorEventHandler.class));
     @NotNull
     private final Function<T, TcpEventHandler<T>> handlerFactory;
     @NotNull

@@ -52,6 +52,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.Math.max;
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
+import static net.openhft.chronicle.core.logger.LoggerFactoryUtil.initialize;
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 
 public class TcpEventHandler<T extends NetworkContext<T>>
@@ -62,7 +63,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
     private static final long NBR_WARNING_NANOS = Long.getLong("tcp.nbr.warning.nanos", 20_000_000);
     private static final long NBW_WARNING_NANOS = Long.getLong("tcp.nbw.warning.nanos", 20_000_000);
-    private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
+    private static final Logger LOG = initialize(LoggerFactory.getLogger(TcpEventHandler.class));
     private static final AtomicBoolean FIRST_HANDLER = new AtomicBoolean();
     private static final int DEFAULT_MAX_MESSAGE_SIZE = 1 << 30;
     public static boolean DISABLE_TCP_NODELAY = Jvm.getBoolean("disable.tcp_nodelay");

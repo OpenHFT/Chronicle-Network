@@ -7,8 +7,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLContext;
 
+import static net.openhft.chronicle.core.logger.LoggerFactoryUtil.initialize;
+
 final class StateMachineProcessor implements Runnable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(StateMachineProcessor.class);
+    private static final Logger LOGGER = initialize(LoggerFactory.getLogger(StateMachineProcessor.class));
 
     private final SSLContext context;
     private final SslEngineStateMachine stateMachine;
@@ -16,8 +18,10 @@ final class StateMachineProcessor implements Runnable {
     private final ChronicleSocketChannel channel;
     private volatile boolean running = true;
 
-    StateMachineProcessor(final ChronicleSocketChannel channel, final boolean isAcceptor,
-                          final SSLContext context, final BufferHandler bufferHandler) {
+    StateMachineProcessor(final ChronicleSocketChannel channel,
+                          final boolean isAcceptor,
+                          final SSLContext context,
+                          final BufferHandler bufferHandler) {
         this.context = context;
         this.channel = channel;
         stateMachine = new SslEngineStateMachine(bufferHandler, isAcceptor);

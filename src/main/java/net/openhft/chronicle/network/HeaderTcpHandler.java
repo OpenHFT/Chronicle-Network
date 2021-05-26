@@ -30,10 +30,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
 
+import static net.openhft.chronicle.core.logger.LoggerFactoryUtil.initialize;
+
 public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseable implements TcpHandler<T> {
 
     public static final String HANDLER = "handler";
-    private static final Logger LOG = LoggerFactory.getLogger(HeaderTcpHandler.class);
+    private static final Logger LOG = initialize(LoggerFactory.getLogger(HeaderTcpHandler.class));
     @NotNull
     private final TcpEventHandler<T> handlerManager;
     @NotNull

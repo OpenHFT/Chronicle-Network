@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 
+import static net.openhft.chronicle.core.logger.LoggerFactoryUtil.initialize;
+
 /**
  * This class is designed to wrap a standard {@link TcpHandler}, providing symmetric encryption/decryption transparently to the underlying handler.
  * <p>
@@ -27,7 +29,7 @@ import java.time.Instant;
  */
 public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
         implements TcpHandler<N>, NetworkContextManager<N> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SslDelegatingTcpHandler.class);
+    private static final Logger LOGGER = initialize(LoggerFactory.getLogger(SslDelegatingTcpHandler.class));
 
     private final TcpHandler<N> delegate;
     private final BytesBufferHandler<N> bufferHandler = new BytesBufferHandler<>();

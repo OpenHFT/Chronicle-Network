@@ -27,9 +27,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import static net.openhft.chronicle.core.logger.LoggerFactoryUtil.initialize;
+
 class NetworkLog {
-    private static final Logger LOG =
-            LoggerFactory.getLogger(NetworkLog.class.getName());
+    private static final Logger LOG = initialize(LoggerFactory.getLogger(NetworkLog.class.getName()));
     @NotNull
     private final String desc;
     private long lastOut = System.currentTimeMillis();

@@ -39,6 +39,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 import static java.lang.ThreadLocal.withInitial;
+import static net.openhft.chronicle.core.logger.LoggerFactoryUtil.initialize;
 import static net.openhft.chronicle.network.connection.CoreFields.reply;
 
 public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
@@ -47,7 +48,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
 
     private static final WriteValue NOOP = out -> {
     };
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractStatelessClient.class);
+    private static final Logger LOG = initialize(LoggerFactory.getLogger(AbstractStatelessClient.class));
 
     @NotNull
     protected final TcpChannelHub hub;

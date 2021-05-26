@@ -13,6 +13,8 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 
+import static net.openhft.chronicle.core.logger.LoggerFactoryUtil.initialize;
+
 /**
  * This class is responsible for the following:
  * <p>
@@ -24,7 +26,7 @@ import java.time.Instant;
  * SSL handshake has occurred, or if an exception occurred.
  */
 final class SslEngineStateMachine {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SslEngineStateMachine.class);
+    private static final Logger LOGGER = initialize(LoggerFactory.getLogger(SslEngineStateMachine.class));
 
     private final BufferHandler bufferHandler;
     private final boolean isAcceptor;

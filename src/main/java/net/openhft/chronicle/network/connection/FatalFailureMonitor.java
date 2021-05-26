@@ -21,8 +21,10 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static net.openhft.chronicle.core.logger.LoggerFactoryUtil.initialize;
+
 public interface FatalFailureMonitor {
-    Logger LOG = LoggerFactory.getLogger(FatalFailureMonitor.class);
+    Logger LOG = initialize(LoggerFactory.getLogger(FatalFailureMonitor.class));
 
     /**
      * called if all the connection attempts/(and/or timeouts) determined by the connection strategy has been exhausted

@@ -27,9 +27,11 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 
+import static net.openhft.chronicle.core.logger.LoggerFactoryUtil.initialize;
+
 public class VanillaWireOutPublisher extends AbstractCloseable implements WireOutPublisher {
 
-    private static final Logger LOG = LoggerFactory.getLogger(VanillaWireOutPublisher.class);
+    private static final Logger LOG = initialize(LoggerFactory.getLogger(VanillaWireOutPublisher.class));
     private final Bytes<ByteBuffer> bytes;
 
     private Wire wire;

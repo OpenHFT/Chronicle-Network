@@ -10,9 +10,11 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
+import static net.openhft.chronicle.core.logger.LoggerFactoryUtil.initialize;
+
 final class Handshaker {
     private static final int HANDSHAKE_BUFFER_CAPACITY = 32768;
-    private static final Logger LOGGER = LoggerFactory.getLogger(Handshaker.class);
+    private static final Logger LOGGER = initialize(LoggerFactory.getLogger(Handshaker.class));
     private final ByteBuffer applicationData;
     private final ByteBuffer networkData;
     private final ByteBuffer peerApplicationData;
