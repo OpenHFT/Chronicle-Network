@@ -49,7 +49,8 @@ public class ClusterAcceptorEventHandler<C extends ClusterContext<C, T>, T exten
 
     @Override
     public boolean action() throws InvalidEventHandlerException {
-        if (!ssc.isOpen() || isClosed() || eventLoop.isClosed()) throw new InvalidEventHandlerException();
+        if (!ssc.isOpen() || isClosed() || eventLoop.isClosed())
+            throw new InvalidEventHandlerException();
 
         try {
             LOGGER.debug("accepting {}", ssc);
@@ -65,24 +66,25 @@ public class ClusterAcceptorEventHandler<C extends ClusterContext<C, T>, T exten
                 closeables.add(nc);
                 nc.socketChannel(sc);
                 nc.isAcceptor(true);
-                NetworkStatsListener<T> nl = nc.networkStatsListener();
+                final NetworkStatsListener<T> nl = nc.networkStatsListener();
                 notifyHostPort(sc, nl);
-                TcpEventHandler<T> apply = context.tcpEventHandlerFactory().apply(nc);
+                final TcpEventHandler<T> tcpEventHandler = context.tcpEventHandlerFactory().apply(nc);
 
                 if (isClosed())
                     closeQuietly(nc);
                 else
-                    eventLoop.addHandler(apply);
+                    eventLoop.addHandler(tcpEventHandler);
             }
         } catch (AsynchronousCloseException e) {
             closeSocket();
             throw new InvalidEventHandlerException(e);
         } catch (ClosedChannelException e) {
             closeSocket();
-            if (isClosed()) throw new InvalidEventHandlerException();
-            else throw new InvalidEventHandlerException(e);
+            if (isClosed())
+                throw InvalidEventHandlerException.reusable();
+            else
+                throw new InvalidEventHandlerException(e);
         } catch (Exception e) {
-
             if (!isClosed() && !eventLoop.isClosed()) {
                 final ChronicleServerSocket socket = ssc.socket();
                 LOGGER.warn("{}, port={}", hostPort, socket == null ? "unknown" : socket.getLocalPort(), e);
