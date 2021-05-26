@@ -161,6 +161,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
             throw Jvm.rethrow(e);
         }
         Closeable.closeQuietly(writers);
+        writers.clear();
         super.performClose();
     }
 

@@ -167,8 +167,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
                         return;
 
                     // if the last iteration didn't consume anything (rolled back) then break
-                    if(dc.index() == index)
-                    {
+                    if (dc.index() == index) {
                         dc.rollbackOnClose();
                         return;
                     }
@@ -346,7 +345,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
 
     @Override
     protected void performClose() {
-        Closeable.closeQuietly(publisher,nc);
+        Closeable.closeQuietly(publisher, nc);
     }
 
     protected void publish(final WriteMarshallable w) {

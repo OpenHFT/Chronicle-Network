@@ -59,6 +59,7 @@ public abstract class CspTcpHandler<T extends NetworkContext<T>> extends WireTcp
     @Override
     protected void performClose() {
         Closeable.closeQuietly(cidToHandle.values());
+        cidToHandle.clear();
         super.performClose();
     }
 
