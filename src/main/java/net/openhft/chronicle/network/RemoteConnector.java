@@ -87,6 +87,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
     @Override
     protected void performClose() {
         closeQuietly(closeables);
+        closeables.clear();
     }
 
     @PackageLocal
