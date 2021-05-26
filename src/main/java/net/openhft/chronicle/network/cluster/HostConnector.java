@@ -90,6 +90,7 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
         }
 
         closeQuietly(nc);
+        this.nc = null;
     }
 
     public ConnectionManager<T> connectionManager() {
