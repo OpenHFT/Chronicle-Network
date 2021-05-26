@@ -48,9 +48,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
 
     @NotNull
     private final ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpHandlerSupplier;
-
     private final int tcpBufferSize;
-
     @NotNull
     private final List<java.io.Closeable> closeables = Collections.synchronizedList(new ArrayList<>());
 
@@ -88,10 +86,10 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
     }
 
     @PackageLocal
-    ChronicleSocketChannel openSocketChannel(InetSocketAddress socketAddress) throws IOException {
+    ChronicleSocketChannel openSocketChannel(final InetSocketAddress socketAddress) throws IOException {
         final ChronicleSocketChannel result = ChronicleSocketChannelFactory.wrap(socketAddress);
         result.configureBlocking(false);
-        ChronicleSocket socket = result.socket();
+        final ChronicleSocket socket = result.socket();
         if (!TcpEventHandler.DISABLE_TCP_NODELAY) socket.setTcpNoDelay(true);
         socket.setReceiveBufferSize(tcpBufferSize);
         socket.setSendBufferSize(tcpBufferSize);
@@ -100,7 +98,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
         return result;
     }
 
-    private class RCEventHandler extends AbstractCloseable implements EventHandler, Closeable {
+    private final class RCEventHandler extends AbstractCloseable implements EventHandler, Closeable {
 
         private final InetSocketAddress address;
         private final AtomicLong nextPeriod = new AtomicLong();
@@ -109,10 +107,11 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
         private final EventLoop eventLoop;
         private final long retryInterval;
 
-        RCEventHandler(String remoteHostPort,
-                       T nc,
-                       EventLoop eventLoop,
-                       InetSocketAddress address, long retryInterval) {
+        RCEventHandler(final String remoteHostPort,
+                       final T nc,
+                       final EventLoop eventLoop,
+                       final InetSocketAddress address,
+                       final long retryInterval) {
             this.remoteHostPort = remoteHostPort;
             this.nc = nc;
             this.eventLoop = eventLoop;
@@ -134,7 +133,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
             throwExceptionIfClosed();
 
             if (isClosed() || eventLoop.isClosed())
-                throw new InvalidEventHandlerException();
+                throw InvalidEventHandlerException.reusable();
             final long time = System.currentTimeMillis();
 
             if (time > nextPeriod.get()) {
@@ -176,7 +175,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
 
             } catch (AlreadyConnectedException e) {
                 Jvm.debug().on(getClass(), e);
-                throw new InvalidEventHandlerException();
+                throw InvalidEventHandlerException.reusable();
             } catch (IOException | IORuntimeException e) {
                 nextPeriod.set(System.currentTimeMillis() + retryInterval);
                 return false;
@@ -189,7 +188,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
                 closeables.add(() -> closeSocket(sc));
             }
 
-            throw new InvalidEventHandlerException();
+            throw InvalidEventHandlerException.reusable();
         }
 
         @NotNull
