@@ -20,10 +20,8 @@ import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static net.openhft.chronicle.core.io.Closeable.*;
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
