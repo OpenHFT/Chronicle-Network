@@ -99,13 +99,15 @@ abstract public class Cluster<T extends ClusteredNetworkContext<T>, C extends Cl
 
     @NotNull
     public Collection<HostDetails> hostDetails() {
+        throwExceptionIfClosed();
         return hostDetails.values();
     }
 
     @Override
     // synchronized guarding hostDetails
     protected synchronized void performClose() {
-        Closeable.closeQuietly(context, hostDetails());
+        Closeable.closeQuietly(context, hostDetails);
+        hostDetails.clear();
     }
 
     // synchronized guarding hostDetails

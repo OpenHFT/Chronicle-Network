@@ -79,6 +79,8 @@ public enum TCPRegistry {
         Closeable.closeQuietly(DESC_TO_SERVER_SOCKET_CHANNEL_MAP.values());
         Closeable.closeQuietly(lookupTable);
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.clear();
+        if (lookupTable != null)
+            lookupTable.clear();
         lookupTable = null;
         Jvm.pause(50);
     }
