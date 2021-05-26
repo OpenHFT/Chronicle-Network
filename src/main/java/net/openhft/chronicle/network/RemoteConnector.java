@@ -57,7 +57,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
         this.tcpHandlerSupplier = tcpEventHandlerFactory;
     }
 
-    private static void closeSocket(Closeable socketChannel) {
+    private static void closeSocket(final Closeable socketChannel) {
         closeQuietly(socketChannel);
     }
 
