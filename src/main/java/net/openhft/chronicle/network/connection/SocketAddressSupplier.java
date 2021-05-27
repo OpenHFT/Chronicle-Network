@@ -167,7 +167,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
         return s + " - " + current;
     }
 
-    private class RemoteAddressSupplier implements Supplier<SocketAddress> {
+    public static class RemoteAddressSupplier implements Supplier<SocketAddress> {
 
         private final InetSocketAddress remoteAddress;
         @NotNull
