@@ -1,11 +1,9 @@
-package net.openhft.chronicle.network;
+package net.openhft.chronicle.network.internal.lookuptable;
 
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IOTools;
-import net.openhft.chronicle.network.internal.lookuptable.FileBasedHostnamePortLookupTable;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -75,7 +73,6 @@ public class FileBasedHostnamePortLookupTableTest {
         assertEquals(new HashSet<>(Arrays.asList("aaa", "bbb", "ccc")), allValues);
     }
 
-    @Ignore(/* https://github.com/OpenHFT/Chronicle-Network/issues/103 */)
     @Test(timeout = 20_000)
     public void shouldWorkConcurrently() {
         int para = doShouldWorkConcurrently(true);
@@ -106,5 +103,41 @@ public class FileBasedHostnamePortLookupTableTest {
                 fail("Missing hosts " + missing);
             return allMyAliases.size();
         }).sum();
+    }
+
+    @Test
+    public void mappingsAreEqualRegardlessOfResolution() {
+        final FileBasedHostnamePortLookupTable.ProcessScopedMapping unresolved
+                = new FileBasedHostnamePortLookupTable.ProcessScopedMapping(123, InetSocketAddress.createUnresolved("localhost", 456));
+        final FileBasedHostnamePortLookupTable.ProcessScopedMapping resolved
+                = new FileBasedHostnamePortLookupTable.ProcessScopedMapping(123, new InetSocketAddress("localhost", 456));
+        assertEquals(unresolved, resolved);
+    }
+
+    @Test
+    public void mappingsAreEqualWhenNeitherHasAddress() {
+        final FileBasedHostnamePortLookupTable.ProcessScopedMapping unresolved
+                = new FileBasedHostnamePortLookupTable.ProcessScopedMapping(123, null);
+        final FileBasedHostnamePortLookupTable.ProcessScopedMapping resolved
+                = new FileBasedHostnamePortLookupTable.ProcessScopedMapping(123, null);
+        assertEquals(unresolved, resolved);
+    }
+
+    @Test
+    public void mappingsHaveSameHashCodeRegardlessOfResolution() {
+        final FileBasedHostnamePortLookupTable.ProcessScopedMapping unresolved
+                = new FileBasedHostnamePortLookupTable.ProcessScopedMapping(123, InetSocketAddress.createUnresolved("localhost", 456));
+        final FileBasedHostnamePortLookupTable.ProcessScopedMapping resolved
+                = new FileBasedHostnamePortLookupTable.ProcessScopedMapping(123, new InetSocketAddress("localhost", 456));
+        assertEquals(unresolved.hashCode(), resolved.hashCode());
+    }
+
+    @Test
+    public void mappingsHaveSameHashCodeWhenAddressIsMissing() {
+        final FileBasedHostnamePortLookupTable.ProcessScopedMapping unresolved
+                = new FileBasedHostnamePortLookupTable.ProcessScopedMapping(123, null);
+        final FileBasedHostnamePortLookupTable.ProcessScopedMapping resolved
+                = new FileBasedHostnamePortLookupTable.ProcessScopedMapping(123, null);
+        assertEquals(unresolved.hashCode(), resolved.hashCode());
     }
 }

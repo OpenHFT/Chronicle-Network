@@ -15,7 +15,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -123,9 +123,25 @@ public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable
     private void readFromTable() {
         assert sharedTableWire.startUse();
         try {
-            allMappings.clear();
             ((YamlWire) sharedTableWire).reset();
-            sharedTableWire.readAllAsMap(String.class, ProcessScopedMapping.class, allMappings);
+
+            // Add new, update changed
+            Map<String, ProcessScopedMapping> readMappings = new HashMap<>();
+            sharedTableWire.readAllAsMap(String.class, ProcessScopedMapping.class, readMappings);
+            for (Map.Entry<String, ProcessScopedMapping> readMapping : readMappings.entrySet()) {
+                final ProcessScopedMapping existingMapping = allMappings.get(readMapping.getKey());
+                if (existingMapping == null || !existingMapping.equals(readMapping.getValue())) {
+                    allMappings.put(readMapping.getKey(), readMapping.getValue());
+                }
+            }
+
+            // Remove removed
+            Set<String> existingKeys = new HashSet<>(allMappings.keySet());
+            for (String key : existingKeys) {
+                if (!readMappings.containsKey(key)) {
+                    allMappings.remove(key);
+                }
+            }
         } finally {
             assert sharedTableWire.endUse();
         }
@@ -175,14 +191,14 @@ public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable
         }
     }
 
-    private static class ProcessScopedMapping implements ReadMarshallable, WriteMarshallable {
+    static class ProcessScopedMapping implements ReadMarshallable, WriteMarshallable {
         private int pid;
         private InetSocketAddress address;
 
         public ProcessScopedMapping() {
         }
 
-        private ProcessScopedMapping(int pid, InetSocketAddress address) {
+        public ProcessScopedMapping(int pid, InetSocketAddress address) {
             this.pid = pid;
             this.address = address;
         }
@@ -190,7 +206,7 @@ public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable
         @Override
         public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
             pid = wire.read("pid").int32();
-            address = new InetSocketAddress(
+            address = InetSocketAddress.createUnresolved(
                     wire.read("hostname").text(),
                     wire.read("port").readInt());
         }
@@ -200,6 +216,27 @@ public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable
             wire.write("pid").int32(pid)
                     .write("hostname").text(address.getHostName())
                     .write("port").int32(address.getPort());
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ProcessScopedMapping that = (ProcessScopedMapping) o;
+            return pid == that.pid &&
+                    (((address != null && that.address != null)
+                            && Objects.equals(address.getHostName(), that.address.getHostName())
+                            && Objects.equals(address.getPort(), that.address.getPort())))
+                    || (address == null && that.address == null);
+        }
+
+        @Override
+        public int hashCode() {
+            if (address == null) {
+                return Objects.hash(pid);
+            } else {
+                return Objects.hash(pid, address.getHostName(), address.getPort());
+            }
         }
     }
 }
