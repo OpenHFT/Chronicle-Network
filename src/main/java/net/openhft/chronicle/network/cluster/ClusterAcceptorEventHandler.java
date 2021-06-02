@@ -108,6 +108,7 @@ public class ClusterAcceptorEventHandler<C extends ClusterContext<C, T>, T exten
     @Override
     protected void performClose() {
         closeQuietly(closeables);
+        closeables.clear(); // https://github.com/OpenHFT/Chronicle-Network/issues/104
         closeSocket();
     }
 }
