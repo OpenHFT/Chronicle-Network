@@ -18,7 +18,6 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.logger.LoggerFactoryUtil;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
@@ -33,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
-import static net.openhft.chronicle.core.logger.LoggerFactoryUtil.initialize;
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 
 /**
@@ -44,7 +42,7 @@ import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
  */
 public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarshallable implements ConnectionStrategy {
 
-    private static final Logger LOG = initialize(LoggerFactory.getLogger(AlwaysStartOnPrimaryConnectionStrategy.class));
+    private static final Logger LOG = LoggerFactory.getLogger(AlwaysStartOnPrimaryConnectionStrategy.class);
 
     private int tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
     private int pausePeriodMs = Integer.getInteger("client.timeout", 500);

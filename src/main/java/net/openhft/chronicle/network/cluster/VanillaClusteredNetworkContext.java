@@ -7,11 +7,9 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static net.openhft.chronicle.core.logger.LoggerFactoryUtil.initialize;
-
 public class VanillaClusteredNetworkContext<T extends VanillaClusteredNetworkContext<T, C>, C extends ClusterContext<C, T>>
         extends VanillaNetworkContext<T> implements ClusteredNetworkContext<T> {
-    private static final Logger LOGGER = initialize(LoggerFactory.getLogger(VanillaClusteredNetworkContext.class));
+    private static final Logger LOGGER = LoggerFactory.getLogger(VanillaClusteredNetworkContext.class);
 
     @NotNull
     private final EventLoop eventLoop;

@@ -28,7 +28,6 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static net.openhft.chronicle.core.logger.LoggerFactoryUtil.initialize;
 import static net.openhft.chronicle.network.connection.CoreFields.reply;
 import static net.openhft.chronicle.wire.WireType.BINARY;
 import static net.openhft.chronicle.wire.WireType.DELTA_BINARY;
@@ -39,7 +38,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
         implements TcpHandler<T>, NetworkContextManager<T> {
 
     private static final int SIZE_OF_SIZE = 4;
-    private static final Logger LOG = initialize(LoggerFactory.getLogger(WireTcpHandler.class));
+    private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
     // this is the point at which it is worth doing more work to get more data.
 
     protected Wire outWire;

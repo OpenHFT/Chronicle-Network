@@ -7,10 +7,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLContext;
 
-import static net.openhft.chronicle.core.logger.LoggerFactoryUtil.initialize;
-
 final class StateMachineProcessor implements Runnable {
-    private static final Logger LOGGER = initialize(LoggerFactory.getLogger(StateMachineProcessor.class));
+    private static final Logger LOGGER = LoggerFactory.getLogger(StateMachineProcessor.class);
 
     private final SSLContext context;
     private final SslEngineStateMachine stateMachine;

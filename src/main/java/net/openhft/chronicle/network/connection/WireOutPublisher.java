@@ -30,11 +30,9 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 
-import static net.openhft.chronicle.core.logger.LoggerFactoryUtil.initialize;
-
 @FunctionalInterface
 public interface WireOutPublisher extends Closeable {
-    Logger LOG = initialize(LoggerFactory.getLogger(WireOutPublisher.class));
+    Logger LOG = LoggerFactory.getLogger(WireOutPublisher.class);
 
     /**
      * a static factory that creates and instance in chronicle enterprise
