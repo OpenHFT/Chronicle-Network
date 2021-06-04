@@ -20,6 +20,7 @@ package net.openhft.chronicle.network.cluster.handlers;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.io.ClosedIllegalStateException;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.ConnectionListener;
 import net.openhft.chronicle.network.api.session.SubHandler;
@@ -229,7 +230,13 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                         "fully " +
                         "process the following " +
                         "YAML\n");
-        } catch (Throwable e) {
+        }
+        catch (ClosedIllegalStateException e) {
+            Jvm.warn().on(getClass(), e);
+
+            close();
+        }
+        catch (Throwable e) {
               Jvm.warn().on(getClass(), e);
         }
     }
