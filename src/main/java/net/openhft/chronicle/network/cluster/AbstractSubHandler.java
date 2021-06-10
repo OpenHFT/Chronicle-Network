@@ -32,7 +32,7 @@ public abstract class AbstractSubHandler<T extends NetworkContext<T>> implements
     private String csp;
     private int remoteIdentifier;
     private int localIdentifier;
-    private boolean isClosed;
+    private volatile boolean isClosed;
 
     @Override
     public void cid(long cid) {
