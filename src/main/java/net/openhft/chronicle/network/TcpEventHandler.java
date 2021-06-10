@@ -214,7 +214,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                 closeAndStartReconnector();
                 throw new InvalidEventHandlerException(e);
             } catch (IOException e) {
-                handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
+                handleIOE(e);
                 throw new InvalidEventHandlerException();
             } catch (InvalidEventHandlerException e) {
                 close();
@@ -443,27 +443,28 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         inBBB.readLimit(inBB.remaining());
     }
 
-    private void handleIOE(@NotNull final IOException e,
-                           final boolean clientIntentionallyClosed,
-                           @Nullable final HeartbeatListener heartbeatListener) {
-        if (isClosed() || clientIntentionallyClosed)
+    private void handleIOE(@NotNull final IOException e) {
+        if (isClosed() || (tcpHandler != null && tcpHandler.hasClientClosed()))
             return;
 
         try {
-            if (e.getMessage() != null && e.getMessage().startsWith("Connection reset by peer"))
-                LOG.trace(e.getMessage(), e);
-            else if (e.getMessage() != null && e.getMessage().startsWith("An existing connection " +
-                    "was forcibly closed"))
-                Jvm.debug().on(getClass(), e.getMessage());
-
-            else if (!(e instanceof ClosedByInterruptException))
+            String message = e.getMessage();
+            if (message != null && message.startsWith("Connection reset by peer")) {
+                LOG.trace(message, e);
+                return;
+            } else if (message != null && message.startsWith("An existing connection was forcibly closed")) {
+                Jvm.debug().on(getClass(), message);
+                return;
+            } else if (!(e instanceof ClosedByInterruptException)) {
                 Jvm.warn().on(getClass(), "", e);
+                return;
+            }
 
             // The remote server has sent you a RST packet, which indicates an immediate dropping of the connection,
             // rather than the usual handshake. This bypasses the normal half-closed state transition.
             // I like this description: "Connection reset by peer" is the TCP/IP equivalent
             // of slamming the phone back on the hook.
-
+            HeartbeatListener heartbeatListener = nc.heartbeatListener();
             if (heartbeatListener != null)
                 heartbeatListener.onMissedHeartbeat();
 
@@ -528,7 +529,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         } catch (ClosedChannelException cce) {
             closeAndStartReconnector();
         } catch (IOException e) {
-            handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
+            handleIOE(e);
         }
         return busy;
     }
