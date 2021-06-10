@@ -54,7 +54,7 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
 
     @NotNull
     @Override
-    public T socketChannel(ChronicleSocketChannel socketChannel) {
+    public T socketChannel(@NotNull ChronicleSocketChannel socketChannel) {
         throwExceptionIfClosedInSetter();
 
         this.socketChannel = socketChannel;
@@ -97,7 +97,7 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
     }
 
     @Override
-    public T wireOutPublisher(WireOutPublisher wireOutPublisher) {
+    public T wireOutPublisher(@NotNull WireOutPublisher wireOutPublisher) {
         throwExceptionIfClosedInSetter();
 
         this.wireOutPublisher = wireOutPublisher;
@@ -111,7 +111,7 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
 
     @Override
     @NotNull
-    public T wireType(WireType wireType) {
+    public T wireType(@NotNull WireType wireType) {
         throwExceptionIfClosedInSetter();
 
         this.wireType = wireType;
