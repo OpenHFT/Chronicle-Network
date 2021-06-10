@@ -59,7 +59,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         implements EventHandler, TcpEventHandlerManager<T> {
 
     public static final int TARGET_WRITE_SIZE = Integer.getInteger("TcpEventHandler.targetWriteSize", 1024);
-    private static final boolean CALL_MISSED_HEARTBEAT_ON_DISCONNECT = Boolean.getBoolean("chronicle.network.callOnMissedHeartbeatOnDisconnect");
+    private static final boolean CALL_MISSED_HEARTBEAT_ON_DISCONNECT = Jvm.getBoolean("chronicle.network.callOnMissedHeartbeatOnDisconnect", false);
     private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
     private static final long NBR_WARNING_NANOS = Long.getLong("tcp.nbr.warning.nanos", 20_000_000);
     private static final long NBW_WARNING_NANOS = Long.getLong("tcp.nbw.warning.nanos", 20_000_000);
