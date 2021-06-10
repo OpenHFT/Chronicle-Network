@@ -59,6 +59,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         implements EventHandler, TcpEventHandlerManager<T> {
 
     public static final int TARGET_WRITE_SIZE = Integer.getInteger("TcpEventHandler.targetWriteSize", 1024);
+    private static final boolean CALL_MISSED_HEARTBEAT_ON_DISCONNECT = Boolean.getBoolean("chronicle.network.callOnMissedHeartbeatOnDisconnect");
     private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
     private static final long NBR_WARNING_NANOS = Long.getLong("tcp.nbr.warning.nanos", 20_000_000);
     private static final long NBW_WARNING_NANOS = Long.getLong("tcp.nbw.warning.nanos", 20_000_000);
@@ -451,22 +452,21 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             String message = e.getMessage();
             if (message != null && message.startsWith("Connection reset by peer")) {
                 LOG.trace(message, e);
-                return;
             } else if (message != null && message.startsWith("An existing connection was forcibly closed")) {
                 Jvm.debug().on(getClass(), message);
-                return;
             } else if (!(e instanceof ClosedByInterruptException)) {
                 Jvm.warn().on(getClass(), "", e);
-                return;
             }
 
             // The remote server has sent you a RST packet, which indicates an immediate dropping of the connection,
             // rather than the usual handshake. This bypasses the normal half-closed state transition.
             // I like this description: "Connection reset by peer" is the TCP/IP equivalent
             // of slamming the phone back on the hook.
-            HeartbeatListener heartbeatListener = nc.heartbeatListener();
-            if (heartbeatListener != null)
-                heartbeatListener.onMissedHeartbeat();
+            if (CALL_MISSED_HEARTBEAT_ON_DISCONNECT) {
+                HeartbeatListener heartbeatListener = nc.heartbeatListener();
+                if (heartbeatListener != null)
+                    heartbeatListener.onMissedHeartbeat();
+            }
 
         } finally {
             closeAndStartReconnector();
