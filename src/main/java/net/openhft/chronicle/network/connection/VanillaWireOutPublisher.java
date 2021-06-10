@@ -20,6 +20,7 @@ package net.openhft.chronicle.network.connection;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.AbstractCloseable;
+import net.openhft.chronicle.core.io.ClosedIllegalStateException;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -113,7 +114,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
         try {
             throwExceptionIfClosed();
 
-        } catch (IllegalStateException ise) {
+        } catch (ClosedIllegalStateException ise) {
             Jvm.debug().on(getClass(), "message ignored as closed", ise);
             return;
         }
