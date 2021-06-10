@@ -23,11 +23,10 @@ import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
-import static net.openhft.chronicle.core.logger.LoggerFactoryUtil.initialize;
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
 public class ClusterAcceptorEventHandler<C extends ClusterContext<C, T>, T extends ClusteredNetworkContext<T>> extends AbstractCloseable implements EventHandler {
-    private static final Logger LOGGER = initialize(LoggerFactory.getLogger(ClusterAcceptorEventHandler.class));
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClusterAcceptorEventHandler.class);
     @NotNull
     private final ChronicleServerSocketChannel ssc;
     @NotNull
