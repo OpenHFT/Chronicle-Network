@@ -19,27 +19,45 @@ package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.network.NetworkContext;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
-import static java.util.Collections.*;
+import static java.util.Collections.newSetFromMap;
 
 public class ConnectionManager<T extends NetworkContext<T>> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionManager.class);
 
     private final Set<ConnectionListener<T>> connectionListeners = newSetFromMap(new IdentityHashMap<>());
 
     @NotNull
     private final IdentityHashMap<T, AtomicBoolean> isConnected = new IdentityHashMap<>();
+    private final Queue<ConnectionListener<T>> newConnectionListeners = new ConcurrentLinkedQueue<>();
 
-    public synchronized void addListener(@NotNull ConnectionListener<T> connectionListener) {
+    /**
+     * Execute any ConnectionChangeListeners that have been added since this was last called
+     */
+    public void executeAndActivateNewConnectionChangeListeners() {
+        while (true) {
+            final ConnectionListener<T> connectionListener = newConnectionListeners.poll();
+            if (connectionListener == null) {
+                break;
+            }
+            LOGGER.info("Addding and executing new listener {}", System.identityHashCode(connectionListener));
+            connectionListeners.add(connectionListener);
+            isConnected.forEach((wireOutPublisher, connected) -> connectionListener.onConnectionChange(wireOutPublisher, connected.get()));
+        }
+    }
 
-        connectionListeners.add(connectionListener);
-
-        isConnected.forEach((wireOutPublisher, connected) -> connectionListener.onConnectionChange(wireOutPublisher, connected.get()));
+    public void addListener(@NotNull ConnectionListener<T> connectionListener) {
+        newConnectionListeners.offer(connectionListener);
     }
 
     public synchronized void onConnectionChanged(boolean isConnected, @NotNull final T nc) {

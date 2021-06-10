@@ -119,6 +119,9 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
         if (outWire.bytes().writePosition() != lastWritePosition)
             onBytesWritten();
 
+        // Run any new connection listeners
+        runNewConnectionListeners();
+
         if (publisher != null)
             publisher.applyAction(outWire);
 
@@ -131,6 +134,9 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
     }
 
     protected void onBytesWritten() {
+    }
+
+    protected void runNewConnectionListeners() {
     }
 
     @Override

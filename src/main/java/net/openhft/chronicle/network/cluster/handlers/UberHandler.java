@@ -242,6 +242,13 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     }
 
     @Override
+    protected void runNewConnectionListeners() {
+        if (connectionChangedNotifier != null) {
+            connectionChangedNotifier.executeAndActivateNewConnectionChangeListeners();
+        }
+    }
+
+    @Override
     protected void onBytesWritten() {
         onMessageReceivedOrWritten();
     }
