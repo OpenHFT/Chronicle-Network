@@ -73,7 +73,7 @@ public class FileBasedHostnamePortLookupTableTest {
         assertEquals(new HashSet<>(Arrays.asList("aaa", "bbb", "ccc")), allValues);
     }
 
-    @Test(timeout = 20_000)
+    @Test(/*timeout = 20_000*/)
     public void shouldWorkConcurrently() {
         int para = doShouldWorkConcurrently(true);
         int seq = doShouldWorkConcurrently(false);
@@ -83,7 +83,9 @@ public class FileBasedHostnamePortLookupTableTest {
 
     public int doShouldWorkConcurrently(boolean parallel) {
         long start = System.currentTimeMillis();
-        IntStream stream = IntStream.range(0, Runtime.getRuntime().availableProcessors());
+        int availableProcessors = Runtime.getRuntime().availableProcessors();
+        System.out.println("availableProcessors = " + availableProcessors);
+        IntStream stream = IntStream.range(0, availableProcessors);
         if (parallel)
             stream = stream.parallel();
 
