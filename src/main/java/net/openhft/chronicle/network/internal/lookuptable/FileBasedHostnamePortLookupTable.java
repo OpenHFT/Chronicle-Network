@@ -3,7 +3,6 @@ package net.openhft.chronicle.network.internal.lookuptable;
 import net.openhft.chronicle.bytes.MappedBytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.OS;
-import net.openhft.chronicle.core.StackTrace;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.network.HostnamePortLookupTable;
@@ -29,7 +28,7 @@ import static net.openhft.chronicle.core.util.Time.sleep;
  */
 public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable, java.io.Closeable {
 
-    private static final long LOCK_TIMEOUT_MS = 4_000;
+    private static final long LOCK_TIMEOUT_MS = 10_000;
     private static final int DELETE_TABLE_FILE_TIMEOUT_MS = 1_000;
     private static final int PID = Jvm.getProcessId();
     private static final String DEFAULT_FILE_NAME = "shared_hostname_mappings";
@@ -157,25 +156,32 @@ public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable
     private <T> T lockFileAndDo(Supplier<T> supplier, boolean shared) {
         final long timeoutAt = System.currentTimeMillis() + LOCK_TIMEOUT_MS;
         final long startMs = System.currentTimeMillis();
-        for (int count = 1; System.currentTimeMillis() < timeoutAt; count++) {
+        Throwable lastThrown = null;
+        int count;
+        for (count = 1; System.currentTimeMillis() < timeoutAt; count++) {
             try (FileLock fileLock = sharedTableBytes.mappedFile().tryLock(0, Long.MAX_VALUE, shared)) {
                 if (fileLock != null) {
-                    return supplier.get();
+                    T t = supplier.get();
+                    long elapsedMs = System.currentTimeMillis() - startMs;
+                    if (elapsedMs > 100)
+                        Jvm.warn().on(getClass(), "Took " + elapsedMs / 1000.0 + " seconds to obtain the lock on " + sharedTableFile, lastThrown);
+                    return t;
                 }
             } catch (IOException | OverlappingFileLockException e) {
                 // failed to acquire the lock, wait until other operation completes
-                if (count > 9) {
-                    if (Jvm.isDebugEnabled(FileBasedHostnamePortLookupTable.class)) {
-                        final long elapsedMs = System.currentTimeMillis() - startMs;
-                        final String message = "Failed to acquire lock on the shared mappings file. Retrying, file=" + sharedTableFile + ", count=" + count + ", elapsed=" + elapsedMs + " ms";
-                        Jvm.debug().on(FileBasedHostnamePortLookupTable.class, "", new StackTrace(message));
-                    }
-                }
+                lastThrown = e;
             }
             int delay = Math.min(250, count * count);
             sleep(delay, MILLISECONDS);
         }
-        throw new RuntimeException("Couldn't acquire lock on shared mapping file");
+        if (Jvm.isDebugEnabled(FileBasedHostnamePortLookupTable.class)) {
+            final long elapsedMs = System.currentTimeMillis() - startMs;
+            final String message = "Failed to acquire lock on the shared mappings file. Retrying, file=" + sharedTableFile + ", count=" + count + ", elapsed=" + elapsedMs + " ms";
+            Jvm.debug().on(FileBasedHostnamePortLookupTable.class, message, lastThrown);
+        }
+        RuntimeException re = new RuntimeException("Couldn't acquire lock on shared mapping file " + sharedTableFile);
+        re.initCause(lastThrown);
+        throw re;
     }
 
     @Override
