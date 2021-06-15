@@ -30,6 +30,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
@@ -255,10 +257,14 @@ public enum TCPRegistry {
         StringBuilder e = new StringBuilder();
         String sep = "";
         for (final ChronicleServerSocketChannel serverSocketChannel : closed) {
+            if (!serverSocketChannel.isOpen())
+                continue;
             try {
-                e.append(sep)
-                        .append(serverSocketChannel.getLocalAddress());
+                SocketAddress address = serverSocketChannel.getLocalAddress();
+                e.append(sep).append(address);
                 sep = ",";
+            } catch (ClosedChannelException cce) {
+                // ignored
             } catch (IOException ioException) {
                 ioException.printStackTrace();
             }
