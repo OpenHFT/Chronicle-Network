@@ -252,7 +252,7 @@ public enum TCPRegistry {
         while (System.currentTimeMillis() < endtime);
 
         Closeable.closeQuietly(closed);
-        Jvm.pause(50);
+        Jvm.pause(500);
 
         StringBuilder e = new StringBuilder();
         String sep = "";
