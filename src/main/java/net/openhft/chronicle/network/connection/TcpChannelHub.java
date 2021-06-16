@@ -27,7 +27,6 @@ import net.openhft.chronicle.core.StackTrace;
 import net.openhft.chronicle.core.io.*;
 import net.openhft.chronicle.core.threads.*;
 import net.openhft.chronicle.network.ConnectionStrategy;
-
 import net.openhft.chronicle.network.api.session.SessionDetails;
 import net.openhft.chronicle.network.api.session.SessionProvider;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
@@ -75,7 +74,7 @@ public final class TcpChannelHub extends AbstractCloseable {
     private static final boolean LOG_TCP_MESSAGES = Jvm.getBoolean("log.tcp.messages");
     private static final Logger LOG = LoggerFactory.getLogger(TcpChannelHub.class);
     private static final boolean DEBUG_ENABLED = LOG.isDebugEnabled();
-    private static final boolean hasAssert;
+    private static final boolean hasAssert = Jvm.isAssertEnabled();
     private static final int HEATBEAT_PING_PERIOD =
             getInteger("heartbeat.ping.period",
                     Jvm.isDebug() ? 30_000 : 5_000);
@@ -84,12 +83,6 @@ public final class TcpChannelHub extends AbstractCloseable {
                     Jvm.isDebug() ? 120_000 : 15_000);
     private static final int SIZE_OF_SIZE = 4;
     private static final Set<TcpChannelHub> hubs = new CopyOnWriteArraySet<>();
-
-    static {
-        boolean x = false;
-        assert x = true;
-        hasAssert = x;
-    }
 
     final long timeoutMs;
     @NotNull
