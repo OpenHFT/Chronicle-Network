@@ -38,10 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketAddress;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
@@ -310,6 +307,19 @@ public final class TcpChannelHub extends AbstractCloseable {
         }
     }
 
+    public static void setTcpNoDelay(Socket socket, boolean tcpNoDelay) throws SocketException {
+        for (int i = 10; i >= 0; i--) {
+            try {
+
+                socket.setTcpNoDelay(tcpNoDelay);
+            } catch (SocketException se) {
+                if (i == 0)
+                    throw se;
+                Jvm.pause(1);
+            }
+        }
+    }
+
     @Nullable
     SocketChannel openSocketChannel(final InetSocketAddress socketAddress) throws IOException {
         final SocketChannel result = SocketChannel.open();
@@ -318,7 +328,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         try {
             result.configureBlocking(false);
             Socket socket = result.socket();
-            socket.setTcpNoDelay(true);
+            setTcpNoDelay(socket, true);
             socket.setReceiveBufferSize(tcpBufferSize);
             socket.setSendBufferSize(tcpBufferSize);
             socket.setSoTimeout(0);
@@ -1665,7 +1675,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                 // we dont want to call isInterrupted every time so will only call it if we have read no bytes
                 if (numberOfBytesRead == 0 && Thread.currentThread().isInterrupted())
                     isShutdown = true;
-                
+
                 if (numberOfBytesRead == -1)
                     throw new ConnectionDroppedException("Disconnection to server=" + socketAddressSupplier +
                             " read=-1 "

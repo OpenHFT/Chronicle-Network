@@ -1,5 +1,7 @@
 package net.openhft.chronicle.network.tcp;
 
+import net.openhft.chronicle.network.connection.TcpChannelHub;
+
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
@@ -11,8 +13,8 @@ public enum ChronicleSocketFactory {
         return new ChronicleSocket() {
 
             @Override
-            public void setTcpNoDelay(final boolean b) throws SocketException {
-                socket.setTcpNoDelay(b);
+            public void setTcpNoDelay(final boolean tcpNoDelay) throws SocketException {
+                TcpChannelHub.setTcpNoDelay(socket, tcpNoDelay);
             }
 
             @Override
@@ -65,6 +67,8 @@ public enum ChronicleSocketFactory {
                 return socket.getLocalPort();
             }
 
-        };
+        }
+
+                ;
     }
 }
