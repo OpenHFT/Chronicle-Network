@@ -19,8 +19,7 @@ package net.openhft.chronicle.network.tcp;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.OS;
-import sun.nio.ch.DirectBuffer;
-import sun.nio.ch.IOStatus;
+import net.openhft.chronicle.core.io.IOTools;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
@@ -48,7 +47,7 @@ public class FastJ8SocketChannel extends VanillaSocketChannel {
         if (buf == null)
             throw new NullPointerException();
 
-        if (isBlocking() || isClosed() || !(buf instanceof DirectBuffer))
+        if (isBlocking() || isClosed() || !IOTools.isDirectBuffer(buf))
             return super.read(buf);
         return read0(buf);
     }
@@ -105,13 +104,13 @@ public class FastJ8SocketChannel extends VanillaSocketChannel {
     }
 
     int readInternal(ByteBuffer buf) throws IOException {
-        int n = OS.read0(fd, ((DirectBuffer) buf).address() + buf.position(), buf.remaining());
-        if ((n == IOStatus.INTERRUPTED) && socketChannel.isOpen()) {
+        int n = OS.read0(fd, IOTools.addressFor(buf) + buf.position(), buf.remaining());
+        if ((n == IOTools.IOSTATUS_INTERRUPTED) && socketChannel.isOpen()) {
             // The system call was interrupted but the channel
             // is still open, so retry
             return 0;
         }
-        int ret = IOStatus.normalize(n);
+        int ret = IOTools.normaliseIOStatus(n);
         if (ret > 0)
             buf.position(buf.position() + ret);
         else if (ret < 0)
