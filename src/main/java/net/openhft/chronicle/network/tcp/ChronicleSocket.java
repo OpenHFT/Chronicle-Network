@@ -6,7 +6,7 @@ import java.net.SocketOptions;
 
 public interface ChronicleSocket {
 
-    void setTcpNoDelay(final boolean b) throws SocketException;
+    void setTcpNoDelay(final boolean tcpNoDelay) throws SocketException;
 
     int getReceiveBufferSize() throws SocketException;
 

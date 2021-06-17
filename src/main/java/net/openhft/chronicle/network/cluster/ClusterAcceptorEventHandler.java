@@ -1,7 +1,6 @@
 package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.core.io.AbstractCloseable;
-import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -19,8 +18,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ClosedChannelException;
-import java.util.Collection;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
@@ -32,7 +29,6 @@ public class ClusterAcceptorEventHandler<C extends ClusterContext<C, T>, T exten
     @NotNull
     private final C context;
     private final String hostPort;
-    private final Collection<Closeable> closeables = new CopyOnWriteArrayList<>();
     private EventLoop eventLoop;
 
     public ClusterAcceptorEventHandler(@NotNull final String hostPort,
@@ -63,7 +59,6 @@ public class ClusterAcceptorEventHandler<C extends ClusterContext<C, T>, T exten
                     throw new InvalidEventHandlerException("closed");
                 }
                 final T nc = context.networkContextFactory().apply(context);
-                closeables.add(nc);
                 nc.socketChannel(sc);
                 nc.isAcceptor(true);
                 final NetworkStatsListener<T> nl = nc.networkStatsListener();
@@ -71,7 +66,7 @@ public class ClusterAcceptorEventHandler<C extends ClusterContext<C, T>, T exten
                 final TcpEventHandler<T> tcpEventHandler = context.tcpEventHandlerFactory().apply(nc);
 
                 if (isClosed())
-                    closeQuietly(nc);
+                    closeQuietly(tcpEventHandler);
                 else
                     eventLoop.addHandler(tcpEventHandler);
             }
@@ -107,8 +102,6 @@ public class ClusterAcceptorEventHandler<C extends ClusterContext<C, T>, T exten
 
     @Override
     protected void performClose() {
-        closeQuietly(closeables);
-        closeables.clear(); // https://github.com/OpenHFT/Chronicle-Network/issues/104
         closeSocket();
     }
 }
