@@ -151,9 +151,10 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
 
     @Override
     protected void performClose() {
-        clear();
-
-        bytes.releaseLast();
+        synchronized (lock()) {
+            bytes.releaseLast();
+            wire = null;
+        }
     }
 
     @Override
