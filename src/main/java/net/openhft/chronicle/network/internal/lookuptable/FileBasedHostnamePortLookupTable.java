@@ -28,6 +28,7 @@ import static net.openhft.chronicle.core.util.Time.sleep;
  */
 public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable, java.io.Closeable {
 
+    private static final long MINIMUM_INITIAL_FILE_SIZE_BYTES = 1_024 * 512; // We want to prevent resizing
     private static final long LOCK_TIMEOUT_MS = 10_000;
     private static final int DELETE_TABLE_FILE_TIMEOUT_MS = 1_000;
     private static final int PID = Jvm.getProcessId();
@@ -48,7 +49,8 @@ public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable
             if (sharedTableFile.createNewFile() && !sharedTableFile.canWrite()) {
                 throw new IllegalStateException("Cannot write to shared mapping file " + sharedTableFile);
             }
-            sharedTableBytes = MappedBytes.mappedBytes(sharedTableFile, OS.SAFE_PAGE_SIZE, OS.SAFE_PAGE_SIZE, false);
+            long pagesForMinimum = (long) Math.ceil(((float) MINIMUM_INITIAL_FILE_SIZE_BYTES) / OS.SAFE_PAGE_SIZE);
+            sharedTableBytes = MappedBytes.mappedBytes(sharedTableFile, pagesForMinimum * OS.SAFE_PAGE_SIZE, OS.SAFE_PAGE_SIZE, false);
             sharedTableBytes.disableThreadSafetyCheck(true);
             sharedTableWire = new YamlWire(sharedTableBytes);
             sharedTableWire.consumePadding();
@@ -161,11 +163,15 @@ public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable
         for (count = 1; System.currentTimeMillis() < timeoutAt; count++) {
             try (FileLock fileLock = sharedTableBytes.mappedFile().tryLock(0, Long.MAX_VALUE, shared)) {
                 if (fileLock != null) {
-                    T t = supplier.get();
-                    long elapsedMs = System.currentTimeMillis() - startMs;
-                    if (elapsedMs > 100)
-                        Jvm.warn().on(getClass(), "Took " + elapsedMs / 1000.0 + " seconds to obtain the lock on " + sharedTableFile, lastThrown);
-                    return t;
+                    try {
+                        T t = supplier.get();
+                        long elapsedMs = System.currentTimeMillis() - startMs;
+                        if (elapsedMs > 100)
+                            Jvm.warn().on(getClass(), "Took " + elapsedMs / 1000.0 + " seconds to obtain the lock on " + sharedTableFile, lastThrown);
+                        return t;
+                    } catch (OverlappingFileLockException e) {
+                        throw new RuntimeException("Attempted to resize the underlying bytes, increase the MINIMUM_INITIAL_FILE_SIZE_BYTES or make this work with resizing!", e);
+                    }
                 }
             } catch (IOException | OverlappingFileLockException e) {
                 // failed to acquire the lock, wait until other operation completes

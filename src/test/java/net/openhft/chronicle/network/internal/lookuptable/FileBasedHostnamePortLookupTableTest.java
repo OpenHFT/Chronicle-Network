@@ -4,7 +4,6 @@ import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IOTools;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -74,7 +73,6 @@ public class FileBasedHostnamePortLookupTableTest {
         assertEquals(new HashSet<>(Arrays.asList("aaa", "bbb", "ccc")), allValues);
     }
 
-    @Ignore(/*OverlappingFileLockException in FileBasedHostnamePortLookupTable #114*/)
     @Test(timeout = 20_000)
     public void shouldWorkConcurrently() {
         int para = doShouldWorkConcurrently(true);
@@ -85,7 +83,7 @@ public class FileBasedHostnamePortLookupTableTest {
 
     public int doShouldWorkConcurrently(boolean parallel) {
         long start = System.currentTimeMillis();
-        IntStream stream = IntStream.range(0, Runtime.getRuntime().availableProcessors());
+        IntStream stream = IntStream.range(0, Math.min(16, Runtime.getRuntime().availableProcessors()));
         if (parallel)
             stream = stream.parallel();
 
@@ -94,7 +92,7 @@ public class FileBasedHostnamePortLookupTableTest {
             for (int i = 0; i < 50 && start + 2000 > System.currentTimeMillis(); i++) {
                 String description = format("0." + (parallel ? "1" : "0") + ".%d.%d", myId, i);
                 allMyAliases.add(description);
-                InetSocketAddress address = new InetSocketAddress(description, i);
+                InetSocketAddress address = InetSocketAddress.createUnresolved(description, i);
                 lookupTable.put(description, address);
                 InetSocketAddress lookup = lookupTable.lookup(description);
                 assertNotNull(description, lookup);
