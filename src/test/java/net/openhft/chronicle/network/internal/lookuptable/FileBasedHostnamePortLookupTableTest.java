@@ -89,7 +89,7 @@ public class FileBasedHostnamePortLookupTableTest {
 
         return stream.map(myId -> {
             Set<String> allMyAliases = new HashSet<>();
-            for (int i = 0; i < 50 && start + 2000 > System.currentTimeMillis(); i++) {
+            for (int i = 0; i < 200 && start + 2000 > System.currentTimeMillis(); i++) {
                 String description = format("0." + (parallel ? "1" : "0") + ".%d.%d", myId, i);
                 allMyAliases.add(description);
                 InetSocketAddress address = InetSocketAddress.createUnresolved(description, i);
