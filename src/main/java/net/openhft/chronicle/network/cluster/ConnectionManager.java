@@ -20,13 +20,12 @@ package net.openhft.chronicle.network.cluster;
 import net.openhft.chronicle.network.NetworkContext;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
-import static java.util.Collections.*;
+import static java.util.Collections.newSetFromMap;
 
 public class ConnectionManager<T extends NetworkContext<T>> {
 
@@ -60,8 +59,8 @@ public class ConnectionManager<T extends NetworkContext<T>> {
         /**
          * Callback which is triggered on connection state change: connect or disconnect.
          *
-         * @param nc Network context.
-         * @param isConnected <tt>true</tt> for connect events, <tt>false</tt> for disconnects.
+         * @param nc          Network context.
+         * @param isConnected <code>true</code> for connect events, <code>false</code> for disconnects.
          */
         void onConnectionChange(T nc, boolean isConnected);
     }

@@ -43,7 +43,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     }
 
     /**
-     * Apply waiting messages and return false if there was none.
+     * Apply waiting messages and return <code>false</code> if there was none.
      *
      * @param bytes buffer to write to.
      */
@@ -85,7 +85,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     }
 
     /**
-     * Apply waiting messages and return false if there was none.
+     * Apply waiting messages and return <code>false</code> if there was none.
      *
      * @param outWire buffer to write to.
      */
