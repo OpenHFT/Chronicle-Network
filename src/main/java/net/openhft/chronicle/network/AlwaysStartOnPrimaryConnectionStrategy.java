@@ -18,7 +18,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.network.connection.FatalFailureConnectionStrategy;
+import net.openhft.chronicle.network.connection.ClientConnectionMonitor;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
@@ -49,15 +49,11 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
     private int pausePeriodMs = Integer.getInteger("client.timeout", 500);
     private int socketConnectionTimeoutMs = Integer.getInteger("connectionStrategy.socketConnectionTimeoutMs", 1);
     private long pauseMillisBeforeReconnect = Integer.getInteger("connectionStrategy.pauseMillisBeforeReconnect", 500);
-    private FatalFailureMonitor fatalFailureMonitor;
+    private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
+    
 
-    @Override
-    public FatalFailureMonitor fatalFailureMonitor() {
-        return fatalFailureMonitor;
-    }
-
-    public AlwaysStartOnPrimaryConnectionStrategy fatalFailureMonitor(FatalFailureMonitor fatalFailureMonitor) {
-        this.fatalFailureMonitor = fatalFailureMonitor;
+    public AlwaysStartOnPrimaryConnectionStrategy clientConnectionMonitor(ClientConnectionMonitor fatalFailureMonitor) {
+        this.clientConnectionMonitor = fatalFailureMonitor;
         return this;
     }
 

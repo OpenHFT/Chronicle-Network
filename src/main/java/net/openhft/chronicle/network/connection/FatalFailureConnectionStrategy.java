@@ -18,7 +18,9 @@
 package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.network.AlwaysStartOnPrimaryConnectionStrategy;
 import net.openhft.chronicle.network.ConnectionStrategy;
+import net.openhft.chronicle.network.VanillaClientConnectionMonitor;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.wire.SelfDescribingMarshallable;
 import org.jetbrains.annotations.NotNull;
@@ -62,15 +64,15 @@ public class FatalFailureConnectionStrategy extends SelfDescribingMarshallable i
     private final boolean blocking;
     private int tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
     private boolean hasSentFatalFailure;
-    private FatalFailureMonitor fatalFailureMonitor;
+    private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
 
     @Override
-    public FatalFailureMonitor fatalFailureMonitor() {
-        return fatalFailureMonitor;
+    public ClientConnectionMonitor clientConnectionMonitor() {
+        return clientConnectionMonitor;
     }
 
-    public FatalFailureConnectionStrategy fatalFailureMonitor(FatalFailureMonitor fatalFailureMonitor) {
-        this.fatalFailureMonitor = fatalFailureMonitor;
+    public FatalFailureConnectionStrategy clientConnectionMonitor(ClientConnectionMonitor fatalFailureMonitor) {
+        this.clientConnectionMonitor = fatalFailureMonitor;
         return this;
     }
 

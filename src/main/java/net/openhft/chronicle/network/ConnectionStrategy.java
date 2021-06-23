@@ -18,6 +18,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.network.connection.ClientConnectionMonitor;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.network.tcp.ChronicleSocket;
@@ -39,8 +40,8 @@ import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 @FunctionalInterface
 public interface ConnectionStrategy extends Marshallable {
 
-    default FatalFailureMonitor fatalFailureMonitor() {
-        return null;
+    default ClientConnectionMonitor clientConnectionMonitor() {
+        return new VanillaClientConnectionMonitor();
     }
 
     @Nullable
