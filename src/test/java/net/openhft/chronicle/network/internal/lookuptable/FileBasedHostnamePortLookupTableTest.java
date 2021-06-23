@@ -115,15 +115,6 @@ public class FileBasedHostnamePortLookupTableTest {
     }
 
     @Test
-    public void mappingsAreEqualWhenNeitherHasAddress() {
-        final FileBasedHostnamePortLookupTable.ProcessScopedMapping unresolved
-                = new FileBasedHostnamePortLookupTable.ProcessScopedMapping(123, null);
-        final FileBasedHostnamePortLookupTable.ProcessScopedMapping resolved
-                = new FileBasedHostnamePortLookupTable.ProcessScopedMapping(123, null);
-        assertEquals(unresolved, resolved);
-    }
-
-    @Test
     public void mappingsHaveSameHashCodeRegardlessOfResolution() {
         final FileBasedHostnamePortLookupTable.ProcessScopedMapping unresolved
                 = new FileBasedHostnamePortLookupTable.ProcessScopedMapping(123, InetSocketAddress.createUnresolved("localhost", 456));
@@ -132,12 +123,8 @@ public class FileBasedHostnamePortLookupTableTest {
         assertEquals(unresolved.hashCode(), resolved.hashCode());
     }
 
-    @Test
-    public void mappingsHaveSameHashCodeWhenAddressIsMissing() {
-        final FileBasedHostnamePortLookupTable.ProcessScopedMapping unresolved
-                = new FileBasedHostnamePortLookupTable.ProcessScopedMapping(123, null);
-        final FileBasedHostnamePortLookupTable.ProcessScopedMapping resolved
-                = new FileBasedHostnamePortLookupTable.ProcessScopedMapping(123, null);
-        assertEquals(unresolved.hashCode(), resolved.hashCode());
+    @Test(expected = IllegalArgumentException.class)
+    public void addressIsMandatory() {
+        lookupTable.put("something", null);
     }
 }
