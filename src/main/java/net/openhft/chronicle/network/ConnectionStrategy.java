@@ -39,6 +39,10 @@ import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 @FunctionalInterface
 public interface ConnectionStrategy extends Marshallable {
 
+    default FatalFailureMonitor fatalFailureMonitor() {
+        return null;
+    }
+
     @Nullable
     static ChronicleSocketChannel socketChannel(@NotNull InetSocketAddress socketAddress, int tcpBufferSize, int socketConnectionTimeoutMs) throws IOException {
 
@@ -98,14 +102,14 @@ public interface ConnectionStrategy extends Marshallable {
      * @throws InterruptedException if the channel is interrupted.
      */
     ChronicleSocketChannel connect(@NotNull String name,
-                           @NotNull SocketAddressSupplier socketAddressSupplier,
-                           boolean didLogIn,
-                           @NotNull FatalFailureMonitor fatalFailureMonitor) throws InterruptedException;
+                                   @NotNull SocketAddressSupplier socketAddressSupplier,
+                                   boolean didLogIn,
+                                   @NotNull FatalFailureMonitor fatalFailureMonitor) throws InterruptedException;
 
     @Nullable
     default ChronicleSocketChannel openSocketChannel(@NotNull InetSocketAddress socketAddress,
-                                             int tcpBufferSize,
-                                             long timeoutMs) throws IOException, InterruptedException {
+                                                     int tcpBufferSize,
+                                                     long timeoutMs) throws IOException, InterruptedException {
 
         return openSocketChannel(socketAddress,
                 tcpBufferSize,
