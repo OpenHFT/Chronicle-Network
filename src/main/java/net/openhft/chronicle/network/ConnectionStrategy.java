@@ -18,6 +18,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.network.connection.ClientConnectionMonitor;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.network.tcp.ChronicleSocket;
@@ -38,6 +39,10 @@ import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
 @FunctionalInterface
 public interface ConnectionStrategy extends Marshallable {
+
+    default ClientConnectionMonitor clientConnectionMonitor() {
+        return new VanillaClientConnectionMonitor();
+    }
 
     @Nullable
     static ChronicleSocketChannel socketChannel(@NotNull InetSocketAddress socketAddress, int tcpBufferSize, int socketConnectionTimeoutMs) throws IOException {
@@ -98,14 +103,14 @@ public interface ConnectionStrategy extends Marshallable {
      * @throws InterruptedException if the channel is interrupted.
      */
     ChronicleSocketChannel connect(@NotNull String name,
-                           @NotNull SocketAddressSupplier socketAddressSupplier,
-                           boolean didLogIn,
-                           @NotNull FatalFailureMonitor fatalFailureMonitor) throws InterruptedException;
+                                   @NotNull SocketAddressSupplier socketAddressSupplier,
+                                   boolean didLogIn,
+                                   @NotNull FatalFailureMonitor fatalFailureMonitor) throws InterruptedException;
 
     @Nullable
     default ChronicleSocketChannel openSocketChannel(@NotNull InetSocketAddress socketAddress,
-                                             int tcpBufferSize,
-                                             long timeoutMs) throws IOException, InterruptedException {
+                                                     int tcpBufferSize,
+                                                     long timeoutMs) throws IOException, InterruptedException {
 
         return openSocketChannel(socketAddress,
                 tcpBufferSize,
