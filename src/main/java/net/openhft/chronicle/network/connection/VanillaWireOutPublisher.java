@@ -188,9 +188,10 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     @NotNull
     @Override
     public String toString() {
+        String wireStr = (wire == null) ? "wire= null " : (wire.getClass().getSimpleName() + "=" + bytes);
         return "VanillaWireOutPublisher{" +
                 ", closed=" + isClosed() +
-                ", " + wire.getClass().getSimpleName() + "=" + bytes +
+                ", " + wireStr +
                 '}';
     }
 
