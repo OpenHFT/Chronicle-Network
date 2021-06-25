@@ -25,11 +25,10 @@ import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class FastJ8SocketChannel extends VanillaSocketChannel {
     final FileDescriptor fd;
-    private final AtomicBoolean readLock = new AtomicBoolean();
+    private final Object readLock;
     volatile boolean open;
     private volatile boolean blocking;
 
@@ -38,6 +37,7 @@ public class FastJ8SocketChannel extends VanillaSocketChannel {
         fd = Jvm.getValue(socketChannel, "fd");
         open = socketChannel.isOpen();
         blocking = socketChannel.isBlocking();
+        readLock = Jvm.getValue(socketChannel, "readLock");
     }
 
     @Override
@@ -53,16 +53,11 @@ public class FastJ8SocketChannel extends VanillaSocketChannel {
     }
 
     int read0(ByteBuffer buf) throws IOException {
-        try {
-            while (true) {
-                if (readLock.compareAndSet(false, true))
-                    break;
-                if (Thread.interrupted())
-                    throw new IOException(new InterruptedException());
-            }
+        synchronized (readLock) {
+            if (Thread.interrupted())
+                throw new IOException(new InterruptedException());
+
             return readInternal(buf);
-        } finally {
-            readLock.compareAndSet(true, false);
         }
     }
 
