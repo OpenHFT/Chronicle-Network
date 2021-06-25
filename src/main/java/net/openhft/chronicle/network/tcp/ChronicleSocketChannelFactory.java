@@ -2,6 +2,7 @@ package net.openhft.chronicle.network.tcp;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.OS;
+import net.openhft.chronicle.core.util.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -54,12 +55,8 @@ public enum ChronicleSocketChannelFactory {
     }
 
     private static ChronicleSocketChannel newNativeInstance(@NotNull final SocketChannel sc) {
-        try {
-            return (ChronicleSocketChannel) Class.forName("software.chronicle.network.impl.NativeChronicleSocketChannel").newInstance();
-        } catch (Exception e) {
-            throw Jvm.rethrow(e);
-        }
-
+        String className = "software.chronicle.network.impl.NativeChronicleSocketChannel";
+        return ObjectUtils.newInstance(className);
     }
 
     @NotNull
