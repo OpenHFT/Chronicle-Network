@@ -57,6 +57,11 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
         return this;
     }
 
+    @Override
+    public ClientConnectionMonitor clientConnectionMonitor() {
+        return clientConnectionMonitor;
+    }
+
     @Nullable
     @Override
     public ChronicleSocketChannel connect(@NotNull String name,
