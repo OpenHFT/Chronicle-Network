@@ -50,7 +50,6 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
     private int socketConnectionTimeoutMs = Integer.getInteger("connectionStrategy.socketConnectionTimeoutMs", 1);
     private long pauseMillisBeforeReconnect = Integer.getInteger("connectionStrategy.pauseMillisBeforeReconnect", 500);
     private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
-    
 
     public AlwaysStartOnPrimaryConnectionStrategy clientConnectionMonitor(ClientConnectionMonitor fatalFailureMonitor) {
         this.clientConnectionMonitor = fatalFailureMonitor;
@@ -61,7 +60,6 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
     public ClientConnectionMonitor clientConnectionMonitor() {
         return clientConnectionMonitor;
     }
-
 
     @Nullable
     @Override
