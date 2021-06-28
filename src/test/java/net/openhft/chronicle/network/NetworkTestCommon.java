@@ -70,12 +70,9 @@ public class NetworkTestCommon {
     }
 
     @After
-    public void resetClock() {
-        SystemTimeProvider.CLOCK = SystemTimeProvider.INSTANCE;
-    }
-
-    @After
     public void afterChecks() {
+        SystemTimeProvider.CLOCK = SystemTimeProvider.INSTANCE;
+
         CleaningThread.performCleanup(Thread.currentThread());
 
         // find any discarded resources.
@@ -87,5 +84,10 @@ public class NetworkTestCommon {
         assertReferencesReleased();
         checkThreadDump();
         checkExceptions();
+        tearDown();
+    }
+
+    protected void tearDown() {
+
     }
 }

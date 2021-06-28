@@ -34,7 +34,6 @@ package net.openhft.performance.tests.network;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.io.AbstractReferenceCounted;
 import net.openhft.chronicle.core.threads.EventLoop;
-import net.openhft.chronicle.core.threads.ThreadDump;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.NetworkTestCommon;
 import net.openhft.chronicle.network.TCPRegistry;
@@ -48,7 +47,6 @@ import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.Wires;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -66,24 +64,9 @@ public class VerySimpleClientTest extends NetworkTestCommon {
     private String expectedMessage;
     private ChronicleSocketChannel client;
 
-    /*
-     * And, check the benchmark went fine afterwards:
-     */
-    private ThreadDump threadDump;
-
     public VerySimpleClientTest() {
         outWire.usePadding(false);
         inWire.usePadding(false);
-    }
-
-    @Before
-    public void threadDump() {
-        threadDump = new ThreadDump();
-    }
-
-    @After
-    public void checkThreadDump() {
-        threadDump.assertNoNewThreads();
     }
 
     @Before
@@ -98,7 +81,7 @@ public class VerySimpleClientTest extends NetworkTestCommon {
 
     }
 
-    @After
+    @Override
     public void tearDown() {
         eg.close();
         TcpChannelHub.closeAllHubs();

@@ -2,7 +2,6 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -12,8 +11,8 @@ import java.io.IOException;
 public class AlwaysStartOnPrimaryConnectionStrategyTest extends NetworkTestCommon {
     private static String uri;
 
-    @After
-    public void teardown() {
+    @Override
+    public void tearDown() {
         TCPRegistry.reset();
     }
 
