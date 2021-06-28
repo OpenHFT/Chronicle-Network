@@ -71,6 +71,7 @@ public class NetworkTestCommon {
 
     @After
     public void afterChecks() {
+        preAfter();
         SystemTimeProvider.CLOCK = SystemTimeProvider.INSTANCE;
 
         CleaningThread.performCleanup(Thread.currentThread());
@@ -85,6 +86,10 @@ public class NetworkTestCommon {
         checkThreadDump();
         checkExceptions();
         tearDown();
+    }
+
+    protected void preAfter() {
+
     }
 
     protected void tearDown() {

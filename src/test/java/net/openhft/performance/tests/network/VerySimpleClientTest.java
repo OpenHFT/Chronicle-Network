@@ -82,10 +82,9 @@ public class VerySimpleClientTest extends NetworkTestCommon {
     }
 
     @Override
-    public void tearDown() {
-        eg.close();
+    protected void preAfter() {
         TcpChannelHub.closeAllHubs();
-        TCPRegistry.reset();
+        eg.close();
         inWire.bytes().releaseLast();
         outWire.bytes().releaseLast();
     }
