@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
@@ -74,7 +75,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
             socketAddressSupplier.failoverToNextAddress();
 
         for (; ; ) {
-
+            throwExceptionIfClosed();
             ChronicleSocketChannel socketChannel = null;
             try {
 
@@ -155,5 +156,17 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
     public AlwaysStartOnPrimaryConnectionStrategy pauseMillisBeforeReconnect(long pauseMillisBeforeReconnect) {
         this.pauseMillisBeforeReconnect = pauseMillisBeforeReconnect;
         return this;
+    }
+
+   private transient final AtomicBoolean isClosed = new AtomicBoolean(false);
+
+    @Override
+    public void close() {
+        isClosed.set(true);
+    }
+
+    @Override
+    public boolean isClosed() {
+        return isClosed.get();
     }
 }

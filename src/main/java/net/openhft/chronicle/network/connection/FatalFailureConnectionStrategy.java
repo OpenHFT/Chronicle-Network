@@ -18,7 +18,6 @@
 package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.network.AlwaysStartOnPrimaryConnectionStrategy;
 import net.openhft.chronicle.network.ConnectionStrategy;
 import net.openhft.chronicle.network.VanillaClientConnectionMonitor;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
@@ -28,6 +27,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
@@ -103,7 +103,7 @@ public class FatalFailureConnectionStrategy extends SelfDescribingMarshallable i
         socketAddressSupplier.resetToPrimary();
 
         for (; ; ) {
-
+            throwExceptionIfClosed();
             if (Thread.currentThread().isInterrupted())
                 throw new InterruptedException();
 
@@ -161,4 +161,17 @@ public class FatalFailureConnectionStrategy extends SelfDescribingMarshallable i
             }
         }
     }
+
+    private final transient AtomicBoolean isClosed = new AtomicBoolean(false);
+
+    @Override
+    public void close() {
+        isClosed.set(true);
+    }
+
+    @Override
+    public boolean isClosed() {
+        return isClosed.get();
+    }
+
 }

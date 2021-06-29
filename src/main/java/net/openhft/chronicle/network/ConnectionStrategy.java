@@ -18,6 +18,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.connection.ClientConnectionMonitor;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
@@ -37,8 +38,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
-@FunctionalInterface
-public interface ConnectionStrategy extends Marshallable {
+public interface ConnectionStrategy extends Marshallable, Closeable {
 
     default ClientConnectionMonitor clientConnectionMonitor() {
         return new VanillaClientConnectionMonitor();
@@ -133,6 +133,7 @@ public interface ConnectionStrategy extends Marshallable {
             return sc;
 
         for (; ; ) {
+            throwExceptionIfClosed();
             if (Thread.currentThread().isInterrupted())
                 throw new InterruptedException();
             long startMs = System.currentTimeMillis();
@@ -164,4 +165,14 @@ public interface ConnectionStrategy extends Marshallable {
     default long pauseMillisBeforeReconnect() {
         return 500;
     }
+
+    @Override
+    default void close() {
+    }
+
+    @Override
+    default boolean isClosed() {
+      return false;
+    }
+
 }
