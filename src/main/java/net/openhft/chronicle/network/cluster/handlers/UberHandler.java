@@ -111,7 +111,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         publisher(publisher);
 
         @NotNull final EventLoop eventLoop = nc.eventLoop();
-        if (!eventLoop.isClosed()) {
+        if (!eventLoop.isClosed() && !eventLoop.isClosing()) {
             eventLoop.start();
 
             // reflect the uber handler
@@ -230,14 +230,12 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                         "fully " +
                         "process the following " +
                         "YAML\n");
-        }
-        catch (ClosedIllegalStateException e) {
+        } catch (ClosedIllegalStateException e) {
             Jvm.warn().on(getClass(), e);
 
             close();
-        }
-        catch (Throwable e) {
-              Jvm.warn().on(getClass(), e);
+        } catch (Throwable e) {
+            Jvm.warn().on(getClass(), e);
         }
     }
 
