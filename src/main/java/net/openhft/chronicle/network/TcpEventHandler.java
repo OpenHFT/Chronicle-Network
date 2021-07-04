@@ -60,6 +60,10 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         implements EventHandler, TcpEventHandlerManager<T> {
 
     public static final int TARGET_WRITE_SIZE = Integer.getInteger("TcpEventHandler.targetWriteSize", 1024);
+    /**
+     * Maximum number of iterations we can go without performing idle work (to prevent starvation in busy handlers)
+     */
+    private static final int MAX_ITERATIONS_BETWEEN_IDLE_WORK = 100;
     private static final boolean CALL_MISSED_HEARTBEAT_ON_DISCONNECT = Jvm.getBoolean("chronicle.network.callOnMissedHeartbeatOnDisconnect");
     private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
     private static final long NBR_WARNING_NANOS = Long.getLong("tcp.nbr.warning.nanos", 20_000_000);
@@ -90,6 +94,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
     private final boolean nbWarningEnabled;
     private final StatusMonitorEventHandler statusMonitorEventHandler;
+    // prevent starvation of idle actions
+    private int iterationsSinceIdle;
 
     @Nullable
     private volatile TcpHandler<T> tcpHandler;
@@ -283,7 +289,21 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
             throw new InvalidEventHandlerException("socket closed " + sc);
         }
+
+        performIdleWorkIfDue(busy);
+
         return busy;
+    }
+
+    private void performIdleWorkIfDue(boolean busy) {
+        if (!busy || iterationsSinceIdle > MAX_ITERATIONS_BETWEEN_IDLE_WORK) {
+            if (tcpHandler != null) {
+                tcpHandler.performIdleWork();
+            }
+            iterationsSinceIdle = 0;
+        } else {
+            iterationsSinceIdle++;
+        }
     }
 
     /**

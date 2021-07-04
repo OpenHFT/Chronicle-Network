@@ -8,7 +8,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.fail;
 
 public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
@@ -43,6 +45,34 @@ public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
         }
     }
 
+    @Test
+    public void performIdleWorkIsOnlyCalledWhenHandlerIsBusyOrOneHundredIterations() throws IOException, InvalidEventHandlerException {
+        NetworkContext nc = new VanillaNetworkContext();
+        nc.socketChannel(TCPRegistry.createSocketChannel(hostPort));
+        BusyTcpEventHandler tcpEventHandler = new BusyTcpEventHandler(nc);
+        final BusyTcpHandler tcpHandler = new BusyTcpHandler();
+        tcpEventHandler.tcpHandler(tcpHandler);
+
+        // not called when busy
+        tcpEventHandler.busy = true;
+        tcpEventHandler.action();
+        assertEquals(0, tcpHandler.performedIdleWorkCount.get());
+
+        // called when not busy
+        tcpEventHandler.busy = false;
+        tcpEventHandler.action();
+        assertEquals(1, tcpHandler.performedIdleWorkCount.get());
+
+        // called when not called for 101 iterations
+        tcpEventHandler.busy = true;
+        for (int i = 0; i < 101; i++) {
+            tcpEventHandler.action();
+        }
+        assertEquals(1, tcpHandler.performedIdleWorkCount.get());
+        tcpEventHandler.action();
+        assertEquals(2, tcpHandler.performedIdleWorkCount.get());
+    }
+
     public TcpEventHandler createTcpEventHandler() throws IOException {
         NetworkContext nc = new VanillaNetworkContext();
         nc.socketChannel(TCPRegistry.createSocketChannel(hostPort));
@@ -67,6 +97,46 @@ public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
         @Override
         public boolean isClosed() {
             return false;
+        }
+    }
+
+    /**
+     * This is nasty, but the TcpEventHandler is very hard to test
+     */
+    private static class BusyTcpEventHandler extends TcpEventHandler {
+
+        private boolean busy = true;
+
+        public BusyTcpEventHandler(@NotNull NetworkContext nc) {
+            super(nc, true);
+        }
+
+        @Override
+        public boolean writeAction() {
+            return busy;
+        }
+    }
+
+    private static class BusyTcpHandler implements TcpHandler {
+
+        private final AtomicInteger performedIdleWorkCount = new AtomicInteger();
+
+        @Override
+        public void process(@NotNull Bytes in, @NotNull Bytes out, NetworkContext nc) {
+        }
+
+        @Override
+        public void close() {
+        }
+
+        @Override
+        public boolean isClosed() {
+            return false;
+        }
+
+        @Override
+        public void performIdleWork() {
+            performedIdleWorkCount.incrementAndGet();
         }
     }
 }
