@@ -3,6 +3,7 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.WritableSubHandler;
@@ -29,11 +30,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class UberHandlerTest extends NetworkTestCommon {
 
@@ -136,6 +137,48 @@ public class UberHandlerTest extends NetworkTestCommon {
             Jvm.pause(2000);
             assertFalse(establishedConnection.get());
             assertTrue(exceptions.keySet().stream().anyMatch(k -> k.throwable != null && k.throwable.getMessage().contains("Received a handler for host ID: 98, my host ID is: 1 this is probably a configuration error")));
+        }
+    }
+
+    @Test
+    public void newConnectionListenersAreExecutedOnEventLoopForExistingConnections() throws IOException, TimeoutException {
+        TCPRegistry.createServerSocketChannelFor("initiator", "acceptor");
+        HostDetails initiatorHost = new HostDetails().hostId(2).connectUri("initiator");
+        HostDetails acceptorHost = new HostDetails().hostId(1).connectUri("acceptor");
+
+        try (MyClusterContext acceptorCtx = clusterContext(acceptorHost, initiatorHost);
+             MyClusterContext initiatorCtx = clusterContext(initiatorHost, acceptorHost)) {
+
+            acceptorCtx.cluster().start(acceptorHost.hostId());
+            initiatorCtx.cluster().start(initiatorHost.hostId());
+
+            // Block until the connection is established
+            AtomicBoolean establishedConnection = new AtomicBoolean(false);
+            AtomicReference<NetworkContext<?>> networkContext = new AtomicReference<>();
+            initiatorCtx.connectionManager(acceptorHost.hostId()).addListener((nc, isConnected) -> {
+                if (isConnected) {
+                    establishedConnection.set(true);
+                    networkContext.set(nc);
+                }
+            });
+            TimingPauser pauser = Pauser.balanced();
+            while (!establishedConnection.get()) {
+                pauser.pause(3, TimeUnit.SECONDS);
+            }
+
+            // Add a new connection listener to the already established connection, ensure it executes on the event loop
+            AtomicBoolean executedOnEventLoop = new AtomicBoolean(false);
+            initiatorCtx.connectionManager(acceptorHost.hostId()).addListener((nc, isConnected) -> {
+                if (isConnected) {
+                    assertSame(networkContext.get(), nc);
+                    executedOnEventLoop.set(EventLoop.inEventLoop());
+                }
+            });
+
+            pauser.reset();
+            while (!executedOnEventLoop.get()) {
+                pauser.pause(3, TimeUnit.SECONDS);
+            }
         }
     }
 

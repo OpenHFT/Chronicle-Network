@@ -54,4 +54,11 @@ public interface TcpHandler<N extends NetworkContext<N>> extends ClientClosedPro
 
     default void onReadComplete() {
     }
+
+    /**
+     * Perform any low priority work, called when the handler is not busy, or after it has been
+     * busy for a long time.
+     */
+    default void performIdleWork() {
+    }
 }

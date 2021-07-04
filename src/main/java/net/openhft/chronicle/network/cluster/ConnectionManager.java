@@ -19,39 +19,72 @@ package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.network.NetworkContext;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.IdentityHashMap;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.Collections.newSetFromMap;
 
 public class ConnectionManager<T extends NetworkContext<T>> {
 
-    private final Set<ConnectionListener<T>> connectionListeners = newSetFromMap(new IdentityHashMap<>());
-
-    @NotNull
-    private final IdentityHashMap<T, AtomicBoolean> isConnected = new IdentityHashMap<>();
+    private static final int EMPTY_SEQUENCE = -1;
+    private final Set<ConnectionListenerHolder> connectionListeners = newSetFromMap(new IdentityHashMap<>());
+    private final AtomicInteger lastListenerAddedSequence = new AtomicInteger(EMPTY_SEQUENCE);
 
     public synchronized void addListener(@NotNull ConnectionListener<T> connectionListener) {
-
-        connectionListeners.add(connectionListener);
-
-        isConnected.forEach((wireOutPublisher, connected) -> connectionListener.onConnectionChange(wireOutPublisher, connected.get()));
+        connectionListeners.add(new ConnectionListenerHolder(lastListenerAddedSequence.incrementAndGet(), connectionListener));
     }
 
-    public synchronized void onConnectionChanged(boolean isConnected, @NotNull final T nc) {
-        @NotNull final Function<T, AtomicBoolean> f = v -> new AtomicBoolean();
-        boolean wasConnected = this.isConnected.computeIfAbsent(nc, f).getAndSet(isConnected);
-        if (wasConnected != isConnected) connectionListeners.forEach(l -> {
-            try {
-                l.onConnectionChange(nc, isConnected);
-            } catch (IllegalStateException ignore) {
-                // this is already logged
+    /**
+     * Execute any new connection listeners that have been added since the emitter last emitted
+     * a connection event.
+     *
+     * @param nc    The network context of the emitter
+     * @param token The event emitter token
+     */
+    public void executeNewListeners(@NotNull final T nc, @NotNull EventEmitterToken token) {
+        assert token != null : "Only emitters who've already emitted should call executeNewListeners";
+        if (lastListenerAddedSequence.get() > token.latestSequenceExecuted) {
+            executeListenersWithSequenceGreaterThan(token.latestSequenceExecuted, nc, token);
+        }
+    }
+
+    /**
+     * The connection state of the network context changed, notify all listeners
+     * <p>
+     * Idempotent if the same emitter calls with the same state consecutively.
+     *
+     * @param isConnected The new connection state
+     * @param nc          The network context
+     * @param token       The event emitter token, or null if the event emitter is new
+     * @return The event emitter token that should be used going forward
+     */
+    public EventEmitterToken onConnectionChanged(boolean isConnected,
+                                                 @NotNull final T nc,
+                                                 @Nullable final EventEmitterToken token) {
+        final EventEmitterToken tokenToUse = (token == null ? new EventEmitterToken() : token);
+        if (tokenToUse.connected.compareAndSet(!isConnected, isConnected)) {
+            executeListenersWithSequenceGreaterThan(EMPTY_SEQUENCE, nc, tokenToUse);
+        }
+        return tokenToUse;
+    }
+
+    private synchronized void executeListenersWithSequenceGreaterThan(int lowerSequenceLimit,
+                                                                      @NotNull final T nc,
+                                                                      @NotNull EventEmitterToken token) {
+        connectionListeners.forEach(l -> {
+            if (l.sequence > lowerSequenceLimit) {
+                try {
+                    l.connectionListener.onConnectionChange(nc, token.connected.get());
+                } catch (IllegalStateException ignore) {
+                    // this is already logged
+                }
+                token.latestSequenceExecuted = Math.max(token.latestSequenceExecuted, l.sequence);
             }
         });
-
     }
 
     @FunctionalInterface
@@ -63,5 +96,38 @@ public class ConnectionManager<T extends NetworkContext<T>> {
          * @param isConnected <code>true</code> for connect events, <code>false</code> for disconnects.
          */
         void onConnectionChange(T nc, boolean isConnected);
+    }
+
+    /**
+     * A connection listener that knows when it was added
+     */
+    private static final class ConnectionListenerHolder<C extends NetworkContext<C>> {
+        private final int sequence;
+        private final ConnectionListener<C> connectionListener;
+
+        public ConnectionListenerHolder(int sequence, ConnectionListener<C> connectionListener) {
+            this.sequence = sequence;
+            this.connectionListener = connectionListener;
+        }
+    }
+
+    /**
+     * An <strong>opaque</strong> token that NetworkContext connection event emitters need to retain and
+     * provide when they dispatch events.
+     * <p>
+     * Keeps track of the listeners they have executed and what the connected state was
+     * on their previous call.
+     * <p>
+     * Allows this state to immediately available, and be garbage collected with the emitter.
+     */
+    public static final class EventEmitterToken {
+        private final AtomicBoolean connected = new AtomicBoolean(false);
+        private volatile int latestSequenceExecuted = Integer.MIN_VALUE;
+
+        /**
+         * These should only be created by the ConnectionManager
+         */
+        private EventEmitterToken() {
+        }
     }
 }
