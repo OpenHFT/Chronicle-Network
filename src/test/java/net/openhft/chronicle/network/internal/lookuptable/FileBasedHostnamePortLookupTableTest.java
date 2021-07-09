@@ -6,12 +6,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
+import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.IntStream;
 
 import static java.lang.String.format;
@@ -19,12 +16,13 @@ import static org.junit.Assert.*;
 
 public class FileBasedHostnamePortLookupTableTest {
 
+    public static final String TEST_TABLE_FILENAME = "FileBasedHostnamePortLookupTableTest";
     private FileBasedHostnamePortLookupTable lookupTable;
 
     @Before
     public void setUp() {
-        final File tmpFile = IOTools.createTempFile("FileBasedHostnamePortLookupTableTest");
-        lookupTable = new FileBasedHostnamePortLookupTable(tmpFile.getName());
+        IOTools.deleteDirWithFilesOrThrow(TEST_TABLE_FILENAME);
+        lookupTable = new FileBasedHostnamePortLookupTable(TEST_TABLE_FILENAME);
     }
 
     @After
@@ -73,12 +71,23 @@ public class FileBasedHostnamePortLookupTableTest {
         assertEquals(new HashSet<>(Arrays.asList("aaa", "bbb", "ccc")), allValues);
     }
 
+    @Test
+    public void entriesShouldBeVisibleAcrossInstances() throws IOException {
+        try (FileBasedHostnamePortLookupTable table1 = new FileBasedHostnamePortLookupTable(TEST_TABLE_FILENAME);
+             FileBasedHostnamePortLookupTable table2 = new FileBasedHostnamePortLookupTable(TEST_TABLE_FILENAME)) {
+            table1.put("aaa", InetSocketAddress.createUnresolved("aaa", 111));
+            assertEquals(table2.aliases(), Collections.singleton("aaa"));
+            table2.put("bbb", InetSocketAddress.createUnresolved("bbb", 222));
+            assertEquals(table1.aliases(), new HashSet<>(Arrays.asList("aaa", "bbb")));
+        }
+    }
+
     @Test(timeout = 20_000)
-    public void shouldWorkConcurrently() {
+    public void doShouldWorkConcurrently() {
         int para = doShouldWorkConcurrently(true);
         int seq = doShouldWorkConcurrently(false);
         System.out.println(seq + " " + para);
-        assertTrue(para > seq);
+        assertTrue(seq > para);
     }
 
     public int doShouldWorkConcurrently(boolean parallel) {
@@ -88,20 +97,24 @@ public class FileBasedHostnamePortLookupTableTest {
             stream = stream.parallel();
 
         return stream.map(myId -> {
-            Set<String> allMyAliases = new HashSet<>();
-            for (int i = 0; i < 200 && start + 2000 > System.currentTimeMillis(); i++) {
-                String description = format("0." + (parallel ? "1" : "0") + ".%d.%d", myId, i);
-                allMyAliases.add(description);
-                InetSocketAddress address = InetSocketAddress.createUnresolved(description, i);
-                lookupTable.put(description, address);
-                InetSocketAddress lookup = lookupTable.lookup(description);
-                assertNotNull(description, lookup);
+            try (FileBasedHostnamePortLookupTable table = new FileBasedHostnamePortLookupTable(TEST_TABLE_FILENAME)) {
+                Set<String> allMyAliases = new HashSet<>();
+                for (int i = 0; i < 200 && start + 2000 > System.currentTimeMillis(); i++) {
+                    String description = format("0." + (parallel ? "1" : "0") + ".%d.%d", myId, i);
+                    allMyAliases.add(description);
+                    InetSocketAddress address = InetSocketAddress.createUnresolved(description, i);
+                    table.put(description, address);
+                    InetSocketAddress lookup = table.lookup(description);
+                    assertNotNull(description, lookup);
+                }
+                Set<String> missing = new LinkedHashSet<>(allMyAliases);
+                missing.removeAll(table.aliases());
+                if (!missing.isEmpty())
+                    fail("Missing hosts " + missing);
+                return allMyAliases.size();
+            } catch (IOException e) {
+                throw new AssertionError("Error creating lookup table", e);
             }
-            Set<String> missing = new LinkedHashSet<>(allMyAliases);
-            missing.removeAll(lookupTable.aliases());
-            if (!missing.isEmpty())
-                fail("Missing hosts " + missing);
-            return allMyAliases.size();
         }).sum();
     }
 

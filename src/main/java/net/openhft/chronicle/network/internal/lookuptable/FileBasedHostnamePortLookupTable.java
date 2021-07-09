@@ -5,6 +5,7 @@ import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.core.io.ReferenceOwner;
 import net.openhft.chronicle.network.HostnamePortLookupTable;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
@@ -14,7 +15,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -26,7 +29,7 @@ import static net.openhft.chronicle.core.util.Time.sleep;
 /**
  * Stores the mappings in a shared file, will work across processes
  */
-public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable, java.io.Closeable {
+public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable, java.io.Closeable, ReferenceOwner {
 
     private static final long MINIMUM_INITIAL_FILE_SIZE_BYTES = 1_024 * 512; // We want to prevent resizing
     private static final long LOCK_TIMEOUT_MS = 10_000;
@@ -34,9 +37,10 @@ public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable
     private static final int PID = Jvm.getProcessId();
     private static final String DEFAULT_FILE_NAME = "shared_hostname_mappings";
 
-    private final Wire sharedTableWire;
+    private final JSONWire sharedTableWire;
     private final MappedBytes sharedTableBytes;
     private final File sharedTableFile;
+    private final long actualBytesSize;
     private final ConcurrentSkipListMap<String, ProcessScopedMapping> allMappings = new ConcurrentSkipListMap<>();
 
     public FileBasedHostnamePortLookupTable() {
@@ -47,12 +51,13 @@ public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable
         sharedTableFile = new File(fileName);
         try {
             if (sharedTableFile.createNewFile() && !sharedTableFile.canWrite()) {
-                throw new IllegalStateException("Cannot write to shared mapping file " + sharedTableFile);
+                throw new IllegalStateException("Cannot write to existing shared mapping file " + sharedTableFile);
             }
             long pagesForMinimum = (long) Math.ceil(((float) MINIMUM_INITIAL_FILE_SIZE_BYTES) / OS.SAFE_PAGE_SIZE);
-            sharedTableBytes = MappedBytes.mappedBytes(sharedTableFile, pagesForMinimum * OS.SAFE_PAGE_SIZE, OS.SAFE_PAGE_SIZE, false);
+            actualBytesSize = pagesForMinimum * OS.SAFE_PAGE_SIZE;
+            sharedTableBytes = MappedBytes.mappedBytes(sharedTableFile, actualBytesSize, OS.SAFE_PAGE_SIZE, false);
             sharedTableBytes.disableThreadSafetyCheck(true);
-            sharedTableWire = new YamlWire(sharedTableBytes);
+            sharedTableWire = new JSONWire(sharedTableBytes);
             sharedTableWire.consumePadding();
         } catch (IOException e) {
             throw new RuntimeException("Error creating shared mapping file", e);
@@ -113,38 +118,66 @@ public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable
 
     private void writeToTable() {
         assert sharedTableWire.startUse();
+        sharedTableBytes.reserve(this);
         try {
             sharedTableWire.clear();
             sharedTableWire.writeAllAsMap(String.class, ProcessScopedMapping.class, allMappings);
+            zeroOutRemainingBytes((int) sharedTableBytes.writePosition());
         } finally {
+            sharedTableBytes.release(this);
             assert sharedTableWire.endUse();
         }
     }
 
-    private void readFromTable() {
-        assert sharedTableWire.startUse();
-        try {
-            ((YamlWire) sharedTableWire).reset();
+    private void zeroOutRemainingBytes(int fromIndex) {
+        sharedTableBytes.readLimit(sharedTableBytes.realCapacity());
+        for (int i = fromIndex; i < actualBytesSize; i++) {
+            sharedTableBytes.readPosition(i);
+            if (sharedTableBytes.readByte() == 0) {
+                break;
+            }
+            sharedTableBytes.writeByte(i, (byte) 0);
+        }
+    }
 
-            // Add new, update changed
-            Map<String, ProcessScopedMapping> readMappings = new HashMap<>();
-            sharedTableWire.readAllAsMap(String.class, ProcessScopedMapping.class, readMappings);
-            for (Map.Entry<String, ProcessScopedMapping> readMapping : readMappings.entrySet()) {
-                final ProcessScopedMapping existingMapping = allMappings.get(readMapping.getKey());
-                if (existingMapping == null || !existingMapping.equals(readMapping.getValue())) {
-                    allMappings.put(readMapping.getKey(), readMapping.getValue());
+    private void readFromTable() {
+        final StringBuilder sb = Wires.acquireStringBuilder();
+        final ProcessScopedMapping reusableMapping = new ProcessScopedMapping();
+        assert sharedTableWire.startUse();
+        sharedTableBytes.reserve(this);
+        try {
+            sharedTableBytes.readPosition(0);
+            sharedTableBytes.readLimit(sharedTableBytes.realCapacity());
+
+            Set<String> readMappings = new HashSet<>();
+            while (true) {
+                final ValueIn valueIn = sharedTableWire.readEventName(sb);
+                if (sb.length() == 0) {
+                    break;
                 }
+                valueIn.object(reusableMapping, ProcessScopedMapping.class);
+                final String name = sb.toString();
+                readMappings.add(name);
+                insertOrUpdateEntry(name, reusableMapping);
             }
 
             // Remove removed
             Set<String> existingKeys = new HashSet<>(allMappings.keySet());
             for (String key : existingKeys) {
-                if (!readMappings.containsKey(key)) {
+                if (!readMappings.contains(key)) {
                     allMappings.remove(key);
                 }
             }
         } finally {
+            sharedTableBytes.release(this);
             assert sharedTableWire.endUse();
+        }
+    }
+
+    private void insertOrUpdateEntry(String name, ProcessScopedMapping mapping) {
+        final ProcessScopedMapping existingMapping = allMappings.get(name);
+        if (existingMapping == null || !existingMapping.equals(mapping)) {
+            allMappings.put(name, new ProcessScopedMapping(mapping.pid, mapping.hostname, mapping.port));
         }
     }
 
