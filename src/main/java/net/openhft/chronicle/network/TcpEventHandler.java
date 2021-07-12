@@ -24,6 +24,7 @@ import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.core.annotation.PackageLocal;
 import net.openhft.chronicle.core.io.AbstractCloseable;
+import net.openhft.chronicle.core.io.ClosedIllegalStateException;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.io.QueryCloseable;
 import net.openhft.chronicle.core.threads.EventHandler;
@@ -204,6 +205,11 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         if (bias.canWrite())
             try {
                 busy = writeAction();
+
+            } catch (ClosedIllegalStateException cise) {
+                Jvm.warn().on(getClass(), cise);
+                throw new InvalidEventHandlerException();
+
             } catch (Exception e) {
                 Jvm.warn().on(getClass(), e);
             }

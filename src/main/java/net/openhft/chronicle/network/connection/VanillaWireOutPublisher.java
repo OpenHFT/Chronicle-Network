@@ -34,12 +34,19 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     private final Bytes<ByteBuffer> bytes;
 
     private Wire wire;
+    private String connectionDescription = "?";
 
     public VanillaWireOutPublisher(@NotNull WireType wireType) {
         bytes = Bytes.elasticByteBuffer(TcpChannelHub.TCP_BUFFER);
         final WireType wireType0 = wireType == WireType.DELTA_BINARY ? WireType.BINARY : wireType;
         wire = wireType0.apply(bytes);
         wire.usePadding(false);
+    }
+
+    @Override
+    public WireOutPublisher connectionDescription(String connectionDescription) {
+        this.connectionDescription = connectionDescription;
+        return this;
     }
 
     /**
@@ -75,7 +82,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
                         bytes.readPosition(bytes.readLimit());
                         return;
                     }
-                    LOG.info("Server Sends async event:\n" + Wires.fromSizePrefixedBlobs(dc));
+                    LOG.info("Server " + connectionDescription + " Sends async event:\n" + Wires.fromSizePrefixedBlobs(dc));
                     bytes.readPosition(bytes.readLimit());
                 }
             }
@@ -115,7 +122,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
             throwExceptionIfClosed();
 
         } catch (ClosedIllegalStateException ise) {
-            Jvm.debug().on(getClass(), "message ignored as closed", ise);
+            Jvm.debug().on(getClass(), "Server " + connectionDescription + " message ignored as closed", ise);
             return;
         }
 
@@ -134,7 +141,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
                         long len = wire.bytes().writePosition() - start;
                         wire.bytes().readPositionRemaining(start, len);
                         String message = Wires.fromSizePrefixedBlobs(wire);
-                        LOG.info("Server is about to send async event:" + message);
+                        LOG.info("Server " + connectionDescription + " is about to send async event:" + message);
                     } finally {
                         wire.bytes().writeLimit(wl).readLimit(rl).readPosition(rp);
                     }
@@ -190,6 +197,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     public String toString() {
         String wireStr = (wire == null) ? "wire= null " : (wire.getClass().getSimpleName() + "=" + bytes);
         return "VanillaWireOutPublisher{" +
+                "description=" + connectionDescription +
                 ", closed=" + isClosed() +
                 ", " + wireStr +
                 '}';

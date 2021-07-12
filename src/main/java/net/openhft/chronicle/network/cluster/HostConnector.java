@@ -103,6 +103,7 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
             return;
 
         WireOutPublisher wireOutPublisher = wireOutPublisherFactory.apply(clusterContext.wireType());
+        wireOutPublisher.connectionDescription(clusterContext.localIdentifier() + " to " + remoteId);
 
         if (!this.wireOutPublisher.compareAndSet(null, wireOutPublisher)) {
             wireOutPublisher.close();

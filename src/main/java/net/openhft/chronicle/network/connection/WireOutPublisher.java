@@ -112,4 +112,8 @@ public interface WireOutPublisher extends Closeable {
     default void publish(WriteMarshallable event) {
         put("", event);
     }
+
+    default WireOutPublisher connectionDescription(String connectionDescription) {
+        return this;
+    }
 }

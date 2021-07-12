@@ -80,6 +80,17 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         }
     }
 
+    public static WriteMarshallable uberHandler(int localIdentifier, int remoteIdentifier, WireType wireType) {
+        return wire -> {
+            try (final DocumentContext ignored = wire.writingDocument(true)) {
+                wire.write(() -> HANDLER).typedMarshallable(new UberHandler<>(
+                        localIdentifier,
+                        remoteIdentifier,
+                        wireType));
+            }
+        };
+    }
+
     public int remoteIdentifier() {
         return remoteIdentifier;
     }
@@ -124,24 +135,16 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     }
 
     private boolean checkIdentifierEqualsHostId() {
-        return localIdentifier == nc().getLocalHostIdentifier() || 0 == nc().getLocalHostIdentifier();
+        byte localHostIdentifier = nc().getLocalHostIdentifier();
+        if (localIdentifier != localHostIdentifier && localHostIdentifier != 0)
+            throw new AssertionError("localId: " + localIdentifier + " != nc().localId: " + localHostIdentifier);
+        return true;
     }
 
     private void notifyConnectionListeners() {
         connectionChangedNotifier = nc().clusterContext().connectionManager(remoteIdentifier);
         if (connectionChangedNotifier != null)
             connectionChangedNotifier.onConnectionChanged(true, nc());
-    }
-
-    public static WriteMarshallable uberHandler(int localIdentifier, int remoteIdentifier, WireType wireType) {
-        return wire -> {
-            try (final DocumentContext ignored = wire.writingDocument(true)) {
-                wire.write(() -> HANDLER).typedMarshallable(new UberHandler<>(
-                        localIdentifier,
-                        remoteIdentifier,
-                        wireType));
-            }
-        };
     }
 
     @Override

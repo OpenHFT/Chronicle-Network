@@ -86,7 +86,7 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseab
 
             handlerManager.tcpHandler(handler);
 
-        } catch (Exception e) {
+        } catch (Throwable e) {
             if (isClosed())
                 return;
             Jvm.pause(50);
