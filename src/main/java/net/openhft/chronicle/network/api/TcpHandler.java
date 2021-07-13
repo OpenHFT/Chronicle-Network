@@ -18,6 +18,7 @@
 package net.openhft.chronicle.network.api;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.annotation.HotMethod;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.ClientClosedProvider;
 import net.openhft.chronicle.network.NetworkContext;
@@ -53,5 +54,16 @@ public interface TcpHandler<N extends NetworkContext<N>> extends ClientClosedPro
     }
 
     default void onReadComplete() {
+    }
+
+    /**
+     * Perform any low priority work
+     *
+     * @param busy If this iteration was already busy
+     * @return true if any work was performed or the iteration was already busy
+     */
+    @HotMethod
+    default boolean performIdleWork(boolean busy) {
+        return busy;
     }
 }

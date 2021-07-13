@@ -47,6 +47,8 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     private final int localIdentifier;
     @NotNull
     private final AtomicBoolean isClosing = new AtomicBoolean();
+    @Nullable
+    private ConnectionManager.EventEmitterToken eventEmitterToken;
 
     @Nullable
     private ConnectionManager<T> connectionChangedNotifier;
@@ -144,14 +146,14 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     private void notifyConnectionListeners() {
         connectionChangedNotifier = nc().clusterContext().connectionManager(remoteIdentifier);
         if (connectionChangedNotifier != null)
-            connectionChangedNotifier.onConnectionChanged(true, nc());
+            eventEmitterToken = connectionChangedNotifier.onConnectionChanged(true, nc(), eventEmitterToken);
     }
 
     @Override
     protected void performClose() {
         T nc = nc();
         if (!isClosing.getAndSet(true) && connectionChangedNotifier != null) {
-            connectionChangedNotifier.onConnectionChanged(false, nc);
+            eventEmitterToken = connectionChangedNotifier.onConnectionChanged(false, nc, eventEmitterToken);
         }
 
         try {
@@ -240,6 +242,14 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         } catch (Throwable e) {
             Jvm.warn().on(getClass(), e);
         }
+    }
+
+    @Override
+    public boolean performIdleWork(boolean busy) {
+        if (connectionChangedNotifier != null && eventEmitterToken != null) {
+            connectionChangedNotifier.executeNewListeners(nc(), eventEmitterToken);
+        }
+        return busy;
     }
 
     @Override
