@@ -76,7 +76,7 @@ public class UberHandlerTest extends NetworkTestCommon {
 
     @NotNull
     private MyClusterContext clusterContext(HostDetails... clusterHosts) {
-        MyClusterContext ctx = new MyClusterContext().wireType(WireType.TEXT).localIdentifier((byte) clusterHosts[0].hostId());
+        MyClusterContext ctx = new MyClusterContext().wireType(WireType.BINARY).localIdentifier((byte) clusterHosts[0].hostId());
         ctx.heartbeatIntervalMs(501);
         MyCluster cluster = new MyCluster(ctx);
         for (HostDetails details : clusterHosts) {
@@ -136,7 +136,7 @@ public class UberHandlerTest extends NetworkTestCommon {
     }
 
     static class PingPongHandler extends AbstractSubHandler<MyClusteredNetworkContext> implements
-            WriteMarshallable, ReadMarshallable, WritableSubHandler<MyClusteredNetworkContext> {
+            Marshallable, WritableSubHandler<MyClusteredNetworkContext> {
 
         private static final int MAX_ROUNDS = 100;
 
