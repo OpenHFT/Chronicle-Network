@@ -1,24 +1,27 @@
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.api.TcpHandler;
-import net.openhft.chronicle.network.cluster.Cluster;
-import net.openhft.chronicle.network.cluster.ClusteredNetworkContext;
-import net.openhft.chronicle.network.cluster.HostDetails;
-import net.openhft.chronicle.network.cluster.VanillaClusteredNetworkContext;
+import net.openhft.chronicle.network.api.session.WritableSubHandler;
+import net.openhft.chronicle.network.cluster.*;
+import net.openhft.chronicle.network.connection.CoreFields;
 import net.openhft.chronicle.network.connection.VanillaWireOutPublisher;
-import net.openhft.chronicle.wire.WireType;
-import net.openhft.chronicle.wire.YamlLogging;
+import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Function;
 
 public class UberHandlerTest extends NetworkTestCommon {
+
+    public static final int SIZE_OF_BIG_PAYLOAD = 300 * 1024;
 
     @Before
     public void before() {
@@ -39,57 +42,81 @@ public class UberHandlerTest extends NetworkTestCommon {
         HostDetails initiatorHost = new HostDetails().hostId(2).connectUri(desc);
         HostDetails acceptorHost = new HostDetails().hostId(1).connectUri(desc);
 
-        MyClusterContext<T> acceptorCtx = clusterContext(acceptorHost);
-        try (Cluster<T, MyClusterContext<T>> ignored = acceptorCtx.cluster()) {
-            acceptorCtx.accept(acceptorHost);
+        try (MyClusterContext acceptorCtx = clusterContext(acceptorHost, initiatorHost);
+             MyClusterContext initiatorCtx = clusterContext(initiatorHost, acceptorHost)) {
 
-            MyClusterContext<T> initiatorCtx = clusterContext(initiatorHost);
-            try (Cluster<T, MyClusterContext<T>> ignored2 = initiatorCtx.cluster()) {
-                initiatorCtx.connect(acceptorHost);
+            acceptorCtx.cluster().start(acceptorHost.hostId());
+            initiatorCtx.cluster().start(initiatorHost.hostId());
 
-                initiatorCtx.connectionManager(acceptorHost.hostId()).addListener((nc, isConnected) -> {
-                    System.out.println("connection changed, isConnected " + isConnected);
-                });
+            initiatorCtx.connectionManager(acceptorHost.hostId()).addListener((nc, isConnected) -> {
+                System.out.println("connection changed, isConnected " + isConnected);
+                nc.wireOutPublisher().publish(w ->
+                        w.writeDocument(true, d -> sendPingPong(d, 12345)));
+                nc.wireOutPublisher().publish(w ->
+                        w.writeDocument(true, d -> sendPingPong(d, 12346)));
+                nc.wireOutPublisher().publish(w ->
+                        w.writeDocument(true, d -> sendPingPong(d, 12347)));
+                nc.wireOutPublisher().publish(w ->
+                        w.writeDocument(true, d -> sendPingPong(d, 12348)));
+            });
 
-                acceptorCtx.eventLoop().start();
-                initiatorCtx.eventLoop().start();
+            // TODO: set HB numbers relatively low
+            // TODO: add handlers to deterministically pause
+            // TODO: send in a large message (>128K) to make bytes resize happen
 
-                // TODO: set HB numbers relatively low
-                // TODO: add handlers to deterministically pause
-                // TODO: send in a large message (>128K) to make bytes resize happen
-
-                Jvm.pause(1_000);
-            }
+            Jvm.pause(10_000);
         }
+    }
+
+    private void sendPingPong(WireOut wireOut, int cid) {
+        wireOut.writeEventName(CoreFields.csp).text("pingpong")
+                .writeEventName(CoreFields.cid).int64(cid)
+                .writeEventName(CoreFields.handler).typedMarshallable(new PingPongHandler(false));
     }
 
     @NotNull
-    private <T extends ClusteredNetworkContext<T>> MyClusterContext<T> clusterContext(HostDetails hd) {
-        Cluster<T, MyClusterContext<T>> cluster = new MyCluster();
-        MyClusterContext<T> ctx = new MyClusterContext<T>().wireType(WireType.TEXT).localIdentifier((byte) hd.hostId());
-        cluster.clusterContext(ctx);
+    private MyClusterContext clusterContext(HostDetails... clusterHosts) {
+        MyClusterContext ctx = new MyClusterContext().wireType(WireType.TEXT).localIdentifier((byte) clusterHosts[0].hostId());
+        ctx.heartbeatIntervalMs(501);
+        MyCluster cluster = new MyCluster(ctx);
+        for (HostDetails details : clusterHosts) {
+            cluster.hostDetails.put(String.valueOf(details.hostId()), details);
+        }
         return ctx;
     }
 
-    static class MyCluster<T extends ClusteredNetworkContext<T>> extends Cluster<T, MyClusterContext<T>> {
-        MyCluster() {
-            super();
+    static class MyClusteredNetworkContext extends VanillaClusteredNetworkContext<MyClusteredNetworkContext, MyClusterContext> {
+        public MyClusteredNetworkContext(@NotNull MyClusterContext clusterContext) {
+            super(clusterContext);
         }
     }
 
-    static class MyClusterContext<T extends ClusteredNetworkContext<T>> extends net.openhft.chronicle.network.cluster.ClusterContext<MyClusterContext<T>, T> {
+    static class MyCluster extends Cluster<MyClusteredNetworkContext, MyClusterContext> {
+        MyCluster(MyClusterContext clusterContext) {
+            super();
+            clusterContext(clusterContext);
+            clusterContext.cluster(this);
+        }
+    }
+
+    static class MyClusterContext extends net.openhft.chronicle.network.cluster.ClusterContext<MyClusterContext, MyClusteredNetworkContext> {
         @Override
         protected String clusterNamePrefix() {
             return "";
         }
 
+
         @NotNull
         @Override
-        public ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpEventHandlerFactory() {
+        public ThrowingFunction<MyClusteredNetworkContext, TcpEventHandler<MyClusteredNetworkContext>, IOException> tcpEventHandlerFactory() {
             return nc -> {
-                final TcpEventHandler<T> handler = new TcpEventHandler<>(nc);
-                final Function<T, TcpHandler<T>> factory = unused -> new HeaderTcpHandler<>(handler, o -> (TcpHandler<T>) o);
-                final WireTypeSniffingTcpHandler<T> sniffer = new WireTypeSniffingTcpHandler<>(handler, factory);
+                if (nc.isAcceptor()) {
+                    nc.wireOutPublisher(new VanillaWireOutPublisher(wireType()));
+                }
+                final TcpEventHandler<MyClusteredNetworkContext> handler = new TcpEventHandler<>(nc);
+                final Function<MyClusteredNetworkContext, TcpHandler<MyClusteredNetworkContext>> factory =
+                        unused -> new HeaderTcpHandler<>(handler, o -> (TcpHandler<MyClusteredNetworkContext>) o);
+                final WireTypeSniffingTcpHandler<MyClusteredNetworkContext> sniffer = new WireTypeSniffingTcpHandler<>(handler, factory);
                 handler.tcpHandler(sniffer);
                 return handler;
             };
@@ -100,18 +127,100 @@ public class UberHandlerTest extends NetworkTestCommon {
             if (this.wireOutPublisherFactory() == null)
                 this.wireOutPublisherFactory(VanillaWireOutPublisher::new);
 
-//            if (wireType() == null)
-//                this.wireType(WireType.BINARY_LIGHT);
-
             if (serverThreadingStrategy() == null)
                 this.serverThreadingStrategy(ServerThreadingStrategy.SINGLE_THREADED);
 
             if (this.networkContextFactory() == null)
-                this.networkContextFactory(cc -> (T) new VanillaClusteredNetworkContext(cc));
+                this.networkContextFactory(MyClusteredNetworkContext::new);
+        }
+    }
 
-            //////////////////////////////////////
-//            if (this.networkStatsListenerFactory() == null)
-//                this.networkStatsListenerFactory(ctx -> LoggingNetworkStatsListener.INSTANCE);
+    static class PingPongHandler extends AbstractSubHandler<MyClusteredNetworkContext> implements
+            WriteMarshallable, ReadMarshallable, WritableSubHandler<MyClusteredNetworkContext> {
+
+        private static final int MAX_ROUNDS = 100;
+
+        private boolean initiator;
+        private boolean initiated = false;
+        private int round = 0;
+
+        public PingPongHandler(boolean initiator) {
+            this.initiator = initiator;
+        }
+
+        @Override
+        public void onInitialize(WireOut outWire) throws RejectedExecutionException {
+            // Send back the handler for the other side
+            if (!initiator) {
+                outWire.writeDocument(true, d ->
+                        d.writeEventName(CoreFields.csp).text("pingpong")
+                                .writeEventName(CoreFields.cid).int64(cid())
+                                .writeEventName(CoreFields.handler).typedMarshallable(new PingPongHandler(!initiator))
+                );
+            }
+        }
+
+        @Override
+        public void onRead(@NotNull WireIn inWire, @NotNull WireOut outWire) {
+            final StringBuilder eventName = Wires.acquireStringBuilder();
+            final ValueIn valueIn = inWire.readEventName(eventName);
+
+            sendPingPongCid(outWire);
+            try (final DocumentContext dc = outWire.writingDocument(false)) {
+                round++;
+                if (initiator && round > MAX_ROUNDS) {
+                    outWire.write("stop").text("now");
+                    close();
+                } else if ("ping".equals(eventName.toString())) {
+                    System.out.println("Read " + valueIn.bytes().length);
+                    writeRandomJunk("pong", dc, round);
+                } else if ("pong".equals(eventName.toString())) {
+                    System.out.println("Read " + valueIn.bytes().length);
+                    writeRandomJunk("ping", dc, round);
+                } else if ("stop".equals(eventName.toString())) {
+                    System.out.println("Stopping");
+                    close();
+                } else {
+                    throw new IllegalStateException("Got unknown event: " + eventName);
+                }
+            }
+        }
+
+        private void writeRandomJunk(String eventName, DocumentContext dc, int counter) {
+            Bytes<?> bigJunk = Bytes.allocateElasticOnHeap();
+            int payloadSize = (int) ((round / (float) MAX_ROUNDS) * SIZE_OF_BIG_PAYLOAD);
+            for (int i = 0; i < payloadSize; i++) {
+                bigJunk.writeByte((byte) i);
+            }
+            dc.wire().write(eventName).bytes(bigJunk)
+                    .write("counter").int32(counter);
+        }
+
+        @Override
+        public void writeMarshallable(@NotNull WireOut wire) {
+            wire.write("initiator").bool(initiator);
+        }
+
+        @Override
+        public void onWrite(WireOut outWire) {
+            if (initiator && !initiated) {
+                sendPingPongCid(outWire);
+                try (final DocumentContext dc = outWire.writingDocument()) {
+                    writeRandomJunk("ping", dc, round++);
+                }
+                initiated = true;
+            }
+        }
+
+        @Override
+        public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
+            initiator = wire.read("initiator").bool();
+        }
+
+        private void sendPingPongCid(WireOut outWire) {
+            try (final DocumentContext dc = outWire.writingDocument(true)) {
+                dc.wire().write(CoreFields.cid).int64(cid());
+            }
         }
     }
 }
