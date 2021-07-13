@@ -44,6 +44,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 
 import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri;
+import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PADDING;
 
 public class SimpleServerAndClientTest extends NetworkTestCommon {
     @Test
@@ -52,7 +53,7 @@ public class SimpleServerAndClientTest extends NetworkTestCommon {
         AbstractReferenceCounted.disableReferenceTracing();
         expectException("Reference tracing disabled");
 
-        YamlLogging.setAll(false);
+        YamlLogging.setAll(true);
 
         for (; ; ) {
             // this the name of a reference to the host name and port,
@@ -80,7 +81,7 @@ public class SimpleServerAndClientTest extends NetworkTestCommon {
 
                     // we will use a text wire backed by a elasticByteBuffer
                     @NotNull final Wire wire = new TextWire(bytes).useTextDocuments();
-                    wire.usePadding(false);
+                    wire.usePadding(TCP_USE_PADDING);
 
                     wire.writeDocument(true, w -> w.write("tid").int64(tid));
                     wire.writeDocument(false, w -> w.write("payload").text(expectedMessage));

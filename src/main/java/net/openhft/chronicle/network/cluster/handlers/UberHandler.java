@@ -254,6 +254,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
      */
     @Override
     protected void onWrite(@NotNull final WireOut outWire) {
+        super.onWrite(outWire);
         for (int i = 0; i < writers.size(); i++)
             try {
                 if (isClosing.get())

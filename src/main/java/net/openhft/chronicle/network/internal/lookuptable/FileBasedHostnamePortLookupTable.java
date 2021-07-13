@@ -200,7 +200,7 @@ public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable
                         T t = supplier.get();
                         long elapsedMs = System.currentTimeMillis() - startMs;
                         if (elapsedMs > 100)
-                            Jvm.warn().on(getClass(), "Took " + elapsedMs / 1000.0 + " seconds to obtain the lock on " + sharedTableFile, lastThrown);
+                            Jvm.perf().on(getClass(), "Took " + elapsedMs / 1000.0 + " seconds to obtain the lock on " + sharedTableFile, lastThrown);
                         return t;
                     } catch (OverlappingFileLockException e) {
                         throw new RuntimeException("Attempted to resize the underlying bytes, increase the MINIMUM_INITIAL_FILE_SIZE_BYTES or make this work with resizing!", e);

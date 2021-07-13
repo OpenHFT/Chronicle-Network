@@ -28,6 +28,8 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 
+import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PADDING;
+
 public class VanillaWireOutPublisher extends AbstractCloseable implements WireOutPublisher {
 
     private static final Logger LOG = LoggerFactory.getLogger(VanillaWireOutPublisher.class);
@@ -40,7 +42,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
         bytes = Bytes.elasticByteBuffer(TcpChannelHub.TCP_BUFFER);
         final WireType wireType0 = wireType == WireType.DELTA_BINARY ? WireType.BINARY : wireType;
         wire = wireType0.apply(bytes);
-        wire.usePadding(false);
+        wire.usePadding(TCP_USE_PADDING);
     }
 
     @Override
@@ -174,7 +176,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
 
         synchronized (lock()) {
             wire = wireType0.apply(bytes);
-            wire.usePadding(false);
+            wire.usePadding(TCP_USE_PADDING);
         }
     }
 

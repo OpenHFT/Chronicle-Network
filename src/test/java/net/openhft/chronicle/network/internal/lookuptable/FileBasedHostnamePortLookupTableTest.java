@@ -84,8 +84,8 @@ public class FileBasedHostnamePortLookupTableTest {
 
     @Test(timeout = 20_000)
     public void doShouldWorkConcurrently() {
-        int para = doShouldWorkConcurrently(true);
         int seq = doShouldWorkConcurrently(false);
+        int para = doShouldWorkConcurrently(true);
         System.out.println(seq + " " + para);
         assertTrue(seq > para);
     }

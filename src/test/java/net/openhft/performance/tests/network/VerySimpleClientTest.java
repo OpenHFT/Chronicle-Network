@@ -54,6 +54,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PADDING;
+
 public class VerySimpleClientTest extends NetworkTestCommon {
 
     public static final WireType WIRE_TYPE = WireType.BINARY;
@@ -65,8 +67,8 @@ public class VerySimpleClientTest extends NetworkTestCommon {
     private ChronicleSocketChannel client;
 
     public VerySimpleClientTest() {
-        outWire.usePadding(false);
-        inWire.usePadding(false);
+        outWire.usePadding(TCP_USE_PADDING);
+        inWire.usePadding(TCP_USE_PADDING);
     }
 
     @Before
