@@ -23,14 +23,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public final class NioSslIntegrationTest extends NetworkTestCommon {
     private static final boolean SEND_DATA_BEFORE_SSL_HANDSHAKE = Jvm.getBoolean("ssl.test.payload");
 
     @Before
-    public void setUp() throws IOException {
+    public void setUp() {
         // https://bugs.openjdk.java.net/browse/JDK-8211426
         if (Jvm.majorVersion() >= 11)
             System.setProperty("jdk.tls.server.protocols", "TLSv1.2");
