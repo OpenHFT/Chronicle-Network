@@ -1,7 +1,6 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.api.TcpHandler;
@@ -25,13 +24,13 @@ public class UberHandlerTest extends NetworkTestCommon {
 
     @Before
     public void before() {
-        YamlLogging.setAll(true);
+        //YamlLogging.setAll(true);
         System.setProperty("TcpEventHandler.tcpBufferSize", "131072");
     }
 
     @After
     public void after() {
-        YamlLogging.setAll(false);
+        //YamlLogging.setAll(false);
         System.clearProperty("TcpEventHandler.tcpBufferSize");
     }
 
@@ -49,7 +48,6 @@ public class UberHandlerTest extends NetworkTestCommon {
             initiatorCtx.cluster().start(initiatorHost.hostId());
 
             initiatorCtx.connectionManager(acceptorHost.hostId()).addListener((nc, isConnected) -> {
-                System.out.println("connection changed, isConnected " + isConnected);
                 nc.wireOutPublisher().publish(w ->
                         w.writeDocument(true, d -> sendPingPong(d, 12345)));
                 nc.wireOutPublisher().publish(w ->
@@ -59,12 +57,6 @@ public class UberHandlerTest extends NetworkTestCommon {
                 nc.wireOutPublisher().publish(w ->
                         w.writeDocument(true, d -> sendPingPong(d, 12348)));
             });
-
-            // TODO: set HB numbers relatively low
-            // TODO: add handlers to deterministically pause
-            // TODO: send in a large message (>128K) to make bytes resize happen
-
-            Jvm.pause(10_000);
         }
     }
 
@@ -104,7 +96,6 @@ public class UberHandlerTest extends NetworkTestCommon {
         protected String clusterNamePrefix() {
             return "";
         }
-
 
         @NotNull
         @Override
@@ -172,13 +163,13 @@ public class UberHandlerTest extends NetworkTestCommon {
                     outWire.write("stop").text("now");
                     close();
                 } else if ("ping".equals(eventName.toString())) {
-                    System.out.println("Read " + valueIn.bytes().length);
+                    //System.out.println("Read " + valueIn.bytes().length);
                     writeRandomJunk("pong", dc, round);
                 } else if ("pong".equals(eventName.toString())) {
-                    System.out.println("Read " + valueIn.bytes().length);
+                    //System.out.println("Read " + valueIn.bytes().length);
                     writeRandomJunk("ping", dc, round);
                 } else if ("stop".equals(eventName.toString())) {
-                    System.out.println("Stopping");
+                    //System.out.println("Stopping");
                     close();
                 } else {
                     throw new IllegalStateException("Got unknown event: " + eventName);
