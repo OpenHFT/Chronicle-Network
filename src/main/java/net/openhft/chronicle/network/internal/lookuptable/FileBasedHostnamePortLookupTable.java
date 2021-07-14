@@ -294,5 +294,15 @@ public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable
         public int hashCode() {
             return Objects.hash(pid, hostname, port);
         }
+
+        @Override
+        public String toString() {
+            return "ProcessScopedMapping{" +
+                    "pid=" + pid +
+                    ", hostname='" + hostname + '\'' +
+                    ", port=" + port +
+                    ", hasInetSocketAddress=" + (address != null) +
+                    '}';
+        }
     }
 }
