@@ -109,7 +109,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
 
     @Override
     protected void onInitialize() {
-        final ClusteredNetworkContext<T> nc = nc();
+        @NotNull final ClusteredNetworkContext<T> nc = nc();
         nc.wireType(wireType());
         isAcceptor(nc.isAcceptor());
 
@@ -118,7 +118,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                 "remoteIdentifier=" + remoteIdentifier + ", " +
                         "localIdentifier=" + localIdentifier;
 
-        final WireOutPublisher publisher = nc.wireOutPublisher();
+        @NotNull final WireOutPublisher publisher = nc.wireOutPublisher();
         publisher(publisher);
 
         @NotNull final EventLoop eventLoop = nc.eventLoop();
@@ -180,7 +180,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                 final SubHandler<T> handler = handler();
                 if (handler != null && handler.inProgress()) {
                     try {
-                        if (false == handler.onTouch(outWire)) {
+                        if (!handler.onTouch(outWire)) {
                             dc.rollbackOnClose();
                             return;
                         }
@@ -253,6 +253,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
      * @param outWire the wire that you wish to write
      */
     @Override
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     protected void onWrite(@NotNull final WireOut outWire) {
         super.onWrite(outWire);
         for (int i = 0; i < writers.size(); i++)
