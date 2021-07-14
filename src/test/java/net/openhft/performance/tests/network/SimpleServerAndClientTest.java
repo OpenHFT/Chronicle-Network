@@ -49,6 +49,7 @@ import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PAD
 public class SimpleServerAndClientTest extends NetworkTestCommon {
     @Test
     public void test() throws IOException {
+//        assert TCP_USE_PADDING;
         // TODO FIX
         AbstractReferenceCounted.disableReferenceTracing();
         expectException("Reference tracing disabled");

@@ -224,16 +224,16 @@ public final class TcpChannelHub extends AbstractCloseable {
         hubs.clear();
     }
 
-    private static void logToStandardOutMessageReceived(@NotNull final Wire wire) {
-        @NotNull final Bytes<?> bytes = wire.bytes();
+     static void logToStandardOutMessageReceived(@NotNull final Wire wire) {
+         @NotNull final Bytes<?> bytes = wire.bytes();
 
-        if (!YamlLogging.showClientReads())
-            return;
+         if (!YamlLogging.showClientReads())
+             return;
 
-        final long position = bytes.writePosition();
-        final long limit = bytes.writeLimit();
-        try {
-            try {
+         final long position = bytes.writePosition();
+         final long limit = bytes.writeLimit();
+         try {
+             try {
 
                 System.out.println(
                         "receives:\n" +
@@ -250,7 +250,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         }
     }
 
-    private static void logToStandardOutMessageReceivedInERROR(@NotNull final Wire wire) {
+    static void logToStandardOutMessageReceivedInERROR(@NotNull final Wire wire) {
         @NotNull final Bytes<?> bytes = wire.bytes();
 
         final long position = bytes.writePosition();
@@ -1362,10 +1362,12 @@ public final class TcpChannelHub extends AbstractCloseable {
                         @NotNull final Bytes<?> bytes = inWire.bytes();
 
                         // the number bytes ( still required  ) to read the size
+                        System.out.println("read header");
                         blockingRead(inWire, SIZE_OF_SIZE);
 
                         final int header = bytes.readVolatileInt(0);
                         final long messageSize = size(header);
+                        System.out.println("... read header " + messageSize);
 
                         // read the data
                         start = System.currentTimeMillis();
