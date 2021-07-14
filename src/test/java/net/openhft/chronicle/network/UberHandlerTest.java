@@ -31,7 +31,7 @@ import java.util.stream.IntStream;
 public class UberHandlerTest extends NetworkTestCommon {
 
     private static final int SIZE_OF_BIG_PAYLOAD = 300 * 1024;
-    private static final int MAX_ROUNDS = 100;
+    private static final int MAX_ROUNDS = 1000;
     private static final int NUM_HANDLERS = 4;
     private static Map<Long, Integer> countersPerCid;
 
@@ -47,7 +47,7 @@ public class UberHandlerTest extends NetworkTestCommon {
     }
 
     @Test
-    public void test() throws IOException, TimeoutException {
+    public void testUberHandlerWithMultipleSubHandlersAndHeartbeats() throws IOException, TimeoutException {
         TCPRegistry.createServerSocketChannelFor("initiator", "acceptor");
         HostDetails initiatorHost = new HostDetails().hostId(2).connectUri("initiator");
         HostDetails acceptorHost = new HostDetails().hostId(1).connectUri("acceptor");
@@ -185,13 +185,12 @@ public class UberHandlerTest extends NetworkTestCommon {
                     outWire.write("stop").text("now");
                     close();
                 } else if ("ping".equals(eventName.toString())) {
-                    //System.out.println("Read " + valueIn.bytes().length);
+                    assert valueIn.bytes().length == inWire.read("bytesLength").int32();
                     writeRandomJunk("pong", dc, round);
                 } else if ("pong".equals(eventName.toString())) {
-                    //System.out.println("Read " + valueIn.bytes().length);
+                    assert valueIn.bytes().length == inWire.read("bytesLength").int32();
                     writeRandomJunk("ping", dc, round);
                 } else if ("stop".equals(eventName.toString())) {
-                    //System.out.println("Stopping");
                     close();
                 } else {
                     throw new IllegalStateException("Got unknown event: " + eventName);
@@ -205,7 +204,9 @@ public class UberHandlerTest extends NetworkTestCommon {
             for (int i = 0; i < payloadSize; i++) {
                 bigJunk.writeByte((byte) i);
             }
-            dc.wire().write(eventName).bytes(bigJunk)
+            dc.wire().write(eventName)
+                    .bytes(bigJunk)
+                    .write("bytesLength").int32(payloadSize)
                     .write("counter").int32(counter);
         }
 
