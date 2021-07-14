@@ -5,9 +5,14 @@ import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.WritableSubHandler;
-import net.openhft.chronicle.network.cluster.*;
+import net.openhft.chronicle.network.cluster.AbstractSubHandler;
+import net.openhft.chronicle.network.cluster.Cluster;
+import net.openhft.chronicle.network.cluster.HostDetails;
+import net.openhft.chronicle.network.cluster.VanillaClusteredNetworkContext;
 import net.openhft.chronicle.network.connection.CoreFields;
 import net.openhft.chronicle.network.connection.VanillaWireOutPublisher;
+import net.openhft.chronicle.threads.Pauser;
+import net.openhft.chronicle.threads.TimingPauser;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
@@ -15,31 +20,37 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
 public class UberHandlerTest extends NetworkTestCommon {
 
-    public static final int SIZE_OF_BIG_PAYLOAD = 300 * 1024;
+    private static final int SIZE_OF_BIG_PAYLOAD = 300 * 1024;
+    private static final int MAX_ROUNDS = 100;
+    private static final int NUM_HANDLERS = 4;
+    private static Map<Long, Integer> countersPerCid;
 
     @Before
     public void before() {
-        //YamlLogging.setAll(true);
         System.setProperty("TcpEventHandler.tcpBufferSize", "131072");
+        countersPerCid = new ConcurrentHashMap<>();
     }
 
     @After
     public void after() {
-        //YamlLogging.setAll(false);
         System.clearProperty("TcpEventHandler.tcpBufferSize");
     }
 
     @Test
-    public <T extends ClusteredNetworkContext<T>> void test() throws IOException {
-        String desc = "host.port";
-        TCPRegistry.createServerSocketChannelFor(desc);
-        HostDetails initiatorHost = new HostDetails().hostId(2).connectUri(desc);
-        HostDetails acceptorHost = new HostDetails().hostId(1).connectUri(desc);
+    public void test() throws IOException, TimeoutException {
+        TCPRegistry.createServerSocketChannelFor("initiator", "acceptor");
+        HostDetails initiatorHost = new HostDetails().hostId(2).connectUri("initiator");
+        HostDetails acceptorHost = new HostDetails().hostId(1).connectUri("acceptor");
 
         try (MyClusterContext acceptorCtx = clusterContext(acceptorHost, initiatorHost);
              MyClusterContext initiatorCtx = clusterContext(initiatorHost, acceptorHost)) {
@@ -48,16 +59,23 @@ public class UberHandlerTest extends NetworkTestCommon {
             initiatorCtx.cluster().start(initiatorHost.hostId());
 
             initiatorCtx.connectionManager(acceptorHost.hostId()).addListener((nc, isConnected) -> {
-                nc.wireOutPublisher().publish(w ->
-                        w.writeDocument(true, d -> sendPingPong(d, 12345)));
-                nc.wireOutPublisher().publish(w ->
-                        w.writeDocument(true, d -> sendPingPong(d, 12346)));
-                nc.wireOutPublisher().publish(w ->
-                        w.writeDocument(true, d -> sendPingPong(d, 12347)));
-                nc.wireOutPublisher().publish(w ->
-                        w.writeDocument(true, d -> sendPingPong(d, 12348)));
+                if (isConnected) {
+                    IntStream.range(0, NUM_HANDLERS).forEach(seq -> {
+                        nc.wireOutPublisher().publish(w ->
+                                w.writeDocument(true, d -> sendPingPong(d, 12345 + seq)));
+                    });
+                }
             });
+
+            TimingPauser pauser = Pauser.balanced();
+            while (pingPongsHaveNotFinished()) {
+                pauser.pause(30, TimeUnit.SECONDS);
+            }
         }
+    }
+
+    private boolean pingPongsHaveNotFinished() {
+        return !(countersPerCid.size() == NUM_HANDLERS && countersPerCid.values().stream().allMatch(val -> val == MAX_ROUNDS));
     }
 
     private void sendPingPong(WireOut wireOut, int cid) {
@@ -69,7 +87,7 @@ public class UberHandlerTest extends NetworkTestCommon {
     @NotNull
     private MyClusterContext clusterContext(HostDetails... clusterHosts) {
         MyClusterContext ctx = new MyClusterContext().wireType(WireType.BINARY).localIdentifier((byte) clusterHosts[0].hostId());
-        ctx.heartbeatIntervalMs(501);
+        ctx.heartbeatIntervalMs(500);
         MyCluster cluster = new MyCluster(ctx);
         for (HostDetails details : clusterHosts) {
             cluster.hostDetails.put(String.valueOf(details.hostId()), details);
@@ -129,8 +147,6 @@ public class UberHandlerTest extends NetworkTestCommon {
     static class PingPongHandler extends AbstractSubHandler<MyClusteredNetworkContext> implements
             Marshallable, WritableSubHandler<MyClusteredNetworkContext> {
 
-        private static final int MAX_ROUNDS = 100;
-
         private boolean initiator;
         private boolean initiated = false;
         private int round = 0;
@@ -158,6 +174,12 @@ public class UberHandlerTest extends NetworkTestCommon {
 
             sendPingPongCid(outWire);
             try (final DocumentContext dc = outWire.writingDocument(false)) {
+
+                // Keep track of what round we're up to
+                if (initiator) {
+                    countersPerCid.put(cid(), round);
+                }
+
                 round++;
                 if (initiator && round > MAX_ROUNDS) {
                     outWire.write("stop").text("now");
@@ -188,11 +210,6 @@ public class UberHandlerTest extends NetworkTestCommon {
         }
 
         @Override
-        public void writeMarshallable(@NotNull WireOut wire) {
-            wire.write("initiator").bool(initiator);
-        }
-
-        @Override
         public void onWrite(WireOut outWire) {
             if (initiator && !initiated) {
                 sendPingPongCid(outWire);
@@ -201,6 +218,11 @@ public class UberHandlerTest extends NetworkTestCommon {
                 }
                 initiated = true;
             }
+        }
+
+        @Override
+        public void writeMarshallable(@NotNull WireOut wire) {
+            wire.write("initiator").bool(initiator);
         }
 
         @Override

@@ -33,12 +33,12 @@ public enum ConnectionListeners implements ConnectionListener {
     LOGGING {
         @Override
         public void onConnected(int localIdentifier, int remoteIdentifier, boolean isAcceptor) {
-            Jvm.warn().on(getClass(), "onConnected lid:" + localIdentifier + ", rid:" + remoteIdentifier + ", acceptor:" + isAcceptor);
+            Jvm.startup().on(getClass(), "onConnected lid:" + localIdentifier + ", rid:" + remoteIdentifier + ", acceptor:" + isAcceptor);
         }
 
         @Override
         public void onDisconnected(int localIdentifier, int remoteIdentifier, boolean isAcceptor) {
-            Jvm.warn().on(getClass(), "onDisconnected lid:" + localIdentifier + ", rid:" + remoteIdentifier + ", acceptor:" + isAcceptor);
+            Jvm.startup().on(getClass(), "onDisconnected lid:" + localIdentifier + ", rid:" + remoteIdentifier + ", acceptor:" + isAcceptor);
         }
     }
 }
