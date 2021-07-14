@@ -209,7 +209,9 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             } catch (ClosedIllegalStateException cise) {
                 Jvm.warn().on(getClass(), cise);
                 throw new InvalidEventHandlerException();
-
+            } catch (FatalTcpHandlerException e) {
+                Jvm.error().on(TcpEventHandler.class, "Fatal handler exception occurred, closing", e);
+                throw new InvalidEventHandlerException(e);
             } catch (Exception e) {
                 Jvm.warn().on(getClass(), e);
             }
@@ -226,6 +228,9 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             } catch (InvalidEventHandlerException e) {
                 close();
                 throw e;
+            } catch (FatalTcpHandlerException e) {
+                Jvm.error().on(TcpEventHandler.class, "Fatal handler exception occurred, closing", e);
+                throw new InvalidEventHandlerException(e);
             } catch (Exception e) {
                 if (!isClosed()) {
                     close();

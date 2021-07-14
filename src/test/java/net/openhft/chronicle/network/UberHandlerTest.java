@@ -1,6 +1,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.api.TcpHandler;
@@ -25,14 +26,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.IntStream;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class UberHandlerTest extends NetworkTestCommon {
 
     private static final int SIZE_OF_BIG_PAYLOAD = 300 * 1024;
     private static final int MAX_ROUNDS = 1000;
     private static final int NUM_HANDLERS = 4;
+    private static final String ERROR_MESSAGE = "Received a handler for host ID: 98, my host ID is: 1 this is probably a configuration error";
     private static Map<Long, Integer> countersPerCid;
 
     @Before
@@ -71,6 +77,33 @@ public class UberHandlerTest extends NetworkTestCommon {
             while (pingPongsHaveNotFinished()) {
                 pauser.pause(30, TimeUnit.SECONDS);
             }
+        }
+    }
+
+    @Test
+    public void testHandlerWillCloseWhenHostIdsAreWrong() throws IOException {
+        expectException(ERROR_MESSAGE);
+
+        TCPRegistry.createServerSocketChannelFor("initiator", "acceptor");
+        HostDetails initiatorHost = new HostDetails().hostId(99).connectUri("initiator");
+        HostDetails acceptorHost = new HostDetails().hostId(1).connectUri("acceptor");
+        HostDetails acceptorHostWithInvalidId = new HostDetails().hostId(98).connectUri("acceptor");
+
+        try (MyClusterContext acceptorCtx = clusterContext(acceptorHost, initiatorHost);
+             MyClusterContext initiatorCtx = clusterContext(initiatorHost, acceptorHostWithInvalidId)) {
+
+            acceptorCtx.cluster().start(acceptorHost.hostId());
+            initiatorCtx.cluster().start(initiatorHost.hostId());
+
+            AtomicBoolean establishedConnection = new AtomicBoolean(false);
+            initiatorCtx.connectionManager(acceptorHostWithInvalidId.hostId()).addListener((nc, isConnected) -> {
+                if (isConnected) {
+                    establishedConnection.set(true);
+                }
+            });
+            Jvm.pause(2000);
+            assertFalse(establishedConnection.get());
+            assertTrue(exceptions.keySet().stream().anyMatch(k -> k.throwable != null && k.throwable.getMessage().contains(ERROR_MESSAGE)));
         }
     }
 
