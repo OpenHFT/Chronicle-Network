@@ -37,6 +37,7 @@ public class UberHandlerTest extends NetworkTestCommon {
 
     @Before
     public void before() {
+        YamlLogging.setAll(false);
         System.setProperty("TcpEventHandler.tcpBufferSize", "131072");
         countersPerCid = new ConcurrentHashMap<>();
     }
