@@ -14,8 +14,7 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -23,11 +22,11 @@
         <groupId>net.openhft</groupId>
         <artifactId>java-parent-pom</artifactId>
         <version>1.1.26</version>
-        <relativePath/>
+        <relativePath />
     </parent>
 
     <artifactId>chronicle-network</artifactId>
-    <version>2.21ea84-SNAPSHOT</version>
+    <version>2.21ea84</version>
     <name>OpenHFT/Chronicle-Network</name>
     <description>Chronicle-Network</description>
     <packaging>bundle</packaging>
@@ -329,7 +328,7 @@
         <connection>scm:git:git@github.com:OpenHFT/Chronicle-Network.git</connection>
         <developerConnection>scm:git:git@github.com:OpenHFT/Chronicle-Network.git
         </developerConnection>
-        <tag>ea</tag>
+        <tag>chronicle-network-2.21ea84</tag>
     </scm>
 
 </project>
