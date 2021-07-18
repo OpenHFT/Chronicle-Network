@@ -23,6 +23,7 @@ import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.ClosedIllegalStateException;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.ConnectionListener;
+import net.openhft.chronicle.network.FatalTcpHandlerException;
 import net.openhft.chronicle.network.api.session.SubHandler;
 import net.openhft.chronicle.network.api.session.WritableSubHandler;
 import net.openhft.chronicle.network.cluster.ClusteredNetworkContext;
@@ -113,7 +114,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         nc.wireType(wireType());
         isAcceptor(nc.isAcceptor());
 
-        assert checkIdentifierEqualsHostId();
+        checkIdentifierEqualsHostId();
         assert remoteIdentifier != localIdentifier :
                 "remoteIdentifier=" + remoteIdentifier + ", " +
                         "localIdentifier=" + localIdentifier;
@@ -134,11 +135,11 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         }
     }
 
-    private boolean checkIdentifierEqualsHostId() {
+    private void checkIdentifierEqualsHostId() {
         byte localHostIdentifier = nc().getLocalHostIdentifier();
         if (localIdentifier != localHostIdentifier && localHostIdentifier != 0)
-            throw new AssertionError("localId: " + localIdentifier + " != nc().localId: " + localHostIdentifier);
-        return true;
+            throw new FatalTcpHandlerException("Received a handler for host ID: "
+                    + localIdentifier + ", my host ID is: " + localHostIdentifier + " this is probably a configuration error");
     }
 
     private void notifyConnectionListeners() {

@@ -87,7 +87,9 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseab
                 ((NetworkContextManager<T>) handler).nc(nc);
 
             handlerManager.tcpHandler(handler);
-
+        } catch (FatalTcpHandlerException e) {
+            // Propagate these
+            throw e;
         } catch (Throwable e) {
             if (isClosed())
                 return;
