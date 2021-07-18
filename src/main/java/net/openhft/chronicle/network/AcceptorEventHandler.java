@@ -76,7 +76,7 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractC
 
     @Override
     public boolean action() throws InvalidEventHandlerException {
-        if (!ssc.isOpen() || isClosed() || eventLoop.isClosed())
+        if (!ssc.isOpen() || isClosed() || eventLoop.isClosing())
             throw new InvalidEventHandlerException();
 
         try {
@@ -85,7 +85,7 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractC
             final ChronicleSocketChannel sc = acceptStrategy.accept(ssc);
 
             if (sc != null) {
-                if (isClosed() || eventLoop.isClosed()) {
+                if (isClosed() || eventLoop.isClosing()) {
                     Closeable.closeQuietly(sc);
                     throw new InvalidEventHandlerException("closed");
                 }
@@ -109,7 +109,7 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractC
         } catch (
                 Exception e) {
 
-            if (!isClosed() && !eventLoop.isClosed()) {
+            if (!isClosed() && !eventLoop.isClosing()) {
                 final ChronicleServerSocket socket = ssc.socket();
                 LOGGER.warn("{}, port={}", hostPort, socket == null ? "unknown" : socket.getLocalPort(), e);
             }

@@ -110,7 +110,7 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
             return;
         }
 
-        if (eventLoop.isClosed())
+        if (eventLoop.isClosing())
             return;
 
         closeQuietly(nc);

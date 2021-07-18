@@ -132,7 +132,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
         public boolean action() throws InvalidEventHandlerException {
             throwExceptionIfClosed();
 
-            if (isClosed() || eventLoop.isClosed())
+            if (isClosed() || eventLoop.isClosing())
                 throw InvalidEventHandlerException.reusable();
             final long time = System.currentTimeMillis();
 
@@ -180,7 +180,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
                 nextPeriod.set(System.currentTimeMillis() + retryInterval);
                 return false;
             }
-            if (isClosed() || eventLoop.isClosed() || Thread.currentThread().isInterrupted())
+            if (isClosed() || eventLoop.isClosing() || Thread.currentThread().isInterrupted())
                 // we have died.
                 closeQuietly(eventHandler);
             else {
