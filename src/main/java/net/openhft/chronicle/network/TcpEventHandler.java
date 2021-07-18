@@ -153,7 +153,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         try {
             eventLoop.addHandler(statusMonitorEventHandler);
         } catch (Exception e) {
-            if (!eventLoop.isClosed())
+            if (!eventLoop.isClosing())
                 throw Jvm.rethrow(e);
         }
     }
