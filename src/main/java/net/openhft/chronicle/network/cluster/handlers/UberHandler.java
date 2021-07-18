@@ -122,7 +122,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         publisher(publisher);
 
         @NotNull final EventLoop eventLoop = nc.eventLoop();
-        if (!eventLoop.isClosed() && !eventLoop.isClosing()) {
+        if (!eventLoop.isClosing()) {
             eventLoop.start();
 
             // reflect the uber handler
