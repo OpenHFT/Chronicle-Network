@@ -1,5 +1,6 @@
 package net.openhft.chronicle.network.internal.lookuptable;
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IOTools;
 import org.junit.After;
@@ -86,8 +87,9 @@ public class FileBasedHostnamePortLookupTableTest {
     public void doShouldWorkConcurrently() {
         int seq = doShouldWorkConcurrently(false);
         int para = doShouldWorkConcurrently(true);
-        System.out.println(seq + " " + para);
-        assertTrue(seq > para);
+        assertTrue(seq > 0);
+        assertTrue(para > 0);
+        Jvm.startup().on(FileBasedHostnamePortLookupTable.class, "Sequential added: " + seq + ", parallel added: " + para);
     }
 
     public int doShouldWorkConcurrently(boolean parallel) {
