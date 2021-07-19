@@ -17,6 +17,7 @@ import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -47,6 +48,7 @@ public class UberHandlerTest extends NetworkTestCommon {
         System.clearProperty("TcpEventHandler.tcpBufferSize");
     }
 
+    @Ignore("https://github.com/OpenHFT/Chronicle-Network/issues/129")
     @Test
     public void testUberHandlerWithMultipleSubHandlersAndHeartbeats() throws IOException, TimeoutException {
         TCPRegistry.createServerSocketChannelFor("initiator", "acceptor");
