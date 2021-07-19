@@ -122,7 +122,9 @@ abstract public class Cluster<T extends ClusteredNetworkContext<T>, C extends Cl
             throw new IllegalStateException("Cannot start cluster member as the cluster context is null");
 
         context.localIdentifier((byte) localHostId);
-        context.localName(acceptOn.get().getKey());
+
+        if (context.localName() == null)
+            context.localName(acceptOn.get().getKey());
 
         hostDetails.values().stream().filter(hd -> hd.hostId() != localHostId).forEach(context::connect);
         context.eventLoop().start();
