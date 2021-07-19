@@ -71,6 +71,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     private String affinityCPU;
     private WireType wireType;
     private byte localIdentifier;
+    private String localName;
     private ServerThreadingStrategy serverThreadingStrategy;
     private long retryInterval = 1_000L;
     private String procPrefix;
@@ -216,6 +217,15 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
 
     public byte localIdentifier() {
         return localIdentifier;
+    }
+
+    public C localName(String localName) {
+        this.localName = localName;
+        return castThis();
+    }
+
+    public String localName() {
+        return this.localName;
     }
 
     @NotNull

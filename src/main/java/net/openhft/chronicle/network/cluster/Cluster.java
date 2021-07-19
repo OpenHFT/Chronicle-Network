@@ -112,7 +112,8 @@ abstract public class Cluster<T extends ClusteredNetworkContext<T>, C extends Cl
 
     // synchronized guarding hostDetails
     public synchronized void start(int localHostId) {
-        final Optional<HostDetails> acceptOn = hostDetails.values().stream().filter(hd -> hd.hostId() == localHostId).findAny();
+        final Optional<Map.Entry<String, HostDetails>> acceptOn = hostDetails.entrySet().stream()
+                .filter(hd -> hd.getValue().hostId() == localHostId).findAny();
 
         if (!acceptOn.isPresent())
             throw new IllegalArgumentException("Cannot start cluster member as provided hostid=" + localHostId + " is not found in the cluster");
@@ -121,9 +122,10 @@ abstract public class Cluster<T extends ClusteredNetworkContext<T>, C extends Cl
             throw new IllegalStateException("Cannot start cluster member as the cluster context is null");
 
         context.localIdentifier((byte) localHostId);
+        context.localName(acceptOn.get().getKey());
 
         hostDetails.values().stream().filter(hd -> hd.hostId() != localHostId).forEach(context::connect);
         context.eventLoop().start();
-        context.accept(acceptOn.get());
+        context.accept(acceptOn.get().getValue());
     }
 }
