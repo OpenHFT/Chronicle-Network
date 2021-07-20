@@ -91,7 +91,9 @@ public class UberHandlerTest extends NetworkTestCommon {
     private void stopAndWaitTillAllHandlersEnd() throws TimeoutException {
         running.set(false);
         TimingPauser pauser = Pauser.balanced();
-        while (stopped.get() < NUM_HANDLERS) {
+
+        // Wait till both sides of all handlers are stopped
+        while (stopped.get() < NUM_HANDLERS * 2) {
             pauser.pause(10, TimeUnit.SECONDS);
         }
     }
