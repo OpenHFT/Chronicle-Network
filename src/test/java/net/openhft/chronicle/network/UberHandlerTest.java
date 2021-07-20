@@ -177,14 +177,14 @@ public class UberHandlerTest extends NetworkTestCommon {
 
         @Override
         public void onRead(@NotNull WireIn inWire, @NotNull WireOut outWire) {
-            final StringBuilder eventName = Wires.acquireStringBuilder();
-            final ValueIn valueIn = inWire.readEventName(eventName);
-
             if (!running.get()) {
                 Jvm.startup().on(PingPongHandler.class, "PingPongHandler closing on round " + round + "(cid=" + cid() + ", initiator=" + initiator + ")");
                 close();
                 return;
             }
+
+            final StringBuilder eventName = Wires.acquireStringBuilder();
+            final ValueIn valueIn = inWire.readEventName(eventName);
 
             sendPingPongCid(outWire);
             try (final DocumentContext dc = outWire.writingDocument(false)) {
