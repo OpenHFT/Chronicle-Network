@@ -19,18 +19,16 @@ package net.openhft.chronicle.network.tcp;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.OS;
-import sun.nio.ch.DirectBuffer;
-import sun.nio.ch.IOStatus;
+import net.openhft.chronicle.core.io.IOTools;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class FastJ8SocketChannel extends VanillaSocketChannel {
     final FileDescriptor fd;
-    private final AtomicBoolean readLock = new AtomicBoolean();
+    private final Object readLock;
     volatile boolean open;
     private volatile boolean blocking;
 
@@ -39,6 +37,7 @@ public class FastJ8SocketChannel extends VanillaSocketChannel {
         fd = Jvm.getValue(socketChannel, "fd");
         open = socketChannel.isOpen();
         blocking = socketChannel.isBlocking();
+        readLock = Jvm.getValue(socketChannel, "readLock");
     }
 
     @Override
@@ -48,22 +47,17 @@ public class FastJ8SocketChannel extends VanillaSocketChannel {
         if (buf == null)
             throw new NullPointerException();
 
-        if (isBlocking() || isClosed() || !(buf instanceof DirectBuffer))
+        if (isBlocking() || isClosed() || !IOTools.isDirectBuffer(buf))
             return super.read(buf);
         return read0(buf);
     }
 
     int read0(ByteBuffer buf) throws IOException {
-        try {
-            while (true) {
-                if (readLock.compareAndSet(false, true))
-                    break;
-                if (Thread.interrupted())
-                    throw new IOException(new InterruptedException());
-            }
+        synchronized (readLock) {
+            if (Thread.interrupted())
+                throw new IOException(new InterruptedException());
+
             return readInternal(buf);
-        } finally {
-            readLock.compareAndSet(true, false);
         }
     }
 
@@ -105,13 +99,13 @@ public class FastJ8SocketChannel extends VanillaSocketChannel {
     }
 
     int readInternal(ByteBuffer buf) throws IOException {
-        int n = OS.read0(fd, ((DirectBuffer) buf).address() + buf.position(), buf.remaining());
-        if ((n == IOStatus.INTERRUPTED) && socketChannel.isOpen()) {
+        int n = OS.read0(fd, IOTools.addressFor(buf) + buf.position(), buf.remaining());
+        if ((n == IOTools.IOSTATUS_INTERRUPTED) && socketChannel.isOpen()) {
             // The system call was interrupted but the channel
             // is still open, so retry
             return 0;
         }
-        int ret = IOStatus.normalize(n);
+        int ret = IOTools.normaliseIOStatus(n);
         if (ret > 0)
             buf.position(buf.position() + ret);
         else if (ret < 0)

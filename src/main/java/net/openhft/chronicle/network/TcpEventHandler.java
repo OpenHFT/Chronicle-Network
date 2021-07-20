@@ -24,6 +24,7 @@ import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.core.annotation.PackageLocal;
 import net.openhft.chronicle.core.io.AbstractCloseable;
+import net.openhft.chronicle.core.io.ClosedIllegalStateException;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.io.QueryCloseable;
 import net.openhft.chronicle.core.threads.EventHandler;
@@ -59,6 +60,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         implements EventHandler, TcpEventHandlerManager<T> {
 
     public static final int TARGET_WRITE_SIZE = Integer.getInteger("TcpEventHandler.targetWriteSize", 1024);
+    private static final boolean CALL_MISSED_HEARTBEAT_ON_DISCONNECT = Jvm.getBoolean("chronicle.network.callOnMissedHeartbeatOnDisconnect");
     private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
     private static final long NBR_WARNING_NANOS = Long.getLong("tcp.nbr.warning.nanos", 20_000_000);
     private static final long NBW_WARNING_NANOS = Long.getLong("tcp.nbw.warning.nanos", 20_000_000);
@@ -203,6 +205,11 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         if (bias.canWrite())
             try {
                 busy = writeAction();
+
+            } catch (ClosedIllegalStateException cise) {
+                Jvm.warn().on(getClass(), cise);
+                throw new InvalidEventHandlerException();
+
             } catch (Exception e) {
                 Jvm.warn().on(getClass(), e);
             }
@@ -214,7 +221,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                 closeAndStartReconnector();
                 throw new InvalidEventHandlerException(e);
             } catch (IOException e) {
-                handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
+                handleIOE(e);
                 throw new InvalidEventHandlerException();
             } catch (InvalidEventHandlerException e) {
                 close();
@@ -443,29 +450,29 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         inBBB.readLimit(inBB.remaining());
     }
 
-    private void handleIOE(@NotNull final IOException e,
-                           final boolean clientIntentionallyClosed,
-                           @Nullable final HeartbeatListener heartbeatListener) {
-        if (isClosed() || clientIntentionallyClosed)
+    private void handleIOE(@NotNull final IOException e) {
+        if (isClosed() || (tcpHandler != null && tcpHandler.hasClientClosed()))
             return;
 
         try {
-            if (e.getMessage() != null && e.getMessage().startsWith("Connection reset by peer"))
-                LOG.trace(e.getMessage(), e);
-            else if (e.getMessage() != null && e.getMessage().startsWith("An existing connection " +
-                    "was forcibly closed"))
-                Jvm.debug().on(getClass(), e.getMessage());
-
-            else if (!(e instanceof ClosedByInterruptException))
+            String message = e.getMessage();
+            if (message != null && message.startsWith("Connection reset by peer")) {
+                LOG.trace(message, e);
+            } else if (message != null && message.startsWith("An existing connection was forcibly closed")) {
+                Jvm.debug().on(getClass(), message);
+            } else if (!(e instanceof ClosedByInterruptException)) {
                 Jvm.warn().on(getClass(), "", e);
+            }
 
             // The remote server has sent you a RST packet, which indicates an immediate dropping of the connection,
             // rather than the usual handshake. This bypasses the normal half-closed state transition.
             // I like this description: "Connection reset by peer" is the TCP/IP equivalent
             // of slamming the phone back on the hook.
-
-            if (heartbeatListener != null)
-                heartbeatListener.onMissedHeartbeat();
+            if (CALL_MISSED_HEARTBEAT_ON_DISCONNECT) {
+                HeartbeatListener heartbeatListener = nc.heartbeatListener();
+                if (heartbeatListener != null)
+                    heartbeatListener.onMissedHeartbeat();
+            }
 
         } finally {
             closeAndStartReconnector();
@@ -528,7 +535,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         } catch (ClosedChannelException cce) {
             closeAndStartReconnector();
         } catch (IOException e) {
-            handleIOE(e, tcpHandler.hasClientClosed(), nc.heartbeatListener());
+            handleIOE(e);
         }
         return busy;
     }

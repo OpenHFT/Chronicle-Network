@@ -23,7 +23,6 @@ import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.io.SimpleCloseable;
 import net.openhft.chronicle.core.util.ThrowingSupplier;
-import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -181,8 +180,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
     @NotNull
     private <R> Function<ValueIn, R> consumerInFunction(@Nullable final R usingValue, @NotNull final Class<R> resultType) {
 
-        // Suspicious code. see https://github.com/OpenHFT/Chronicle-Network/issues/58
-        if (resultType == CharSequence.class && usingValue != null)
+        if (resultType == CharSequence.class && usingValue instanceof StringBuilder)
             return f -> {
                 f.textTo((StringBuilder) usingValue);
                 return usingValue;

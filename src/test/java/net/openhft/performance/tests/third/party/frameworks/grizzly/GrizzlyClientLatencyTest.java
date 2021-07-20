@@ -89,7 +89,7 @@ public class GrizzlyClientLatencyTest extends NetworkTestCommon {
                 Buffer msg = ctx.<Buffer>getMessage();
                 if (msg.remaining() >= 8) {
                     if (count % 10000 == 0)
-                       // System.out.print(".");
+                        System.out.print(".");
 
                     if (count >= 0) {
                         times[count] = System.nanoTime() - msg.getLong();

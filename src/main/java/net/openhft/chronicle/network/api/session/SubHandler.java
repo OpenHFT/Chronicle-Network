@@ -53,7 +53,7 @@ public interface SubHandler<T extends NetworkContext<T>> extends NetworkContextM
 
     /**
      * Some events may result in long-lived actions, which must yield periodically to allow (eg) buffers to clear (out messages to be sent)
-     * A busy handler can indicate a long-lived action by returning true from inProgress
+     * A busy handler can indicate a long-lived action by returning <code>true</code> from inProgress
      * The caller should then use this to invoke onTouch to give the handler another slice
      *
      * @param outWire

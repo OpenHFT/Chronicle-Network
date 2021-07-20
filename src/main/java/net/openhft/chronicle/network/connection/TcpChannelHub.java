@@ -27,7 +27,6 @@ import net.openhft.chronicle.core.StackTrace;
 import net.openhft.chronicle.core.io.*;
 import net.openhft.chronicle.core.threads.*;
 import net.openhft.chronicle.network.ConnectionStrategy;
-
 import net.openhft.chronicle.network.api.session.SessionDetails;
 import net.openhft.chronicle.network.api.session.SessionProvider;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
@@ -35,14 +34,9 @@ import net.openhft.chronicle.threads.*;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketAddress;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
@@ -72,10 +66,8 @@ public final class TcpChannelHub extends AbstractCloseable {
 
     public static final int TCP_BUFFER = getTcpBufferSize();
     public static final int TCP_SAFE_SIZE = Integer.getInteger("tcp.safe.size", 128 << 10);
-    private static final boolean LOG_TCP_MESSAGES = Jvm.getBoolean("log.tcp.messages");
-    private static final Logger LOG = LoggerFactory.getLogger(TcpChannelHub.class);
-    private static final boolean DEBUG_ENABLED = LOG.isDebugEnabled();
-    private static final boolean hasAssert;
+    public static final boolean TCP_USE_PADDING = Jvm.getBoolean("tcp.use.padding", false);
+    private static final boolean hasAssert = Jvm.isAssertEnabled();
     private static final int HEATBEAT_PING_PERIOD =
             getInteger("heartbeat.ping.period",
                     Jvm.isDebug() ? 30_000 : 5_000);
@@ -84,13 +76,6 @@ public final class TcpChannelHub extends AbstractCloseable {
                     Jvm.isDebug() ? 120_000 : 15_000);
     private static final int SIZE_OF_SIZE = 4;
     private static final Set<TcpChannelHub> hubs = new CopyOnWriteArraySet<>();
-
-    static {
-        boolean x = false;
-        assert x = true;
-        hasAssert = x;
-    }
-
     final long timeoutMs;
     @NotNull
     private final String name;
@@ -116,16 +101,17 @@ public final class TcpChannelHub extends AbstractCloseable {
     private final ConnectionStrategy connectionStrategy;
     @NotNull
     private final Pauser pauser;
+    @NotNull
+    private final CountDownLatch receivedClosedAcknowledgement = new CountDownLatch(1);
+    private final boolean shouldSendCloseMessage;
+    private final HandlerPriority priority;
+    private final boolean debugEnabled = Jvm.isDebugEnabled(TcpChannelHub.class);
     // private final String description;
     private long largestChunkSoFar = 0;
     @Nullable
     private volatile ChronicleSocketChannel clientChannel;
-    @NotNull
-    private final CountDownLatch receivedClosedAcknowledgement = new CountDownLatch(1);
     // set up in the header
     private long limitOfLast = 0;
-    private final boolean shouldSendCloseMessage;
-    private final HandlerPriority priority;
 
     public TcpChannelHub(@Nullable final SessionProvider sessionProvider,
                          @NotNull final EventLoop eventLoop,
@@ -165,7 +151,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         this.eventLoop = eventLoop;
         this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
         this.outWire = wireType.apply(elasticByteBuffer());
-        outWire.usePadding(false);
+        outWire.usePadding(TCP_USE_PADDING);
         // this.inWire = wireType.apply(elasticByteBuffer());
         this.name = name.trim();
         this.timeoutMs = Integer.getInteger("tcp.client.timeout", 10_000);
@@ -174,7 +160,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         // we are always going to send the header as text wire, the server will
         // respond in the wire define by the wireType field, all subsequent types must be in wireType
         this.handShakingWire = WireType.TEXT.apply(Bytes.elasticByteBuffer());
-        this.handShakingWire.usePadding(false);
+        this.handShakingWire.usePadding(TCP_USE_PADDING);
 
         this.sessionProvider = sessionProvider;
         this.shouldSendCloseMessage = shouldSendCloseMessage;
@@ -231,29 +217,27 @@ public final class TcpChannelHub extends AbstractCloseable {
             if (hub.isClosed())
                 continue;
 
-            if (DEBUG_ENABLED)
+            if (hub.debugEnabled)
                 Jvm.debug().on(TcpChannelHub.class, "Closing " + hub);
             hub.close();
         }
         hubs.clear();
     }
 
-    private static void logToStandardOutMessageReceived(@NotNull final Wire wire) {
-        @NotNull final Bytes<?> bytes = wire.bytes();
+     static void logToStandardOutMessageReceived(@NotNull final Wire wire) {
+         @NotNull final Bytes<?> bytes = wire.bytes();
 
-        if (!YamlLogging.showClientReads())
-            return;
+         if (!YamlLogging.showClientReads())
+             return;
 
-        final long position = bytes.writePosition();
-        final long limit = bytes.writeLimit();
-        try {
-            try {
+         final long position = bytes.writePosition();
+         final long limit = bytes.writeLimit();
+         try {
+             try {
 
-                //         LOG.info("Bytes.toString(bytes)=" + Bytes.toString(bytes));
-                LOG.info("\nreceives:\n" +
-                        "```yaml\n" +
-                        Wires.fromSizePrefixedBlobs(wire) +
-                        "```\n");
+                System.out.println(
+                        "receives:\n" +
+                                Wires.fromSizePrefixedBlobs(wire));
                 YamlLogging.title = "";
                 YamlLogging.writeMessage("");
 
@@ -266,7 +250,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         }
     }
 
-    private static void logToStandardOutMessageReceivedInERROR(@NotNull final Wire wire) {
+    static void logToStandardOutMessageReceivedInERROR(@NotNull final Wire wire) {
         @NotNull final Bytes<?> bytes = wire.bytes();
 
         final long position = bytes.writePosition();
@@ -274,10 +258,9 @@ public final class TcpChannelHub extends AbstractCloseable {
         try {
             try {
 
-                LOG.info("\nreceives IN ERROR:\n" +
-                        "```yaml\n" +
-                        Wires.fromSizePrefixedBlobs(wire) +
-                        "```\n");
+                System.out.println(
+                        "\nreceives IN ERROR:\n" +
+                                Wires.fromSizePrefixedBlobs(wire));
                 YamlLogging.title = "";
                 YamlLogging.writeMessage("");
 
@@ -308,6 +291,19 @@ public final class TcpChannelHub extends AbstractCloseable {
         }
     }
 
+    public static void setTcpNoDelay(Socket socket, boolean tcpNoDelay) throws SocketException {
+        for (int i = 10; i >= 0; i--) {
+            try {
+
+                socket.setTcpNoDelay(tcpNoDelay);
+            } catch (SocketException se) {
+                if (i == 0)
+                    throw se;
+                Jvm.pause(1);
+            }
+        }
+    }
+
     void clear(@NotNull final Wire wire) {
         assert wire.startUse();
         try {
@@ -317,6 +313,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         }
     }
 
+    @Deprecated(/* remove in x.22 */)
     @Nullable
     SocketChannel openSocketChannel(final InetSocketAddress socketAddress) throws IOException {
         final SocketChannel result = SocketChannel.open();
@@ -325,7 +322,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         try {
             result.configureBlocking(false);
             Socket socket = result.socket();
-            socket.setTcpNoDelay(true);
+            setTcpNoDelay(socket, true);
             socket.setReceiveBufferSize(tcpBufferSize);
             socket.setSendBufferSize(tcpBufferSize);
             socket.setSoTimeout(0);
@@ -345,7 +342,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                         return null;
 
                 } catch (IOException e) {
-                    if (DEBUG_ENABLED)
+                    if (debugEnabled)
                         Jvm.debug().on(TcpChannelHub.class, "Failed to connect to " + socketAddress + " " + e);
                     return null;
                 }
@@ -382,7 +379,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
     private void onDisconnected() {
 
-        if (DEBUG_ENABLED)
+        if (debugEnabled)
             Jvm.debug().on(TcpChannelHub.class, "disconnected to remoteAddress=" + socketAddressSupplier);
         tcpSocketConsumer.onConnectionClosed();
 
@@ -395,7 +392,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
     private void onConnected() {
 
-        if (DEBUG_ENABLED)
+        if (debugEnabled)
             Jvm.debug().on(TcpChannelHub.class, "connected to remoteAddress=" + socketAddressSupplier);
 
         if (clientConnectionMonitor != null) {
@@ -499,7 +496,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
             this.clientChannel = null;
 
-            if (DEBUG_ENABLED)
+            if (debugEnabled)
                 Jvm.debug().on(TcpChannelHub.class, "closing",
                         new StackTrace("only added for logging - please ignore !"));
 
@@ -546,12 +543,12 @@ public final class TcpChannelHub extends AbstractCloseable {
             awaitAckOfClosedMessage();
         }
 
-        if (DEBUG_ENABLED)
+        if (debugEnabled)
             Jvm.debug().on(TcpChannelHub.class, "closing connection to " + socketAddressSupplier);
         tcpSocketConsumer.stop();
 
         for (int i = 1; clientChannel != null; i++) {
-            if (DEBUG_ENABLED) {
+            if (debugEnabled) {
                 Jvm.debug().on(TcpChannelHub.class, "waiting for disconnect to " + socketAddressSupplier);
             }
             Jvm.pause(Math.min(100, i));
@@ -582,7 +579,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         try {
             final boolean await = receivedClosedAcknowledgement.await(25, MILLISECONDS);
             if (!await)
-                if (DEBUG_ENABLED)
+                if (debugEnabled)
                     Jvm.debug().on(TcpChannelHub.class, "SERVER IGNORED CLOSE REQUEST: shutting down the client anyway as the " +
                             "server did not respond to the close() request.");
         } catch (InterruptedException ignore) {
@@ -704,11 +701,12 @@ public final class TcpChannelHub extends AbstractCloseable {
      */
     private void writeSocket1(@NotNull final WireOut outWire, @Nullable final ChronicleSocketChannel clientChannel) throws IOException {
 
-        if (LOG_TCP_MESSAGES && DEBUG_ENABLED)
-            Jvm.debug().on(TcpChannelHub.class, "sending :" + Wires.fromSizePrefixedBlobs((Wire) outWire));
+        if (YamlLogging.showClientWrites())
+            System.out.println("sending from TCH: " + Wires.fromSizePrefixedBlobs((Wire) outWire));
 
         if (clientChannel == null) {
-            LOG.info("Connection Dropped");
+            Jvm.debug().on(TcpChannelHub.class,
+                    "Connection Dropped");
             throw new ConnectionDroppedException("Connection Dropped");
         }
 
@@ -763,7 +761,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                             tcpSocketConsumer.lastTimeMessageReceivedOrSent = start;
 
                     } else {
-                        if (!isOutBufferFull && Jvm.isDebug() && DEBUG_ENABLED)
+                        if (!isOutBufferFull && Jvm.isDebug() && debugEnabled)
                             Jvm.debug().on(TcpChannelHub.class, "----> TCP write buffer is FULL! " + outBuffer.remaining() + " bytes" +
                                     " remaining.");
                         isOutBufferFull = true;
@@ -824,14 +822,13 @@ public final class TcpChannelHub extends AbstractCloseable {
         try {
 
             if (bytes.readRemaining() > 0)
-                LOG.info(((!YamlLogging.title.isEmpty()) ? "### " + YamlLogging
-                        .title + "\n" : "") + "" +
-                        YamlLogging.writeMessage() + (YamlLogging.writeMessage().isEmpty() ?
-                        "" : "\n\n") +
-                        "sends:\n\n" +
-                        "```yaml\n" +
-                        Wires.fromSizePrefixedBlobs(bytes, false, false) +
-                        "```");
+                Jvm.debug().on(TcpChannelHub.class,
+                        ((!YamlLogging.title.isEmpty()) ? "### " + YamlLogging
+                                .title + "\n" : "") + "" +
+                                YamlLogging.writeMessage() + (YamlLogging.writeMessage().isEmpty() ?
+                                "" : "\n\n") +
+                                "sends:\n\n" +
+                                Wires.fromSizePrefixedBlobs(bytes, false, false));
             YamlLogging.title = "";
             YamlLogging.writeMessage("");
 
@@ -868,7 +865,7 @@ public final class TcpChannelHub extends AbstractCloseable {
     private void reflectServerHeartbeatMessage(@NotNull final ValueIn valueIn) {
 
         if (!outBytesLock().tryLock()) {
-            if (Jvm.isDebug() && DEBUG_ENABLED)
+            if (Jvm.isDebug() && debugEnabled)
                 Jvm.debug().on(TcpChannelHub.class, "skipped sending back heartbeat, because lock is held !" +
                         outBytesLock);
             return;
@@ -990,7 +987,7 @@ public final class TcpChannelHub extends AbstractCloseable {
             } else {
                 if (!lock.tryLock()) {
                     if (tryLock.equals(TryLock.TRY_LOCK_WARN))
-                        if (DEBUG_ENABLED)
+                        if (debugEnabled)
                             Jvm.debug().on(TcpChannelHub.class, "FAILED TO OBTAIN LOCK thread=" + Thread.currentThread() + " on " +
                                     lock, new IllegalStateException());
                     return false;
@@ -1005,7 +1002,8 @@ public final class TcpChannelHub extends AbstractCloseable {
 
                 assert checkWritesOnReadThread(tcpSocketConsumer);
 
-                writeSocket(outWire(), reconnectOnFailure, sessionMessage);
+                if (outWire.bytes().readRemaining() > 0)
+                    writeSocket(outWire(), reconnectOnFailure, sessionMessage);
 
             } catch (ConnectionDroppedException e) {
                 if (Jvm.isDebug())
@@ -1087,13 +1085,11 @@ public final class TcpChannelHub extends AbstractCloseable {
         private final ExecutorService service;
         @NotNull
         private final ThreadLocal<Wire> syncInWireThreadLocal = CleaningThreadLocal.withCleanup(this::createWire, w -> releaseWire(w));
-
+        private final Bytes serverHeartBeatHandler = Bytes.elasticByteBuffer();
+        private final TidReader tidReader = new TidReader();
         long lastheartbeatSentTime = 0;
         volatile long start = Long.MAX_VALUE;
         private long tid;
-        private final Bytes serverHeartBeatHandler = Bytes.elasticByteBuffer();
-        private final TidReader tidReader = new TidReader();
-
         private volatile long lastTimeMessageReceivedOrSent = System.currentTimeMillis();
         private volatile boolean isShutdown;
         @Nullable
@@ -1102,7 +1098,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         private volatile Thread readThread;
 
         TcpSocketConsumer() {
-            if (DEBUG_ENABLED)
+            if (debugEnabled)
                 Jvm.debug().on(TcpChannelHub.class, "constructor remoteAddress=" + socketAddressSupplier);
 
             service = newCachedThreadPool(
@@ -1176,7 +1172,7 @@ public final class TcpChannelHub extends AbstractCloseable {
             //noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized (bytes) {
 
-                if (DEBUG_ENABLED)
+                if (debugEnabled)
                     Jvm.debug().on(TcpChannelHub.class, "tid=" + tid + " of client request");
 
                 bytes.clear();
@@ -1235,7 +1231,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                     outBytesLock().isHeldByCurrentThread();
 
                     registerSubscribe(asyncSubscription.tid(), asyncSubscription);
-                    if (DEBUG_ENABLED)
+                    if (debugEnabled)
                         Jvm.debug().on(TcpChannelHub.class, "deferred subscription tid=" + asyncSubscription.tid() + "," +
                                 "asyncSubscription=" + asyncSubscription);
 
@@ -1256,7 +1252,8 @@ public final class TcpChannelHub extends AbstractCloseable {
                         while (!lock.tryLock(1, SECONDS)) {
                             if (isShuttingdown())
                                 throw new IllegalStateException("Shutting down");
-                            LOG.info("Waiting for lock " + Jvm.lockWithStack(lock));
+                            Jvm.warn().on(TcpChannelHub.class,
+                                    "Waiting for lock " + Jvm.lockWithStack(lock));
                         }
                     }
                 } catch (InterruptedException e) {
@@ -1328,8 +1325,8 @@ public final class TcpChannelHub extends AbstractCloseable {
                                 lastMsg = msg;
                             } else {
                                 if (lastMsg != null)
-                                    LOG.info(lastMsg);
-                                LOG.info(msg);
+                                    Jvm.debug().on(TcpChannelHub.class, lastMsg);
+                                Jvm.debug().on(TcpChannelHub.class, msg);
                                 lastMsg = null;
                             }
                         }
@@ -1350,7 +1347,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
         private void running() {
             final Wire inWire = wireType.apply(elasticByteBuffer());
-            inWire.usePadding(false);
+            inWire.usePadding(TCP_USE_PADDING);
 
             try {
                 assert inWire != null;
@@ -1365,10 +1362,12 @@ public final class TcpChannelHub extends AbstractCloseable {
                         @NotNull final Bytes<?> bytes = inWire.bytes();
 
                         // the number bytes ( still required  ) to read the size
+                        System.out.println("read header");
                         blockingRead(inWire, SIZE_OF_SIZE);
 
                         final int header = bytes.readVolatileInt(0);
                         final long messageSize = size(header);
+                        System.out.println("... read header " + messageSize);
 
                         // read the data
                         start = System.currentTimeMillis();
@@ -1381,7 +1380,8 @@ public final class TcpChannelHub extends AbstractCloseable {
                             long timeTaken = System.currentTimeMillis() - start;
                             start = Long.MAX_VALUE;
                             if (timeTaken > 100)
-                                LOG.info("Processing data=" + timeTaken + "ms");
+                                Jvm.perf().on(TcpChannelHub.class,
+                                        "Processing data=" + timeTaken + "ms");
 
                             if (clearTid)
                                 tid = -1;
@@ -1404,7 +1404,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                     } catch (Exception e) {
                         start = Long.MAX_VALUE;
 
-                        if (Jvm.isDebug() && DEBUG_ENABLED)
+                        if (Jvm.isDebug() && debugEnabled)
                             Jvm.debug().on(TcpChannelHub.class, e);
 
                         tid = -1;
@@ -1414,7 +1414,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                         } else {
                             final String message = e.getMessage();
                             if (e instanceof ConnectionDroppedException) {
-                                if (DEBUG_ENABLED)
+                                if (debugEnabled)
                                     Jvm.debug().on(TcpChannelHub.class, "reconnecting due to dropped connection " + ((message == null) ? "" : message));
                             } else if (e instanceof IOException && "Connection reset by peer".equals(message)) {
                                 Jvm.warn().on(TcpChannelHub.class, "reconnecting due to \"Connection reset by peer\" " + message);
@@ -1538,7 +1538,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                         blockingRead(inWire, messageSize);
                         logToStandardOutMessageReceived(inWire);
 
-                        if (DEBUG_ENABLED)
+                        if (debugEnabled)
                             Jvm.debug().on(TcpChannelHub.class, "unable to respond to tid=" + tid + ", given that we have " +
                                     "received a message we a tid which is unknown, this can occur " +
                                     "sometime if " +
@@ -1622,7 +1622,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
             final StringBuilder eventName = Wires.acquireStringBuilder();
             final Wire inWire = TcpChannelHub.this.wireType.apply(bytes);
-            inWire.usePadding(false);
+            inWire.usePadding(TCP_USE_PADDING);
             if (YamlLogging.showHeartBeats())
                 logToStandardOutMessageReceived(inWire);
             inWire.readDocument(null, d -> {
@@ -1672,7 +1672,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                 // we dont want to call isInterrupted every time so will only call it if we have read no bytes
                 if (numberOfBytesRead == 0 && Thread.currentThread().isInterrupted())
                     isShutdown = true;
-                
+
                 if (numberOfBytesRead == -1)
                     throw new ConnectionDroppedException("Disconnection to server=" + socketAddressSupplier +
                             " read=-1 "
@@ -1682,7 +1682,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                     onMessageReceived();
                     emptyRead = false;
 
-                    if (DEBUG_ENABLED)
+                    if (debugEnabled)
                         Jvm.debug().on(TcpChannelHub.class, "R:" + numberOfBytesRead + ",socket=" + socketAddressSupplier.get());
                     pauser.reset();
 
@@ -1758,15 +1758,15 @@ public final class TcpChannelHub extends AbstractCloseable {
                 subscribe(new AbstractAsyncTemporarySubscription(TcpChannelHub.this, null, name) {
                     @Override
                     public void onSubscribe(@NotNull WireOut wireOut) {
-                        LOG.debug("sending heartbeat");
+                        Jvm.debug().on(TcpChannelHub.class, "sending heartbeat");
                         wireOut.writeEventName(EventId.heartbeat).int64(System.currentTimeMillis());
                     }
 
                     @Override
                     public void onConsumer(@NotNull WireIn inWire) {
                         long roundTipTimeMicros = NANOSECONDS.toMicros(System.nanoTime() - l);
-                        if (DEBUG_ENABLED)
-                            Jvm.debug().on(TcpChannelHub.class, "heartbeat round trip time=" + roundTipTimeMicros + "" +
+                        if (debugEnabled)
+                            Jvm.perf().on(TcpChannelHub.class, "heartbeat round trip time=" + roundTipTimeMicros + "" +
                                     " server=" + socketAddressSupplier);
 
                         inWire.clear();
@@ -1846,10 +1846,8 @@ public final class TcpChannelHub extends AbstractCloseable {
 
                 checkNotShuttingDown();
 
-                if (DEBUG_ENABLED)
+                if (debugEnabled || (i >= socketAddressSupplier.all().size() && !isShuttingdown()))
                     Jvm.debug().on(TcpChannelHub.class, "attemptConnect remoteAddress=" + socketAddressSupplier);
-                else if (i >= socketAddressSupplier.all().size() && !isShuttingdown())
-                    LOG.info("attemptConnect remoteAddress=" + socketAddressSupplier);
 
                 @Nullable ChronicleSocketChannel socketChannel;
                 try {
@@ -1877,7 +1875,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                         onMessageReceived();
 
                         synchronized (this) {
-                            LOG.info("connected to " + socketChannel);
+                            Jvm.debug().on(TcpChannelHub.class, "Connected to " + socketChannel);
                             clientChannel = socketChannel;
                         }
 
@@ -1886,7 +1884,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                         doHandShaking(socketChannel);
 
                         eventLoop.addHandler(this);
-                        if (DEBUG_ENABLED)
+                        if (debugEnabled)
                             Jvm.debug().on(TcpChannelHub.class, "successfully connected to remoteAddress=" +
                                     socketAddressSupplier);
                         onReconnect();
@@ -1950,7 +1948,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
         private Wire createWire() {
             final Wire wire = wireType.apply(elasticByteBuffer());
-            wire.usePadding(false);
+            wire.usePadding(TCP_USE_PADDING);
             assert wire.startUse();
             return wire;
         }

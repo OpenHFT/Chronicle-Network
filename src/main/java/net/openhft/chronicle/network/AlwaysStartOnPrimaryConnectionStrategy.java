@@ -18,6 +18,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.network.connection.ClientConnectionMonitor;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
@@ -29,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
@@ -48,6 +50,17 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
     private int pausePeriodMs = Integer.getInteger("client.timeout", 500);
     private int socketConnectionTimeoutMs = Integer.getInteger("connectionStrategy.socketConnectionTimeoutMs", 1);
     private long pauseMillisBeforeReconnect = Integer.getInteger("connectionStrategy.pauseMillisBeforeReconnect", 500);
+    private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
+
+    public AlwaysStartOnPrimaryConnectionStrategy clientConnectionMonitor(ClientConnectionMonitor fatalFailureMonitor) {
+        this.clientConnectionMonitor = fatalFailureMonitor;
+        return this;
+    }
+
+    @Override
+    public ClientConnectionMonitor clientConnectionMonitor() {
+        return clientConnectionMonitor;
+    }
 
     @Nullable
     @Override
@@ -62,7 +75,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
             socketAddressSupplier.failoverToNextAddress();
 
         for (; ; ) {
-
+            throwExceptionIfClosed();
             ChronicleSocketChannel socketChannel = null;
             try {
 
@@ -143,5 +156,17 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
     public AlwaysStartOnPrimaryConnectionStrategy pauseMillisBeforeReconnect(long pauseMillisBeforeReconnect) {
         this.pauseMillisBeforeReconnect = pauseMillisBeforeReconnect;
         return this;
+    }
+
+   private transient final AtomicBoolean isClosed = new AtomicBoolean(false);
+
+    @Override
+    public void close() {
+        isClosed.set(true);
+    }
+
+    @Override
+    public boolean isClosed() {
+        return isClosed.get();
     }
 }

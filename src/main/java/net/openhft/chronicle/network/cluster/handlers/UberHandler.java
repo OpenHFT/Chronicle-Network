@@ -20,6 +20,7 @@ package net.openhft.chronicle.network.cluster.handlers;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.io.ClosedIllegalStateException;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.ConnectionListener;
 import net.openhft.chronicle.network.api.session.SubHandler;
@@ -79,6 +80,17 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         }
     }
 
+    public static WriteMarshallable uberHandler(int localIdentifier, int remoteIdentifier, WireType wireType) {
+        return wire -> {
+            try (final DocumentContext ignored = wire.writingDocument(true)) {
+                wire.write(() -> HANDLER).typedMarshallable(new UberHandler<>(
+                        localIdentifier,
+                        remoteIdentifier,
+                        wireType));
+            }
+        };
+    }
+
     public int remoteIdentifier() {
         return remoteIdentifier;
     }
@@ -97,7 +109,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
 
     @Override
     protected void onInitialize() {
-        final ClusteredNetworkContext<T> nc = nc();
+        @NotNull final ClusteredNetworkContext<T> nc = nc();
         nc.wireType(wireType());
         isAcceptor(nc.isAcceptor());
 
@@ -106,11 +118,11 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                 "remoteIdentifier=" + remoteIdentifier + ", " +
                         "localIdentifier=" + localIdentifier;
 
-        final WireOutPublisher publisher = nc.wireOutPublisher();
+        @NotNull final WireOutPublisher publisher = nc.wireOutPublisher();
         publisher(publisher);
 
         @NotNull final EventLoop eventLoop = nc.eventLoop();
-        if (!eventLoop.isClosed()) {
+        if (!eventLoop.isClosed() && !eventLoop.isClosing()) {
             eventLoop.start();
 
             // reflect the uber handler
@@ -123,24 +135,16 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     }
 
     private boolean checkIdentifierEqualsHostId() {
-        return localIdentifier == nc().getLocalHostIdentifier() || 0 == nc().getLocalHostIdentifier();
+        byte localHostIdentifier = nc().getLocalHostIdentifier();
+        if (localIdentifier != localHostIdentifier && localHostIdentifier != 0)
+            throw new AssertionError("localId: " + localIdentifier + " != nc().localId: " + localHostIdentifier);
+        return true;
     }
 
     private void notifyConnectionListeners() {
         connectionChangedNotifier = nc().clusterContext().connectionManager(remoteIdentifier);
         if (connectionChangedNotifier != null)
             connectionChangedNotifier.onConnectionChanged(true, nc());
-    }
-
-    public static WriteMarshallable uberHandler(int localIdentifier, int remoteIdentifier, WireType wireType) {
-        return wire -> {
-            try (final DocumentContext ignored = wire.writingDocument(true)) {
-                wire.write(() -> HANDLER).typedMarshallable(new UberHandler<>(
-                        localIdentifier,
-                        remoteIdentifier,
-                        wireType));
-            }
-        };
     }
 
     @Override
@@ -161,6 +165,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
             throw Jvm.rethrow(e);
         }
         Closeable.closeQuietly(writers);
+        writers.clear();
         super.performClose();
     }
 
@@ -175,7 +180,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                 final SubHandler<T> handler = handler();
                 if (handler != null && handler.inProgress()) {
                     try {
-                        if (false == handler.onTouch(outWire)) {
+                        if (!handler.onTouch(outWire)) {
                             dc.rollbackOnClose();
                             return;
                         }
@@ -228,8 +233,12 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                         "fully " +
                         "process the following " +
                         "YAML\n");
+        } catch (ClosedIllegalStateException e) {
+            Jvm.warn().on(getClass(), e);
+
+            close();
         } catch (Throwable e) {
-              Jvm.warn().on(getClass(), e);
+            Jvm.warn().on(getClass(), e);
         }
     }
 
@@ -244,7 +253,9 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
      * @param outWire the wire that you wish to write
      */
     @Override
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     protected void onWrite(@NotNull final WireOut outWire) {
+        super.onWrite(outWire);
         for (int i = 0; i < writers.size(); i++)
             try {
                 if (isClosing.get())

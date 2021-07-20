@@ -20,6 +20,7 @@ package net.openhft.chronicle.network.connection;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.AbstractCloseable;
+import net.openhft.chronicle.core.io.ClosedIllegalStateException;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -27,22 +28,31 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 
+import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PADDING;
+
 public class VanillaWireOutPublisher extends AbstractCloseable implements WireOutPublisher {
 
     private static final Logger LOG = LoggerFactory.getLogger(VanillaWireOutPublisher.class);
     private final Bytes<ByteBuffer> bytes;
 
     private Wire wire;
+    private String connectionDescription = "?";
 
     public VanillaWireOutPublisher(@NotNull WireType wireType) {
         bytes = Bytes.elasticByteBuffer(TcpChannelHub.TCP_BUFFER);
         final WireType wireType0 = wireType == WireType.DELTA_BINARY ? WireType.BINARY : wireType;
         wire = wireType0.apply(bytes);
-        wire.usePadding(false);
+        wire.usePadding(TCP_USE_PADDING);
+    }
+
+    @Override
+    public WireOutPublisher connectionDescription(String connectionDescription) {
+        this.connectionDescription = connectionDescription;
+        return this;
     }
 
     /**
-     * Apply waiting messages and return false if there was none.
+     * Apply waiting messages and return <code>false</code> if there was none.
      *
      * @param bytes buffer to write to.
      */
@@ -74,7 +84,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
                         bytes.readPosition(bytes.readLimit());
                         return;
                     }
-                    LOG.info("Server Sends async event:\n" + Wires.fromSizePrefixedBlobs(dc));
+                    LOG.info("Server " + connectionDescription + " Sends async event:\n" + Wires.fromSizePrefixedBlobs(dc));
                     bytes.readPosition(bytes.readLimit());
                 }
             }
@@ -84,7 +94,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     }
 
     /**
-     * Apply waiting messages and return false if there was none.
+     * Apply waiting messages and return <code>false</code> if there was none.
      *
      * @param outWire buffer to write to.
      */
@@ -113,8 +123,8 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
         try {
             throwExceptionIfClosed();
 
-        } catch (IllegalStateException ise) {
-            Jvm.debug().on(getClass(), "message ignored as closed", ise);
+        } catch (ClosedIllegalStateException ise) {
+            Jvm.debug().on(getClass(), "Server " + connectionDescription + " message ignored as closed", ise);
             return;
         }
 
@@ -133,7 +143,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
                         long len = wire.bytes().writePosition() - start;
                         wire.bytes().readPositionRemaining(start, len);
                         String message = Wires.fromSizePrefixedBlobs(wire);
-                        LOG.info("Server is about to send async event:" + message);
+                        LOG.info("Server " + connectionDescription + " is about to send async event:" + message);
                     } finally {
                         wire.bytes().writeLimit(wl).readLimit(rl).readPosition(rp);
                     }
@@ -150,8 +160,10 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
 
     @Override
     protected void performClose() {
-        bytes.releaseLast();
-        clear();
+        synchronized (lock()) {
+            bytes.releaseLast();
+            wire = null;
+        }
     }
 
     @Override
@@ -164,7 +176,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
 
         synchronized (lock()) {
             wire = wireType0.apply(bytes);
-            wire.usePadding(false);
+            wire.usePadding(TCP_USE_PADDING);
         }
     }
 
@@ -185,9 +197,11 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     @NotNull
     @Override
     public String toString() {
+        String wireStr = (wire == null) ? "wire= null " : (wire.getClass().getSimpleName() + "=" + bytes);
         return "VanillaWireOutPublisher{" +
+                "description=" + connectionDescription +
                 ", closed=" + isClosed() +
-                ", " + wire.getClass().getSimpleName() + "=" + bytes +
+                ", " + wireStr +
                 '}';
     }
 

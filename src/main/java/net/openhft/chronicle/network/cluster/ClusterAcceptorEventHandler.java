@@ -1,7 +1,6 @@
 package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.core.io.AbstractCloseable;
-import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -19,11 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ClosedChannelException;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
-import static net.openhft.chronicle.core.io.Closeable.*;
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
@@ -34,7 +29,6 @@ public class ClusterAcceptorEventHandler<C extends ClusterContext<C, T>, T exten
     @NotNull
     private final C context;
     private final String hostPort;
-    private final Collection<Closeable> closeables = new CopyOnWriteArrayList<>();
     private EventLoop eventLoop;
 
     public ClusterAcceptorEventHandler(@NotNull final String hostPort,
@@ -51,7 +45,8 @@ public class ClusterAcceptorEventHandler<C extends ClusterContext<C, T>, T exten
 
     @Override
     public boolean action() throws InvalidEventHandlerException {
-        if (!ssc.isOpen() || isClosed() || eventLoop.isClosed()) throw new InvalidEventHandlerException();
+        if (!ssc.isOpen() || isClosed() || eventLoop.isClosed())
+            throw new InvalidEventHandlerException();
 
         try {
             LOGGER.debug("accepting {}", ssc);
@@ -64,27 +59,27 @@ public class ClusterAcceptorEventHandler<C extends ClusterContext<C, T>, T exten
                     throw new InvalidEventHandlerException("closed");
                 }
                 final T nc = context.networkContextFactory().apply(context);
-                closeables.add(nc);
                 nc.socketChannel(sc);
                 nc.isAcceptor(true);
-                NetworkStatsListener<T> nl = nc.networkStatsListener();
+                final NetworkStatsListener<T> nl = nc.networkStatsListener();
                 notifyHostPort(sc, nl);
-                TcpEventHandler<T> apply = context.tcpEventHandlerFactory().apply(nc);
+                final TcpEventHandler<T> tcpEventHandler = context.tcpEventHandlerFactory().apply(nc);
 
                 if (isClosed())
-                    closeQuietly(nc);
+                    closeQuietly(tcpEventHandler);
                 else
-                    eventLoop.addHandler(apply);
+                    eventLoop.addHandler(tcpEventHandler);
             }
         } catch (AsynchronousCloseException e) {
             closeSocket();
             throw new InvalidEventHandlerException(e);
         } catch (ClosedChannelException e) {
             closeSocket();
-            if (isClosed()) throw new InvalidEventHandlerException();
-            else throw new InvalidEventHandlerException(e);
+            if (isClosed())
+                throw InvalidEventHandlerException.reusable();
+            else
+                throw new InvalidEventHandlerException(e);
         } catch (Exception e) {
-
             if (!isClosed() && !eventLoop.isClosed()) {
                 final ChronicleServerSocket socket = ssc.socket();
                 LOGGER.warn("{}, port={}", hostPort, socket == null ? "unknown" : socket.getLocalPort(), e);
@@ -107,7 +102,6 @@ public class ClusterAcceptorEventHandler<C extends ClusterContext<C, T>, T exten
 
     @Override
     protected void performClose() {
-        closeQuietly(closeables);
         closeSocket();
     }
 }

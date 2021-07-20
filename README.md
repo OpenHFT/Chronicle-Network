@@ -190,7 +190,7 @@ Then you can change the server threading strategy, to :
 see the following enum for more details net.openhft.chronicle.network.ServerThreadingStrategy
 
 # Java Version
-This library requires Java 8
+This library requires Java 8 or Java 11
 
 # Testing
 The target environment is to support TCP over 10 Gig-E ethernet.  In prototype

@@ -40,7 +40,7 @@ import java.util.function.Supplier;
  */
 public class SocketAddressSupplier implements Supplier<SocketAddress> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SocketAddressSupplier.class);
+    private static final Logger LOG =  LoggerFactory.getLogger(SocketAddressSupplier.class);
     @NotNull
     private final String name;
     private final List<RemoteAddressSupplier> remoteAddresses = new ArrayList<>();
@@ -165,7 +165,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
         return s + " - " + current;
     }
 
-    private class RemoteAddressSupplier implements Supplier<SocketAddress> {
+    public static class RemoteAddressSupplier implements Supplier<SocketAddress> {
 
         private final InetSocketAddress remoteAddress;
         @NotNull

@@ -18,6 +18,8 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.network.connection.ClientConnectionMonitor;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.network.tcp.ChronicleSocket;
@@ -36,8 +38,11 @@ import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
-@FunctionalInterface
-public interface ConnectionStrategy extends Marshallable {
+public interface ConnectionStrategy extends Marshallable, Closeable {
+
+    default ClientConnectionMonitor clientConnectionMonitor() {
+        return new VanillaClientConnectionMonitor();
+    }
 
     @Nullable
     static ChronicleSocketChannel socketChannel(@NotNull InetSocketAddress socketAddress, int tcpBufferSize, int socketConnectionTimeoutMs) throws IOException {
@@ -98,14 +103,14 @@ public interface ConnectionStrategy extends Marshallable {
      * @throws InterruptedException if the channel is interrupted.
      */
     ChronicleSocketChannel connect(@NotNull String name,
-                           @NotNull SocketAddressSupplier socketAddressSupplier,
-                           boolean didLogIn,
-                           @NotNull FatalFailureMonitor fatalFailureMonitor) throws InterruptedException;
+                                   @NotNull SocketAddressSupplier socketAddressSupplier,
+                                   boolean didLogIn,
+                                   @NotNull FatalFailureMonitor fatalFailureMonitor) throws InterruptedException;
 
     @Nullable
     default ChronicleSocketChannel openSocketChannel(@NotNull InetSocketAddress socketAddress,
-                                             int tcpBufferSize,
-                                             long timeoutMs) throws IOException, InterruptedException {
+                                                     int tcpBufferSize,
+                                                     long timeoutMs) throws IOException, InterruptedException {
 
         return openSocketChannel(socketAddress,
                 tcpBufferSize,
@@ -128,6 +133,7 @@ public interface ConnectionStrategy extends Marshallable {
             return sc;
 
         for (; ; ) {
+            throwExceptionIfClosed();
             if (Thread.currentThread().isInterrupted())
                 throw new InterruptedException();
             long startMs = System.currentTimeMillis();
@@ -159,4 +165,14 @@ public interface ConnectionStrategy extends Marshallable {
     default long pauseMillisBeforeReconnect() {
         return 500;
     }
+
+    @Override
+    default void close() {
+    }
+
+    @Override
+    default boolean isClosed() {
+      return false;
+    }
+
 }

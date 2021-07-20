@@ -90,6 +90,7 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
         }
 
         closeQuietly(nc);
+        this.nc = null;
     }
 
     public ConnectionManager<T> connectionManager() {
@@ -101,7 +102,8 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
         if (connectUri == null || connectUri.isEmpty())
             return;
 
-        WireOutPublisher wireOutPublisher = wireOutPublisherFactory.apply(clusterContext.wireType());
+        @NotNull WireOutPublisher wireOutPublisher = wireOutPublisherFactory.apply(clusterContext.wireType());
+        wireOutPublisher.connectionDescription(clusterContext.localIdentifier() + " to " + remoteId);
 
         if (!this.wireOutPublisher.compareAndSet(null, wireOutPublisher)) {
             wireOutPublisher.close();

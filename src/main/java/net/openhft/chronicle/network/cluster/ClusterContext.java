@@ -71,6 +71,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     private String affinityCPU;
     private WireType wireType;
     private byte localIdentifier;
+    private String localName;
     private ServerThreadingStrategy serverThreadingStrategy;
     private long retryInterval = 1_000L;
     private String procPrefix;
@@ -86,6 +87,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
      * @param hd remote host details
      */
     public void connect(HostDetails hd) {
+        throwExceptionIfClosed();
 
         final ConnectionManager<T> connectionManager = new ConnectionManager<>();
         connManagers.put(hd.hostId(), connectionManager);
@@ -113,6 +115,8 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
      * @param hd local host details to accept on
      */
     public void accept(HostDetails hd) {
+        throwExceptionIfClosed();
+
         if (hd.connectUri() == null)
             return;
         acceptorLoop = new BlockingEventLoop(eventLoop(), clusterNamePrefix() + "acceptor-" + localIdentifier);
@@ -127,6 +131,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     }
 
     public ConnectionManager<T> connectionManager(int hostId) {
+        throwExceptionIfClosed();
         return connManagers.get(hostId);
     }
 
@@ -137,6 +142,8 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
      */
     @NotNull
     public EventLoop eventLoop() {
+        throwExceptionIfClosed();
+
         final EventLoop el = this.eventLoop;
         if (el != null)
             return el;
@@ -154,6 +161,8 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
 
     @NotNull
     public C eventLoop(EventLoop eventLoop) {
+        throwExceptionIfClosed();
+
         this.eventLoop = eventLoop;
         return castThis();
     }
@@ -167,6 +176,8 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     }
 
     public Function<C, NetworkStatsListener<T>> networkStatsListenerFactory() {
+        throwExceptionIfClosed();
+
         return networkStatsListenerFactory;
     }
 
@@ -206,6 +217,15 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
 
     public byte localIdentifier() {
         return localIdentifier;
+    }
+
+    public C localName(String localName) {
+        this.localName = localName;
+        return castThis();
+    }
+
+    public String localName() {
+        return this.localName;
     }
 
     @NotNull
@@ -271,6 +291,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     }
 
     public Function<WireType, WireOutPublisher> wireOutPublisherFactory() {
+        throwExceptionIfClosed();
         return wireOutPublisherFactory;
     }
 
@@ -281,6 +302,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     }
 
     public Function<C, T> networkContextFactory() {
+        throwExceptionIfClosed();
         return networkContextFactory;
     }
 
@@ -322,6 +344,14 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
                 networkStatsListenerFactory,
                 eventLoop,
                 acceptorLoop);
+
+        closeables.clear();
+        acceptorEventHandler = null;
+        wireOutPublisherFactory = null;
+        networkContextFactory = null;
+        networkStatsListenerFactory = null;
+        eventLoop = null;
+        acceptorLoop = null;
     }
 
     protected abstract String clusterNamePrefix();

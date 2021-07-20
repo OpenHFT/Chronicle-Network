@@ -19,12 +19,15 @@ package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.network.ConnectionStrategy;
+import net.openhft.chronicle.network.VanillaClientConnectionMonitor;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
+import net.openhft.chronicle.wire.SelfDescribingMarshallable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
@@ -54,13 +57,24 @@ import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
  * --h.     Connection attempt no 3 with DR1:  failed
  * --i.      Connection attempt no 3 with DR2:  failed   implies:   Attempt 3 finished. Fatal Failure is raised
  */
-public class FatalFailureConnectionStrategy implements ConnectionStrategy {
+public class FatalFailureConnectionStrategy extends SelfDescribingMarshallable implements ConnectionStrategy {
 
     private static final long PAUSE = TimeUnit.MILLISECONDS.toNanos(300);
     private final int attempts;
     private final boolean blocking;
     private int tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
     private boolean hasSentFatalFailure;
+    private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
+
+    @Override
+    public ClientConnectionMonitor clientConnectionMonitor() {
+        return clientConnectionMonitor;
+    }
+
+    public FatalFailureConnectionStrategy clientConnectionMonitor(ClientConnectionMonitor fatalFailureMonitor) {
+        this.clientConnectionMonitor = fatalFailureMonitor;
+        return this;
+    }
 
     /**
      * @param attempts the number of attempts before a onFatalFailure() reported
@@ -89,7 +103,7 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
         socketAddressSupplier.resetToPrimary();
 
         for (; ; ) {
-
+            throwExceptionIfClosed();
             if (Thread.currentThread().isInterrupted())
                 throw new InterruptedException();
 
@@ -147,4 +161,17 @@ public class FatalFailureConnectionStrategy implements ConnectionStrategy {
             }
         }
     }
+
+    private final transient AtomicBoolean isClosed = new AtomicBoolean(false);
+
+    @Override
+    public void close() {
+        isClosed.set(true);
+    }
+
+    @Override
+    public boolean isClosed() {
+        return isClosed.get();
+    }
+
 }

@@ -34,7 +34,6 @@ package net.openhft.performance.tests.network;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.io.AbstractReferenceCounted;
 import net.openhft.chronicle.core.threads.EventLoop;
-import net.openhft.chronicle.core.threads.ThreadDump;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.NetworkTestCommon;
 import net.openhft.chronicle.network.TCPRegistry;
@@ -48,13 +47,14 @@ import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.Wires;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PADDING;
 
 public class VerySimpleClientTest extends NetworkTestCommon {
 
@@ -66,24 +66,9 @@ public class VerySimpleClientTest extends NetworkTestCommon {
     private String expectedMessage;
     private ChronicleSocketChannel client;
 
-    /*
-     * And, check the benchmark went fine afterwards:
-     */
-    private ThreadDump threadDump;
-
     public VerySimpleClientTest() {
-        outWire.usePadding(false);
-        inWire.usePadding(false);
-    }
-
-    @Before
-    public void threadDump() {
-        threadDump = new ThreadDump();
-    }
-
-    @After
-    public void checkThreadDump() {
-        threadDump.assertNoNewThreads();
+        outWire.usePadding(TCP_USE_PADDING);
+        inWire.usePadding(TCP_USE_PADDING);
     }
 
     @Before
@@ -98,11 +83,10 @@ public class VerySimpleClientTest extends NetworkTestCommon {
 
     }
 
-    @After
-    public void tearDown() {
-        eg.close();
+    @Override
+    protected void preAfter() {
         TcpChannelHub.closeAllHubs();
-        TCPRegistry.reset();
+        eg.close();
         inWire.bytes().releaseLast();
         outWire.bytes().releaseLast();
     }

@@ -17,7 +17,7 @@
  */
 package net.openhft.chronicle.network;
 
-import net.openhft.chronicle.bytes.MappedUniqueMicroTimeProvider;
+import net.openhft.chronicle.bytes.MappedUniqueTimeProvider;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -42,18 +42,18 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
     boolean isAcceptor();
 
     @NotNull
-    T socketChannel(ChronicleSocketChannel sc);
+    T socketChannel(@NotNull ChronicleSocketChannel sc);
 
     ChronicleSocketChannel socketChannel();
 
     WireOutPublisher wireOutPublisher();
 
-    T wireOutPublisher(WireOutPublisher wireOutPublisher);
+    T wireOutPublisher(@NotNull WireOutPublisher wireOutPublisher);
 
     WireType wireType();
 
     @NotNull
-    T wireType(WireType wireType);
+    T wireType(@NotNull WireType wireType);
 
     SessionDetailsProvider sessionDetails();
 
@@ -64,7 +64,7 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
 
     HeartbeatListener heartbeatListener();
 
-    void heartbeatListener(HeartbeatListener heartbeatListener);
+    void heartbeatListener(@NotNull HeartbeatListener heartbeatListener);
 
     T heartbeatTimeoutMs(long l);
 
@@ -73,7 +73,7 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
     }
 
     default long newCid() {
-        return MappedUniqueMicroTimeProvider.INSTANCE.currentTimeMicros();
+        return MappedUniqueTimeProvider.INSTANCE.currentTimeMicros();
     }
 
     ServerThreadingStrategy serverThreadingStrategy();
@@ -88,7 +88,7 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
     @NotNull
     T socketReconnector(Runnable socketReconnector);
 
-    void networkStatsListener(NetworkStatsListener<T> NetworkStatsListener);
+    void networkStatsListener(@NotNull NetworkStatsListener<T> NetworkStatsListener);
 
     @Nullable
     NetworkStatsListener<T> networkStatsListener();

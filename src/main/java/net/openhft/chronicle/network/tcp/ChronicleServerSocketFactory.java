@@ -1,6 +1,6 @@
 package net.openhft.chronicle.network.tcp;
 
-import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.util.ObjectUtils;
 
 public class ChronicleServerSocketFactory {
 
@@ -9,10 +9,7 @@ public class ChronicleServerSocketFactory {
     }
 
     public static ChronicleServerSocketChannel openNative() {
-        try {
-            return (ChronicleServerSocketChannel) Class.forName("software.chronicle.network.impl.NativeChronicleServerSocketChannel").newInstance();
-        } catch (Exception e) {
-            throw Jvm.rethrow(e);
-        }
+        String className = "software.chronicle.network.impl.NativeChronicleServerSocketChannel";
+        return ObjectUtils.newInstance(className);
     }
 }

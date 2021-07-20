@@ -16,8 +16,10 @@ final class StateMachineProcessor implements Runnable {
     private final ChronicleSocketChannel channel;
     private volatile boolean running = true;
 
-    StateMachineProcessor(final ChronicleSocketChannel channel, final boolean isAcceptor,
-                          final SSLContext context, final BufferHandler bufferHandler) {
+    StateMachineProcessor(final ChronicleSocketChannel channel,
+                          final boolean isAcceptor,
+                          final SSLContext context,
+                          final BufferHandler bufferHandler) {
         this.context = context;
         this.channel = channel;
         stateMachine = new SslEngineStateMachine(bufferHandler, isAcceptor);

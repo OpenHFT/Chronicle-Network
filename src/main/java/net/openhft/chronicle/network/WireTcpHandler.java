@@ -25,10 +25,9 @@ import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static net.openhft.chronicle.network.connection.CoreFields.reply;
+import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PADDING;
 import static net.openhft.chronicle.wire.WireType.BINARY;
 import static net.openhft.chronicle.wire.WireType.DELTA_BINARY;
 import static net.openhft.chronicle.wire.WriteMarshallable.EMPTY;
@@ -38,36 +37,35 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
         implements TcpHandler<T>, NetworkContextManager<T> {
 
     private static final int SIZE_OF_SIZE = 4;
-    private static final Logger LOG = LoggerFactory.getLogger(WireTcpHandler.class);
     // this is the point at which it is worth doing more work to get more data.
-
     protected Wire outWire;
+    @Nullable
+    protected WireType wireType;
     long lastWritePosition = 0;
     private Wire inWire;
     private boolean recreateWire;
-    @Nullable
-    protected WireType wireType;
     private WireOutPublisher publisher;
     private T nc;
     private boolean isAcceptor;
 
     private static void logYaml(@NotNull final DocumentContext dc) {
-        if (YamlLogging.showServerWrites() || YamlLogging.showServerReads())
-            try {
-                LOG.info("\nDocumentContext:\n" +
-                        Wires.fromSizePrefixedBlobs(dc));
+        try {
+            System.out.println(
+                    "Server Reads:\n" +
+                            Wires.fromSizePrefixedBlobs(dc));
 
-            } catch (Exception e) {
-                Jvm.warn().on(WireOutPublisher.class, "\nServer Sends ( corrupted ) :\n" +
-                        dc.wire().bytes().toDebugString());
-            }
+        } catch (Exception e) {
+            Jvm.warn().on(WireOutPublisher.class, "\nServer Reads ( corrupted ) :\n" +
+                    dc.wire().bytes().toDebugString());
+        }
     }
 
     private static void logYaml(@NotNull final WireOut outWire) {
         if (YamlLogging.showServerWrites())
             try {
-                LOG.info("\nServer Sends:\n" +
-                        Wires.fromSizePrefixedBlobs((Wire) outWire));
+                System.out.println(
+                        "Server Sends:\n" +
+                                Wires.fromSizePrefixedBlobs((Wire) outWire));
 
             } catch (Exception e) {
                 Jvm.warn().on(WireOutPublisher.class, "\nServer Sends ( corrupted ) :\n" +
@@ -116,7 +114,8 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
 
         // we assume that if any bytes were in lastOutBytesRemaining the sc.write() would have been
         // called and this will fail, if the other end has lost its connection
-        if (outWire.bytes().writePosition() != lastWritePosition)
+        Bytes<?> bytes = outWire.bytes();
+        if (bytes.writePosition() != lastWritePosition)
             onBytesWritten();
 
         if (publisher != null)
@@ -124,10 +123,19 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
 
         if (in.readRemaining() >= SIZE_OF_SIZE)
             onRead0();
-        else
+        else {
+            long remaining = bytes.readRemaining();
+            if (YamlLogging.showServerWrites() && remaining >= 4) {
+                int length = Wires.lengthOf(bytes.peekVolatileInt());
+                if (length <= remaining)
+                    System.out.println("sending from WTH: " + Wires.fromSizePrefixedBlobs(outWire));
+                else
+                    System.out.println("send remaining from WTH: " + remaining);
+            }
             onWrite(outWire);
+        }
 
-        lastWritePosition = outWire.bytes().writePosition();
+        lastWritePosition = bytes.writePosition();
     }
 
     protected void onBytesWritten() {
@@ -167,8 +175,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
                         return;
 
                     // if the last iteration didn't consume anything (rolled back) then break
-                    if(dc.index() == index)
-                    {
+                    if (dc.index() == index) {
                         dc.rollbackOnClose();
                         return;
                     }
@@ -244,13 +251,13 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
 
     protected Wire initialiseOutWire(final Bytes<?> out, @NotNull final WireType wireType) {
         final Wire wire = wireType.apply(out);
-        wire.usePadding(false);
+        wire.usePadding(TCP_USE_PADDING);
         return outWire = wire;
     }
 
     protected Wire initialiseInWire(@NotNull final WireType wireType, final Bytes<?> in) {
         final Wire wire = wireType.apply(in);
-        wire.usePadding(false);
+        wire.usePadding(TCP_USE_PADDING);
         return inWire = wire;
     }
 
@@ -279,9 +286,8 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
                 c.writeMarshallable(outWire);
             } catch (Throwable t) {
                 inBytes.readPosition(readPosition);
-                if (LOG.isInfoEnabled())
-                    LOG.info("While reading " + inBytes.toDebugString(),
-                            " processing wire " + c, t);
+                Jvm.warn().on(WireTcpHandler.class,
+                        "While reading " + inBytes.toDebugString() + " processing wire " + c, t);
                 outWire.bytes().writePosition(position);
                 outWire.writeEventName("exception").throwable(t);
             }
@@ -309,9 +315,8 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
                 c.writeMarshallable(outWire);
             } catch (Throwable t) {
                 inBytes.readPosition(readPosition);
-                if (LOG.isInfoEnabled())
-                    LOG.info("While reading " + inBytes.toDebugString(),
-                            " processing wire " + c, t);
+                Jvm.warn().on(WireTcpHandler.class,
+                        "While reading " + inBytes.toDebugString() + " processing wire " + c, t);
                 outWire.bytes().writePosition(position);
                 outWire.writeEventName("exception").throwable(t);
             }
@@ -346,7 +351,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
 
     @Override
     protected void performClose() {
-        Closeable.closeQuietly(publisher,nc);
+        Closeable.closeQuietly(publisher, nc);
     }
 
     protected void publish(final WriteMarshallable w) {
