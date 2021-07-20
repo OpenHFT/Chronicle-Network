@@ -64,7 +64,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
     }
 
     /**
-     * use this method if you only with to connect to a single server
+     * use this method if you only want to connect to a single server
      *
      * @param connectURI the uri of the server
      * @return a SocketAddressSupplier containing the UIR you provide
