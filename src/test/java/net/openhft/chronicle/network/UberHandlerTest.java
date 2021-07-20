@@ -12,6 +12,8 @@ import net.openhft.chronicle.network.cluster.HostDetails;
 import net.openhft.chronicle.network.cluster.VanillaClusteredNetworkContext;
 import net.openhft.chronicle.network.connection.CoreFields;
 import net.openhft.chronicle.network.connection.VanillaWireOutPublisher;
+import net.openhft.chronicle.threads.Pauser;
+import net.openhft.chronicle.threads.TimingPauser;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
@@ -22,7 +24,10 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
@@ -34,8 +39,9 @@ public class UberHandlerTest extends NetworkTestCommon {
     private static final int ROUNDS_PER_SIZE_CYCLE = 100;
     private static final int NUM_HANDLERS = 4;
     private static final long RUN_TIME_MS = 5_000;
+    private static final AtomicBoolean running = new AtomicBoolean(false);
+    private static final AtomicInteger stopped = new AtomicInteger(0);
     private static Map<Long, Integer> countersPerCid;
-    private static AtomicBoolean running = new AtomicBoolean(false);
 
     @Before
     public void before() {
@@ -43,6 +49,7 @@ public class UberHandlerTest extends NetworkTestCommon {
         System.setProperty("TcpEventHandler.tcpBufferSize", "131072");
         countersPerCid = new ConcurrentHashMap<>();
         running.set(true);
+        stopped.set(0);
     }
 
     @After
@@ -51,7 +58,7 @@ public class UberHandlerTest extends NetworkTestCommon {
     }
 
     @Test
-    public void testUberHandlerWithMultipleSubHandlersAndHeartbeats() throws IOException {
+    public void testUberHandlerWithMultipleSubHandlersAndHeartbeats() throws IOException, TimeoutException {
         TCPRegistry.createServerSocketChannelFor("initiator", "acceptor");
         HostDetails initiatorHost = new HostDetails().hostId(2).connectUri("initiator");
         HostDetails acceptorHost = new HostDetails().hostId(1).connectUri("acceptor");
@@ -75,11 +82,21 @@ public class UberHandlerTest extends NetworkTestCommon {
             while (System.currentTimeMillis() - startTime < RUN_TIME_MS && !Thread.currentThread().isInterrupted()) {
                 Jvm.pause(100);
             }
-            assertTrue(pingPongsAllRanForAWhile());
+            Jvm.startup().on(PingPongHandler.class, "Test complete, stopping handlers countersPerCid=" + countersPerCid);
+            stopAndWaitTillAllHandlersEnd();
+            assertTrue(pingPongsAllCompletedAtLeastOneRound());
         }
     }
 
-    private boolean pingPongsAllRanForAWhile() {
+    private void stopAndWaitTillAllHandlersEnd() throws TimeoutException {
+        running.set(false);
+        TimingPauser pauser = Pauser.balanced();
+        while (stopped.get() < NUM_HANDLERS) {
+            pauser.pause(10, TimeUnit.SECONDS);
+        }
+    }
+
+    private boolean pingPongsAllCompletedAtLeastOneRound() {
         return countersPerCid.size() == NUM_HANDLERS && countersPerCid.values().stream().allMatch(val -> val > 0);
     }
 
@@ -156,6 +173,7 @@ public class UberHandlerTest extends NetworkTestCommon {
 
         private boolean initiator;
         private boolean initiated = false;
+        private boolean flaggedComplete = false;
         private int round = 0;
 
         public PingPongHandler(boolean initiator) {
@@ -177,9 +195,9 @@ public class UberHandlerTest extends NetworkTestCommon {
 
         @Override
         public void onRead(@NotNull WireIn inWire, @NotNull WireOut outWire) {
+            throwExceptionIfClosed();
             if (!running.get()) {
-                Jvm.startup().on(PingPongHandler.class, "PingPongHandler closing on round " + round + "(cid=" + cid() + ", initiator=" + initiator + ")");
-                close();
+                flagComplete();
                 return;
             }
 
@@ -224,6 +242,12 @@ public class UberHandlerTest extends NetworkTestCommon {
 
         @Override
         public void onWrite(WireOut outWire) {
+            throwExceptionIfClosed();
+            if (!running.get()) {
+                flagComplete();
+                return;
+            }
+
             if (initiator && !initiated) {
                 sendPingPongCid(outWire);
                 try (final DocumentContext dc = outWire.writingDocument()) {
@@ -241,6 +265,13 @@ public class UberHandlerTest extends NetworkTestCommon {
         @Override
         public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
             initiator = wire.read("initiator").bool();
+        }
+
+        private void flagComplete() {
+            if (!flaggedComplete) {
+                stopped.incrementAndGet();
+                flaggedComplete = true;
+            }
         }
 
         private void sendPingPongCid(WireOut outWire) {
