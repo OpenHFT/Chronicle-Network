@@ -12,39 +12,37 @@ import net.openhft.chronicle.network.cluster.HostDetails;
 import net.openhft.chronicle.network.cluster.VanillaClusteredNetworkContext;
 import net.openhft.chronicle.network.connection.CoreFields;
 import net.openhft.chronicle.network.connection.VanillaWireOutPublisher;
-import net.openhft.chronicle.threads.Pauser;
-import net.openhft.chronicle.threads.TimingPauser;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.impl.SimpleLogger;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.IntStream;
+
+import static org.junit.Assert.assertTrue;
 
 public class UberHandlerTest extends NetworkTestCommon {
 
     private static final int SIZE_OF_BIG_PAYLOAD = 200 * 1024;
-    private static final int MAX_ROUNDS = 300;
+    private static final int ROUNDS_PER_SIZE_CYCLE = 100;
     private static final int NUM_HANDLERS = 4;
+    private static final long RUN_TIME_MS = 5_000;
     private static Map<Long, Integer> countersPerCid;
+    private static AtomicBoolean running = new AtomicBoolean(false);
 
     @Before
     public void before() {
         YamlLogging.setAll(false);
         System.setProperty("TcpEventHandler.tcpBufferSize", "131072");
-        System.setProperty(SimpleLogger.LOG_KEY_PREFIX + PingPongHandler.class.getName(), "debug");
         countersPerCid = new ConcurrentHashMap<>();
+        running.set(true);
     }
 
     @After
@@ -53,7 +51,7 @@ public class UberHandlerTest extends NetworkTestCommon {
     }
 
     @Test
-    public void testUberHandlerWithMultipleSubHandlersAndHeartbeats() throws IOException, TimeoutException {
+    public void testUberHandlerWithMultipleSubHandlersAndHeartbeats() throws IOException {
         TCPRegistry.createServerSocketChannelFor("initiator", "acceptor");
         HostDetails initiatorHost = new HostDetails().hostId(2).connectUri("initiator");
         HostDetails acceptorHost = new HostDetails().hostId(1).connectUri("acceptor");
@@ -73,20 +71,16 @@ public class UberHandlerTest extends NetworkTestCommon {
                 }
             });
 
-            Instant startWaitingTime = Instant.now();
-            TimingPauser pauser = Pauser.balanced();
-            try {
-                while (pingPongsHaveNotFinished()) {
-                    pauser.pause(30, TimeUnit.SECONDS);
-                }
-            } catch (TimeoutException e) {
-                Jvm.error().on(UberHandlerTest.class, "Timed out waiting for PingPongs to complete after " + Duration.between(startWaitingTime, Instant.now()));
+            long startTime = System.currentTimeMillis();
+            while (System.currentTimeMillis() - startTime < RUN_TIME_MS && !Thread.currentThread().isInterrupted()) {
+                Jvm.pause(100);
             }
+            assertTrue(pingPongsAllRanForAWhile());
         }
     }
 
-    private boolean pingPongsHaveNotFinished() {
-        return !(countersPerCid.size() == NUM_HANDLERS && countersPerCid.values().stream().allMatch(val -> val == MAX_ROUNDS));
+    private boolean pingPongsAllRanForAWhile() {
+        return countersPerCid.size() == NUM_HANDLERS && countersPerCid.values().stream().allMatch(val -> val > 0);
     }
 
     private void sendPingPong(WireOut wireOut, int cid) {
@@ -186,6 +180,12 @@ public class UberHandlerTest extends NetworkTestCommon {
             final StringBuilder eventName = Wires.acquireStringBuilder();
             final ValueIn valueIn = inWire.readEventName(eventName);
 
+            if (!running.get()) {
+                Jvm.startup().on(PingPongHandler.class, "PingPongHandler closing on round " + round + "(cid=" + cid() + ", initiator=" + initiator + ")");
+                close();
+                return;
+            }
+
             sendPingPongCid(outWire);
             try (final DocumentContext dc = outWire.writingDocument(false)) {
 
@@ -198,19 +198,12 @@ public class UberHandlerTest extends NetworkTestCommon {
                 if (round % LOGGING_INTERVAL == 0) {
                     Jvm.startup().on(PingPongHandler.class, "PingPongHandler at round " + round + "(cid=" + cid() + ", initiator=" + initiator + ")");
                 }
-                if (initiator && round > MAX_ROUNDS) {
-                    outWire.write("stop").text("now");
-                    Jvm.startup().on(PingPongHandler.class, "PingPongHandler sending 'stop' (cid=" + cid() + ")");
-                    close();
-                } else if ("ping".equals(eventName.toString())) {
+                if ("ping".equals(eventName.toString())) {
                     assert valueIn.bytes().length == inWire.read("bytesLength").int32();
                     writeRandomJunk("pong", dc, round);
                 } else if ("pong".equals(eventName.toString())) {
                     assert valueIn.bytes().length == inWire.read("bytesLength").int32();
                     writeRandomJunk("ping", dc, round);
-                } else if ("stop".equals(eventName.toString())) {
-                    Jvm.startup().on(PingPongHandler.class, "PingPongHandler received 'stop' (cid=" + cid() + ")");
-                    close();
                 } else {
                     throw new IllegalStateException("Got unknown event: " + eventName);
                 }
@@ -219,7 +212,7 @@ public class UberHandlerTest extends NetworkTestCommon {
 
         private void writeRandomJunk(String eventName, DocumentContext dc, int counter) {
             Bytes<?> bigJunk = Bytes.allocateElasticOnHeap();
-            int payloadSize = (int) ((round / (float) MAX_ROUNDS) * SIZE_OF_BIG_PAYLOAD);
+            int payloadSize = (int) ((round / (float) ROUNDS_PER_SIZE_CYCLE) * SIZE_OF_BIG_PAYLOAD);
             for (int i = 0; i < payloadSize; i++) {
                 bigJunk.writeByte((byte) i);
             }
