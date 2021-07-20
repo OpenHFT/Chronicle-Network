@@ -1,6 +1,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.api.TcpHandler;
@@ -18,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.impl.SimpleLogger;
 
 import java.io.IOException;
 import java.util.Map;
@@ -39,6 +41,7 @@ public class UberHandlerTest extends NetworkTestCommon {
     public void before() {
         YamlLogging.setAll(false);
         System.setProperty("TcpEventHandler.tcpBufferSize", "131072");
+        System.setProperty(SimpleLogger.LOG_KEY_PREFIX + PingPongHandler.class.getName(), "debug");
         countersPerCid = new ConcurrentHashMap<>();
     }
 
@@ -148,6 +151,8 @@ public class UberHandlerTest extends NetworkTestCommon {
     static class PingPongHandler extends AbstractSubHandler<MyClusteredNetworkContext> implements
             Marshallable, WritableSubHandler<MyClusteredNetworkContext> {
 
+        private static final int LOGGING_INTERVAL = 50;
+
         private boolean initiator;
         private boolean initiated = false;
         private int round = 0;
@@ -158,6 +163,7 @@ public class UberHandlerTest extends NetworkTestCommon {
 
         @Override
         public void onInitialize(WireOut outWire) throws RejectedExecutionException {
+            Jvm.startup().on(PingPongHandler.class, "Initializing PingPongHandler (cid=" + cid() + ", initiator=" + initiator + ")");
             // Send back the handler for the other side
             if (!initiator) {
                 outWire.writeDocument(true, d ->
@@ -182,8 +188,12 @@ public class UberHandlerTest extends NetworkTestCommon {
                 }
 
                 round++;
+                if (round % LOGGING_INTERVAL == 0) {
+                    Jvm.startup().on(PingPongHandler.class, "PingPongHandler at round " + round + "(cid=" + cid() + ", initiator=" + initiator + ")");
+                }
                 if (initiator && round > MAX_ROUNDS) {
                     outWire.write("stop").text("now");
+                    Jvm.startup().on(PingPongHandler.class, "PingPongHandler sending 'stop' (cid=" + cid() + ")");
                     close();
                 } else if ("ping".equals(eventName.toString())) {
                     assert valueIn.bytes().length == inWire.read("bytesLength").int32();
@@ -192,6 +202,7 @@ public class UberHandlerTest extends NetworkTestCommon {
                     assert valueIn.bytes().length == inWire.read("bytesLength").int32();
                     writeRandomJunk("ping", dc, round);
                 } else if ("stop".equals(eventName.toString())) {
+                    Jvm.startup().on(PingPongHandler.class, "PingPongHandler received 'stop' (cid=" + cid() + ")");
                     close();
                 } else {
                     throw new IllegalStateException("Got unknown event: " + eventName);
