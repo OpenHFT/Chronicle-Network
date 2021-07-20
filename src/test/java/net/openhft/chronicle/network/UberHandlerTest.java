@@ -22,6 +22,8 @@ import org.junit.Test;
 import org.slf4j.impl.SimpleLogger;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
@@ -71,9 +73,14 @@ public class UberHandlerTest extends NetworkTestCommon {
                 }
             });
 
+            Instant startWaitingTime = Instant.now();
             TimingPauser pauser = Pauser.balanced();
-            while (pingPongsHaveNotFinished()) {
-                pauser.pause(30, TimeUnit.SECONDS);
+            try {
+                while (pingPongsHaveNotFinished()) {
+                    pauser.pause(30, TimeUnit.SECONDS);
+                }
+            } catch (TimeoutException e) {
+                Jvm.error().on(UberHandlerTest.class, "Timed out waiting for PingPongs to complete after " + Duration.between(startWaitingTime, Instant.now()));
             }
         }
     }
