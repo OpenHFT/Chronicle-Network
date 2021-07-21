@@ -2,7 +2,6 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.api.TcpHandler;
@@ -200,7 +199,6 @@ public class UberHandlerTest extends NetworkTestCommon {
         public void onRead(@NotNull WireIn inWire, @NotNull WireOut outWire) {
             throwExceptionIfClosed();
             if (!running.get()) {
-                close();
                 flagComplete();
                 return;
             }
@@ -248,7 +246,6 @@ public class UberHandlerTest extends NetworkTestCommon {
         public void onWrite(WireOut outWire) {
             throwExceptionIfClosed();
             if (!running.get()) {
-                close();
                 flagComplete();
                 return;
             }
@@ -270,16 +267,6 @@ public class UberHandlerTest extends NetworkTestCommon {
         @Override
         public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
             initiator = wire.read("initiator").bool();
-        }
-
-        @Override
-        public boolean isClosed() {
-            return closable().isClosed();
-        }
-
-        @Override
-        public void close() {
-            Closeable.closeQuietly(closable());
         }
 
         private void flagComplete() {
