@@ -21,7 +21,7 @@ Planned support for
 
 * Shared Memory
 
-UDP support can be found in Chronicle Network Enterprise (commercial product - contact link:mailto:&#115;a&#108;&#x65;&#x73;&#x40;&#x63;&#104;&#x72;&#x6f;n&#105;&#x63;&#108;e&#46;&#115;&#111;f&#116;w&#x61;&#114;&#x65;[&#115;a&#108;&#x65;&#x73;&#x40;&#x63;&#104;&#x72;&#x6f;n&#105;&#x63;&#108;e&#46;&#115;&#111;f&#116;w&#x61;&#114;&#x65;])
+UDP support can be found in Chronicle Network Enterprise (commercial product - contact sales@chronicle.software)
 
 == Example
 
@@ -29,7 +29,6 @@ UDP support can be found in Chronicle Network Enterprise (commercial product - c
 
 The client sends a message to the server, the server immediately responds with the same message
 back to the client.
-
 The full source code of this example can be found at:
 
 [source,java]
@@ -69,7 +68,7 @@ eg.start();
 The server is configured with `TextWire`, so
 the client must also be configured with `TextWire`. The port that we will use will be ( in this example ) determined
 by the `TCPRegistry`, of course in a real life production environment you may decide not to use the
-`TcpRegistry` or if you still use the `TcpRegistry` you can use a fixed host:port.
+`TCPRegistry` or if you still use the `TCPRegistry` you can use a fixed host:port.
 
 [source,java]
 ----
@@ -83,8 +82,9 @@ sc.configureBlocking(false);
 
 ==== Server Message Processing
 
-The server code that processes a message, in this simple example we
-receive and update a message and then immediately send back a response, however there are
+The server code that processes a message:
+
+In this simple example we receive and update a message and then immediately send back a response, however there are
 other solutions that can be implemented using Chronicle Network, such as the server
 responding later to a client subscription.
 
@@ -125,10 +125,9 @@ public class WireEchoRequestHandler extends WireTcpHandler {
 
 ==== Create and Start the Client
 
-The client code that creates the `TcpChannelHub`,
+The client code that creates the `TcpChannelHub`:
 
 The `TcpChannelHub` is used to send your messages to the server and then read the servers response.
-
 The `TcpChannelHub` ensures that each response is marshalled back onto the appropriate client thread.
 It does this through the use of a unique transaction ID ( we call this transaction ID the "tid" ),
  when the server responds to the client, its expected that the server sends back the tid as the very first field in the message.
@@ -202,7 +201,7 @@ tcpChannelHub.close();
 
 == Server Threading Strategy
 
-By default the Chronicle Network server uses a single thread, to process all messages.
+By default the Chronicle Network server uses a single thread to process all messages.
 However, if you wish to dedicate each client connection to its own thread,
 then you can change the server threading strategy, to:
 
@@ -214,11 +213,11 @@ see the following enum for more details `net.openhft.chronicle.network.ServerThr
 
 == Java Version
 
-This library requires Java 8.
+This library requires Java 8 or Java 11.
 
 == Testing
 
-The target environment is to support TCP over 10 Gig-E ethernet. In prototype
+The target environment is to support TCP over 10 Gigabit Ethernet. In prototype
 testing, this library has half the latency and supports 30% more bandwidth.
 
 A key test is that it shouldn't GC more than once (to allow for warm up) with -mx64m.
