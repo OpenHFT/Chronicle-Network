@@ -19,6 +19,7 @@ package net.openhft.chronicle.network.cluster;
 
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.io.ManagedCloseable;
@@ -37,9 +38,12 @@ import net.openhft.chronicle.wire.SelfDescribingMarshallable;
 import net.openhft.chronicle.wire.WireIn;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -336,14 +340,13 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     }
 
     protected void performClose() {
+        closeAndWaitForEventLoops(eventLoop, acceptorLoop);
         closeQuietly(
                 closeables,
                 acceptorEventHandler,
                 wireOutPublisherFactory,
                 networkContextFactory,
-                networkStatsListenerFactory,
-                eventLoop,
-                acceptorLoop);
+                networkStatsListenerFactory);
 
         closeables.clear();
         acceptorEventHandler = null;
@@ -352,6 +355,23 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
         networkStatsListenerFactory = null;
         eventLoop = null;
         acceptorLoop = null;
+    }
+
+    private void closeAndWaitForEventLoops(@Nullable EventLoop... eventLoops) {
+        Arrays.stream(eventLoops)
+                .filter(Objects::nonNull)
+                .forEach(Closeable::closeQuietly);
+        Arrays.stream(eventLoops)
+                .filter(Objects::nonNull)
+                .forEach(this::awaitTerminationQuietly);
+    }
+
+    private void awaitTerminationQuietly(@NotNull EventLoop eventLoop) {
+        try {
+            eventLoop.awaitTermination();
+        } catch (Exception e) {
+            Jvm.warn().on(ClusterContext.class, "Error waiting for event loop to terminate", e);
+        }
     }
 
     protected abstract String clusterNamePrefix();
