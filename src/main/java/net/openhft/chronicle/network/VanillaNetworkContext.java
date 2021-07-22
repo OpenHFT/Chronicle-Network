@@ -49,7 +49,7 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
 
     @Override
     protected boolean shouldPerformCloseInBackground() {
-        return true;
+        return false;
     }
 
     @NotNull
