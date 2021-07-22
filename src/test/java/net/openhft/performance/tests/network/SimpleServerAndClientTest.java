@@ -37,6 +37,7 @@ import net.openhft.chronicle.wire.YamlLogging;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -47,6 +48,8 @@ import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PADDING;
 
 public class SimpleServerAndClientTest extends NetworkTestCommon {
+
+    @Ignore("https://github.com/OpenHFT/Chronicle-Network/issues/133")
     @Test
     public void test() throws IOException {
 //        assert TCP_USE_PADDING;
