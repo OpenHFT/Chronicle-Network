@@ -47,6 +47,20 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
         return socketChannel;
     }
 
+    /**
+     * We don't perform close in background because delaying it would mean
+     * the background resource releaser would end up calling close on the
+     * network stats listener. The FixNetworkContext also had some listeners
+     * that were being called after the fact by background resource releaser.
+     *
+     * see https://github.com/ChronicleEnterprise/Chronicle-FIX/issues/716
+     *
+     * The {@link net.openhft.chronicle.network.tcp.VanillaSocketChannel}
+     * is released in the background itself and the {@link WireOutPublisher}
+     * could be made to do so if it's slow
+     *
+     * @return false
+     */
     @Override
     protected boolean shouldPerformCloseInBackground() {
         return false;
