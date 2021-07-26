@@ -340,7 +340,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     }
 
     protected void performClose() {
-        closeAndWaitForEventLoops(eventLoop, acceptorLoop);
+        closeAndWaitForEventLoops(acceptorLoop, eventLoop);
         closeQuietly(
                 closeables,
                 acceptorEventHandler,
@@ -360,6 +360,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     private void closeAndWaitForEventLoops(@Nullable EventLoop... eventLoops) {
         Arrays.stream(eventLoops)
                 .filter(Objects::nonNull)
+                .parallel()
                 .forEach(Closeable::closeQuietly);
         Arrays.stream(eventLoops)
                 .filter(Objects::nonNull)
