@@ -10,6 +10,7 @@ import net.openhft.chronicle.network.cluster.AbstractSubHandler;
 import net.openhft.chronicle.network.cluster.Cluster;
 import net.openhft.chronicle.network.cluster.HostDetails;
 import net.openhft.chronicle.network.cluster.VanillaClusteredNetworkContext;
+import net.openhft.chronicle.network.cluster.handlers.UberHandler;
 import net.openhft.chronicle.network.connection.CoreFields;
 import net.openhft.chronicle.network.connection.VanillaWireOutPublisher;
 import net.openhft.chronicle.threads.Pauser;
@@ -31,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class UberHandlerTest extends NetworkTestCommon {
@@ -88,6 +90,12 @@ public class UberHandlerTest extends NetworkTestCommon {
         }
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void constructorWillThrowIfLocalAndRemoteIdentifiersAreTheSame() {
+        Wire wire = new BinaryWire(Bytes.allocateElasticOnHeap());
+        UberHandler.uberHandler(123, 123, WireType.BINARY).writeMarshallable(wire);
+    }
+
     private void stopAndWaitTillAllHandlersEnd() throws TimeoutException {
         running.set(false);
         TimingPauser pauser = Pauser.balanced();
@@ -100,6 +108,35 @@ public class UberHandlerTest extends NetworkTestCommon {
 
     private boolean pingPongsAllCompletedAtLeastOneRound() {
         return countersPerCid.size() == NUM_HANDLERS && countersPerCid.values().stream().allMatch(val -> val > 0);
+    }
+
+    @Test
+    public void testHandlerWillCloseWhenHostIdsAreWrong() throws IOException {
+        expectException("Received a handler for host ID: 98, my host ID is: 1 this is probably a configuration error");
+        expectException("Closed");
+        expectException("SubHandler HeartbeatHandler");
+
+        TCPRegistry.createServerSocketChannelFor("initiator", "acceptor");
+        HostDetails initiatorHost = new HostDetails().hostId(99).connectUri("initiator");
+        HostDetails acceptorHost = new HostDetails().hostId(1).connectUri("acceptor");
+        HostDetails acceptorHostWithInvalidId = new HostDetails().hostId(98).connectUri("acceptor");
+
+        try (MyClusterContext acceptorCtx = clusterContext(acceptorHost, initiatorHost);
+             MyClusterContext initiatorCtx = clusterContext(initiatorHost, acceptorHostWithInvalidId)) {
+
+            acceptorCtx.cluster().start(acceptorHost.hostId());
+            initiatorCtx.cluster().start(initiatorHost.hostId());
+
+            AtomicBoolean establishedConnection = new AtomicBoolean(false);
+            initiatorCtx.connectionManager(acceptorHostWithInvalidId.hostId()).addListener((nc, isConnected) -> {
+                if (isConnected) {
+                    establishedConnection.set(true);
+                }
+            });
+            Jvm.pause(2000);
+            assertFalse(establishedConnection.get());
+            assertTrue(exceptions.keySet().stream().anyMatch(k -> k.throwable != null && k.throwable.getMessage().contains("Received a handler for host ID: 98, my host ID is: 1 this is probably a configuration error")));
+        }
     }
 
     private void sendPingPong(WireOut wireOut, int cid) {

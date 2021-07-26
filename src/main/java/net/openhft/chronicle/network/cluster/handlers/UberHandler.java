@@ -66,9 +66,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         this.localIdentifier = localIdentifier;
         this.remoteIdentifier = remoteIdentifier;
 
-        assert remoteIdentifier != localIdentifier :
-                "remoteIdentifier=" + remoteIdentifier + ", " +
-                        "localIdentifier=" + localIdentifier;
+        checkRemoteAndLocalIdentifiersAreNotEqual();
         wireType(wireType);
     }
 
@@ -113,10 +111,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         nc.wireType(wireType());
         isAcceptor(nc.isAcceptor());
 
-        assert checkIdentifierEqualsHostId();
-        assert remoteIdentifier != localIdentifier :
-                "remoteIdentifier=" + remoteIdentifier + ", " +
-                        "localIdentifier=" + localIdentifier;
+        validateIdentifiers();
 
         @NotNull final WireOutPublisher publisher = nc.wireOutPublisher();
         publisher(publisher);
@@ -134,11 +129,23 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         }
     }
 
-    private boolean checkIdentifierEqualsHostId() {
+    private void validateIdentifiers() {
+        checkIdentifierEqualsHostId();
+        checkRemoteAndLocalIdentifiersAreNotEqual();
+    }
+
+    private void checkRemoteAndLocalIdentifiersAreNotEqual() {
+        if (remoteIdentifier == localIdentifier) {
+            throw new IllegalArgumentException("remoteIdentifier=" + remoteIdentifier + ", " +
+                    "localIdentifier=" + localIdentifier);
+        }
+    }
+
+    private void checkIdentifierEqualsHostId() {
         byte localHostIdentifier = nc().getLocalHostIdentifier();
         if (localIdentifier != localHostIdentifier && localHostIdentifier != 0)
-            throw new AssertionError("localId: " + localIdentifier + " != nc().localId: " + localHostIdentifier);
-        return true;
+            throw new IllegalArgumentException("Received a handler for host ID: "
+                    + localIdentifier + ", my host ID is: " + localHostIdentifier + " this is probably a configuration error");
     }
 
     private void notifyConnectionListeners() {
