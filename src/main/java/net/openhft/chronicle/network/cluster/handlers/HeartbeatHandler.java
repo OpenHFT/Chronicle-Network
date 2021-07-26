@@ -20,7 +20,6 @@ package net.openhft.chronicle.network.cluster.handlers;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.core.io.Closeable;
-import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.core.threads.Timer;
 import net.openhft.chronicle.core.threads.VanillaEventHandler;
@@ -42,6 +41,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extends AbstractSubHandler<T> implements
         Demarshallable, WriteMarshallable, HeartbeatEventHandler {
 
+    private static final int MINIMUM_HEARTBEAT_TIMEOUT_MS = 1000;
+    private static final int MINIMUM_HEARTBEAT_INTERVAL_MS = 500;
     private final long heartbeatIntervalMs;
     private final long heartbeatTimeoutMs;
     private final AtomicBoolean hasHeartbeats = new AtomicBoolean();
@@ -53,32 +54,37 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
 
     @UsedViaReflection
     public HeartbeatHandler(@NotNull WireIn w) {
-        heartbeatTimeoutMs = w.read("heartbeatTimeoutMs").int64();
-        heartbeatIntervalMs = w.read("heartbeatIntervalMs").int64();
-        assert heartbeatTimeoutMs >= 1000 :
-                "heartbeatTimeoutMs=" + heartbeatTimeoutMs + ", this is too small";
-        assert heartbeatIntervalMs >= 500 :
-                "heartbeatIntervalMs=" + heartbeatIntervalMs + ", this is too small";
+        this(w.read("heartbeatTimeoutMs").int64(),
+                w.read("heartbeatIntervalMs").int64());
         onMessageReceived();
-
     }
 
     private HeartbeatHandler(long heartbeatTimeoutMs, long heartbeatIntervalMs) {
         this.heartbeatTimeoutMs = heartbeatTimeoutMs;
         this.heartbeatIntervalMs = heartbeatIntervalMs;
-        assert heartbeatTimeoutMs > heartbeatIntervalMs :
-                "heartbeatIntervalMs=" + heartbeatIntervalMs + ", " +
-                        "heartbeatTimeoutMs=" + heartbeatTimeoutMs;
+        validateHeartbeatParameters(this.heartbeatTimeoutMs, this.heartbeatIntervalMs);
+    }
 
-        assert heartbeatTimeoutMs >= 1000 :
-                "heartbeatTimeoutMs=" + heartbeatTimeoutMs + ", this is too small";
-        assert heartbeatIntervalMs >= 500 :
-                "heartbeatIntervalMs=" + heartbeatIntervalMs + ", this is too small";
+    private static void validateHeartbeatParameters(long heartbeatTimeoutMs, long heartbeatIntervalMs) {
+        if (heartbeatTimeoutMs <= heartbeatIntervalMs) {
+            throw new IllegalArgumentException("Heartbeat timeout must be greater than heartbeat interval, " +
+                    "please fix this in your configuration, (heartbeatIntervalMs=" + heartbeatIntervalMs + ", " +
+                    "heartbeatTimeoutMs=" + heartbeatTimeoutMs + ")");
+        }
+
+        if (heartbeatTimeoutMs < MINIMUM_HEARTBEAT_TIMEOUT_MS) {
+            throw new IllegalArgumentException("heartbeatTimeoutMs=" + heartbeatTimeoutMs + ", this is too small (minimum=" + MINIMUM_HEARTBEAT_TIMEOUT_MS + ")");
+        }
+
+        if (heartbeatIntervalMs < MINIMUM_HEARTBEAT_INTERVAL_MS) {
+            throw new IllegalArgumentException("heartbeatIntervalMs=" + heartbeatIntervalMs + ", this is too small (minimum=" + MINIMUM_HEARTBEAT_INTERVAL_MS + ")");
+        }
     }
 
     public static WriteMarshallable heartbeatHandler(final long heartbeatTimeoutMs,
                                                      final long heartbeatIntervalMs,
                                                      final long cid) {
+        validateHeartbeatParameters(heartbeatTimeoutMs, heartbeatIntervalMs);
         return new WriteHeartbeatHandler(cid, heartbeatTimeoutMs, heartbeatIntervalMs);
     }
 

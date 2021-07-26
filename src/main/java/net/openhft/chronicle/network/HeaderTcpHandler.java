@@ -53,8 +53,7 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseab
                         @NotNull final T nc) {
         throwExceptionIfClosed();
 
-        WireType wireType = nc.wireType() == null ? WireType.BINARY :  nc.wireType();
-      // assert wireType != null;
+        WireType wireType = nc.wireType() == null ? WireType.BINARY : nc.wireType();
 
         // the type of the header
         final Wire inWire = wireType.apply(in);
@@ -87,7 +86,6 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseab
                 ((NetworkContextManager<T>) handler).nc(nc);
 
             handlerManager.tcpHandler(handler);
-
         } catch (Throwable e) {
             if (isClosed())
                 return;
