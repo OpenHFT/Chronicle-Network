@@ -38,16 +38,17 @@ import net.openhft.chronicle.wire.SelfDescribingMarshallable;
 import net.openhft.chronicle.wire.WireIn;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static java.lang.String.format;
 import static java.util.EnumSet.of;
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.core.threads.HandlerPriority.*;
@@ -56,6 +57,20 @@ import static net.openhft.chronicle.threads.EventGroup.CONC_THREADS;
 public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends ClusteredNetworkContext<T>>
         extends SelfDescribingMarshallable
         implements Closeable, ManagedCloseable {
+
+    /**
+     * Maximum time non-closing threads wait for the ClusterContext
+     * to get into CLOSED state when they call close()
+     */
+    private static final long MAX_CLOSE_WAIT_MS = 5_000;
+
+    enum Status {
+        NOT_CLOSED,
+        STOPPING,
+        CLOSING,
+        CLOSED
+    }
+
     // todo should be final
     public static PauserMode DEFAULT_PAUSER_MODE = PauserMode.busy;
     private transient Function<WireType, WireOutPublisher> wireOutPublisherFactory;
@@ -66,7 +81,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     private transient ClusterAcceptorEventHandler<C, T> acceptorEventHandler;
     private final transient TIntObjectMap<HostConnector<T, C>> hostConnectors = new TIntObjectHashMap<>();
     private final transient TIntObjectMap<ConnectionManager<T>> connManagers = new TIntObjectHashMap<>();
-    private transient boolean closed = false;
+    private final transient AtomicReference<Status> status = new AtomicReference<>(Status.NOT_CLOSED);
     private final transient List<java.io.Closeable> closeables = new CopyOnWriteArrayList<>();
     private Function<C, T> networkContextFactory;
     private long heartbeatTimeoutMs = 40_000;
@@ -328,19 +343,59 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
 
     @Override
     public boolean isClosed() {
-        return closed;
+        return status.get() == Status.CLOSED;
     }
 
     @Override
+    public boolean isClosing() {
+        return Status.CLOSING.compareTo(status.get()) <= 0;
+    }
+
+    /**
+     * For ClusterContext we add a stage called "STOPPING" in which we
+     * close the event loops and wait for them to stop. In "STOPPING"
+     * phase, {@link #throwExceptionIfClosed()} does not throw. This allows
+     * the handlers to finish their last iteration without producing
+     * a lot of log noise because the context is closed.
+     * <p>
+     * This close() method will block until the event loops are finished
+     * and everything is closed.
+     */
+    @Override
     public void close() {
-        if (closed)
-            return;
-        closed = true;
-        performClose();
+        if (status.compareAndSet(Status.NOT_CLOSED, Status.STOPPING)) {
+            performStop();
+            status.set(Status.CLOSING);
+            performClose();
+            status.set(Status.CLOSED);
+        } else {
+            // Block other threads until we reach CLOSED state, with a reasonable timeout
+            long endTime = System.currentTimeMillis() + MAX_CLOSE_WAIT_MS;
+            while (status.get() != Status.CLOSED) {
+                if (System.currentTimeMillis() > endTime) {
+                    Jvm.error().on(ClusterContext.class,
+                            format("Waited longer than %,d for context to be closed, continuing (current state: %s)", MAX_CLOSE_WAIT_MS, status.get()));
+                    break;
+                }
+                Jvm.pause(1);
+            }
+        }
+    }
+
+    protected void performStop() {
+        closeAndWaitForEventLoops(eventLoopsToStop());
+    }
+
+    /**
+     * Subclasses may override to close additional EventLoops when STOPPING
+     *
+     * @return The list of event loops to stop before entering CLOSING phase
+     */
+    protected List<EventLoop> eventLoopsToStop() {
+        return Arrays.asList(acceptorLoop, eventLoop);
     }
 
     protected void performClose() {
-        closeAndWaitForEventLoops(acceptorLoop, eventLoop);
         closeQuietly(
                 closeables,
                 acceptorEventHandler,
@@ -357,12 +412,12 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
         acceptorLoop = null;
     }
 
-    private void closeAndWaitForEventLoops(@Nullable EventLoop... eventLoops) {
-        Arrays.stream(eventLoops)
+    private void closeAndWaitForEventLoops(@NotNull List<EventLoop> eventLoops) {
+        eventLoops.stream()
                 .filter(Objects::nonNull)
                 .parallel()
                 .forEach(Closeable::closeQuietly);
-        Arrays.stream(eventLoops)
+        eventLoops.stream()
                 .filter(Objects::nonNull)
                 .forEach(this::awaitTerminationQuietly);
     }
