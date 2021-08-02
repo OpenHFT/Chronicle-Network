@@ -1362,12 +1362,10 @@ public final class TcpChannelHub extends AbstractCloseable {
                         @NotNull final Bytes<?> bytes = inWire.bytes();
 
                         // the number bytes ( still required  ) to read the size
-                        System.out.println("read header");
                         blockingRead(inWire, SIZE_OF_SIZE);
 
                         final int header = bytes.readVolatileInt(0);
                         final long messageSize = size(header);
-                        System.out.println("... read header " + messageSize);
 
                         // read the data
                         start = System.currentTimeMillis();
