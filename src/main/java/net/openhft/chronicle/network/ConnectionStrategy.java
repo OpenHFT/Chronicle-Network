@@ -175,5 +175,6 @@ public interface ConnectionStrategy extends Marshallable, Closeable {
       return false;
     }
 
-    void open();
+   default void open() {
+   }
 }
