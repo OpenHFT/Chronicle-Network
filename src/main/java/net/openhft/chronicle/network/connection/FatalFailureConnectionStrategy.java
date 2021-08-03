@@ -174,4 +174,8 @@ public class FatalFailureConnectionStrategy extends SelfDescribingMarshallable i
         return isClosed.get();
     }
 
+    @Override
+    public void open() {
+        isClosed.set(false);
+    }
 }

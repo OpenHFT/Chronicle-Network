@@ -52,6 +52,11 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
     private long pauseMillisBeforeReconnect = Integer.getInteger("connectionStrategy.pauseMillisBeforeReconnect", 500);
     private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
 
+    @Override
+    public void open() {
+        isClosed.set(false);
+    }
+
     public AlwaysStartOnPrimaryConnectionStrategy clientConnectionMonitor(ClientConnectionMonitor fatalFailureMonitor) {
         this.clientConnectionMonitor = fatalFailureMonitor;
         return this;
@@ -158,7 +163,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
         return this;
     }
 
-   private transient final AtomicBoolean isClosed = new AtomicBoolean(false);
+    private transient final AtomicBoolean isClosed = new AtomicBoolean(false);
 
     @Override
     public void close() {
