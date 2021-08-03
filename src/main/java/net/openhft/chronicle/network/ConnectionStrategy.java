@@ -18,7 +18,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.io.ClosedIllegalStateException;
 import net.openhft.chronicle.network.connection.ClientConnectionMonitor;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
@@ -38,7 +38,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
-public interface ConnectionStrategy extends Marshallable, Closeable {
+public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
 
     default ClientConnectionMonitor clientConnectionMonitor() {
         return new VanillaClientConnectionMonitor();
@@ -170,12 +170,17 @@ public interface ConnectionStrategy extends Marshallable, Closeable {
     default void close() {
     }
 
-    @Override
     default boolean isClosed() {
-      return false;
+        return false;
     }
 
-   default ConnectionStrategy open() {
+    default ConnectionStrategy open() {
         return this;
-   }
+    }
+
+    default void throwExceptionIfClosed() throws IllegalStateException {
+        if (this.isClosed()) {
+            throw new ClosedIllegalStateException("Closed");
+        }
+    }
 }
