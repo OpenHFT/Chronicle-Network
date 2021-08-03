@@ -53,8 +53,9 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
     private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
 
     @Override
-    public void open() {
+    public AlwaysStartOnPrimaryConnectionStrategy open() {
         isClosed.set(false);
+        return this;
     }
 
     public AlwaysStartOnPrimaryConnectionStrategy clientConnectionMonitor(ClientConnectionMonitor fatalFailureMonitor) {
