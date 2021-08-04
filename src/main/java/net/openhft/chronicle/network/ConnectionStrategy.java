@@ -183,4 +183,5 @@ public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
             throw new ClosedIllegalStateException("Closed");
         }
     }
+    
 }

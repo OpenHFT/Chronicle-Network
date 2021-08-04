@@ -29,17 +29,17 @@ public interface ClientConnectionMonitor extends FatalFailureMonitor, Marshallab
      * Call just after the client as successfully established a connection to the server
      *
      * @param name          the name of the connection
-     * @param socketAddress the address that we have just connected to
+     * @param socketAddress the address that we have just connected to  or @null if not known
      */
-    void onConnected(@Nullable String name, @NotNull SocketAddress socketAddress);
+    void onConnected(@Nullable String name, @Nullable SocketAddress socketAddress);
 
     /**
      * call just after the client has disconnect to the server, this maybe called as part of a
      * failover
      *
      * @param name          the name of the connection
-     * @param socketAddress the address of the socket that we have been disconnected from
+     * @param socketAddress the address of the socket that we have been disconnected from or @null if not known
      */
-    void onDisconnected(@Nullable String name, @NotNull SocketAddress socketAddress);
+    void onDisconnected(@Nullable String name, @Nullable SocketAddress socketAddress);
 
 }
