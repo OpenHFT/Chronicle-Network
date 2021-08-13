@@ -19,7 +19,10 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.PackageLocal;
-import net.openhft.chronicle.core.io.*;
+import net.openhft.chronicle.core.io.AbstractCloseable;
+import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.core.io.SimpleCloseable;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -34,6 +37,9 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.AlreadyConnectedException;
+import java.nio.channels.AsynchronousCloseException;
+import java.nio.channels.UnresolvedAddressException;
+import java.nio.channels.UnsupportedAddressTypeException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -173,10 +179,11 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
 
                 eventHandler = tcpHandlerSupplier.apply(nc);
 
-            } catch (AlreadyConnectedException e) {
-                Jvm.debug().on(getClass(), e);
+            } catch (AlreadyConnectedException | AsynchronousCloseException | UnsupportedAddressTypeException e) {
+                Jvm.debug().on(getClass(), "Unable to connect to " + address, e);
                 throw InvalidEventHandlerException.reusable();
-            } catch (IOException | IORuntimeException e) {
+            } catch (IOException | IORuntimeException | UnresolvedAddressException e) {
+                // UnresolvedAddressException: host configuration can change over time, See https://github.com/OpenHFT/Chronicle-Network/issues/136
                 nextPeriod.set(System.currentTimeMillis() + retryInterval);
                 return false;
             }
