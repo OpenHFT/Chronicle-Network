@@ -167,7 +167,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         this.clientConnectionMonitor = clientConnectionMonitor;
         this.pauser = (pauserSupplier != null) ? pauserSupplier.get() : new LongPauser(100, 100, 500, 20_000, TimeUnit.MICROSECONDS);
         hubs.add(this);
-        eventLoop.addHandler(new PauserMonitor(pauser, "async-read", 30));
+        eventLoop.addHandler(new PauserMonitor(pauser, "async-read", 300));
 
         // has to be done last as it starts a thread which uses this class.
         this.tcpSocketConsumer = new TcpSocketConsumer();
