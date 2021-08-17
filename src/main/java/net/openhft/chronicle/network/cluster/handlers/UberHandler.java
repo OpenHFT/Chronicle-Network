@@ -234,18 +234,21 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                     Jvm.debug().on(getClass(), "Removing rejected handler: " + handler);
                     removeHandler(handler);
                 }
-            else
-                Jvm.warn().on(getClass(), "handler == null, check that the " +
-                        "Csp/Cid has been sent, failed to " +
-                        "fully " +
-                        "process the following " +
-                        "YAML\n");
+            else {
+                if (handler == null) {
+                    Jvm.warn().on(getClass(), "handler == null, check that the " +
+                            "Csp/Cid has been sent, failed to " +
+                            "fully " +
+                            "process the following " +
+                            "YAML\n");
+                }
+            }
         } catch (ClosedIllegalStateException e) {
-            Jvm.warn().on(getClass(), e);
+            Jvm.warn().on(getClass(), this.toString(), e);
 
             close();
         } catch (Throwable e) {
-            Jvm.warn().on(getClass(), e);
+            Jvm.warn().on(getClass(), this.toString(), e);
         }
     }
 
