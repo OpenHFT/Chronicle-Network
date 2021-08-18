@@ -35,7 +35,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static net.openhft.chronicle.network.HeaderTcpHandler.HANDLER;
 
@@ -45,8 +44,6 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
 
     private final int remoteIdentifier;
     private final int localIdentifier;
-    @NotNull
-    private final AtomicBoolean isClosing = new AtomicBoolean();
 
     @Nullable
     private ConnectionManager<T> connectionChangedNotifier;
@@ -91,11 +88,6 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
 
     public int remoteIdentifier() {
         return remoteIdentifier;
-    }
-
-    @Override
-    public boolean isClosed() {
-        return isClosing.get();
     }
 
     @Override
@@ -157,7 +149,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     @Override
     protected void performClose() {
         T nc = nc();
-        if (!isClosing.getAndSet(true) && connectionChangedNotifier != null) {
+        if (connectionChangedNotifier != null) {
             connectionChangedNotifier.onConnectionChanged(false, nc);
         }
 
@@ -179,7 +171,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     @Override
     protected void onRead(@NotNull final DocumentContext dc, @NotNull final WireOut outWire) {
         try {
-            if (isClosing.get())
+            if (isClosing())
                 return;
 
             // divert to onTouch (block further reads) if a message is already in progress
@@ -268,7 +260,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         super.onWrite(outWire);
         for (int i = 0; i < writers.size(); i++)
             try {
-                if (isClosing.get())
+                if (isClosing())
                     return;
                 final WritableSubHandler<T> w = writers.get(i);
                 if (w != null)
@@ -290,7 +282,6 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         return "UberHandler{" +
                 "remoteIdentifier=" + remoteIdentifier +
                 ", localIdentifier=" + localIdentifier +
-                ", isClosing=" + isClosing +
                 '}';
     }
 }
