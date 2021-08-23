@@ -171,6 +171,8 @@ public final class TcpChannelHub extends AbstractCloseable {
 
         // has to be done last as it starts a thread which uses this class.
         this.tcpSocketConsumer = new TcpSocketConsumer();
+
+        disableThreadSafetyCheck(true);
     }
 
     private static int getTcpBufferSize() {
@@ -1051,11 +1053,6 @@ public final class TcpChannelHub extends AbstractCloseable {
 
     public boolean isOutBytesEmpty() {
         return outWire.bytes().readRemaining() == 0;
-    }
-
-    @Override
-    protected void threadSafetyCheck(boolean isUsed) {
-        // Assume it is thread safe.
     }
 
     @FunctionalInterface

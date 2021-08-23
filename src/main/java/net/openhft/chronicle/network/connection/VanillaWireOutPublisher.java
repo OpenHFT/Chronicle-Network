@@ -43,6 +43,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
         final WireType wireType0 = wireType == WireType.DELTA_BINARY ? WireType.BINARY : wireType;
         wire = wireType0.apply(bytes);
         wire.usePadding(TCP_USE_PADDING);
+        disableThreadSafetyCheck(true);
     }
 
     @Override
@@ -203,11 +204,6 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
                 ", closed=" + isClosed() +
                 ", " + wireStr +
                 '}';
-    }
-
-    @Override
-    protected void threadSafetyCheck(boolean isUsed) {
-        // assume thread safe
     }
 }
 

@@ -42,6 +42,10 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
     private NetworkStatsListener<T> networkStatsListener;
     private ServerThreadingStrategy serverThreadingStrategy = ServerThreadingStrategy.SINGLE_THREADED;
 
+    public VanillaNetworkContext() {
+        disableThreadSafetyCheck(true);
+    }
+
     @Override
     public ChronicleSocketChannel socketChannel() {
         return socketChannel;
@@ -221,10 +225,5 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
 
     private T self() {
         return (T) this;
-    }
-
-    @Override
-    protected void threadSafetyCheck(boolean isUsed) {
-        // assume thread safe.
     }
 }

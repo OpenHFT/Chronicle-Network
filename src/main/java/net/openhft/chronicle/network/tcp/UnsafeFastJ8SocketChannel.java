@@ -31,6 +31,7 @@ import java.nio.channels.SocketChannel;
 public class UnsafeFastJ8SocketChannel extends FastJ8SocketChannel {
     public UnsafeFastJ8SocketChannel(SocketChannel socketChannel) {
         super(socketChannel);
+        disableThreadSafetyCheck(true);
     }
 
     @Override
@@ -68,9 +69,5 @@ public class UnsafeFastJ8SocketChannel extends FastJ8SocketChannel {
             throw new AsynchronousCloseException();
 
         return res;
-    }
-
-    @Override
-    protected void threadSafetyCheck(boolean isUsed) {
     }
 }

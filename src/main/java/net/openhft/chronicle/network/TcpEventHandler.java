@@ -148,6 +148,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         writeLog = new NetworkLog(this.sc, "write");
         nbWarningEnabled = Jvm.warn().isEnabled(getClass());
         statusMonitorEventHandler = new StatusMonitorEventHandler(getClass());
+        disableThreadSafetyCheck(true);
+
         if (FIRST_HANDLER.compareAndSet(false, true))
             warmUp();
     }
@@ -382,11 +384,6 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
         nc.onHandlerChanged(tcpHandler);
         this.tcpHandler = tcpHandler;
-    }
-
-    @Override
-    protected void threadSafetyCheck(boolean isUsed) {
-        // assume thread safe
     }
 
     @Override

@@ -34,6 +34,7 @@ public class VanillaSocketChannel extends AbstractCloseable implements Chronicle
 
     public VanillaSocketChannel(SocketChannel socketChannel) {
         this.socketChannel = socketChannel;
+        disableThreadSafetyCheck(true);
     }
 
     @Override
@@ -129,9 +130,5 @@ public class VanillaSocketChannel extends AbstractCloseable implements Chronicle
         return "VanillaSocketChannel{" +
                 "socketChannel=" + socketChannel +
                 '}';
-    }
-
-    @Override
-    protected void threadSafetyCheck(boolean isUsed) {
     }
 }
