@@ -126,14 +126,6 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
      * {@inheritDoc}
      */
     @Override
-    public void notifyClosing() {
-        delegate.notifyClosing();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public boolean isClosed() {
         return delegate.isClosed();
     }

@@ -210,10 +210,5 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
         @Override
         protected void performClose() {
         }
-
-        @Override
-        public void notifyClosing() {
-            close();
-        }
     }
 }

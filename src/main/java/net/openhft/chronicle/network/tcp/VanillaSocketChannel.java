@@ -131,12 +131,7 @@ public class VanillaSocketChannel extends AbstractCloseable implements Chronicle
                 '}';
     }
 
-    protected boolean superThreadSafetyCheck(boolean isUsed) {
-        return super.threadSafetyCheck(isUsed);
-    }
-
     @Override
-    protected boolean threadSafetyCheck(boolean isUsed) {
-        return true;
+    protected void threadSafetyCheck(boolean isUsed) {
     }
 }

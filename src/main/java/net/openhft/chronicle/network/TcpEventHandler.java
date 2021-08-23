@@ -385,9 +385,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     }
 
     @Override
-    protected boolean threadSafetyCheck(boolean isUsed) {
+    protected void threadSafetyCheck(boolean isUsed) {
         // assume thread safe
-        return true;
     }
 
     @Override

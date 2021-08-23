@@ -206,9 +206,8 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     }
 
     @Override
-    protected boolean threadSafetyCheck(boolean isUsed) {
+    protected void threadSafetyCheck(boolean isUsed) {
         // assume thread safe
-        return true;
     }
 }
 

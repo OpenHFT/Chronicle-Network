@@ -224,8 +224,7 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
     }
 
     @Override
-    protected boolean threadSafetyCheck(boolean isUsed) {
+    protected void threadSafetyCheck(boolean isUsed) {
         // assume thread safe.
-        return true;
     }
 }

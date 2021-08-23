@@ -71,7 +71,6 @@ public class UnsafeFastJ8SocketChannel extends FastJ8SocketChannel {
     }
 
     @Override
-    protected boolean threadSafetyCheck(boolean isUsed) {
-        return superThreadSafetyCheck(isUsed);
+    protected void threadSafetyCheck(boolean isUsed) {
     }
 }

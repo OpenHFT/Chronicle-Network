@@ -515,12 +515,6 @@ public final class TcpChannelHub extends AbstractCloseable {
         return clientChannel != null;
     }
 
-    @Override
-    public void notifyClosing() {
-        // close early if possible.
-        close();
-    }
-
     /**
      * called when we are finished with using the TcpChannelHub
      */
@@ -1060,9 +1054,8 @@ public final class TcpChannelHub extends AbstractCloseable {
     }
 
     @Override
-    protected boolean threadSafetyCheck(boolean isUsed) {
+    protected void threadSafetyCheck(boolean isUsed) {
         // Assume it is thread safe.
-        return true;
     }
 
     @FunctionalInterface
