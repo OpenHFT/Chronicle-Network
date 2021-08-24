@@ -151,14 +151,15 @@ public class WireTcpHandlerTest extends NetworkTestCommon {
                     VanillaNetworkContext::new);
             eg.addHandler(eah);
 
-            ChronicleSocketChannel sc = TCPRegistry.createSocketChannel(desc);
-            sc.configureBlocking(false);
+            try (ChronicleSocketChannel sc = TCPRegistry.createSocketChannel(desc)) {
+                sc.configureBlocking(false);
 
-            //       testThroughput(sc);
-            testLatency(desc, wireType, sc);
+                //       testThroughput(sc);
+                testLatency(desc, wireType, sc);
 
-            eg.stop();
-            TcpChannelHub.closeAllHubs();
+                eg.stop();
+                TcpChannelHub.closeAllHubs();
+            }
         }
         YamlLogging.setAll(logging);
     }
