@@ -13,9 +13,9 @@ import java.nio.channels.SocketChannel;
 
 public class VanillaChronicleServerSocketChannel implements ChronicleServerSocketChannel {
 
-    ServerSocketChannel ssc;
+    final ServerSocketChannel ssc;
 
-    { // instance initialiser
+    public VanillaChronicleServerSocketChannel() {
         try {
             ssc = ServerSocketChannel.open();
         } catch (IOException e) {

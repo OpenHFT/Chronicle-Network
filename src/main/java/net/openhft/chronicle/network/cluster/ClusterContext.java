@@ -383,6 +383,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     }
 
     protected void performStop() {
+        acceptorEventHandler.close();
         closeAndWaitForEventLoops(eventLoopsToStop());
     }
 
