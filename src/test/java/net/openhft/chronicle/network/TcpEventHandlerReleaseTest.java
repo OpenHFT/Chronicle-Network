@@ -71,6 +71,7 @@ public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
         assertEquals(1, tcpHandler.performedIdleWorkCount.get());
         tcpEventHandler.action();
         assertEquals(2, tcpHandler.performedIdleWorkCount.get());
+        tcpEventHandler.close();
     }
 
     public TcpEventHandler createTcpEventHandler() throws IOException {

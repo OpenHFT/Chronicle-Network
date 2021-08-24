@@ -33,6 +33,7 @@ package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.io.AbstractReferenceCounted;
+import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.NetworkTestCommon;
@@ -65,6 +66,7 @@ public class VerySimpleClientTest extends NetworkTestCommon {
     private EventLoop eg;
     private String expectedMessage;
     private ChronicleSocketChannel client;
+    private ChronicleSocketChannel sc;
 
     public VerySimpleClientTest() {
         outWire.usePadding(TCP_USE_PADDING);
@@ -85,8 +87,8 @@ public class VerySimpleClientTest extends NetworkTestCommon {
 
     @Override
     protected void preAfter() {
+        Closeable.closeQuietly(sc, eg);
         TcpChannelHub.closeAllHubs();
-        eg.close();
         inWire.bytes().releaseLast();
         outWire.bytes().releaseLast();
     }
@@ -158,7 +160,7 @@ public class VerySimpleClientTest extends NetworkTestCommon {
                 VanillaNetworkContext::new);
 
         eg.addHandler(eah);
-        ChronicleSocketChannel sc = TCPRegistry.createSocketChannel(desc);
+        sc = TCPRegistry.createSocketChannel(desc);
         sc.configureBlocking(false);
     }
 }

@@ -36,12 +36,12 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketAddress;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -312,50 +312,6 @@ public final class TcpChannelHub extends AbstractCloseable {
             wire.clear();
         } finally {
             assert wire.endUse();
-        }
-    }
-
-    @Deprecated(/* remove in x.22 */)
-    @Nullable
-    SocketChannel openSocketChannel(final InetSocketAddress socketAddress) throws IOException {
-        final SocketChannel result = SocketChannel.open();
-        @Nullable Selector selector = null;
-        boolean failed = true;
-        try {
-            result.configureBlocking(false);
-            Socket socket = result.socket();
-            setTcpNoDelay(socket, true);
-            socket.setReceiveBufferSize(tcpBufferSize);
-            socket.setSendBufferSize(tcpBufferSize);
-            socket.setSoTimeout(0);
-            socket.setSoLinger(false, 0);
-            result.connect(socketAddress);
-
-            selector = Selector.open();
-            result.register(selector, SelectionKey.OP_CONNECT);
-
-            int select = selector.select(2500);
-            if (select == 0) {
-                Jvm.warn().on(TcpChannelHub.class, "Timed out attempting to connect to " + socketAddress);
-                return null;
-            } else {
-                try {
-                    if (!result.finishConnect())
-                        return null;
-
-                } catch (IOException e) {
-                    if (debugEnabled)
-                        Jvm.debug().on(TcpChannelHub.class, "Failed to connect to " + socketAddress + " " + e);
-                    return null;
-                }
-            }
-            failed = false;
-            return result;
-
-        } finally {
-            Closeable.closeQuietly(selector);
-            if (failed)
-                Closeable.closeQuietly(result);
         }
     }
 
@@ -849,13 +805,6 @@ public final class TcpChannelHub extends AbstractCloseable {
     public Wire outWire() {
         assert outBytesLock().isHeldByCurrentThread();
         return outWire;
-    }
-
-    @Deprecated(/* to be removed in x.22 */)
-    public boolean isOutBytesLocked() {
-        throwExceptionIfClosed();
-
-        return outBytesLock.isLocked();
     }
 
     private void reflectServerHeartbeatMessage(@NotNull final ValueIn valueIn) {

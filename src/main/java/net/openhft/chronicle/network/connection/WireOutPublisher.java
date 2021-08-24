@@ -18,7 +18,6 @@
 package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.wire.WireOut;
 import net.openhft.chronicle.wire.WireType;
@@ -28,32 +27,9 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Constructor;
-
 @FunctionalInterface
 public interface WireOutPublisher extends Closeable {
     Logger LOG = LoggerFactory.getLogger(WireOutPublisher.class);
-
-    /**
-     * a static factory that creates and instance in chronicle enterprise
-     *
-     * @param periodMs the period between updates of the same key
-     * @param delegate the  WireOutPublisher the events will get delegated to
-     * @return a throttled WireOutPublisher
-     */
-    @Deprecated // For removal in x.22. software.chronicle.enterprise.throttle.ThrottledWireOutPublisher is no longer available since it is located in an archived project.
-    static WireOutPublisher newThrottledWireOutPublisher(int periodMs, @NotNull WireOutPublisher delegate) {
-
-        try {
-            final Class<?> aClass = Class.forName("software.chronicle.enterprise.throttle.ThrottledWireOutPublisher");
-            @NotNull final Constructor<WireOutPublisher> constructor = (Constructor) aClass.getConstructors()[0];
-            return constructor.newInstance(periodMs, delegate);
-
-        } catch (Exception e) {
-            Jvm.warn().on(WireOutPublisher.class, "To use this feature please install Chronicle-Engine-Enterprise");
-            throw Jvm.rethrow(e);
-        }
-    }
 
     default void applyAction(@NotNull Bytes<?> out) {
         throw new UnsupportedOperationException();
