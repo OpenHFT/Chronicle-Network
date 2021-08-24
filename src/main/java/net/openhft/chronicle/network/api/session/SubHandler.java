@@ -18,6 +18,7 @@
 package net.openhft.chronicle.network.api.session;
 
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.core.io.ManagedCloseable;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.NetworkContextManager;
 import net.openhft.chronicle.wire.WireIn;
@@ -26,7 +27,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.RejectedExecutionException;
 
-public interface SubHandler<T extends NetworkContext<T>> extends NetworkContextManager<T>, Closeable {
+public interface SubHandler<T extends NetworkContext<T>> extends NetworkContextManager<T>, ManagedCloseable {
 
     void cid(long cid);
 
