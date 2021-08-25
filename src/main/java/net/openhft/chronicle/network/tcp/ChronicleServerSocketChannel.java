@@ -28,21 +28,14 @@ public interface ChronicleServerSocketChannel extends Closeable {
      * bind(local, 0);
      * </pre></blockquote>
      *
-     * @param   address
-     *          The local address to bind the socket, or {@code null} to bind
-     *          to an automatically assigned socket address
-     *
-     * @return  This channel
-     *
-     * @throws AlreadyBoundException               {@inheritDoc}
-     * @throws UnsupportedAddressTypeException     {@inheritDoc}
-     * @throws ClosedChannelException              {@inheritDoc}
-     * @throws  IOException                         {@inheritDoc}
-     * @throws  SecurityException
-     *          If a security manager has been installed and its {@link
-     *          SecurityManager#checkListen checkListen} method denies the
-     *          operation
-     *
+     * @param address The local address to bind the socket, or {@code null} to bind
+     *                to an automatically assigned socket address
+     * @throws AlreadyBoundException           if bound
+     * @throws UnsupportedAddressTypeException if address unsupported
+     * @throws ClosedChannelException          if channel is closed
+     * @throws IOException                     if unable to open
+     * @throws SecurityException               If a security manager has been installed and its {@link SecurityManager#checkListen checkListen}
+     *                                         method denies the operation
      * @since 1.7
      */
     void bind(InetSocketAddress address) throws IOException;
