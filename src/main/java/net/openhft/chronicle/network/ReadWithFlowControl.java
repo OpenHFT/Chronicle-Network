@@ -11,7 +11,7 @@ import static java.util.Objects.requireNonNull;
 import static net.openhft.chronicle.wire.Wires.lengthOf;
 
 /**
- * provides flow control and back pressure to the the socket writer, so that only just one message is read at a time from the TCP/IP socket This class
+ * provides flow control and back pressure to the socket writer, so that only just one message is read at a time from the TCP/IP socket This class
  * is only used in data grid
  */
 public final class ReadWithFlowControl implements TcpEventHandler.SocketReader {
@@ -21,8 +21,6 @@ public final class ReadWithFlowControl implements TcpEventHandler.SocketReader {
     private int position = 0;
     private int limit = 4;
     private int rawLen;
-
-    public ReadWithFlowControl() {}
 
     /**
      * reads just a single message from the socket
@@ -42,7 +40,7 @@ public final class ReadWithFlowControl implements TcpEventHandler.SocketReader {
                 return 0;
             rawLen = bytes.readInt(this.len);
             len = lengthOf(rawLen);
-            bytes.ensureCapacity(this.len + 4);
+            bytes.ensureCapacity(this.len + 4L);
             bb = requireNonNull(bytes.underlyingObject());
             limit(this.len + 8);
             position(4);
@@ -72,7 +70,7 @@ public final class ReadWithFlowControl implements TcpEventHandler.SocketReader {
             rawLen = bytes.readInt(this.len);
             this.len = lengthOf(rawLen);
             limit(this.len + 4);
-            bytes.ensureCapacity(this.len + 4);
+            bytes.ensureCapacity(this.len + 4L);
             bb = requireNonNull(bytes.underlyingObject());
             bb.position(len + 4);
             bytes.readPositionRemaining(0, result);

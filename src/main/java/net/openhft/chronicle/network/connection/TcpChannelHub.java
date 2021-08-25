@@ -1515,7 +1515,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                 //noinspection SynchronizationOnLocalVariableOrMethodParameter
                 synchronized (bytes) {
                     bytes.clear();
-                    bytes.ensureCapacity(SIZE_OF_SIZE + messageSize);
+                    bytes.ensureCapacity((long) SIZE_OF_SIZE + messageSize);
                     @Nullable final ByteBuffer byteBuffer = (ByteBuffer) bytes.underlyingObject();
                     byteBuffer.clear();
                     // we have to first write the header back to the bytes so that is can be

@@ -31,7 +31,7 @@ import static net.openhft.chronicle.core.util.Time.sleep;
  */
 public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable, java.io.Closeable, ReferenceOwner {
 
-    private static final long MINIMUM_INITIAL_FILE_SIZE_BYTES = 1_024 * 512; // We want to prevent resizing
+    private static final long MINIMUM_INITIAL_FILE_SIZE_BYTES = 1_024L * 512L; // We want to prevent resizing
     private static final long LOCK_TIMEOUT_MS = 10_000;
     private static final int DELETE_TABLE_FILE_TIMEOUT_MS = 1_000;
     private static final int PID = Jvm.getProcessId();

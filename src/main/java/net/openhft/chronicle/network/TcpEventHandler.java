@@ -517,7 +517,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
         tcpHandler.onWriteTime(beginNs, outBB, start, outBB.position());
 
-        statusMonitorEventHandler.addBytesWritten(outBB.position() - start);
+        statusMonitorEventHandler.addBytesWritten((long) outBB.position() - start);
         writeLog.log(outBB, start, outBB.position());
 
         if (wrote < 0) {
