@@ -109,13 +109,18 @@ public enum TCPRegistry {
     /**
      * @param descriptions each string is the name to a reference of a host and port, or if correctly formed this example host and port are used
      *                     instead
+     * @return
      * @throws IOException
      */
+    public static ChronicleServerSocketChannel createServerSocketChannelFor(@NotNull String descriptions) throws IOException {
+        return createServerSocketChannelFor(false, descriptions);
+    }
+
     public static void createServerSocketChannelFor(@NotNull String... descriptions) throws IOException {
         createServerSocketChannelFor(false, descriptions);
     }
 
-    public static void createServerSocketChannelFor(boolean isNative, @NotNull String... descriptions) throws IOException {
+    public static ChronicleServerSocketChannel createServerSocketChannelFor(boolean isNative, @NotNull String... descriptions) throws IOException {
         for (@NotNull String description : descriptions) {
             InetSocketAddress address;
             if (description.contains(":")) {
@@ -126,12 +131,15 @@ public enum TCPRegistry {
             } else {
                 address = new InetSocketAddress("localhost", 0);
             }
-            createSSC(isNative, description, address);
+            ChronicleServerSocketChannel ssc = createSSC(isNative, description, address);
+            if (descriptions.length == 1)
+                return ssc;
         }
+        return null;
     }
 
-    private static void createSSC(boolean isNative, String description, InetSocketAddress address) throws IOException {
-        ChronicleServerSocketChannel ssc = isNative ? ChronicleServerSocketFactory.openNative() : ChronicleServerSocketFactory.open();
+    private static ChronicleServerSocketChannel createSSC(boolean isNative, String description, InetSocketAddress address) throws IOException {
+        ChronicleServerSocketChannel ssc = isNative ? ChronicleServerSocketFactory.openNative() : ChronicleServerSocketFactory.open(description);
         ssc.socket().setReuseAddress(true);
         ssc.bind(address);
 
@@ -139,6 +147,7 @@ public enum TCPRegistry {
 
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.put(description, ssc);
         lookupTable().put(description, (InetSocketAddress) ssc.socket().getLocalSocketAddress());
+        return ssc;
     }
 
     public static ChronicleServerSocketChannel acquireServerSocketChannel(@NotNull String description) throws IOException {
@@ -146,7 +155,7 @@ public enum TCPRegistry {
         if (ssc != null && ssc.isOpen())
             return ssc;
         InetSocketAddress address = lookup(description);
-        ssc = ChronicleServerSocketFactory.open();
+        ssc = ChronicleServerSocketFactory.open(description);
 
         // PLEASE DON'T CHANGE THIS TO FALSE AS IT CAUSES RESTART ISSUES ON TCP/IP TIMED_WAIT
         ssc.socket().setReuseAddress(true);

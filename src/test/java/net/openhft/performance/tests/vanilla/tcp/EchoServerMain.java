@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class EchoServerMain {
     public static void main(@NotNull String... args) throws IOException {
         int port = args.length < 1 ? EchoClientMain.PORT : Integer.parseInt(args[0]);
-        ChronicleServerSocketChannel ssc = ChronicleServerSocketFactory.open();
+        ChronicleServerSocketChannel ssc = ChronicleServerSocketFactory.open("localhost:" + port);
         ssc.bind(new InetSocketAddress(port));
         System.out.println("listening on " + ssc);
 

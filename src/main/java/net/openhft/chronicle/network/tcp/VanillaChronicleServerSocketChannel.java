@@ -14,10 +14,21 @@ import java.nio.channels.SocketChannel;
 public class VanillaChronicleServerSocketChannel implements ChronicleServerSocketChannel {
 
     final ServerSocketChannel ssc;
+    private String hostPort;
 
     public VanillaChronicleServerSocketChannel() {
         try {
             ssc = ServerSocketChannel.open();
+            hostPort = ssc.getLocalAddress().toString();
+        } catch (IOException e) {
+            throw Jvm.rethrow(e);
+        }
+    }
+
+    public VanillaChronicleServerSocketChannel(String hostPort) {
+        try {
+            ssc = ServerSocketChannel.open();
+            this.hostPort = hostPort;
         } catch (IOException e) {
             throw Jvm.rethrow(e);
         }
@@ -88,9 +99,20 @@ public class VanillaChronicleServerSocketChannel implements ChronicleServerSocke
     }
 
     @Override
+    public String hostPort() {
+        return hostPort;
+    }
+
+    public VanillaChronicleServerSocketChannel hostPort(String hostPort) {
+        this.hostPort = hostPort;
+        return this;
+    }
+
+    @Override
     public String toString() {
         return "VanillaChronicleServerSocketChannel{" +
-                "ssc=" + ssc +
+                "ssc=" + ssc + ", " +
+                "hostPort=" + hostPort +
                 '}';
     }
 }

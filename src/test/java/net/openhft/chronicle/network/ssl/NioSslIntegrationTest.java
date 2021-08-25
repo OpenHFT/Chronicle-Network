@@ -46,7 +46,7 @@ public final class NioSslIntegrationTest extends NetworkTestCommon {
         final ExecutorService threadPool = Executors.newFixedThreadPool(2,
                 new NamedThreadFactory("test"));
 
-        final ChronicleServerSocketChannel serverChannel = ChronicleServerSocketFactory.open();//ServerSocketChannel.open();
+        final ChronicleServerSocketChannel serverChannel = ChronicleServerSocketFactory.open("localhost:13337");
         serverChannel.bind(new InetSocketAddress("0.0.0.0", 13337));
         serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         serverChannel.configureBlocking(true);

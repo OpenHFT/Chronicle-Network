@@ -21,6 +21,12 @@ public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
         TCPRegistry.createServerSocketChannelFor(hostPort);
     }
 
+    @Override
+    protected void preAfter() {
+        super.preAfter();
+        TCPRegistry.reset();
+    }
+
     @Test
     public void testRelease() throws IOException {
         try (TcpEventHandler t = createTcpEventHandler()) {

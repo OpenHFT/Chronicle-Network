@@ -69,6 +69,17 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractC
         this.acceptStrategy = acceptStrategy;
     }
 
+    public AcceptorEventHandler(@NotNull final ChronicleServerSocketChannel ssc,
+                                @NotNull final Function<T, TcpEventHandler<T>> handlerFactory,
+                                @NotNull final Supplier<T> ncFactory,
+                                @NotNull final AcceptStrategy acceptStrategy) throws IOException {
+        this.handlerFactory = handlerFactory;
+        this.hostPort = ssc.getLocalAddress().toString();
+        this.ssc = ssc;
+        this.ncFactory = ncFactory;
+        this.acceptStrategy = acceptStrategy;
+    }
+
     @Override
     public void eventLoop(final EventLoop eventLoop) {
         this.eventLoop = eventLoop;

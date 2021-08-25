@@ -52,4 +52,6 @@ public interface ChronicleServerSocketChannel extends Closeable {
     void setOption(SocketOption<Boolean> soReuseaddr, boolean b) throws IOException;
 
     void configureBlocking(boolean b) throws IOException;
+
+    String hostPort();
 }
