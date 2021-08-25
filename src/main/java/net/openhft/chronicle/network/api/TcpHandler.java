@@ -35,9 +35,9 @@ public interface TcpHandler<N extends NetworkContext<N>> extends ClientClosedPro
      * @param in  the bytes send from the client
      * @param out the response send back to the client
      */
-    void process(@NotNull Bytes in, @NotNull Bytes out, N nc);
+    void process(@NotNull Bytes<?> in, @NotNull Bytes<?> out, N nc);
 
-    default void sendHeartBeat(Bytes out, SessionDetailsProvider sessionDetails) {
+    default void sendHeartBeat(Bytes<?> out, SessionDetailsProvider sessionDetails) {
     }
 
     default void onEndOfConnection(boolean heartbeatTimeOut) {

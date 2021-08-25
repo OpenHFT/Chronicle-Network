@@ -190,7 +190,7 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
         }
 
         @Override
-        public void process(@NotNull final Bytes in, @NotNull final Bytes out, final StubNetworkContext nc) {
+        public void process(@NotNull final Bytes<?> in, @NotNull final Bytes<?> out, final StubNetworkContext nc) {
             latch.countDown();
             try {
                 if (nc.isAcceptor() && in.readRemaining() != 0) {

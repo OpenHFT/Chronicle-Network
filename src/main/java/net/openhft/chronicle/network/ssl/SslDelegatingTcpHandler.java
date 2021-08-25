@@ -42,7 +42,7 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
      * {@inheritDoc}
      */
     @Override
-    public void process(@NotNull final Bytes in, @NotNull final Bytes out, final N nc) {
+    public void process(@NotNull final Bytes<?> in, @NotNull final Bytes<?> out, final N nc) {
         if (delegate instanceof ManagedCloseable)
             ((ManagedCloseable) delegate).throwExceptionIfClosed();
 
@@ -56,7 +56,7 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
             handshakeComplete = true;
         }
 
-        bufferHandler.set(delegate, in, out, nc);
+        bufferHandler.set(delegate, (Bytes<ByteBuffer>) in, (Bytes<ByteBuffer>)out, nc);
         stateMachine.action();
     }
 
@@ -64,7 +64,7 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
      * {@inheritDoc}
      */
     @Override
-    public void sendHeartBeat(final Bytes out, final SessionDetailsProvider sessionDetails) {
+    public void sendHeartBeat(final Bytes<?> out, final SessionDetailsProvider sessionDetails) {
         delegate.sendHeartBeat(out, sessionDetails);
     }
 

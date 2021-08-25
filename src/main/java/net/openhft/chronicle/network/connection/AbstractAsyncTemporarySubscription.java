@@ -28,7 +28,7 @@ public abstract class AbstractAsyncTemporarySubscription extends AbstractAsyncSu
      * @param csp  the url of the subscription.
      * @param name the name of the subscription
      */
-    public AbstractAsyncTemporarySubscription(@NotNull TcpChannelHub hub, @Nullable String csp, String name) {
+    protected AbstractAsyncTemporarySubscription(@NotNull TcpChannelHub hub, @Nullable String csp, String name) {
         super(hub, csp, name);
     }
 
@@ -38,7 +38,7 @@ public abstract class AbstractAsyncTemporarySubscription extends AbstractAsyncSu
      * @param id   use as a seed to the tid, makes unique tid's makes reading the logs easier.
      * @param name the name of the subscription
      */
-    public AbstractAsyncTemporarySubscription(@NotNull TcpChannelHub hub, @Nullable String csp, byte id, String name) {
+    protected AbstractAsyncTemporarySubscription(@NotNull TcpChannelHub hub, @Nullable String csp, byte id, String name) {
         super(hub, csp, id, name);
     }
 }

@@ -85,7 +85,9 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     @NotNull
     private final T nc;
     @NotNull
-    private final NetworkLog readLog, writeLog;
+    private final NetworkLog readLog;
+    @NotNull
+    private final NetworkLog writeLog;
     @NotNull
     private final Bytes<ByteBuffer> inBBB;
     @NotNull
@@ -594,13 +596,11 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     }
 
     public static class Factory<T extends NetworkContext<T>> implements MarshallableFunction<T, TcpEventHandler<T>> {
-        public Factory() {
-        }
 
         @NotNull
         @Override
         public TcpEventHandler<T> apply(@NotNull final T nc) {
-            return new TcpEventHandler<T>(nc);
+            return new TcpEventHandler<>(nc);
         }
     }
 

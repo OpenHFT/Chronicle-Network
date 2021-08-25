@@ -24,10 +24,12 @@ public enum ConnectionListeners implements ConnectionListener {
     NONE {
         @Override
         public void onConnected(int localIdentifier, int remoteIdentifier, boolean isAcceptor) {
+            // Do Nothing
         }
 
         @Override
         public void onDisconnected(int localIdentifier, int remoteIdentifier, boolean isAcceptor) {
+            // Do Nothing
         }
     },
     LOGGING {

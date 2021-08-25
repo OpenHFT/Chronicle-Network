@@ -47,8 +47,8 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext<T>> extends Sim
     }
 
     @Override
-    public void process(final @NotNull Bytes in,
-                        final @NotNull Bytes out,
+    public void process(final @NotNull Bytes<?> in,
+                        final @NotNull Bytes<?> out,
                         T nc) {
         throwExceptionIfClosed();
 

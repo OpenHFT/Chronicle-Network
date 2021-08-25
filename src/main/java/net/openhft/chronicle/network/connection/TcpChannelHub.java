@@ -1023,8 +1023,8 @@ public final class TcpChannelHub extends AbstractCloseable {
         @NotNull
         private final ExecutorService service;
         @NotNull
-        private final ThreadLocal<Wire> syncInWireThreadLocal = CleaningThreadLocal.withCleanup(this::createWire, w -> releaseWire(w));
-        private final Bytes serverHeartBeatHandler = Bytes.elasticByteBuffer();
+        private final ThreadLocal<Wire> syncInWireThreadLocal = CleaningThreadLocal.withCleanup(this::createWire, TcpChannelHub::releaseWire);
+        private final Bytes<?> serverHeartBeatHandler = Bytes.elasticByteBuffer();
         private final TidReader tidReader = new TidReader();
         long lastheartbeatSentTime = 0;
         volatile long start = Long.MAX_VALUE;

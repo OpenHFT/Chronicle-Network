@@ -13,7 +13,7 @@ public enum LoggingNetworkStatsListener implements NetworkStatsListener {
 
     @Override
     public void networkContext(final NetworkContext networkContext) {
-
+        // Ignore
     }
 
     @Override
@@ -40,6 +40,7 @@ public enum LoggingNetworkStatsListener implements NetworkStatsListener {
 
     @Override
     public void close() {
+        // Do nothing
     }
 
     @Override

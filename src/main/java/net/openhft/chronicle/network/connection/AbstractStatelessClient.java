@@ -76,15 +76,15 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
     /**
      * Returns a WriteValue for the provided {@code eventId} and
      * provided {@code argument}.
-     *
+     * <p>
      * This is a specialized one-parameter implementation of
      * {@link #toParameters(ParameterizeWireKey, Object...)} which
      * avoids creation of an array and lambda.
      *
      * @param eventId to used
-     * @param arg single argument
+     * @param arg     single argument
      * @return a WriteValue for the provided {@code eventId} and
-     *         provided {@code argument}.
+     * provided {@code argument}.
      */
     protected WriteValue toParameters(@NotNull final E eventId,
                                       @Nullable final Object arg) {
@@ -106,18 +106,17 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
             return toParameters(eventId, args[0]);
         }
         // Todo: Unwind this double dynamic lambda. See https://github.com/OpenHFT/Chronicle-Network/issues/59
-        return out -> {
-            out.marshallable(m -> {
-                @NotNull final WireKey[] paramNames = eventId.params();
-                for (int i = 0; i < paramNames.length; i++) {
-                    @NotNull final ValueOut vo = m.write(paramNames[i]);
-                    vo.object(args[i]);
-                }
-            });
-        };
+        return out ->
+                out.marshallable(m -> {
+                    @NotNull final WireKey[] paramNames = eventId.params();
+                    for (int i = 0; i < paramNames.length; i++) {
+                        @NotNull final ValueOut vo = m.write(paramNames[i]);
+                        vo.object(args[i]);
+                    }
+                });
     }
 
-@Nullable
+    @Nullable
     protected <R> R proxyReturnWireTypedObject(
             @NotNull final E eventId,
             @Nullable final R usingValue,
@@ -188,13 +187,11 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
 
         if (usingValue == null) {
             // Avoid having to create the same lambda over and over again.
-            @SuppressWarnings("unchecked")
-            final Function<ValueIn, R> consumerInFunction = (Function<ValueIn, R>) consumerInFunctionMap.computeIfAbsent(resultType, c -> (f -> f.object(c)));
+            @SuppressWarnings("unchecked") final Function<ValueIn, R> consumerInFunction = (Function<ValueIn, R>) consumerInFunctionMap.computeIfAbsent(resultType, c -> (f -> f.object(c)));
             return consumerInFunction;
         } else {
             // use a per-class ThreadLocal to avoid lambda creation.
-            @SuppressWarnings("unchecked")
-            final ConsumerInUsingFunction<R> consumerInUsingFunctionThreadLocal =
+            @SuppressWarnings("unchecked") final ConsumerInUsingFunction<R> consumerInUsingFunctionThreadLocal =
                     (ConsumerInUsingFunction<R>) consumerInFunctionUsingTL.get();
             consumerInUsingFunctionThreadLocal.using(usingValue);
             consumerInUsingFunctionThreadLocal.resultType(resultType);
@@ -361,7 +358,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
      * @param bytes                the bytes to send
      * @param reattemptUponFailure if false - will only be sent if the connection is valid
      */
-    protected boolean sendBytes(@NotNull final Bytes bytes,
+    protected boolean sendBytes(@NotNull final Bytes<?> bytes,
                                 final boolean reattemptUponFailure) {
 
         if (reattemptUponFailure)
@@ -396,7 +393,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
         }
     }
 
-    private void quietSendBytesAsyncWithoutLock(@NotNull final Bytes bytes) {
+    private void quietSendBytesAsyncWithoutLock(@NotNull final Bytes<?> bytes) {
         try {
             sendBytesAsyncWithoutLock(bytes);
 
@@ -410,7 +407,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
         }
     }
 
-    private void sendBytesAsyncWithoutLock(@NotNull final Bytes bytes) {
+    private void sendBytesAsyncWithoutLock(@NotNull final Bytes<?> bytes) {
         writeAsyncMetaData();
         hub.outWire().bytes().write(bytes);
         hub.writeSocket(hub.outWire(), true, false);
@@ -528,7 +525,7 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
 
     protected boolean proxyReturnBooleanWithSequence(
             @NotNull final E eventId,
-            @NotNull final Collection sequence) {
+            @NotNull final Collection<?> sequence) {
         final long startTime = System.currentTimeMillis();
         return attempt(() -> readBoolean(sendEvent(startTime, eventId, out ->
                 sequence.forEach(out::object)), startTime));

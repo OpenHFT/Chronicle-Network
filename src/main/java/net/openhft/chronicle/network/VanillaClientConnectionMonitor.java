@@ -1,7 +1,6 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.network.connection.ClientConnectionMonitor;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.SocketAddress;

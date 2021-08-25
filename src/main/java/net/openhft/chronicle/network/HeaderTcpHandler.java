@@ -48,8 +48,8 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseab
     }
 
     @Override
-    public void process(@NotNull final Bytes in,
-                        @NotNull final Bytes out,
+    public void process(@NotNull final Bytes<?> in,
+                        @NotNull final Bytes<?> out,
                         @NotNull final T nc) {
         throwExceptionIfClosed();
 
@@ -80,7 +80,7 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseab
                 o = toSessionDetails(inWire);
             }
 
-            final TcpHandler handler = handlerFunction.apply(o);
+            final TcpHandler<T> handler = handlerFunction.apply(o);
 
             if (handler instanceof NetworkContextManager)
                 ((NetworkContextManager<T>) handler).nc(nc);

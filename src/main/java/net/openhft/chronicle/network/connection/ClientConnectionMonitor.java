@@ -18,7 +18,6 @@
 package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.wire.Marshallable;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.SocketAddress;

@@ -96,9 +96,16 @@ public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
 
         }
 
+/*
+        @Override
+        public void process(@NotNull Bytes<?> in, @NotNull Bytes<?> out, NetworkContext nc) {
+
+        }
+*/
+
         @Override
         public void close() {
-
+        // Do nothing
         }
 
         @Override

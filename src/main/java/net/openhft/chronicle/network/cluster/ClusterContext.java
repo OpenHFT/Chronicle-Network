@@ -95,7 +95,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     private long retryInterval = 1_000L;
     private String procPrefix;
 
-    public ClusterContext() {
+    protected ClusterContext() {
         defaults();
     }
 

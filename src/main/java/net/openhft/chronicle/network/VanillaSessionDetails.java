@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public class VanillaSessionDetails implements SessionDetailsProvider {
-    private final Map<Class, Object> infoMap = new LinkedHashMap<>();
+    private final Map<Class<?>, Object> infoMap = new LinkedHashMap<>();
     private String userId = "";
     private String securityToken = "";
     private String domain = "";
@@ -43,9 +43,6 @@ public class VanillaSessionDetails implements SessionDetailsProvider {
     private WireType wireType;
 
     private byte hostId;
-
-    public VanillaSessionDetails() {
-    }
 
     @NotNull
     public static VanillaSessionDetails of(String userId, String securityToken, String domain) {

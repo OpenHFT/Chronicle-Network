@@ -217,7 +217,7 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
         public boolean action() throws InvalidEventHandlerException {
 
             if (HeartbeatHandler.this.closable().isClosed())
-                throw new InvalidEventHandlerException("closed");
+                throw newClosedInvalidEventHandlerException();
 
             boolean hasHeartbeats = HeartbeatHandler.this.hasReceivedHeartbeat();
             boolean prev = HeartbeatHandler.this.hasHeartbeats.getAndSet(hasHeartbeats);
@@ -235,7 +235,7 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
 
                     HeartbeatHandler.this.close();
 
-                    throw new InvalidEventHandlerException("closed");
+                    throw newClosedInvalidEventHandlerException();
                 } else
                     connectionMonitor.onConnected(HeartbeatHandler.this.localIdentifier(),
                             HeartbeatHandler.this.remoteIdentifier(), HeartbeatHandler.this.nc().isAcceptor());
@@ -260,7 +260,7 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
         @Override
         public boolean action() throws InvalidEventHandlerException {
             if (HeartbeatHandler.this.isClosed())
-                throw new InvalidEventHandlerException("closed");
+                throw newClosedInvalidEventHandlerException();
             // we will only publish a heartbeat if the wire out publisher is empty
             WireOutPublisher wireOutPublisher = HeartbeatHandler.this.nc().wireOutPublisher();
             if (wireOutPublisher.isEmpty())
@@ -286,4 +286,10 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
             return "HeartbeatMessage{" + cid() + "}";
         }
     }
+
+    InvalidEventHandlerException newClosedInvalidEventHandlerException() {
+        return new InvalidEventHandlerException("closed");
+    }
+
+
 }

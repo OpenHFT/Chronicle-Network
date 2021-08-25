@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentSkipListMap;
 
-abstract public class Cluster<T extends ClusteredNetworkContext<T>, C extends ClusterContext<C, T>>
+public abstract class Cluster<T extends ClusteredNetworkContext<T>, C extends ClusterContext<C, T>>
         extends SimpleCloseable
         implements Marshallable {
 
@@ -37,7 +37,7 @@ abstract public class Cluster<T extends ClusteredNetworkContext<T>, C extends Cl
 
     private C context;
 
-    public Cluster() {
+    protected Cluster() {
         hostDetails = new ConcurrentSkipListMap<>();
     }
 

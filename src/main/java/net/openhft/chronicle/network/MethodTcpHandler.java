@@ -33,8 +33,10 @@ public class MethodTcpHandler<I, O, N extends NetworkContext<N>> extends WireTcp
 
     private final Supplier<I> implSupplier;
     private final Class<O> outClass;
+    // Todo: investigate why outSetter is never used.
     private final Consumer<O> outSetter;
     private MethodReader reader;
+    // Todo: investigate why output is never used.
     private O output;
 
     /**
@@ -80,6 +82,6 @@ public class MethodTcpHandler<I, O, N extends NetworkContext<N>> extends WireTcp
 
     @Override
     protected void onInitialize() {
-
+        // Do nothing
     }
 }

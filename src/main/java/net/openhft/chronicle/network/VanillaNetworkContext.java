@@ -80,12 +80,8 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
     }
 
     @Override
-    public void throwExceptionIfClosedInSetter() throws IllegalStateException {
-        super.throwExceptionIfClosedInSetter();
-    }
-
-    @Override
     public void onHandlerChanged(TcpHandler<T> handler) {
+        // Do nothing
     }
 
     /**
@@ -102,7 +98,7 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
     }
 
     /**
-     * @return {@code} true if its a server socket, {@code} false if its a client
+     * @return {@code} true if it is a server socket, {@code} false if it is a client
      */
     @Override
     public boolean isAcceptor() {

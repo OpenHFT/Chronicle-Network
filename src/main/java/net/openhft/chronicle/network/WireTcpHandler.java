@@ -101,7 +101,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
     }
 
     @Override
-    public void process(@NotNull final Bytes in, @NotNull final Bytes out, final T nc) {
+    public void process(@NotNull final Bytes<?> in, @NotNull final Bytes<?> out, final T nc) {
 
         if (isClosed())
             return;

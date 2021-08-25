@@ -34,5 +34,6 @@ public interface SocketConnectionNotifier<T extends NetworkContext> extends Mars
     void onConnected(String host, long port, T nc);
 
     default void onDisconnected(String host, long port) {
+        // Do nothing
     }
 }

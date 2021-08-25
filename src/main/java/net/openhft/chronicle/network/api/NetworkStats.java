@@ -34,7 +34,10 @@ public class NetworkStats extends SelfDescribingMarshallable {
     private long socketPollRate;
 
     private int localIdentifier;
-    private int p50, p90, p99, p99_9;
+    private int p50;
+    private int p90;
+    private int p99;
+    private int p99_9;
     private int remoteIdentifier;
 
     private boolean connected;

@@ -69,14 +69,6 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         wireType(wireType);
     }
 
-    private static String peekContents(@NotNull final DocumentContext dc) {
-        try {
-            return dc.wire().readingPeekYaml();
-        } catch (RuntimeException e) {
-            return "Failed to peek at contents due to: " + e.getMessage();
-        }
-    }
-
     public static WriteMarshallable uberHandler(int localIdentifier, int remoteIdentifier, WireType wireType) {
         return wire -> {
             try (final DocumentContext ignored = wire.writingDocument(true)) {

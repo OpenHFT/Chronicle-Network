@@ -55,9 +55,6 @@ public abstract class AbstractSubHandler<T extends NetworkContext<T>> implements
     }
 
     @Override
-    public abstract void onRead(@NotNull WireIn inWire, @NotNull WireOut outWire);
-
-    @Override
     public T nc() {
         return nc;
     }

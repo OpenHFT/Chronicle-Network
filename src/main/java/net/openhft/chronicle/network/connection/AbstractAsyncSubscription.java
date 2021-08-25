@@ -17,7 +17,6 @@
  */
 package net.openhft.chronicle.network.connection;
 
-import net.openhft.chronicle.core.util.Time;
 import net.openhft.chronicle.wire.WireOut;
 import org.jetbrains.annotations.NotNull;
 public abstract class AbstractAsyncSubscription implements AsyncSubscription {
@@ -28,14 +27,14 @@ public abstract class AbstractAsyncSubscription implements AsyncSubscription {
     private final String csp;
     private final String name;
 
-    public AbstractAsyncSubscription(@NotNull final TcpChannelHub hub, String csp, String name) {
+    protected AbstractAsyncSubscription(@NotNull final TcpChannelHub hub, String csp, String name) {
         tid = hub.nextUniqueTransaction(System.currentTimeMillis());
         this.hub = hub;
         this.csp = csp;
         this.name = name;
     }
 
-    public AbstractAsyncSubscription(@NotNull final TcpChannelHub hub, String csp, byte identifier, String name) {
+    protected AbstractAsyncSubscription(@NotNull final TcpChannelHub hub, String csp, byte identifier, String name) {
         this.tid = hub.nextUniqueTransaction(System.currentTimeMillis()) * identifier;
         this.hub = hub;
         this.csp = csp;

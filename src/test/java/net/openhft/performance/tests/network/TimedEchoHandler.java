@@ -49,7 +49,7 @@ class TimedEchoHandler<T extends NetworkContext<T>>
     }
 
     @Override
-    public void process(@NotNull final Bytes in, @NotNull final Bytes out, T nc) {
+    public void process(@NotNull final Bytes<?> in, @NotNull final Bytes<?> out, T nc) {
         if (in.readRemaining() == 0)
             return;
         long toWrite = Math.min(in.readRemaining(), out.writeRemaining());

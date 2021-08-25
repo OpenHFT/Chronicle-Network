@@ -164,7 +164,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
         return this;
     }
 
-    private transient final AtomicBoolean isClosed = new AtomicBoolean(false);
+    private final transient AtomicBoolean isClosed = new AtomicBoolean(false);
 
     @Override
     public void close() {

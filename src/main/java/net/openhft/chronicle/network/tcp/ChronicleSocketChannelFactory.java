@@ -11,7 +11,7 @@ import java.nio.channels.SocketChannel;
 
 public enum ChronicleSocketChannelFactory {
     ;
-    public static boolean FAST_JAVA8_IO = isFastJava8IO();
+    public static final boolean FAST_JAVA8_IO = isFastJava8IO();
 
     private static boolean isFastJava8IO() {
         boolean fastJava8IO = Jvm.getBoolean("fastJava8IO") && !Jvm.isJava9Plus() && OS.isLinux();

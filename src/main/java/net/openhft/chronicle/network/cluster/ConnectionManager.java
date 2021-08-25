@@ -31,11 +31,11 @@ import static java.util.Collections.newSetFromMap;
 public class ConnectionManager<T extends NetworkContext<T>> {
 
     private static final int EMPTY_SEQUENCE = -1;
-    private final Set<ConnectionListenerHolder> connectionListeners = newSetFromMap(new IdentityHashMap<>());
+    private final Set<ConnectionListenerHolder<?>> connectionListeners = newSetFromMap(new IdentityHashMap<>());
     private final AtomicInteger lastListenerAddedSequence = new AtomicInteger(EMPTY_SEQUENCE);
 
     public synchronized void addListener(@NotNull ConnectionListener<T> connectionListener) {
-        connectionListeners.add(new ConnectionListenerHolder(lastListenerAddedSequence.incrementAndGet(), connectionListener));
+        connectionListeners.add(new ConnectionListenerHolder<>(lastListenerAddedSequence.incrementAndGet(), connectionListener));
     }
 
     /**
@@ -78,7 +78,7 @@ public class ConnectionManager<T extends NetworkContext<T>> {
         connectionListeners.forEach(l -> {
             if (l.sequence > lowerSequenceLimit) {
                 try {
-                    l.connectionListener.onConnectionChange(nc, token.connected.get());
+                    ((ConnectionListenerHolder<T>)l).connectionListener.onConnectionChange(nc, token.connected.get());
                 } catch (IllegalStateException ignore) {
                     // this is already logged
                 }

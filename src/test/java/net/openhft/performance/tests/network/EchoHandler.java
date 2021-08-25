@@ -33,7 +33,7 @@ public class EchoHandler<T extends VanillaNetworkContext<T>> extends AbstractClo
     }
 
     @Override
-    public void process(@NotNull final Bytes in, @NotNull final Bytes out, T nc) {
+    public void process(@NotNull final Bytes<?> in, @NotNull final Bytes<?> out, T nc) {
 //        //  System.out.println(in.readRemaining());
         if (in.readRemaining() == 0)
             return;

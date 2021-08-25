@@ -107,10 +107,12 @@ public enum TCPRegistry {
     }
 
     /**
+     * Creates and returns a new ChronicleServerSocketChannel.
+     *
      * @param descriptions each string is the name to a reference of a host and port, or if correctly formed this example host and port are used
      *                     instead
-     * @return
-     * @throws IOException
+     * @return a new ChronicleServerSocketChannel
+     * @throws IOException if the socket cannot be created
      */
     public static ChronicleServerSocketChannel createServerSocketChannelFor(@NotNull String descriptions) throws IOException {
         return createServerSocketChannelFor(false, descriptions);

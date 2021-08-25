@@ -26,9 +26,6 @@ public class HostDetails extends SelfDescribingMarshallable {
     private int tcpBufferSize;
     private String connectUri;
 
-    public HostDetails() {
-    }
-
     public int tcpBufferSize() {
         return tcpBufferSize;
     }

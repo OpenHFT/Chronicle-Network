@@ -118,7 +118,7 @@ public abstract class CspTcpHandler<T extends NetworkContext<T>> extends WireTcp
 
                 try {
                     if (handler instanceof Registerable) {
-                        Registerable registerable = (Registerable) this.handler;
+                        final Registerable<SubHandler<T>> registerable = (Registerable<SubHandler<T>>) this.handler;
                         registry.put(registerable.registryKey(), this.handler);
                         registerable.registry(registry);
                     }
