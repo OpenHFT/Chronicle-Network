@@ -1021,7 +1021,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
         private final TLongObjectMap<Object> omap = hasAssert ? TCollections.synchronizedMap(new TLongObjectHashMap<>(8)) : null;
         @NotNull
-        private final ExecutorService service;
+        private transient final ExecutorService service;
         @NotNull
         private final ThreadLocal<Wire> syncInWireThreadLocal = CleaningThreadLocal.withCleanup(this::createWire, TcpChannelHub::releaseWire);
         private final Bytes<?> serverHeartBeatHandler = Bytes.elasticByteBuffer();
@@ -1034,7 +1034,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         @Nullable
         private volatile Throwable shutdownHere = null;
         private volatile boolean prepareToShutdown;
-        private volatile Thread readThread;
+        private volatile transient Thread readThread;
 
         TcpSocketConsumer() {
             if (debugEnabled)
