@@ -291,5 +291,4 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
         return new InvalidEventHandlerException("closed");
     }
 
-
 }
