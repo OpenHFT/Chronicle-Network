@@ -50,6 +50,9 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     @Nullable
     private ConnectionManager<T> connectionChangedNotifier;
 
+    // Used to round-robin which WritableSubHandler gets first chance to write to the buffer
+    private int writerOffset = 0;
+
     @UsedViaReflection
     private UberHandler(@NotNull final WireIn wire) {
         remoteIdentifier = wire.read("remoteIdentifier").int32();
@@ -259,17 +262,22 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     @SuppressWarnings("ForLoopReplaceableByForEach")
     protected void onWrite(@NotNull final WireOut outWire) {
         super.onWrite(outWire);
-        for (int i = 0; i < writers.size(); i++)
+        for (int i = 0; i < writers.size(); i++) {
+            int writerIndex = (i + writerOffset) % writers.size();
             try {
                 if (isClosing())
                     return;
-                final WritableSubHandler<T> w = writers.get(i);
+                final WritableSubHandler<T> w = writers.get(writerIndex);
                 if (w != null)
                     w.onWrite(outWire);
             } catch (Exception e) {
                 Jvm.error().on(getClass(), "onWrite:", e);
                 throw Jvm.rethrow(e);
             }
+        }
+        if (!writers.isEmpty()) {
+            writerOffset = (writerOffset + 1) % writers.size(); // protect against overflow
+        }
     }
 
     private void onMessageReceivedOrWritten() {
