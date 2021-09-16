@@ -30,10 +30,7 @@ import net.openhft.chronicle.network.RemoteConnector;
 import net.openhft.chronicle.network.ServerThreadingStrategy;
 import net.openhft.chronicle.network.TcpEventHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
-import net.openhft.chronicle.threads.BlockingEventLoop;
-import net.openhft.chronicle.threads.EventGroup;
-import net.openhft.chronicle.threads.Pauser;
-import net.openhft.chronicle.threads.PauserMode;
+import net.openhft.chronicle.threads.*;
 import net.openhft.chronicle.wire.SelfDescribingMarshallable;
 import net.openhft.chronicle.wire.WireIn;
 import net.openhft.chronicle.wire.WireType;
@@ -42,7 +39,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -384,7 +380,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
 
     protected void performStop() {
         Closeable.closeQuietly(acceptorEventHandler);
-        closeAndWaitForEventLoops(eventLoopsToStop());
+        EventLoops.stopAll(eventLoopsToStop());
     }
 
     /**
@@ -402,7 +398,9 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
                 acceptorEventHandler,
                 wireOutPublisherFactory,
                 networkContextFactory,
-                networkStatsListenerFactory);
+                networkStatsListenerFactory,
+                eventLoop,
+                acceptorLoop);
 
         closeables.clear();
         acceptorEventHandler = null;
@@ -411,24 +409,6 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
         networkStatsListenerFactory = null;
         eventLoop = null;
         acceptorLoop = null;
-    }
-
-    private void closeAndWaitForEventLoops(@NotNull List<EventLoop> eventLoops) {
-        eventLoops.stream()
-                .filter(Objects::nonNull)
-                .parallel()
-                .forEach(Closeable::closeQuietly);
-        eventLoops.stream()
-                .filter(Objects::nonNull)
-                .forEach(this::awaitTerminationQuietly);
-    }
-
-    private void awaitTerminationQuietly(@NotNull EventLoop eventLoop) {
-        try {
-            eventLoop.awaitTermination();
-        } catch (Exception e) {
-            Jvm.warn().on(ClusterContext.class, "Error waiting for event loop to terminate", e);
-        }
     }
 
     protected abstract String clusterNamePrefix();
