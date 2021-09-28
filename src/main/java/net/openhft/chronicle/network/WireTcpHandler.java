@@ -43,7 +43,6 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
     protected WireType wireType;
     long lastWritePosition = 0;
     private Wire inWire;
-    private boolean recreateWire;
     private WireOutPublisher publisher;
     private T nc;
     private boolean isAcceptor;
@@ -218,22 +217,13 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
     }
 
     protected void checkWires(final Bytes<?> in, Bytes<?> out, @NotNull final WireType wireType) {
-        if (recreateWire) {
-            recreateWire = false;
-            initialiseInWire(wireType, in);
-            initialiseOutWire(out, wireType);
-            return;
-        }
-
         if (inWire == null) {
             initialiseInWire(wireType, in);
-            recreateWire = false;
         }
 
         assert inWire.startUse();
         if (inWire.bytes() != in) {
             initialiseInWire(wireType, in);
-            recreateWire = false;
         }
         assert inWire.endUse();
 
@@ -245,7 +235,6 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
         }
         if (replace) {
             initialiseOutWire(out, wireType);
-            recreateWire = false;
         }
     }
 
