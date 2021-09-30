@@ -113,8 +113,8 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
 
         RCEventHandler(final String remoteHostPort,
                        final T nc,
-                       final EventLoop eventLoop,
-                       final InetSocketAddress address,
+                       @NotNull final EventLoop eventLoop,
+                       @NotNull final InetSocketAddress address,
                        final long retryInterval) {
             this.remoteHostPort = remoteHostPort;
             this.nc = nc;
