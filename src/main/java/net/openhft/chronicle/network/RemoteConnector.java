@@ -72,6 +72,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
         if (eventLoop instanceof ManagedCloseable)
             ((ManagedCloseable) eventLoop).throwExceptionIfClosed();
 
+        @NotNull
         final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
 
         @NotNull final RCEventHandler handler = new RCEventHandler(
