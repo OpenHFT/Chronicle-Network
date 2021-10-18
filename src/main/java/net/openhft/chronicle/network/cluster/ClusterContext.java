@@ -45,10 +45,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.lang.String.format;
-import static java.util.EnumSet.of;
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.core.threads.HandlerPriority.*;
-import static net.openhft.chronicle.threads.EventGroup.CONC_THREADS;
 
 public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends ClusteredNetworkContext<T>>
         extends SelfDescribingMarshallable
@@ -83,6 +81,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     private long heartbeatTimeoutMs = 40_000;
     private long heartbeatIntervalMs = 20_000;
     private Supplier<Pauser> pauserSupplier = DEFAULT_PAUSER_MODE;
+    private Supplier<Pauser> replicationPauserSupplier = null;
     private String affinityCPU;
     private WireType wireType;
     private byte localIdentifier;
@@ -170,8 +169,13 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
         if (el != null)
             return el;
 
-        return this.eventLoop = new EventGroup(true, pauserSupplier.get(), null, affinityCPU, clusterNamePrefix(), CONC_THREADS,
-                of(MEDIUM, TIMER, BLOCKING, REPLICATION, REPLICATION_TIMER));
+        return this.eventLoop = EventGroupBuilder.builder()
+                .withPauser(pauserSupplier.get())
+                .withReplicationPauser(replicationPauserSupplier != null ? replicationPauserSupplier.get() : null)
+                .withReplicationBinding(affinityCPU)
+                .withName(clusterNamePrefix())
+                .withPriorities(MEDIUM, TIMER, BLOCKING, REPLICATION, REPLICATION_TIMER)
+                .build();
     }
 
     @NotNull
@@ -288,6 +292,16 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
 
     public Supplier<Pauser> pauserSupplier() {
         return pauserSupplier;
+    }
+
+    @NotNull
+    public C replicationPauserSupplier(@NotNull Supplier<Pauser> replicationPauserSupplier) {
+        this.replicationPauserSupplier = replicationPauserSupplier;
+        return castThis();
+    }
+
+    public Supplier<Pauser> replicationPauserSupplier() {
+        return replicationPauserSupplier;
     }
 
     public String affinityCPU() {
