@@ -72,6 +72,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     private static final AtomicBoolean FIRST_HANDLER = new AtomicBoolean();
     private static final int DEFAULT_MAX_MESSAGE_SIZE = 1 << 30;
     public static boolean DISABLE_TCP_NODELAY = Jvm.getBoolean("disable.tcp_nodelay");
+    public static final boolean CREATE_IN_CONSTRUCTOR = Jvm.getBoolean("tcp.cic", true);
 
     static {
         if (DISABLE_TCP_NODELAY) System.out.println("tcpNoDelay disabled");
@@ -89,9 +90,9 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     @NotNull
     private final NetworkLog writeLog;
     @NotNull
-    private final Bytes<ByteBuffer> inBBB;
+    private Bytes<ByteBuffer> inBBB;
     @NotNull
-    private final Bytes<ByteBuffer> outBBB;
+    private Bytes<ByteBuffer> outBBB;
     private final TcpHandlerBias.BiasController bias;
 
     private final boolean nbWarningEnabled;
@@ -139,6 +140,15 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             Jvm.warn().on(getClass(), e);
         }
 
+        if (CREATE_IN_CONSTRUCTOR) createBuffers();
+        readLog = new NetworkLog(this.sc, "read");
+        writeLog = new NetworkLog(this.sc, "write");
+        nbWarningEnabled = Jvm.warn().isEnabled(getClass());
+        statusMonitorEventHandler = new StatusMonitorEventHandler(getClass());
+        disableThreadSafetyCheck(true);
+    }
+
+    private void createBuffers() {
         //We have to provide back pressure to restrict the buffer growing beyond,2GB because it reverts to
         // being Native bytes, we should also provide back pressure if we are not able to keep up
         inBBB = Bytes.elasticByteBuffer(TCP_BUFFER + OS.pageSize(), max(TCP_BUFFER + OS.pageSize(), DEFAULT_MAX_MESSAGE_SIZE));
@@ -146,14 +156,14 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
         // must be set after we take a slice();
         outBBB.underlyingObject().limit(0);
-        readLog = new NetworkLog(this.sc, "read");
-        writeLog = new NetworkLog(this.sc, "write");
-        nbWarningEnabled = Jvm.warn().isEnabled(getClass());
-        statusMonitorEventHandler = new StatusMonitorEventHandler(getClass());
-        disableThreadSafetyCheck(true);
 
         if (FIRST_HANDLER.compareAndSet(false, true))
             warmUp();
+    }
+
+    @Override
+    public void loopStarted() {
+        if (!CREATE_IN_CONSTRUCTOR) createBuffers();
     }
 
     @Override
