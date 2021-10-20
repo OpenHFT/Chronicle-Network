@@ -17,10 +17,15 @@
  */
 package net.openhft.performance.tests.network;
 
+import net.openhft.affinity.AffinityLock;
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.threads.EventLoop;
+import net.openhft.chronicle.core.util.Histogram;
 import net.openhft.chronicle.network.*;
+import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.connection.TcpChannelHub;
+import net.openhft.chronicle.network.connection.VanillaWireOutPublisher;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.threads.Pauser;
@@ -30,81 +35,120 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 
-import static net.openhft.performance.tests.network.LegacyHanderFactory.simpleTcpEventHandlerFactory;
+import static net.openhft.chronicle.wire.WireType.TEXT;
 
 public class PingPongWithMains {
 
+    private static final String serverBinding;
+    private static final String clientBinding1;
+    private static final String clientBinding2;
+    private static final int warmup;
+    private static final int iterations;
+    private static final int wbsize;
     public static final int SIZE_OF_SIZE = 4;
 
-    private final String serverHostPort = "localhost:8097"; // localhost:8080
+    private final String serverHostPort = "localhost:8097";
+
+    static {
+        Jvm.init();
+        serverBinding = System.getProperty("ping_pong.server", "any");
+        clientBinding1 = System.getProperty("ping_pong.client1", "any");
+        clientBinding2 = System.getProperty("ping_pong.client2", "any");
+        warmup = Integer.getInteger("ping_pong.warmup", 40_000);
+        iterations = Integer.getInteger("ping_pong.iterations", 400_000);
+        wbsize = Integer.getInteger("ping_pong.wbsize", 0);
+    }
 
     private static void testLatency(String desc, @NotNull Function<Bytes, Wire> wireWrapper, @NotNull ChronicleSocketChannel... sockets) throws IOException {
-        int tests = 40000;
-        @NotNull long[] times = new long[tests * sockets.length];
-        int count = 0;
-        ByteBuffer out = ByteBuffer.allocateDirect(64 * 1024);
-        Bytes outBytes = Bytes.wrapForWrite(out);
-        Wire outWire = wireWrapper.apply(outBytes);
+        final @NotNull Histogram[] histo;
+        final Wire outWire;
+        final Wire inWire;
+        final @NotNull TestData td;
+        final @NotNull TestData td2;
 
-        ByteBuffer in = ByteBuffer.allocateDirect(64 * 1024);
-        Bytes inBytes = Bytes.wrapForRead(in);
-        Wire inWire = wireWrapper.apply(inBytes);
-        @NotNull TestData td = new TestData();
-        @NotNull TestData td2 = new TestData();
-        for (int i = -12000; i < tests; i++) {
-            long now = System.nanoTime();
-            for (@NotNull ChronicleSocketChannel socket : sockets) {
-                out.clear();
-                outBytes.clear();
-                td.value3 = td.value2 = td.value1 = i;
-                try (DocumentContext ignored = outWire.writingDocument(false)) {
-                    td.write(outWire);
-                }
-                out.limit((int) outBytes.writePosition());
-                socket.write(out);
-                if (out.remaining() > 0)
-                    throw new AssertionError("Unable to write in one go.");
-            }
+        try (AffinityLock client1 = AffinityLock.acquireLock(clientBinding1)) {
+            // allocate buffers etc on CPU/NUMA region for clientBinding1
+            histo = new Histogram[sockets.length];
+            histo[0] = new Histogram();
 
-            for (@NotNull ChronicleSocketChannel socket : sockets) {
-                in.clear();
-                inBytes.clear();
-                while (true) {
-                    int read = socket.read(in);
-                    inBytes.readLimit(in.position());
-                    if (inBytes.readRemaining() >= SIZE_OF_SIZE) {
-                        int header = inBytes.readInt(0);
+            ByteBuffer out = ByteBuffer.allocateDirect(64 * 1024);
+            Bytes outBytes = Bytes.wrapForWrite(out);
+            outWire = wireWrapper.apply(outBytes);
 
-                        final int len = Wires.lengthOf(header);
-                        if (inBytes.readRemaining() >= len) {
-                            td2.read(inWire);
-                        }
-                        break;
+            ByteBuffer in = ByteBuffer.allocateDirect(64 * 1024);
+            Bytes inBytes = Bytes.wrapForRead(in);
+            inWire = wireWrapper.apply(inBytes);
+
+            td = new TestData();
+            td2 = new TestData();
+            Jvm.warn().on(PingPongWithMains.class, "Created buffers on core " + client1.cpuId());
+        }
+
+        try (AffinityLock client2 = AffinityLock.acquireLock(clientBinding2)) {
+            final Bytes workBuffer = Bytes.allocateDirect(wbsize);
+            Jvm.warn().on(PingPongWithMains.class, "Running test on " + client2.cpuId());
+            for (int i = -warmup; i < iterations; i++) {
+                long now = System.nanoTime();
+                for (@NotNull ChronicleSocketChannel socket : sockets) {
+                    Bytes<ByteBuffer> outBytes = (Bytes<ByteBuffer>) outWire.bytes();
+                    ByteBuffer out = outBytes.underlyingObject();
+                    out.clear();
+                    outBytes.clear();
+                    td.value3 = td.value2 = td.value1 = i;
+                    try (DocumentContext ignored = outWire.writingDocument(false)) {
+                        td.write(outWire);
                     }
-                    if (read < 0)
-                        throw new AssertionError("Unable to read in one go.");
+                    out.limit((int) outBytes.writePosition());
+                    socket.write(out);
+                    if (out.remaining() > 0)
+                        throw new AssertionError("Unable to write in one go.");
                 }
-                if (i >= 0)
-                    times[count++] = System.nanoTime() - now;
+
+                for (@NotNull ChronicleSocketChannel socket : sockets) {
+                    Bytes<ByteBuffer> inBytes = (Bytes<ByteBuffer>) inWire.bytes();
+                    ByteBuffer in = inBytes.underlyingObject();
+                    in.clear();
+                    inBytes.clear();
+                    while (true) {
+                        int read = socket.read(in);
+                        inBytes.readLimit(in.position());
+                        if (inBytes.readRemaining() >= SIZE_OF_SIZE) {
+                            int header = inBytes.readInt(0);
+
+                            final int len = Wires.lengthOf(header);
+                            if (inBytes.readRemaining() >= len) {
+                                td2.read(inWire);
+                            }
+                            break;
+                        }
+                        if (read < 0)
+                            throw new AssertionError("Unable to read in one go.");
+                    }
+                    if (i >= 0)
+                        histo[0].sampleNanos(System.nanoTime() - now);
+                }
+
+                doSomeMemoryWork(workBuffer);
             }
         }
         inWire.bytes().releaseLast();
         outWire.bytes().releaseLast();
 
-        Arrays.sort(times);
-        System.out.printf("%s: Loop back echo latency was %.1f/%.1f %,d/%,d %,d/%d us for 50/90 99/99.9 99.99/worst %%tile%n",
+        System.out.printf("%s: Loop back echo latency was %s%n",
                 desc,
-                times[times.length / 2] / 1e3,
-                times[times.length * 9 / 10] / 1e3,
-                times[times.length - times.length / 100] / 1000,
-                times[times.length - times.length / 1000] / 1000,
-                times[times.length - times.length / 10000] / 1000,
-                times[times.length - 1] / 1000
+                histo[0].toMicrosFormat()
         );
+    }
+
+    private static void doSomeMemoryWork(Bytes workBuffer) {
+        for (int ii = 0; ii < workBuffer.capacity() / 4; ii += 4)
+            workBuffer.writeInt(ii, ii);
+        for (int ii = 0; ii < workBuffer.capacity() / 4; ii += 4)
+            if (ii != workBuffer.readInt(ii))
+                throw new IllegalStateException();
     }
 
     public static void main(String[] args) throws IOException {
@@ -131,7 +175,8 @@ public class PingPongWithMains {
     }
 
     public void testServer() throws IOException {
-        @NotNull EventLoop eg = EventGroup.builder().withPauser(Pauser.busy()).withBinding("any").build();
+        Jvm.warn().on(PingPongWithMains.class, "Running server on " + serverBinding + " with CIC: " + TcpEventHandler.CREATE_IN_CONSTRUCTOR);
+        @NotNull EventLoop eg = EventGroup.builder().withPauser(Pauser.busy()).withBinding(serverBinding).build();
 
         eg.start();
         TCPRegistry.createServerSocketChannelFor(serverHostPort);
@@ -143,22 +188,30 @@ public class PingPongWithMains {
 
     }
 
+    private <T extends NetworkContext<T>> Function<T, TcpEventHandler<T>> simpleTcpEventHandlerFactory(@NotNull final Function<T, TcpHandler<T>> defaultHandedFactory, final WireType text) {
+        return (networkContext) -> {
+
+            networkContext.wireOutPublisher(new VanillaWireOutPublisher(TEXT));
+            @NotNull final TcpEventHandler<T> handler = new TcpEventHandler<>(networkContext);
+            handler.tcpHandler(new WireTypeSniffingTcpHandler<>(handler,
+                    defaultHandedFactory));
+            return handler;
+
+        };
+    }
+
     static class EchoRequestHandler extends WireTcpHandler {
 
         private final TestData td = new TestData();
 
         public EchoRequestHandler(NetworkContext networkContext) {
-
         }
 
         @Override
         protected void onRead(@NotNull DocumentContext in, @NotNull WireOut out) {
-
             Wire wire = in.wire();
-            //          System.out.println(wire);
             td.read(wire);
             td.write(outWire);
-
         }
 
         @Override
