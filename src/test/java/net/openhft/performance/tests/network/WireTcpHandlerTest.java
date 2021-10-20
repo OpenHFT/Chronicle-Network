@@ -143,7 +143,7 @@ public class WireTcpHandlerTest extends NetworkTestCommon {
 // TODO FIX
         AbstractReferenceCounted.disableReferenceTracing();
 
-        try (@NotNull EventLoop eg = new EventGroup(true)) {
+        try (@NotNull EventLoop eg = EventGroup.builder().build()) {
             eg.start();
             TCPRegistry.createServerSocketChannelFor(desc);
             @NotNull AcceptorEventHandler eah = new AcceptorEventHandler(desc,

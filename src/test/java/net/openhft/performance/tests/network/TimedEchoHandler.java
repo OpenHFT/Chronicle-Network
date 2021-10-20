@@ -39,7 +39,7 @@ class TimedEchoHandler<T extends NetworkContext<T>>
     }
 
     public static <T extends NetworkContext<T>> void main(String[] args) throws IOException {
-        @NotNull EventLoop eg = new EventGroup(false);
+        @NotNull EventLoop eg = EventGroup.builder().withDaemon(false).build();
         eg.start();
         @NotNull AcceptorEventHandler<T> eah = new AcceptorEventHandler<>("*:" + EchoClientMain.PORT,
                 LegacyHanderFactory.legacyTcpEventHandlerFactory(TimedEchoHandler::new),

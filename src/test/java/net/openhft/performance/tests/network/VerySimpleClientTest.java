@@ -77,7 +77,7 @@ public class VerySimpleClientTest extends NetworkTestCommon {
     public void setUp() throws IOException {
         @NotNull String desc = "host.port";
         TCPRegistry.createServerSocketChannelFor(desc);
-        eg = new EventGroup(true);
+        eg = EventGroup.builder().build();
         eg.start();
         expectedMessage = "<my message>";
         createServer(desc, eg);

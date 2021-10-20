@@ -48,8 +48,8 @@ import static org.junit.Assert.assertTrue;
 public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
 
     private static final boolean DEBUG = Jvm.getBoolean("NonClusteredSslIntegrationTest.debug");
-    private final EventGroup client = new EventGroup(true, Pauser.millis(1), false, "client");
-    private final EventGroup server = new EventGroup(true, Pauser.millis(1), false, "server");
+    private final EventGroup client = EventGroup.builder().withPauser(Pauser.millis(1)).withName("client").build();
+    private final EventGroup server = EventGroup.builder().withPauser(Pauser.millis(1)).withName("server").build();
     private final CountingTcpHandler clientAcceptor = new CountingTcpHandler("client-acceptor");
     private final CountingTcpHandler serverAcceptor = new CountingTcpHandler("server-acceptor");
     private final CountingTcpHandler clientInitiator = new CountingTcpHandler("client-initiator");
