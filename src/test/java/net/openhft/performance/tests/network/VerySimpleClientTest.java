@@ -87,7 +87,7 @@ public class VerySimpleClientTest extends NetworkTestCommon {
 
     @Override
     protected void preAfter() {
-        Closeable.closeQuietly(sc, eg);
+        Closeable.closeQuietly(sc, eg, client);
         TcpChannelHub.closeAllHubs();
         inWire.bytes().releaseLast();
         outWire.bytes().releaseLast();
@@ -95,10 +95,6 @@ public class VerySimpleClientTest extends NetworkTestCommon {
 
     @Test
     public void test() throws IOException {
-        expectException("Reference tracing disabled");
-// TODO FIX
-        AbstractReferenceCounted.disableReferenceTracing();
-
         // create the message to send§
         final long tid = 0;
         outWire.clear();

@@ -18,7 +18,6 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.core.io.AbstractReferenceCounted;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.network.AcceptorEventHandler;
@@ -52,11 +51,6 @@ public class SimpleServerAndClientTest extends NetworkTestCommon {
     @Ignore("https://github.com/OpenHFT/Chronicle-Network/issues/133")
     @Test
     public void test() throws IOException {
-//        assert TCP_USE_PADDING;
-        // TODO FIX
-        AbstractReferenceCounted.disableReferenceTracing();
-        expectException("Reference tracing disabled");
-
         YamlLogging.setAll(true);
 
         for (; ; ) {
