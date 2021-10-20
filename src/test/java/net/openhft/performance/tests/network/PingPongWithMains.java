@@ -131,7 +131,7 @@ public class PingPongWithMains {
     }
 
     public void testServer() throws IOException {
-        @NotNull EventLoop eg = new EventGroup(true, Pauser.busy(), true);
+        @NotNull EventLoop eg = EventGroup.builder().withPauser(Pauser.busy()).withBinding("any").build();
 
         eg.start();
         TCPRegistry.createServerSocketChannelFor(serverHostPort);

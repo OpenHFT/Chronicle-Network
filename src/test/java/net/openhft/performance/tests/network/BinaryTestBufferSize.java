@@ -67,7 +67,7 @@ public class BinaryTestBufferSize {
     @Before
     public void setUp() throws IOException {
         TCPRegistry.createServerSocketChannelFor(desc);
-        eg = new EventGroup(true);
+        eg = EventGroup.builder().build();
         eg.start();
         createServer(desc, eg);
     }

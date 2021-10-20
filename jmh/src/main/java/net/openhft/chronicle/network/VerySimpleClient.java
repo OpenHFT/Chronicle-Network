@@ -100,7 +100,7 @@ public class VerySimpleClient {
     public void setUp() throws Exception {
         String desc = "host.port";
         TCPRegistry.createServerSocketChannelFor(desc);
-        eg = new EventGroup(true);
+        eg = EventGroup.builder().build();
         eg.start();
         expectedMessage = "<my message>";
         createServer(desc, eg);

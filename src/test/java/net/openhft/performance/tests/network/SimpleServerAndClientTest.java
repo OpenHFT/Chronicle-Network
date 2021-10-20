@@ -67,7 +67,7 @@ public class SimpleServerAndClientTest extends NetworkTestCommon {
 
             Bytes<ByteBuffer> bytes = Bytes.elasticByteBuffer();
             // we use an event loop rather than lots of threads
-            try (@NotNull EventLoop eg = new EventGroup(true)) {
+            try (@NotNull EventLoop eg = EventGroup.builder().build()) {
                 eg.start();
 
                 // an example message that we are going to send from the server to the client and back
