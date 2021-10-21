@@ -48,6 +48,7 @@ public class PingPongWithMains {
     private static final int warmup;
     private static final int iterations;
     private static final int wbsize;
+    private static final int payload;
     public static final int SIZE_OF_SIZE = 4;
 
     private final String serverHostPort = "localhost:8097";
@@ -60,6 +61,7 @@ public class PingPongWithMains {
         warmup = Integer.getInteger("ping_pong.warmup", 40_000);
         iterations = Integer.getInteger("ping_pong.iterations", 400_000);
         wbsize = Integer.getInteger("ping_pong.wbsize", 0);
+        payload = Integer.getInteger("ping_pong.payload", 16 << 10); // 32 blows up!!
     }
 
     private static void testLatency(String desc, @NotNull Function<Bytes, Wire> wireWrapper, @NotNull ChronicleSocketChannel... sockets) throws IOException {
@@ -83,6 +85,7 @@ public class PingPongWithMains {
             inWire = wireWrapper.apply(inBytes);
 
             td = new TestData();
+            td.payload.write(new byte[payload]);
             td2 = new TestData();
             Jvm.warn().on(PingPongWithMains.class, "Created buffers on core " + client1.cpuId());
         }
@@ -121,6 +124,8 @@ public class PingPongWithMains {
                             final int len = Wires.lengthOf(header);
                             if (inBytes.readRemaining() >= len) {
                                 td2.read(inWire);
+                                if (td2.payload.length() != payload)
+                                    throw new IllegalStateException();
                             }
                             break;
                         }

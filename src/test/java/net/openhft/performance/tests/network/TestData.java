@@ -17,6 +17,7 @@
  */
 package net.openhft.performance.tests.network;
 
+import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.wire.WireIn;
 import net.openhft.chronicle.wire.WireKey;
 import net.openhft.chronicle.wire.WireOut;
@@ -30,6 +31,7 @@ class TestData implements DoubleConsumer, LongConsumer, IntConsumer {
     int value1;
     long value2;
     double value3;
+    Bytes payload = Bytes.elasticByteBuffer();
 
     public TestData() {
     }
@@ -37,13 +39,15 @@ class TestData implements DoubleConsumer, LongConsumer, IntConsumer {
     public void write(@NotNull WireOut wire) {
         wire.write(Field.key1).int32(value1)
                 .write(Field.key2).int64(value2)
-                .write(Field.key3).float64(value3);
+                .write(Field.key3).float64(value3)
+                .write(Field.key4).bytes(payload);
     }
 
     public void read(@NotNull WireIn wire) {
         wire.read(Field.key1).int32(this, (o, i) -> value1 = i)
                 .read(Field.key2).int64(this, (o, i) -> value2 = i)
-                .read(Field.key3).float64(this, (o, i) -> value3 = i);
+                .read(Field.key3).float64(this, (o, i) -> value3 = i)
+                .read(Field.key4).bytes(payload);
     }
 
     @Override
@@ -60,6 +64,6 @@ class TestData implements DoubleConsumer, LongConsumer, IntConsumer {
     }
 
     enum Field implements WireKey {
-        key1, key2, key3
+        key1, key2, key3, key4
     }
 }

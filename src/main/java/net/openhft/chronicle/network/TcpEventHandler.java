@@ -149,7 +149,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     }
 
     private void createBuffers() {
-        //We have to provide back pressure to restrict the buffer growing beyond,2GB because it reverts to
+        // We have to provide back pressure to restrict the buffer growing beyond,2GB because it reverts to
         // being Native bytes, we should also provide back pressure if we are not able to keep up
         inBBB = Bytes.elasticByteBuffer(TCP_BUFFER + OS.pageSize(), max(TCP_BUFFER + OS.pageSize(), DEFAULT_MAX_MESSAGE_SIZE));
         outBBB = Bytes.elasticByteBuffer(TCP_BUFFER, max(TCP_BUFFER, DEFAULT_MAX_MESSAGE_SIZE));
