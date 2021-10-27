@@ -18,10 +18,12 @@
 package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.network.ConnectionStrategy;
 import net.openhft.chronicle.network.VanillaClientConnectionMonitor;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.wire.SelfDescribingMarshallable;
+import net.openhft.chronicle.wire.WireIn;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,13 +60,38 @@ import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
  * --i.      Connection attempt no 3 with DR2:  failed   implies:   Attempt 3 finished. Fatal Failure is raised
  */
 public class FatalFailureConnectionStrategy extends SelfDescribingMarshallable implements ConnectionStrategy {
-
     private static final long PAUSE = TimeUnit.MILLISECONDS.toNanos(300);
+
     private final int attempts;
     private final boolean blocking;
-    private int tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
-    private boolean hasSentFatalFailure;
+    private int tcpBufferSize;
     private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
+    private transient AtomicBoolean isClosed;
+    private transient boolean hasSentFatalFailure;
+
+    /**
+     * @param attempts the number of attempts before a onFatalFailure() reported
+     */
+    public FatalFailureConnectionStrategy(int attempts, boolean blocking) {
+        this.attempts = attempts;
+        this.blocking = blocking;
+
+        init();
+    }
+
+    /**
+     * Initializes missing optional and transient fields to default values.
+     */
+    private void init() {
+        if (tcpBufferSize == 0)
+            tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
+
+        if (isClosed == null)
+            isClosed = new AtomicBoolean(false);
+
+        if (clientConnectionMonitor == null)
+            clientConnectionMonitor = new VanillaClientConnectionMonitor();
+    }
 
     @Override
     public ClientConnectionMonitor clientConnectionMonitor() {
@@ -74,14 +101,6 @@ public class FatalFailureConnectionStrategy extends SelfDescribingMarshallable i
     public FatalFailureConnectionStrategy clientConnectionMonitor(ClientConnectionMonitor fatalFailureMonitor) {
         this.clientConnectionMonitor = fatalFailureMonitor;
         return this;
-    }
-
-    /**
-     * @param attempts the number of attempts before a onFatalFailure() reported
-     */
-    public FatalFailureConnectionStrategy(int attempts, boolean blocking) {
-        this.attempts = attempts;
-        this.blocking = blocking;
     }
 
     @Nullable
@@ -162,8 +181,6 @@ public class FatalFailureConnectionStrategy extends SelfDescribingMarshallable i
         }
     }
 
-    private final transient AtomicBoolean isClosed = new AtomicBoolean(false);
-
     @Override
     public void close() {
         isClosed.set(true);
@@ -178,5 +195,11 @@ public class FatalFailureConnectionStrategy extends SelfDescribingMarshallable i
     public FatalFailureConnectionStrategy open() {
         isClosed.set(false);
         return this;
+    }
+
+    @Override
+    public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
+        super.readMarshallable(wire);
+        init();
     }
 }
