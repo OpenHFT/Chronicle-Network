@@ -74,7 +74,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     public static boolean DISABLE_TCP_NODELAY = Jvm.getBoolean("disable.tcp_nodelay");
 
     static {
-        if (DISABLE_TCP_NODELAY) System.out.println("tcpNoDelay disabled");
+        if (DISABLE_TCP_NODELAY) Jvm.startup().on(TcpEventHandler.class, "tcpNoDelay disabled");
     }
 
     private TcpEventHandler.SocketReader reader = new DefaultSocketReader();
@@ -334,7 +334,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     }
 
     public void warmUp() {
-        // System.out.println(TcpEventHandler.class.getSimpleName() + " - Warming up...");
+        Jvm.debug().on(TcpEventHandler.class, "Warming up...");
         final int runs = 12000;
         long beginNs = System.nanoTime();
         for (int i = 0; i < runs; i++) {
@@ -343,7 +343,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             clearBuffer();
         }
         long elapsedNs = System.nanoTime() - beginNs;
-        // System.out.println(TcpEventHandler.class.getSimpleName() + " - ... warmed up - took " + (elapsedNs / runs / 1e3) + " us avg");
+        Jvm.debug().on(TcpEventHandler.class, "... warmed up - took " + (elapsedNs / runs / 1e3) + " us avg");
     }
 
     private void checkBufSize(final int bufSize, final String name) {

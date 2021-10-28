@@ -229,7 +229,7 @@ public enum TCPRegistry {
     }
 
     public static void dumpAllSocketChannels() {
-        lookupTable().forEach((s, inetSocketAddress) -> System.out.println(s + ": " + inetSocketAddress.toString()));
+        lookupTable().forEach((s, inetSocketAddress) -> Jvm.startup().on(TCPRegistry.class, s + ": " + inetSocketAddress.toString()));
     }
 
     public static void assertAllServersStopped(final long timeout, final TimeUnit unit) {

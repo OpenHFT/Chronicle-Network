@@ -49,7 +49,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
 
     private static void logYaml(@NotNull final DocumentContext dc) {
         try {
-            System.out.println(
+            Jvm.startup().on(WireTcpHandler.class,
                     "Server Reads:\n" +
                             Wires.fromSizePrefixedBlobs(dc));
 
@@ -62,7 +62,7 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
     private static void logYaml(@NotNull final WireOut outWire) {
         if (YamlLogging.showServerWrites())
             try {
-                System.out.println(
+                Jvm.startup().on(WireTcpHandler.class,
                         "Server Sends:\n" +
                                 Wires.fromSizePrefixedBlobs((Wire) outWire));
 
@@ -127,9 +127,9 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
             if (YamlLogging.showServerWrites() && remaining >= 4) {
                 int length = Wires.lengthOf(bytes.peekVolatileInt());
                 if (length <= remaining)
-                    System.out.println("sending from WTH: " + Wires.fromSizePrefixedBlobs(outWire));
+                    Jvm.startup().on(WireTcpHandler.class, "sending from WTH: " + Wires.fromSizePrefixedBlobs(outWire));
                 else
-                    System.out.println("send remaining from WTH: " + remaining);
+                    Jvm.startup().on(WireTcpHandler.class, "send remaining from WTH: " + remaining);
             }
             onWrite(outWire);
         }

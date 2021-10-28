@@ -226,18 +226,18 @@ public final class TcpChannelHub extends AbstractCloseable {
         hubs.clear();
     }
 
-     static void logToStandardOutMessageReceived(@NotNull final Wire wire) {
-         @NotNull final Bytes<?> bytes = wire.bytes();
+    static void logToStandardOutMessageReceived(@NotNull final Wire wire) {
+        @NotNull final Bytes<?> bytes = wire.bytes();
 
-         if (!YamlLogging.showClientReads())
-             return;
+        if (!YamlLogging.showClientReads())
+            return;
 
-         final long position = bytes.writePosition();
-         final long limit = bytes.writeLimit();
-         try {
-             try {
+        final long position = bytes.writePosition();
+        final long limit = bytes.writeLimit();
+        try {
+            try {
 
-                System.out.println(
+                Jvm.startup().on(TcpChannelHub.class,
                         "receives:\n" +
                                 Wires.fromSizePrefixedBlobs(wire));
                 YamlLogging.title = "";
@@ -260,7 +260,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         try {
             try {
 
-                System.out.println(
+                Jvm.startup().on(TcpChannelHub.class,
                         "\nreceives IN ERROR:\n" +
                                 Wires.fromSizePrefixedBlobs(wire));
                 YamlLogging.title = "";
@@ -654,7 +654,7 @@ public final class TcpChannelHub extends AbstractCloseable {
     private void writeSocket1(@NotNull final WireOut outWire, @Nullable final ChronicleSocketChannel clientChannel) throws IOException {
 
         if (YamlLogging.showClientWrites())
-            System.out.println("sending from TCH: " + Wires.fromSizePrefixedBlobs((Wire) outWire));
+            Jvm.startup().on(TcpChannelHub.class, "sending from TCH: " + Wires.fromSizePrefixedBlobs((Wire) outWire));
 
         if (clientChannel == null) {
             Jvm.debug().on(TcpChannelHub.class,
