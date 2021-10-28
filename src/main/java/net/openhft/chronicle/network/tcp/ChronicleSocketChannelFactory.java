@@ -15,7 +15,7 @@ public enum ChronicleSocketChannelFactory {
 
     private static boolean isFastJava8IO() {
         boolean fastJava8IO = Jvm.getBoolean("fastJava8IO") && !Jvm.isJava9Plus() && OS.isLinux();
-        if (fastJava8IO) System.out.println("FastJava8IO: enabled");
+        if (fastJava8IO) Jvm.startup().on(ChronicleSocketChannelFactory.class, "FastJava8IO: enabled");
         return fastJava8IO;
     }
 
