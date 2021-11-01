@@ -12,8 +12,6 @@ image:https://img.shields.io/github/license/OpenHFT/Chronicle-Network[GitHub]
 image:https://img.shields.io/badge/release%20notes-subscribe-brightgreen[link="https://chronicle.software/release-notes/"]
 image:https://sonarcloud.io/api/project_badges/measure?project=OpenHFT_Chronicle-Network&metric=alert_status[link="https://sonarcloud.io/dashboard?id=OpenHFT_Chronicle-Network"]
 
-image::images/Network_line.png[]
-
 toc::[]
 
 == About
