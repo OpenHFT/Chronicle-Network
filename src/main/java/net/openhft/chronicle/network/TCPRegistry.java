@@ -147,9 +147,7 @@ public enum TCPRegistry {
         ChronicleServerSocketChannel ssc = isNative ? ChronicleServerSocketFactory.openNative() : ChronicleServerSocketFactory.open(description);
         ssc.socket().setReuseAddress(true);
         ssc.bind(address);
-
         assert ssc.isOpen();
-
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.put(description, ssc);
         lookupTable().put(description, (InetSocketAddress) ssc.socket().getLocalSocketAddress());
         return ssc;
