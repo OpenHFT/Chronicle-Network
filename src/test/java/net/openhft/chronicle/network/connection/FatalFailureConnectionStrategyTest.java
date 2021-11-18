@@ -17,6 +17,7 @@
  */
 package net.openhft.chronicle.network.connection;
 
+import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.wire.Marshallable;
 import org.junit.Assert;
 import org.junit.Test;
@@ -27,20 +28,21 @@ import org.junit.Test;
 public class FatalFailureConnectionStrategyTest {
     @Test
     public void testFromYaml() {
+        TCPRegistry.reset();
         final FatalFailureConnectionStrategy strategy = new FatalFailureConnectionStrategy(3, false);
 
         final FatalFailureConnectionStrategy strategyFromYaml = Marshallable.fromString(
-                "!net.openhft.chronicle.network.connection.FatalFailureConnectionStrategy {\n" +
+                "!FatalFailureConnectionStrategy {\n" +
                         "  attempts: 3,\n" +
                         "  blocking: false\n" +
                         "}");
 
         Assert.assertNotNull(strategyFromYaml);
 
-        final String expectedToString = "!net.openhft.chronicle.network.connection.FatalFailureConnectionStrategy {\n" +
+        final String expectedToString = "!FatalFailureConnectionStrategy {\n" +
                 "  attempts: 3,\n" +
                 "  tcpBufferSize: " + TcpChannelHub.TCP_BUFFER + ",\n" +
-                "  clientConnectionMonitor: !net.openhft.chronicle.network.VanillaClientConnectionMonitor {\n" +
+                "  clientConnectionMonitor: !VanillaClientConnectionMonitor {\n" +
                 "  }\n" +
                 "}\n";
 
