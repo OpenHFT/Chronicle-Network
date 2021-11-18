@@ -39,7 +39,6 @@ public class FatalFailureConnectionStrategyTest {
 
         final String expectedToString = "!net.openhft.chronicle.network.connection.FatalFailureConnectionStrategy {\n" +
                 "  attempts: 3,\n" +
-                "  blocking: false,\n" +
                 "  tcpBufferSize: " + TcpChannelHub.TCP_BUFFER + ",\n" +
                 "  clientConnectionMonitor: !net.openhft.chronicle.network.VanillaClientConnectionMonitor {\n" +
                 "  }\n" +
