@@ -1,13 +1,14 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.network.connection.ClientConnectionMonitor;
+import net.openhft.chronicle.wire.AbstractMarshallableCfg;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.SocketAddress;
 
 import static net.openhft.chronicle.core.Jvm.debug;
 
-public class VanillaClientConnectionMonitor implements ClientConnectionMonitor {
+public class VanillaClientConnectionMonitor extends AbstractMarshallableCfg implements ClientConnectionMonitor {
 
     @Override
     public void onConnected(String name, @Nullable SocketAddress socketAddress) {

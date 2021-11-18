@@ -42,11 +42,11 @@ public class AlwaysStartOnPrimaryConnectionStrategyTest extends NetworkTestCommo
 
     @Test
     public void test() {
-
+        TCPRegistry.reset();
         final AlwaysStartOnPrimaryConnectionStrategy alwaysStartOnPrimaryConnectionStrategy = new AlwaysStartOnPrimaryConnectionStrategy();
         JSONWire jsonWire = new JSONWire().useTypes(true);
         jsonWire.getValueOut().object(alwaysStartOnPrimaryConnectionStrategy);
-        Assert.assertEquals("{\"@AlwaysStartOnPrimaryConnectionStrategy\":{\"clientConnectionMonitor\":{\"@net.openhft.chronicle.network.VanillaClientConnectionMonitor\":{}}  }}", jsonWire.bytes().toString());
+        Assert.assertEquals("{\"@AlwaysStartOnPrimaryConnectionStrategy\":{}}", jsonWire.bytes().toString());
 
     }
 
