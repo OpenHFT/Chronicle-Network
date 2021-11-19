@@ -11,6 +11,7 @@ import net.openhft.chronicle.network.cluster.AbstractSubHandler;
 import net.openhft.chronicle.network.cluster.Cluster;
 import net.openhft.chronicle.network.cluster.HostDetails;
 import net.openhft.chronicle.network.cluster.VanillaClusteredNetworkContext;
+import net.openhft.chronicle.network.cluster.handlers.RejectedHandlerException;
 import net.openhft.chronicle.network.cluster.handlers.UberHandler;
 import net.openhft.chronicle.network.connection.CoreFields;
 import net.openhft.chronicle.network.connection.VanillaWireOutPublisher;
@@ -51,6 +52,8 @@ public class UberHandlerTest extends NetworkTestCommon {
     private static final List<Long> MESSAGES_RECEIVED_CIDS = new ArrayList<>();
     private static final AtomicInteger SENDERS_INITIALIZED = new AtomicInteger();
     private static final Map<Long, Integer> COUNTERS_PER_CID = new ConcurrentHashMap<>();
+    private static final AtomicBoolean REJECTED_HANDLER_ONREAD_CALLED = new AtomicBoolean(false);
+    private static final AtomicBoolean REJECTED_HANDLER_ONWRITE_CALLED = new AtomicBoolean(false);
 
     @Before
     public void before() {
@@ -237,6 +240,92 @@ public class UberHandlerTest extends NetworkTestCommon {
         }
     }
 
+    @Test
+    public void handlersThatRejectAreRemovedFromReadAndWrite() throws IOException {
+        TCPRegistry.createServerSocketChannelFor("initiator", "acceptor");
+        HostDetails initiatorHost = new HostDetails().hostId(2).connectUri("initiator");
+        HostDetails acceptorHost = new HostDetails().hostId(1).connectUri("acceptor");
+
+        try (MyClusterContext acceptorCtx = clusterContext(acceptorHost, initiatorHost);
+             MyClusterContext initiatorCtx = clusterContext(initiatorHost, acceptorHost)) {
+
+            acceptorCtx.cluster().start(acceptorHost.hostId());
+            initiatorCtx.cluster().start(initiatorHost.hostId());
+
+            initiatorCtx.connectionManager(acceptorHost.hostId()).addListener((nc, isConnected) -> {
+                if (isConnected) {
+                    // This handler should reject in onInitialize
+                    expectException("Rejected in onInitialize");
+                    nc.wireOutPublisher().publish(w ->
+                            w.writeDocument(true, d -> sendHandler(d, FIRST_CID, new RejectingOnInitializeHandler())));
+                    expectException("handler == null, check that the Csp/Cid has been sent");
+                    nc.wireOutPublisher().publish(w ->
+                            w.writeDocument(false, d -> sendMessageToHandler(d, FIRST_CID)));
+
+                    // This handler should reject in onRead
+                    nc.wireOutPublisher().publish(w ->
+                            w.writeDocument(true, d -> sendHandler(d, FIRST_CID + 1, new RejectingOnReadHandler())));
+                    nc.wireOutPublisher().publish(w ->
+                            w.writeDocument(false, d -> sendMessageToHandler(d, FIRST_CID + 1)));
+                }
+            });
+
+            long startTime = System.currentTimeMillis();
+            while (System.currentTimeMillis() - startTime < 2_000 && !Thread.currentThread().isInterrupted()) {
+                assertFalse("onWrite was called after a handler threw a RejectedHandler exception", REJECTED_HANDLER_ONWRITE_CALLED.get());
+                assertFalse("onRead was called after a handler threw a RejectedHandler exception", REJECTED_HANDLER_ONREAD_CALLED.get());
+            }
+            RUNNING.set(false);
+        }
+    }
+
+    private static class RejectingOnInitializeHandler extends AbstractSubHandler<MyClusteredNetworkContext>
+            implements WritableSubHandler<MyClusteredNetworkContext>, Marshallable {
+
+        @Override
+        public void onRead(@NotNull WireIn inWire, @NotNull WireOut outWire) {
+            REJECTED_HANDLER_ONREAD_CALLED.set(true);
+        }
+
+        @Override
+        public void onInitialize(WireOut outWire) throws RejectedExecutionException {
+            throw new RejectedExecutionException("Rejected in onInitialize");
+        }
+
+        @Override
+        public void onWrite(WireOut outWire) {
+            REJECTED_HANDLER_ONWRITE_CALLED.set(true);
+        }
+    }
+
+    private static class RejectingOnReadHandler extends AbstractSubHandler<MyClusteredNetworkContext>
+            implements WritableSubHandler<MyClusteredNetworkContext>, Marshallable {
+
+        boolean hasRejected = false;
+
+        @Override
+        public void onRead(@NotNull WireIn inWire, @NotNull WireOut outWire) {
+            if (!hasRejected) {
+                hasRejected = true;
+                throw new RejectedHandlerException("Rejected in onRead");
+            } else {
+                REJECTED_HANDLER_ONREAD_CALLED.set(true);
+            }
+        }
+
+        @Override
+        public void onInitialize(WireOut outWire) throws RejectedExecutionException {
+            // Do nothing
+        }
+
+        @Override
+        public void onWrite(WireOut outWire) {
+            if (hasRejected) {
+                REJECTED_HANDLER_ONWRITE_CALLED.set(true);
+            }
+        }
+    }
+
     private boolean messagesWereReceivedInRoundRobinOrder() {
         long offset = MESSAGES_RECEIVED_CIDS.get(0) - FIRST_CID;
         for (int i = 0; i < MESSAGES_RECEIVED_CIDS.size(); i++) {
@@ -254,6 +343,11 @@ public class UberHandlerTest extends NetworkTestCommon {
         wireOut.writeEventName(CoreFields.csp).text(TEST_HANDLERS_CSP)
                 .writeEventName(CoreFields.cid).int64(cid)
                 .writeEventName(CoreFields.handler).typedMarshallable(handler);
+    }
+
+    private void sendMessageToHandler(WireOut wireOut, int cid) {
+        wireOut.writeEventName(CoreFields.csp).text(TEST_HANDLERS_CSP)
+                .writeEventName(CoreFields.cid).int64(cid);
     }
 
     @NotNull
