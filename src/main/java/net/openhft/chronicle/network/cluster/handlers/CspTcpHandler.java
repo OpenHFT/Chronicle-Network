@@ -65,6 +65,9 @@ public abstract class CspTcpHandler<T extends NetworkContext<T>> extends WireTcp
 
     protected void removeHandler(SubHandler<T> handler) {
         cidToHandle.remove(handler.cid());
+        if (handler instanceof WritableSubHandler) {
+            writers.remove(handler);
+        }
         if (this.handler == handler) {
             this.handler = null;
             this.lastCid = 0;
