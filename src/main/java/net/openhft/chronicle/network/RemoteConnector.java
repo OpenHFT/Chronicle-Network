@@ -19,10 +19,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.PackageLocal;
-import net.openhft.chronicle.core.io.AbstractCloseable;
-import net.openhft.chronicle.core.io.Closeable;
-import net.openhft.chronicle.core.io.IORuntimeException;
-import net.openhft.chronicle.core.io.SimpleCloseable;
+import net.openhft.chronicle.core.io.*;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -156,7 +153,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
                 return false;
             }
 
-            final ChronicleSocketChannel sc;
+            ChronicleSocketChannel sc = null;
             final TcpEventHandler<T> eventHandler;
 
             try {
@@ -169,6 +166,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
                     // this can happen if the acceptor is in the process of shutting down
                     return false;
 
+
                 nc.socketChannel(sc);
                 nc.isAcceptor(false);
 
@@ -179,6 +177,12 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
 
                 eventHandler = tcpHandlerSupplier.apply(nc);
 
+            } catch (ClosedIllegalStateException e) {
+                Jvm.debug().on(getClass(), "Already closed while connecting to " + address, e);
+                // may be already closed by socketReconnector in HostConnector
+                closeSocket(sc);
+
+                throw InvalidEventHandlerException.reusable();
             } catch (AlreadyConnectedException | AsynchronousCloseException | UnsupportedAddressTypeException e) {
                 Jvm.debug().on(getClass(), "Unable to connect to " + address, e);
                 throw InvalidEventHandlerException.reusable();
@@ -192,7 +196,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
                 closeQuietly(eventHandler);
             else {
                 eventLoop.addHandler(eventHandler);
-                closeables.add(() -> closeSocket(sc));
+                closeables.add(() -> closeSocket(nc.socketChannel()));
             }
 
             throw InvalidEventHandlerException.reusable();
