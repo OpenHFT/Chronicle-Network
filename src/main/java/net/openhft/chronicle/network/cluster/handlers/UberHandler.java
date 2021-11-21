@@ -209,7 +209,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                     Jvm.warn().on(getClass(), "EventGroup shutdown", e);
                     removeHandler(handler);
                 } catch (RejectedHandlerException ex) {
-                    Jvm.debug().on(getClass(), "Removing rejected handler: " + handler);
+                    Jvm.warn().on(getClass(), "Removing rejected handler: " + handler + ", message=" + ex.getMessage(), ex);
                     removeHandler(handler);
                 }
                 return;
@@ -220,7 +220,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                 try {
                     handler.onRead(inWire, outWire);
                 } catch (RejectedHandlerException ex) {
-                    Jvm.debug().on(getClass(), "Removing rejected handler: " + handler);
+                    Jvm.warn().on(getClass(), "Removing rejected handler: " + handler + ", message=" + ex.getMessage(), ex);
                     removeHandler(handler);
                 }
             else {
