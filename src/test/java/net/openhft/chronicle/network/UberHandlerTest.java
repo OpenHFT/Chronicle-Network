@@ -265,6 +265,7 @@ public class UberHandlerTest extends NetworkTestCommon {
                     // This handler should reject in onRead
                     nc.wireOutPublisher().publish(w ->
                             w.writeDocument(true, d -> sendHandler(d, FIRST_CID + 1, new RejectingOnReadHandler())));
+                    expectException("Rejected in onRead");
                     nc.wireOutPublisher().publish(w ->
                             w.writeDocument(false, d -> sendMessageToHandler(d, FIRST_CID + 1)));
                 }
@@ -289,7 +290,7 @@ public class UberHandlerTest extends NetworkTestCommon {
 
         @Override
         public void onInitialize(WireOut outWire) throws RejectedExecutionException {
-            throw new RejectedExecutionException("Rejected in onInitialize");
+            throw new RejectedHandlerException("Rejected in onInitialize");
         }
 
         @Override
