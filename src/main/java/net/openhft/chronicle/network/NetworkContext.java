@@ -99,6 +99,10 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
         // do nothing
     }
 
+    default void removeConnectionListener(ConnectionListener connectionListener) {
+        // do nothing
+    }
+
     default TimeProvider timeProvider() {
         return SystemTimeProvider.INSTANCE;
     }
