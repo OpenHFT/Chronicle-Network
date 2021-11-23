@@ -255,13 +255,14 @@ public class UberHandlerTest extends NetworkTestCommon {
     }
 
     @Test
-    public void rejectedOnInitializeHandlersAreRemovedFromRead() {
+    public void rejectedOnInitializeHandlersAreRemovedFromReadAndWrite() {
         try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
             expectException("Rejected in onInitialize");
             REJECTING_SUB_HANDLER_SHOULD_REJECT.set(true);
             testHarness.registerSubHandler(new WritableRejectingSubHandler());
             expectException("handler == null, check that the Csp/Cid has been sent");
             testHarness.sendMessageToCurrentHandler();
+            testHarness.callProcess();
             assertFalse(REJECTED_HANDLER_ONREAD_CALLED.get());
             assertFalse(REJECTED_HANDLER_ONWRITE_CALLED.get());
         }
@@ -273,6 +274,23 @@ public class UberHandlerTest extends NetworkTestCommon {
             testHarness.registerSubHandler(new WritableRejectingSubHandler());
             expectException("Rejected in onRead");
             REJECTING_SUB_HANDLER_SHOULD_REJECT.set(true);
+            testHarness.sendMessageToCurrentHandler();
+            expectException("handler == null, check that the Csp/Cid has been sent");
+            testHarness.sendMessageToCurrentHandler();
+            testHarness.callProcess();
+            assertFalse(REJECTED_HANDLER_ONWRITE_CALLED.get());
+            assertFalse(REJECTED_HANDLER_ONREAD_CALLED.get());
+        }
+    }
+
+    @Test
+    public void rejectedOnWriteHandlersAreRemoveFromReadAndWrite() {
+        try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
+            testHarness.registerSubHandler(new WritableRejectingSubHandler());
+            expectException("Rejected in onWrite");
+            REJECTING_SUB_HANDLER_SHOULD_REJECT.set(true);
+            testHarness.callProcess();
+            expectException("handler == null, check that the Csp/Cid has been sent");
             testHarness.sendMessageToCurrentHandler();
             testHarness.callProcess();
             assertFalse(REJECTED_HANDLER_ONWRITE_CALLED.get());
@@ -423,7 +441,6 @@ public class UberHandlerTest extends NetworkTestCommon {
 
         public MyClusteredNetworkContext(@NotNull MyClusterContext clusterContext) {
             super(clusterContext);
-            wireOutPublisher(new VanillaWireOutPublisher(clusterContext.wireType()));
         }
 
         @Override
@@ -679,6 +696,7 @@ public class UberHandlerTest extends NetworkTestCommon {
         public UberHandlerTestHarness() {
             clusterContext = new MyClusterContext();
             nc = new MyClusteredNetworkContext(clusterContext);
+            nc.wireOutPublisher(new VanillaWireOutPublisher(clusterContext.wireType()));
             uberHandler = createHandler();
             uberHandler.nc(nc);
             inWire = WireType.BINARY.apply(Bytes.allocateElasticOnHeap());
