@@ -61,6 +61,11 @@ public class ClusterAcceptorEventHandler<C extends ClusterContext<C, T>, T exten
                 final T nc = context.networkContextFactory().apply(context);
                 nc.socketChannel(sc);
                 nc.isAcceptor(true);
+                if (context.networkStatsListenerFactory() != null) {
+                    final NetworkStatsListener<T> nsl = context.networkStatsListenerFactory().apply(context);
+                    nc.networkStatsListener(nsl);
+                    nsl.networkContext(nc);
+                }
                 final NetworkStatsListener<T> nl = nc.networkStatsListener();
                 notifyHostPort(sc, nl);
                 final TcpEventHandler<T> tcpEventHandler = context.tcpEventHandlerFactory().apply(nc);
