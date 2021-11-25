@@ -1,7 +1,6 @@
 package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.core.threads.EventLoop;
-import net.openhft.chronicle.network.NetworkStatsListener;
 import net.openhft.chronicle.network.VanillaNetworkContext;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -22,12 +21,6 @@ public class VanillaClusteredNetworkContext<T extends VanillaClusteredNetworkCon
         this.eventLoop = clusterContext.eventLoop();
         heartbeatListener(this::logMissedHeartbeat);
         serverThreadingStrategy(clusterContext.serverThreadingStrategy());
-        // make sure network stats set for acceptor
-        if (clusterContext.networkStatsListenerFactory() != null) {
-            final NetworkStatsListener<T> networkStatsListener = clusterContext.networkStatsListenerFactory().apply(clusterContext);
-            this.networkStatsListener(networkStatsListener);
-            networkStatsListener.networkContext((T) this);
-        }
     }
 
     @Override
