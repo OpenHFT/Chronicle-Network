@@ -652,7 +652,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                             .append(msg.elapsedNs / 1000)
                             .append(" us, CPU: ")
                             .append(Affinity.getCpu())
-                            .append(" us, affinity ")
+                            .append(", affinity ")
                             .append(Affinity.getAffinity());
 
                     // no point grabbing stack trace as thread has moved on
