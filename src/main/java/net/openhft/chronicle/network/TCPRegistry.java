@@ -21,6 +21,7 @@ import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.pool.ClassAliasPool;
 import net.openhft.chronicle.network.api.NetworkStats;
+import net.openhft.chronicle.network.internal.AddressCache;
 import net.openhft.chronicle.network.internal.lookuptable.FileBasedHostnamePortLookupTable;
 import net.openhft.chronicle.network.internal.lookuptable.ProcessLocalHostnamePortLookupTable;
 import net.openhft.chronicle.network.tcp.ChronicleServerSocketChannel;
@@ -54,6 +55,7 @@ public enum TCPRegistry {
     public static final String TCP_REGISTRY_LOOKUP_TABLE_IMPLEMENTATION_PROPERTY = "chronicle.tcpRegistry.lookupTableImplementation";
     static HostnamePortLookupTable lookupTable;
     static final Map<String, ChronicleServerSocketChannel> DESC_TO_SERVER_SOCKET_CHANNEL_MAP = new ConcurrentSkipListMap<>();
+    private static final AddressCache ADDRESS_CACHE = new AddressCache();
 
     static {
         ClassAliasPool.CLASS_ALIASES.addAlias(
@@ -82,6 +84,7 @@ public enum TCPRegistry {
         Closeable.closeQuietly(lookupTable);
         lookupTable = null;
         DESC_TO_SERVER_SOCKET_CHANNEL_MAP.clear();
+        ADDRESS_CACHE.clear();
         Jvm.pause(50);
     }
 
@@ -166,6 +169,9 @@ public enum TCPRegistry {
         InetSocketAddress address = lookupTable().lookup(description);
         if (address != null)
             return address;
+        address = ADDRESS_CACHE.lookup(description);
+        if (address != null)
+            return address;
         String property = System.getProperty(description);
         if (property != null) {
             @NotNull String[] parts = property.split(":", 2);
@@ -199,13 +205,12 @@ public enum TCPRegistry {
         if (port <= 0 || port >= 65536)
             throw new IllegalArgumentException("Invalid port " + port);
 
-        @NotNull InetSocketAddress address = createInetSocketAddress(hostname, port);
-        lookupTable().put(description, address);
-        return address;
+        ADDRESS_CACHE.add(description, hostname, port);
+        return ADDRESS_CACHE.lookup(description);
     }
 
     @NotNull
-    private static InetSocketAddress createInetSocketAddress(@NotNull String hostname, int port) {
+    public static InetSocketAddress createInetSocketAddress(@NotNull String hostname, int port) {
         return hostname.isEmpty() || hostname.equals("*") ? new InetSocketAddress(port) : new InetSocketAddress(hostname, port);
     }
 
