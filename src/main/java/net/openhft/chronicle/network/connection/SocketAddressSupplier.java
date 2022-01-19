@@ -167,18 +167,16 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
 
     public static class RemoteAddressSupplier implements Supplier<SocketAddress> {
 
-        private final InetSocketAddress remoteAddress;
         @NotNull
         private final String description;
 
         public RemoteAddressSupplier(@NotNull String description) {
             this.description = description;
-            remoteAddress = TCPRegistry.lookup(description);
         }
 
         @Override
         public InetSocketAddress get() {
-            return remoteAddress;
+            return TCPRegistry.lookup(description);
         }
 
         @NotNull
