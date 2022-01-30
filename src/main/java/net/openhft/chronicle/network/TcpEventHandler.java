@@ -74,6 +74,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     public static boolean DISABLE_TCP_NODELAY = Jvm.getBoolean("disable.tcp_nodelay");
 
     static {
+        ThreadLogTypeElapsedRecord.loadClass();
         if (DISABLE_TCP_NODELAY) Jvm.startup().on(TcpEventHandler.class, "tcpNoDelay disabled");
     }
 
@@ -608,6 +609,14 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
         private final LogType logType;
         private final long elapsedNs;
+
+        /**
+         * Does nothing, just called to load the class eagerly
+         * <p>
+         * We have observed lengthy class loading delays due to this class not being loaded
+         */
+        private static void loadClass() {
+        }
 
         public ThreadLogTypeElapsedRecord(@NotNull final LogType logType,
                                           final long elapsedNs) {
