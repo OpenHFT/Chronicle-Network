@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class EchoServerMain {
     private static final String CPU = System.getProperty("cpu", "any");
+    public static final int CAPACITY = 1 << 20;
 
     public static void main(@NotNull String... args) throws IOException {
         int port = args.length < 1 ? EchoClientMain.PORT : Integer.parseInt(args[0]);
@@ -49,8 +50,8 @@ public class EchoServerMain {
             try (final AffinityLock lock = AffinityLock.acquireLock(CPU)) {
                 System.out.println("Running on CPU " + Affinity.getCpu());
 
-                ByteBuffer bb = ByteBuffer.allocateDirect(32 * 1024);
-                ByteBuffer bb2 = ByteBuffer.allocateDirect(32 * 1024);
+                ByteBuffer bb = ByteBuffer.allocateDirect(CAPACITY);
+                ByteBuffer bb2 = ByteBuffer.allocateDirect(CAPACITY);
                 @NotNull List<ChronicleSocketChannel> sockets = new ArrayList<>();
                 for (; ; ) {
                     if (sockets.isEmpty())
