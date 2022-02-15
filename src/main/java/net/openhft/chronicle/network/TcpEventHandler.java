@@ -54,6 +54,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static java.lang.Math.max;
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
+import static net.openhft.chronicle.network.internal.SocketExceptionUtil.isAConnectionResetException;
 
 public class TcpEventHandler<T extends NetworkContext<T>>
         extends AbstractCloseable
@@ -475,7 +476,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
         try {
             String message = e.getMessage();
-            if (message != null && message.startsWith("Connection reset by peer")) {
+            if (isAConnectionResetException(e)) {
                 LOG.trace(message, e);
             } else if (message != null && message.startsWith("An existing connection was forcibly closed")) {
                 Jvm.debug().on(getClass(), message);
