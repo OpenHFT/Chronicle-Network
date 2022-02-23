@@ -1,5 +1,6 @@
 package net.openhft.chronicle.network;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -9,10 +10,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
-public class TCPRegistryTest {
+public class TCPRegistryTest extends NetworkTestCommon {
 
     private final boolean useCrossProcess;
 
@@ -30,6 +32,11 @@ public class TCPRegistryTest {
         if (useCrossProcess) {
             TCPRegistry.useCrossProcessRegistry();
         }
+    }
+
+    @After
+    public void tearDown() {
+        TCPRegistry.useInMemoryRegistry();
     }
 
     @Test

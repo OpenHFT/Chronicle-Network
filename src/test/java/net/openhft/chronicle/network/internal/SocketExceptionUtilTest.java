@@ -1,6 +1,7 @@
 package net.openhft.chronicle.network.internal;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.network.NetworkTestCommon;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.tcp.ChronicleServerSocketChannel;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
@@ -19,7 +20,7 @@ import java.util.concurrent.Executors;
 import static net.openhft.chronicle.network.internal.SocketExceptionUtil.isAConnectionResetException;
 import static org.junit.Assert.*;
 
-public class SocketExceptionUtilTest {
+public class SocketExceptionUtilTest extends NetworkTestCommon {
 
     /**
      * Original means of detection
@@ -70,8 +71,7 @@ public class SocketExceptionUtilTest {
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.submit(() -> {
             // Server logic
-            try {
-                final ChronicleSocketChannel csc = serverSocketChannel.accept();
+            try (final ChronicleSocketChannel csc = serverSocketChannel.accept()) {
                 Jvm.pause(100); // make sure the client read has started
                 final Socket socket = csc.socketChannel().socket();
                 socket.setSoLinger(true, 0);
@@ -80,11 +80,15 @@ public class SocketExceptionUtilTest {
                 fail(e.getMessage());
             }
         });
-        final ChronicleSocketChannel clientSocketChannel = ChronicleSocketChannelFactory.wrap(false, TCPRegistry.lookup("server-address"));
-        try {
+        try (final ChronicleSocketChannel clientSocketChannel = ChronicleSocketChannelFactory.wrap(false, TCPRegistry.lookup("server-address"))) {
             clientSocketChannel.read(ByteBuffer.allocate(1000));
+            fail("Read should throw Connection reset exception");
         } catch (IOException e) {
-            assertTrue(isAConnectionResetException(e));
+            final boolean identifiedCorrectly = isAConnectionResetException(e);
+            if (!identifiedCorrectly) {
+                Jvm.error().on(SocketExceptionUtilTest.class, "Didn't identify connection reset exception correctly", e);
+            }
+            assertTrue(identifiedCorrectly);
         }
         Threads.shutdown(executorService);
     }

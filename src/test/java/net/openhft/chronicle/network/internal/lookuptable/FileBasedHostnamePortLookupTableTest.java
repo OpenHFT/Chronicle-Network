@@ -1,8 +1,10 @@
 package net.openhft.chronicle.network.internal.lookuptable;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IOTools;
+import net.openhft.chronicle.network.NetworkTestCommon;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,13 +17,16 @@ import java.util.stream.IntStream;
 import static java.lang.String.format;
 import static org.junit.Assert.*;
 
-public class FileBasedHostnamePortLookupTableTest {
+public class FileBasedHostnamePortLookupTableTest extends NetworkTestCommon {
 
     public static final String TEST_TABLE_FILENAME = "FileBasedHostnamePortLookupTableTest";
     private FileBasedHostnamePortLookupTable lookupTable;
 
     @Before
     public void setUp() {
+        if (OS.isWindows()) {
+            expectException("Error deleting the shared lookup table");
+        }
         IOTools.deleteDirWithFilesOrThrow(TEST_TABLE_FILENAME);
         lookupTable = new FileBasedHostnamePortLookupTable(TEST_TABLE_FILENAME);
     }
