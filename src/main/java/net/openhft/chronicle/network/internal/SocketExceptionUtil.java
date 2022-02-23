@@ -20,9 +20,20 @@ public final class SocketExceptionUtil {
      * @return true if the exception is one that signifies the connection was reset
      */
     public static boolean isAConnectionResetException(IOException e) {
-        String message = e.getMessage();
-        return message != null &&
-                (message.equals("Connection reset by peer")
-                        || e instanceof SocketException && message.equals("Connection reset"));
+        return isALinuxJava12OrLessConnectionResetException(e)
+                || isAWindowsConnectionResetException(e)
+                || isALinuxJava13OrGreaterConnectionResetException(e);
+    }
+
+    private static boolean isALinuxJava13OrGreaterConnectionResetException(IOException e) {
+        return e.getClass().equals(SocketException.class) && "Connection reset".equals(e.getMessage());
+    }
+
+    private static boolean isAWindowsConnectionResetException(IOException e) {
+        return e.getClass().equals(IOException.class) && "An existing connection was forcibly closed by the remote host".equals(e.getMessage());
+    }
+
+    private static boolean isALinuxJava12OrLessConnectionResetException(IOException e) {
+        return e.getClass().equals(IOException.class) && "Connection reset by peer".equals(e.getMessage());
     }
 }
