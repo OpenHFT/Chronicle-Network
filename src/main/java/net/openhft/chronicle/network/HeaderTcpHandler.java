@@ -30,8 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
 
-import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PADDING;
-
 public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseable implements TcpHandler<T> {
 
     public static final String HANDLER = "handler";
@@ -57,7 +55,6 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseab
 
         // the type of the header
         final Wire inWire = wireType.apply(in);
-        inWire.usePadding(TCP_USE_PADDING);
         final long start = in.readPosition();
 
         Object o = null;

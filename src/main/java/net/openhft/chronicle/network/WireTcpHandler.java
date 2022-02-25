@@ -27,7 +27,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static net.openhft.chronicle.network.connection.CoreFields.reply;
-import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PADDING;
 import static net.openhft.chronicle.wire.WireType.BINARY;
 import static net.openhft.chronicle.wire.WireType.DELTA_BINARY;
 import static net.openhft.chronicle.wire.WriteMarshallable.EMPTY;
@@ -240,13 +239,11 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
 
     protected Wire initialiseOutWire(final Bytes<?> out, @NotNull final WireType wireType) {
         final Wire wire = wireType.apply(out);
-        wire.usePadding(TCP_USE_PADDING);
         return outWire = wire;
     }
 
     protected Wire initialiseInWire(@NotNull final WireType wireType, final Bytes<?> in) {
         final Wire wire = wireType.apply(in);
-        wire.usePadding(TCP_USE_PADDING);
         return inWire = wire;
     }
 

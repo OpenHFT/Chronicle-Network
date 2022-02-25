@@ -35,7 +35,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Function;
 
-import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PADDING;
 import static net.openhft.performance.tests.network.LegacyHanderFactory.simpleTcpEventHandlerFactory;
 
 /*
@@ -75,7 +74,6 @@ public class WireTcpHandlerTest extends NetworkTestCommon {
         ByteBuffer out = ByteBuffer.allocateDirect(64 * 1024);
         Bytes outBytes = Bytes.wrapForWrite(out);
         Wire outWire = wireWrapper.apply(outBytes);
-        outWire.usePadding(TCP_USE_PADDING);
 
         ByteBuffer in = ByteBuffer.allocateDirect(64 * 1024);
         Bytes inBytes = Bytes.wrapForRead(in);

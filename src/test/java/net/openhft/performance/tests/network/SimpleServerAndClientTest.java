@@ -44,7 +44,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 
 import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri;
-import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PADDING;
 
 public class SimpleServerAndClientTest extends NetworkTestCommon {
 
@@ -79,7 +78,6 @@ public class SimpleServerAndClientTest extends NetworkTestCommon {
 
                     // we will use a text wire backed by a elasticByteBuffer
                     @NotNull final Wire wire = new TextWire(bytes).useTextDocuments();
-                    wire.usePadding(TCP_USE_PADDING);
 
                     wire.writeDocument(true, w -> w.write("tid").int64(tid));
                     wire.writeDocument(false, w -> w.write("payload").text(expectedMessage));
