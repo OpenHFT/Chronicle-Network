@@ -46,10 +46,10 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
 
     private static final Logger LOG = LoggerFactory.getLogger(AlwaysStartOnPrimaryConnectionStrategy.class);
 
-    private int tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
-    private int pausePeriodMs = Integer.getInteger("client.timeout", 500);
-    private int socketConnectionTimeoutMs = Integer.getInteger("connectionStrategy.socketConnectionTimeoutMs", 1);
-    private long pauseMillisBeforeReconnect = Integer.getInteger("connectionStrategy.pauseMillisBeforeReconnect", 500);
+    private int tcpBufferSize = Jvm.getInteger("tcp.client.buffer.size", TCP_BUFFER);
+    private int pausePeriodMs = Jvm.getInteger("client.timeout", 500);
+    private int socketConnectionTimeoutMs = Jvm.getInteger("connectionStrategy.socketConnectionTimeoutMs", 1);
+    private long pauseMillisBeforeReconnect = Jvm.getInteger("connectionStrategy.pauseMillisBeforeReconnect", 500);
     private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
 
     @Override

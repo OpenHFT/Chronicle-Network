@@ -51,10 +51,10 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
-import static java.lang.Integer.getInteger;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.*;
 import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
+import static net.openhft.chronicle.core.Jvm.getInteger;
 import static net.openhft.chronicle.network.internal.SocketExceptionUtil.isAConnectionResetException;
 
 /**
@@ -66,7 +66,7 @@ import static net.openhft.chronicle.network.internal.SocketExceptionUtil.isAConn
 public final class TcpChannelHub extends AbstractCloseable {
 
     public static final int TCP_BUFFER = getTcpBufferSize();
-    public static final int TCP_SAFE_SIZE = Integer.getInteger("tcp.safe.size", 128 << 10);
+    public static final int TCP_SAFE_SIZE = getInteger("tcp.safe.size", 128 << 10);
     public static final boolean TCP_USE_PADDING = Jvm.getBoolean("tcp.use.padding", false);
     private static final boolean hasAssert = Jvm.isAssertEnabled();
     private static final int HEATBEAT_PING_PERIOD =
@@ -177,7 +177,7 @@ public final class TcpChannelHub extends AbstractCloseable {
     }
 
     private static int getTcpBufferSize() {
-        final String sizeStr = System.getProperty("TcpEventHandler.tcpBufferSize");
+        final String sizeStr = Jvm.getProperty("TcpEventHandler.tcpBufferSize");
         if (sizeStr != null && !sizeStr.isEmpty())
             try {
                 final int size = Integer.parseInt(sizeStr);

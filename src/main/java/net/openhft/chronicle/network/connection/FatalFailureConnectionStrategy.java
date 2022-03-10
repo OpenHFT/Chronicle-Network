@@ -84,7 +84,7 @@ public class FatalFailureConnectionStrategy extends AbstractMarshallableCfg impl
      */
     private void init() {
         if (tcpBufferSize == 0)
-            tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
+            tcpBufferSize = Jvm.getInteger("tcp.client.buffer.size", TCP_BUFFER);
 
         if (isClosed == null)
             isClosed = new AtomicBoolean(false);

@@ -184,7 +184,7 @@ public enum TCPRegistry {
         address = ADDRESS_CACHE.lookup(description);
         if (address != null)
             return address;
-        String property = System.getProperty(description);
+        String property = Jvm.getProperty(description);
         if (property != null) {
             @NotNull String[] parts = property.split(":", 2);
             if (parts[0].equals("null"))
@@ -299,7 +299,7 @@ public enum TCPRegistry {
 
     private static void createNewLookupTable() {
         try {
-            final Class<?> lookupTableClass = Class.forName(System.getProperty(TCP_REGISTRY_LOOKUP_TABLE_IMPLEMENTATION_PROPERTY,
+            final Class<?> lookupTableClass = Class.forName(Jvm.getProperty(TCP_REGISTRY_LOOKUP_TABLE_IMPLEMENTATION_PROPERTY,
                     ProcessLocalHostnamePortLookupTable.class.getName()));
             lookupTable = (HostnamePortLookupTable) lookupTableClass.getConstructor().newInstance();
         } catch (Exception ex) {
