@@ -56,7 +56,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
     private final List<java.io.Closeable> closeables = Collections.synchronizedList(new ArrayList<>());
 
     public RemoteConnector(@NotNull final ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpEventHandlerFactory) {
-        this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TcpChannelHub.TCP_BUFFER);
+        this.tcpBufferSize = Jvm.getInteger("tcp.client.buffer.size", TcpChannelHub.TCP_BUFFER);
         this.tcpHandlerSupplier = tcpEventHandlerFactory;
     }
 
