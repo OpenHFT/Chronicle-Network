@@ -45,7 +45,7 @@ import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarshallable implements ConnectionStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(AlwaysStartOnPrimaryConnectionStrategy.class);
-
+    private final transient AtomicBoolean isClosed = new AtomicBoolean(false);
     private int tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
     private int pausePeriodMs = Integer.getInteger("client.timeout", 500);
     private int socketConnectionTimeoutMs = Integer.getInteger("connectionStrategy.socketConnectionTimeoutMs", 1);
@@ -53,7 +53,6 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
     private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
     private long minTimeSec = Integer.getInteger("connectionStrategy.pause.min.secs", 5);
     private long maxTimeSec = Integer.getInteger("connectionStrategy.pause.max.secs", 5);
-
 
     @Override
     public AlwaysStartOnPrimaryConnectionStrategy open() {
@@ -154,12 +153,12 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
     public AlwaysStartOnPrimaryConnectionStrategy minTimeSec(long minTimeSec) {
         this.minTimeSec = minTimeSec;
         return this;
-        }
+    }
 
     public AlwaysStartOnPrimaryConnectionStrategy maxTimeSec(long maxTimeSec) {
         this.maxTimeSec = maxTimeSec;
         return this;
-        }
+    }
 
     public long maxTimeSec() {
         return maxTimeSec;
@@ -184,8 +183,6 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
         this.pauseMillisBeforeReconnect = pauseMillisBeforeReconnect;
         return this;
     }
-
-    private final transient AtomicBoolean isClosed = new AtomicBoolean(false);
 
     @Override
     public void close() {

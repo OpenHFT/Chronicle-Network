@@ -184,11 +184,11 @@ public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
         }
     }
 
-     long minTimeSec();
+    default long minTimeSec() {
+        return 5;
+    }
 
-    ConnectionStrategy minTimeSec(long minTimeSec);
-
-    ConnectionStrategy maxTimeSec(long maxTimeSec);
-
-    long maxTimeSec();
+    default long maxTimeSec() {
+        return 5;
+    }
 }
