@@ -68,6 +68,8 @@ public class FatalFailureConnectionStrategy extends SelfDescribingMarshallable i
     private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
     private transient AtomicBoolean isClosed;
     private transient boolean hasSentFatalFailure;
+    private long minTimeSec = Integer.getInteger("connectionStrategy.pause.min.secs", 5);
+    private long maxTimeSec = Integer.getInteger("connectionStrategy.pause.max.secs", 5);
 
     /**
      * @param attempts the number of attempts before a onFatalFailure() reported
@@ -201,5 +203,23 @@ public class FatalFailureConnectionStrategy extends SelfDescribingMarshallable i
     public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
         super.readMarshallable(wire);
         init();
+    }
+
+    public long minTimeSec() {
+        return minTimeSec;
+    }
+
+    public FatalFailureConnectionStrategy minTimeSec(long minTimeSec) {
+        this.minTimeSec = minTimeSec;
+        return this;
+    }
+
+    public FatalFailureConnectionStrategy maxTimeSec(long maxTimeSec) {
+        this.maxTimeSec = maxTimeSec;
+        return this;
+    }
+
+    public long maxTimeSec() {
+        return maxTimeSec;
     }
 }
