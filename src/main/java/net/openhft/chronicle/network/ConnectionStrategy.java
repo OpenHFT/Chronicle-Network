@@ -39,6 +39,9 @@ import java.util.concurrent.locks.LockSupport;
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
 public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
+    long minPauseSec = Integer.getInteger("connectionStrategy.pause.min.secs", 5);
+    long maxPauseSec = Integer.getInteger("connectionStrategy.pause.max.secs", 5);
+
 
     default ClientConnectionMonitor clientConnectionMonitor() {
         return new VanillaClientConnectionMonitor();
@@ -184,11 +187,11 @@ public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
         }
     }
 
-    default long minTimeSec() {
-        return 5;
+    default long minPauseSec() {
+        return minPauseSec;
     }
 
-    default long maxTimeSec() {
-        return 5;
+    default long maxPauseSec() {
+        return maxPauseSec;
     }
 }

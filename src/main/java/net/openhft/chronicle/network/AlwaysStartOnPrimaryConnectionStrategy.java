@@ -51,8 +51,6 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
     private int socketConnectionTimeoutMs = Integer.getInteger("connectionStrategy.socketConnectionTimeoutMs", 1);
     private long pauseMillisBeforeReconnect = Integer.getInteger("connectionStrategy.pauseMillisBeforeReconnect", 500);
     private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
-    private long minTimeSec = Integer.getInteger("connectionStrategy.pause.min.secs", 5);
-    private long maxTimeSec = Integer.getInteger("connectionStrategy.pause.max.secs", 5);
 
     @Override
     public AlwaysStartOnPrimaryConnectionStrategy open() {
@@ -144,24 +142,6 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarsha
     @Override
     public long pauseMillisBeforeReconnect() {
         return pauseMillisBeforeReconnect;
-    }
-
-    public long minTimeSec() {
-        return minTimeSec;
-    }
-
-    public AlwaysStartOnPrimaryConnectionStrategy minTimeSec(long minTimeSec) {
-        this.minTimeSec = minTimeSec;
-        return this;
-    }
-
-    public AlwaysStartOnPrimaryConnectionStrategy maxTimeSec(long maxTimeSec) {
-        this.maxTimeSec = maxTimeSec;
-        return this;
-    }
-
-    public long maxTimeSec() {
-        return maxTimeSec;
     }
 
     public AlwaysStartOnPrimaryConnectionStrategy tcpBufferSize(int tcpBufferSize) {
