@@ -45,12 +45,15 @@ import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallableCfg implements ConnectionStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(AlwaysStartOnPrimaryConnectionStrategy.class);
+
     private final transient AtomicBoolean isClosed = new AtomicBoolean(false);
-    private int tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
-    private int pausePeriodMs = Integer.getInteger("client.timeout", 500);
-    private int socketConnectionTimeoutMs = Integer.getInteger("connectionStrategy.socketConnectionTimeoutMs", 1);
-    private long pauseMillisBeforeReconnect = Integer.getInteger("connectionStrategy.pauseMillisBeforeReconnect", 500);
+    private int tcpBufferSize = Jvm.getInteger("tcp.client.buffer.size", TCP_BUFFER);
+    private int pausePeriodMs = Jvm.getInteger("client.timeout", 500);
+    private int socketConnectionTimeoutMs = Jvm.getInteger("connectionStrategy.socketConnectionTimeoutMs", 1);
+    private long pauseMillisBeforeReconnect = Jvm.getInteger("connectionStrategy.pauseMillisBeforeReconnect", 500);
     private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
+    private long minPauseSec = Jvm.getInteger("connectionStrategy.pause.min.secs", 5);
+    private long maxPauseSec = Jvm.getInteger("connectionStrategy.pause.max.secs", 5);
 
     @Override
     public AlwaysStartOnPrimaryConnectionStrategy open() {
@@ -172,5 +175,25 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
     @Override
     public boolean isClosed() {
         return isClosed.get();
+    }
+
+    @Override
+    public long minPauseSec() {
+        return minPauseSec;
+    }
+
+    @Override
+    public long maxPauseSec() {
+        return maxPauseSec;
+    }
+
+    public AlwaysStartOnPrimaryConnectionStrategy minPauseSec(long minPauseSec) {
+        this.minPauseSec = minPauseSec;
+        return this;
+    }
+
+    public AlwaysStartOnPrimaryConnectionStrategy maxPauseSec(long maxPauseSec) {
+        this.maxPauseSec = maxPauseSec;
+        return this;
     }
 }
