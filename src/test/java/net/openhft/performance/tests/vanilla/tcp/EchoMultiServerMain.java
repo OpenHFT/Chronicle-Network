@@ -34,6 +34,9 @@ import java.util.concurrent.TimeUnit;
  * @author peter.lawrey
  */
 public class EchoMultiServerMain {
+
+    public static final int CAPACITY = 64 << 10;
+
     public static void main(@NotNull String... args) throws IOException {
         int port = args.length < 1 ? EchoClientMain.PORT : Integer.parseInt(args[0]);
         ServerSocketChannel ssc = ServerSocketChannel.open();
@@ -54,8 +57,8 @@ public class EchoMultiServerMain {
     }
 
     private static void process(SocketChannel socket) {
-        ByteBuffer bb = ByteBuffer.allocateDirect(4 * 1024);
-        ByteBuffer bb2 = ByteBuffer.allocateDirect(4 * 1024);
+        ByteBuffer bb = ByteBuffer.allocateDirect(CAPACITY);
+        ByteBuffer bb2 = ByteBuffer.allocateDirect(CAPACITY);
         for (; ; ) {
             try {
                 // simulate copying the data.

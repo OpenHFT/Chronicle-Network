@@ -209,7 +209,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                     Jvm.warn().on(getClass(), "EventGroup shutdown", e);
                     removeHandler(handler);
                 } catch (RejectedHandlerException ex) {
-                    Jvm.debug().on(getClass(), "Removing rejected handler: " + handler);
+                    Jvm.warn().on(getClass(), "Removing rejected handler: " + handler + ", message=" + ex.getMessage(), ex);
                     removeHandler(handler);
                 }
                 return;
@@ -220,7 +220,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                 try {
                     handler.onRead(inWire, outWire);
                 } catch (RejectedHandlerException ex) {
-                    Jvm.debug().on(getClass(), "Removing rejected handler: " + handler);
+                    Jvm.warn().on(getClass(), "Removing rejected handler: " + handler + ", message=" + ex.getMessage(), ex);
                     removeHandler(handler);
                 }
             else {
@@ -262,14 +262,20 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
     @SuppressWarnings("ForLoopReplaceableByForEach")
     protected void onWrite(@NotNull final WireOut outWire) {
         super.onWrite(outWire);
+        int removedCount = 0;
         for (int i = 0; i < writers.size(); i++) {
-            int writerIndex = (i + writerOffset) % writers.size();
+            int writerIndex = (i + writerOffset - removedCount) % writers.size();
             try {
                 if (isClosing())
                     return;
                 final WritableSubHandler<T> w = writers.get(writerIndex);
                 if (w != null)
                     w.onWrite(outWire);
+            } catch (RejectedHandlerException e) {
+                final WritableSubHandler<T> handler = writers.get(writerIndex);
+                Jvm.warn().on(getClass(), "Removing rejected handler: " + handler + ", message=" + e.getMessage(), e);
+                removeHandler(handler);
+                removedCount++;
             } catch (Exception e) {
                 Jvm.error().on(getClass(), "onWrite:", e);
                 throw Jvm.rethrow(e);

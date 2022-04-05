@@ -346,7 +346,6 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
 
     @Override
     public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
-        networkStatsListenerFactory = wire.read("networkStatsListenerFactory").object(Function.class);
         defaults();
         super.readMarshallable(wire);
     }

@@ -18,6 +18,7 @@
 package net.openhft.performance.tests.vanilla.tcp;
 
 import net.openhft.affinity.Affinity;
+import net.openhft.affinity.AffinityLock;
 import net.openhft.chronicle.network.tcp.ChronicleServerSocketChannel;
 import net.openhft.chronicle.network.tcp.ChronicleServerSocketFactory;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
@@ -34,6 +35,9 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author peter.lawrey
  */
 public class EchoServerMain {
+    private static final String CPU = System.getProperty("cpu", "any");
+    public static final int CAPACITY = 1 << 20;
+
     public static void main(@NotNull String... args) throws IOException {
         int port = args.length < 1 ? EchoClientMain.PORT : Integer.parseInt(args[0]);
         ChronicleServerSocketChannel ssc = ChronicleServerSocketFactory.open("localhost:" + port);
@@ -43,55 +47,55 @@ public class EchoServerMain {
         @NotNull AtomicReference<ChronicleSocketChannel> nextSocket = new AtomicReference<>();
 
         new Thread(() -> {
-            Affinity.acquireCore();
-            System.out.println("Running on CPU " + Affinity.getCpu());
+            try (final AffinityLock lock = AffinityLock.acquireLock(CPU)) {
+                System.out.println("Running on CPU " + Affinity.getCpu());
 
-            ByteBuffer bb = ByteBuffer.allocateDirect(32 * 1024);
-            ByteBuffer bb2 = ByteBuffer.allocateDirect(32 * 1024);
-            @NotNull List<ChronicleSocketChannel> sockets = new ArrayList<>();
-            for (; ; ) {
-                if (sockets.isEmpty())
-                    Thread.yield();
-                ChronicleSocketChannel sc = nextSocket.getAndSet(null);
-                if (sc != null) {
-//                    System.out.println("Connected " + sc);
-                    sockets.add(sc);
-                }
-                for (int i = 0; i < sockets.size(); i++) {
-                    ChronicleSocketChannel socket = sockets.get(i);
-                    try {
-                        // simulate copying the data.
-                        // obviously faster if you don't touch the data but no real service would do that.
-                        bb.clear();
-                        int len = socket.read(bb);
-                        if (len < 0) {
-                            System.out.println("... closed " + socket + " on read");
+                ByteBuffer bb = ByteBuffer.allocateDirect(CAPACITY);
+                ByteBuffer bb2 = ByteBuffer.allocateDirect(CAPACITY);
+                @NotNull List<ChronicleSocketChannel> sockets = new ArrayList<>();
+                for (; ; ) {
+                    if (sockets.isEmpty())
+                        Thread.yield();
+                    ChronicleSocketChannel sc = nextSocket.getAndSet(null);
+                    if (sc != null) {
+                        sockets.add(sc);
+                    }
+                    for (int i = 0; i < sockets.size(); i++) {
+                        ChronicleSocketChannel socket = sockets.get(i);
+                        try {
+                            // simulate copying the data.
+                            // obviously faster if you don't touch the data but no real service would do that.
+                            bb.clear();
+                            int len = socket.read(bb);
+                            if (len < 0) {
+                                System.out.println("... closed " + socket + " on read");
+                                socket.close();
+                                sockets.remove(i--);
+                                continue;
+                            } else if (len == 0) {
+                                continue;
+                            }
+                            bb.flip();
+                            bb2.clear();
+                            bb2.put(bb);
+                            bb2.flip();
+                            // make sure there is enough space to do a full read the next time.
+
+                            while ((len = socket.write(bb2)) > 0) {
+                                // busy wait
+                            }
+                            if (len < 0) {
+                                System.out.println("... closed " + socket + " on write");
+                                socket.close();
+                                sockets.remove(i--);
+                                continue;
+                            }
+                        } catch (IOException ioe) {
+                            System.out.println("... closed " + socket + " on " + ioe);
                             socket.close();
                             sockets.remove(i--);
-                            continue;
-                        } else if (len == 0) {
-                            continue;
-                        }
-                        bb.flip();
-                        bb2.clear();
-                        bb2.put(bb);
-                        bb2.flip();
-                        // make sure there is enough space to do a full read the next time.
 
-                        while ((len = socket.write(bb2)) > 0) {
-                            // busy wait
                         }
-                        if (len < 0) {
-                            System.out.println("... closed " + socket + " on write");
-                            socket.close();
-                            sockets.remove(i--);
-                            continue;
-                        }
-                    } catch (IOException ioe) {
-                        System.out.println("... closed " + socket + " on " + ioe);
-                        socket.close();
-                        sockets.remove(i--);
-
                     }
                 }
             }

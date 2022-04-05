@@ -29,7 +29,7 @@
       <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
     <artifactId>chronicle-network</artifactId>
-    <version>2.22ea6-SNAPSHOT</version>
+    <version>2.23ea3-SNAPSHOT</version>
     <name>OpenHFT/Chronicle-Network</name>
     <description>Chronicle-Network</description>
     <packaging>bundle</packaging>
@@ -40,7 +40,7 @@
             <dependency>
                 <groupId>net.openhft</groupId>
                 <artifactId>third-party-bom</artifactId>
-                <version>3.19.9</version>
+                <version>3.22.3</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -48,7 +48,7 @@
             <dependency>
                 <groupId>net.openhft</groupId>
                 <artifactId>chronicle-bom</artifactId>
-                <version>2.22ea-SNAPSHOT</version>
+                <version>2.23ea-SNAPSHOT</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -117,7 +117,7 @@
         <dependency>
             <groupId>org.apache.mina</groupId>
             <artifactId>mina-core</artifactId>
-            <version>2.0.17</version>
+            <version>2.1.5</version>
             <scope>test</scope>
         </dependency>
 
@@ -171,7 +171,7 @@
                             <goal>enforcer</goal>
                         </goals>
                         <configuration>
-                            <referenceVersion>2.22ea1</referenceVersion>
+                            <referenceVersion>2.23ea0</referenceVersion>
                             <artifactsURI>https://teamcity.chronicle.software/repository/download</artifactsURI>
                         </configuration>
                     </execution>
@@ -229,6 +229,13 @@
                         </manifest>
                     </archive>
                 </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
 
             </plugin>
             <plugin>
@@ -285,6 +292,20 @@
                     <execution>
                         <goals>
                             <goal>manifest</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                            <goal>test-jar</goal>
                         </goals>
                     </execution>
                 </executions>

@@ -44,7 +44,7 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
     @NotNull
     private final String name;
     private final List<RemoteAddressSupplier> remoteAddresses = new ArrayList<>();
-    private final long failoverTimeout = Integer.getInteger("tcp.failover.time", 2_000);
+    private final long failoverTimeout = Jvm.getInteger("tcp.failover.time", 2_000);
     @Nullable
     private RemoteAddressSupplier current;
     private int addressCount = 0;
@@ -167,18 +167,16 @@ public class SocketAddressSupplier implements Supplier<SocketAddress> {
 
     public static class RemoteAddressSupplier implements Supplier<SocketAddress> {
 
-        private final InetSocketAddress remoteAddress;
         @NotNull
         private final String description;
 
         public RemoteAddressSupplier(@NotNull String description) {
             this.description = description;
-            remoteAddress = TCPRegistry.lookup(description);
         }
 
         @Override
         public InetSocketAddress get() {
-            return remoteAddress;
+            return TCPRegistry.lookup(description);
         }
 
         @NotNull

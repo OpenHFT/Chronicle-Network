@@ -52,6 +52,7 @@ public interface TcpHandler<N extends NetworkContext<N>> extends ClientClosedPro
                              final int position) {
     }
 
+    @Deprecated(/* unused, no replacement. To be removed in x.24 */)
     default void onReadComplete() {
     }
 

@@ -54,26 +54,28 @@ import java.util.concurrent.atomic.AtomicLong;
 import static java.lang.Math.max;
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
+import static net.openhft.chronicle.network.internal.SocketExceptionUtil.isAConnectionResetException;
 
 public class TcpEventHandler<T extends NetworkContext<T>>
         extends AbstractCloseable
         implements EventHandler, TcpEventHandlerManager<T> {
 
-    public static final int TARGET_WRITE_SIZE = Integer.getInteger("TcpEventHandler.targetWriteSize", 1024);
+    public static final int TARGET_WRITE_SIZE = Jvm.getInteger("TcpEventHandler.targetWriteSize", 1024);
     /**
      * Maximum number of iterations we can go without performing idle work (to prevent starvation in busy handlers)
      */
     private static final int MAX_ITERATIONS_BETWEEN_IDLE_WORK = 100;
     private static final boolean CALL_MISSED_HEARTBEAT_ON_DISCONNECT = Jvm.getBoolean("chronicle.network.callOnMissedHeartbeatOnDisconnect");
-    private static final int MONITOR_POLL_EVERY_SEC = Integer.getInteger("tcp.event.monitor.secs", 10);
-    private static final long NBR_WARNING_NANOS = Long.getLong("tcp.nbr.warning.nanos", 20_000_000);
-    private static final long NBW_WARNING_NANOS = Long.getLong("tcp.nbw.warning.nanos", 20_000_000);
+    private static final int MONITOR_POLL_EVERY_SEC = Jvm.getInteger("tcp.event.monitor.secs", 10);
+    private static final long NBR_WARNING_NANOS = Jvm.getLong("tcp.nbr.warning.nanos", 20_000_000L);
+    private static final long NBW_WARNING_NANOS = Jvm.getLong("tcp.nbw.warning.nanos", 20_000_000L);
     private static final Logger LOG = LoggerFactory.getLogger(TcpEventHandler.class);
     private static final AtomicBoolean FIRST_HANDLER = new AtomicBoolean();
     private static final int DEFAULT_MAX_MESSAGE_SIZE = 1 << 30;
     public static boolean DISABLE_TCP_NODELAY = Jvm.getBoolean("disable.tcp_nodelay");
 
     static {
+        ThreadLogTypeElapsedRecord.loadClass();
         if (DISABLE_TCP_NODELAY) Jvm.startup().on(TcpEventHandler.class, "tcpNoDelay disabled");
     }
 
@@ -474,7 +476,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
         try {
             String message = e.getMessage();
-            if (message != null && message.startsWith("Connection reset by peer")) {
+            if (isAConnectionResetException(e)) {
                 LOG.trace(message, e);
             } else if (message != null && message.startsWith("An existing connection was forcibly closed")) {
                 Jvm.debug().on(getClass(), message);
@@ -609,6 +611,14 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         private final LogType logType;
         private final long elapsedNs;
 
+        /**
+         * Does nothing, just called to load the class eagerly
+         * <p>
+         * We have observed lengthy class loading delays due to this class not being loaded
+         */
+        private static void loadClass() {
+        }
+
         public ThreadLogTypeElapsedRecord(@NotNull final LogType logType,
                                           final long elapsedNs) {
             this.logType = logType;
@@ -652,7 +662,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                             .append(msg.elapsedNs / 1000)
                             .append(" us, CPU: ")
                             .append(Affinity.getCpu())
-                            .append(" us, affinity ")
+                            .append(", affinity ")
                             .append(Affinity.getAffinity());
 
                     // no point grabbing stack trace as thread has moved on

@@ -22,7 +22,7 @@ import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.network.ConnectionStrategy;
 import net.openhft.chronicle.network.VanillaClientConnectionMonitor;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
-import net.openhft.chronicle.wire.SelfDescribingMarshallable;
+import net.openhft.chronicle.wire.AbstractMarshallableCfg;
 import net.openhft.chronicle.wire.WireIn;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -59,7 +59,7 @@ import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
  * --h.     Connection attempt no 3 with DR1:  failed
  * --i.      Connection attempt no 3 with DR2:  failed   implies:   Attempt 3 finished. Fatal Failure is raised
  */
-public class FatalFailureConnectionStrategy extends SelfDescribingMarshallable implements ConnectionStrategy {
+public class FatalFailureConnectionStrategy extends AbstractMarshallableCfg implements ConnectionStrategy {
     private static final long PAUSE = TimeUnit.MILLISECONDS.toNanos(300);
 
     private final int attempts;
@@ -84,7 +84,7 @@ public class FatalFailureConnectionStrategy extends SelfDescribingMarshallable i
      */
     private void init() {
         if (tcpBufferSize == 0)
-            tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
+            tcpBufferSize = Jvm.getInteger("tcp.client.buffer.size", TCP_BUFFER);
 
         if (isClosed == null)
             isClosed = new AtomicBoolean(false);

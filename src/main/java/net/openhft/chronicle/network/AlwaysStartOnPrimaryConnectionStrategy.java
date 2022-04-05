@@ -22,7 +22,7 @@ import net.openhft.chronicle.network.connection.ClientConnectionMonitor;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
-import net.openhft.chronicle.wire.SelfDescribingMarshallable;
+import net.openhft.chronicle.wire.AbstractMarshallableCfg;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -42,7 +42,7 @@ import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
  * If all the host:ports have been attempted since the last connection was established, no successful connection can be found,
  * then null is returned, and the fatalFailureMonitor.onFatalFailure() is triggered
  */
-public class AlwaysStartOnPrimaryConnectionStrategy extends SelfDescribingMarshallable implements ConnectionStrategy {
+public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallableCfg implements ConnectionStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(AlwaysStartOnPrimaryConnectionStrategy.class);
     private final transient AtomicBoolean isClosed = new AtomicBoolean(false);

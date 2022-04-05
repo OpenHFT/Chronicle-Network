@@ -56,7 +56,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
     private final List<java.io.Closeable> closeables = Collections.synchronizedList(new ArrayList<>());
 
     public RemoteConnector(@NotNull final ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpEventHandlerFactory) {
-        this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TcpChannelHub.TCP_BUFFER);
+        this.tcpBufferSize = Jvm.getInteger("tcp.client.buffer.size", TcpChannelHub.TCP_BUFFER);
         this.tcpHandlerSupplier = tcpEventHandlerFactory;
     }
 
@@ -155,7 +155,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
                 return false;
             }
 
-            final ChronicleSocketChannel sc;
+            ChronicleSocketChannel sc = null;
             final TcpEventHandler<T> eventHandler;
 
             try {
@@ -168,6 +168,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
                     // this can happen if the acceptor is in the process of shutting down
                     return false;
 
+
                 nc.socketChannel(sc);
                 nc.isAcceptor(false);
 
@@ -178,6 +179,12 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
 
                 eventHandler = tcpHandlerSupplier.apply(nc);
 
+            } catch (ClosedIllegalStateException e) {
+                Jvm.debug().on(getClass(), "Already closed while connecting to " + address, e);
+                // may be already closed by socketReconnector in HostConnector
+                closeSocket(sc);
+
+                throw InvalidEventHandlerException.reusable();
             } catch (AlreadyConnectedException | AsynchronousCloseException | UnsupportedAddressTypeException e) {
                 Jvm.debug().on(getClass(), "Unable to connect to " + address, e);
                 throw InvalidEventHandlerException.reusable();
@@ -191,7 +198,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
                 closeQuietly(eventHandler);
             else {
                 eventLoop.addHandler(eventHandler);
-                closeables.add(() -> closeSocket(sc));
+                closeables.add(() -> closeSocket(nc.socketChannel()));
             }
 
             throw InvalidEventHandlerException.reusable();

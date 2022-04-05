@@ -2,6 +2,8 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.io.AbstractCloseable;
+import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.util.ThrowingFunction;
@@ -11,12 +13,15 @@ import net.openhft.chronicle.network.cluster.AbstractSubHandler;
 import net.openhft.chronicle.network.cluster.Cluster;
 import net.openhft.chronicle.network.cluster.HostDetails;
 import net.openhft.chronicle.network.cluster.VanillaClusteredNetworkContext;
+import net.openhft.chronicle.network.cluster.handlers.Registerable;
+import net.openhft.chronicle.network.cluster.handlers.RejectedHandlerException;
 import net.openhft.chronicle.network.cluster.handlers.UberHandler;
 import net.openhft.chronicle.network.connection.CoreFields;
 import net.openhft.chronicle.network.connection.VanillaWireOutPublisher;
 import net.openhft.chronicle.threads.Pauser;
 import net.openhft.chronicle.threads.TimingPauser;
 import net.openhft.chronicle.wire.*;
+import org.apache.mina.util.IdentityHashSet;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
@@ -26,6 +31,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +42,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
+import static net.openhft.chronicle.network.HeaderTcpHandler.HANDLER;
+import static net.openhft.chronicle.network.cluster.handlers.UberHandler.uberHandler;
+import static net.openhft.chronicle.network.connection.CoreFields.*;
 import static org.junit.Assert.*;
 
 public class UberHandlerTest extends NetworkTestCommon {
@@ -51,6 +60,10 @@ public class UberHandlerTest extends NetworkTestCommon {
     private static final List<Long> MESSAGES_RECEIVED_CIDS = new ArrayList<>();
     private static final AtomicInteger SENDERS_INITIALIZED = new AtomicInteger();
     private static final Map<Long, Integer> COUNTERS_PER_CID = new ConcurrentHashMap<>();
+    private static final AtomicBoolean REJECTED_HANDLER_ONREAD_CALLED = new AtomicBoolean(false);
+    private static final AtomicBoolean REJECTED_HANDLER_ONWRITE_CALLED = new AtomicBoolean(false);
+    private static final AtomicBoolean REJECTING_SUB_HANDLER_SHOULD_REJECT = new AtomicBoolean(false);
+    private static final AtomicReference<Map<Object, RegisterableSubHandler>> REGISTRY = new AtomicReference<>();
 
     @Before
     public void before() {
@@ -61,6 +74,10 @@ public class UberHandlerTest extends NetworkTestCommon {
         STOPPED.set(0);
         MESSAGES_RECEIVED_CIDS.clear();
         SENDERS_INITIALIZED.set(0);
+        REJECTING_SUB_HANDLER_SHOULD_REJECT.set(false);
+        REJECTED_HANDLER_ONREAD_CALLED.set(false);
+        REJECTED_HANDLER_ONWRITE_CALLED.set(false);
+        REGISTRY.set(null);
     }
 
     @After
@@ -102,7 +119,7 @@ public class UberHandlerTest extends NetworkTestCommon {
     @Test(expected = IllegalArgumentException.class)
     public void constructorWillThrowIfLocalAndRemoteIdentifiersAreTheSame() {
         Wire wire = new BinaryWire(Bytes.allocateElasticOnHeap());
-        UberHandler.uberHandler(123, 123, WireType.BINARY).writeMarshallable(wire);
+        uberHandler(123, 123, WireType.BINARY).writeMarshallable(wire);
     }
 
     private void stopAndWaitTillAllHandlersEnd() throws TimeoutException {
@@ -237,6 +254,152 @@ public class UberHandlerTest extends NetworkTestCommon {
         }
     }
 
+    @Test
+    public void rejectedOnInitializeHandlersAreRemovedFromReadAndWrite() {
+        try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
+            expectException("Rejected in onInitialize");
+            REJECTING_SUB_HANDLER_SHOULD_REJECT.set(true);
+            testHarness.registerSubHandler(new WritableRejectingSubHandler());
+            expectException("handler == null, check that the Csp/Cid has been sent");
+            testHarness.sendMessageToCurrentHandler();
+            testHarness.callProcess();
+            assertFalse(REJECTED_HANDLER_ONREAD_CALLED.get());
+            assertFalse(REJECTED_HANDLER_ONWRITE_CALLED.get());
+        }
+    }
+
+    @Test
+    public void rejectedOnReadHandlersAreRemoveFromReadAndWrite() {
+        try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
+            testHarness.registerSubHandler(new WritableRejectingSubHandler());
+            expectException("Rejected in onRead");
+            REJECTING_SUB_HANDLER_SHOULD_REJECT.set(true);
+            testHarness.sendMessageToCurrentHandler();
+            expectException("handler == null, check that the Csp/Cid has been sent");
+            testHarness.sendMessageToCurrentHandler();
+            testHarness.callProcess();
+            assertFalse(REJECTED_HANDLER_ONWRITE_CALLED.get());
+            assertFalse(REJECTED_HANDLER_ONREAD_CALLED.get());
+        }
+    }
+
+    @Test
+    public void rejectedOnWriteHandlersAreRemoveFromReadAndWrite() {
+        try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
+            testHarness.registerSubHandler(new WritableRejectingSubHandler());
+            expectException("Rejected in onWrite");
+            REJECTING_SUB_HANDLER_SHOULD_REJECT.set(true);
+            testHarness.callProcess();
+            expectException("handler == null, check that the Csp/Cid has been sent");
+            testHarness.sendMessageToCurrentHandler();
+            testHarness.callProcess();
+            assertFalse(REJECTED_HANDLER_ONWRITE_CALLED.get());
+            assertFalse(REJECTED_HANDLER_ONREAD_CALLED.get());
+        }
+    }
+
+    @Test
+    public void addHandlerRegistersRegisterableHandlers() {
+        try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
+            testHarness.registerSubHandler(new RegisterableSubHandler());
+            assertEquals(REGISTRY.get().get(RegisterableSubHandler.REGISTRY_KEY).getClass(), RegisterableSubHandler.class);
+        }
+    }
+
+    @Test
+    public void removeHandlerUnregistersRegisterableHandlers() {
+        try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
+            testHarness.registerSubHandler(new RegisterableSubHandler());
+            assertEquals(REGISTRY.get().get(RegisterableSubHandler.REGISTRY_KEY).getClass(), RegisterableSubHandler.class);
+            REJECTING_SUB_HANDLER_SHOULD_REJECT.set(true);
+            expectException("Rejected in onRead");
+            testHarness.sendMessageToCurrentHandler();
+            assertTrue(REGISTRY.get().isEmpty());
+        }
+    }
+
+    @Test
+    public void addHandlerAddsConnectionListenerHandlersToNetworkContext() {
+        try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
+            testHarness.registerSubHandler(new ConnectionListenerSubHandler());
+            assertEquals(1, testHarness.nc().connectionListeners.size());
+        }
+    }
+
+    @Test
+    public void removeHandlerRemovesConnectionListenerHandlersFromNetworkContext() {
+        try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
+            testHarness.registerSubHandler(new ConnectionListenerSubHandler());
+            assertEquals(1, testHarness.nc().connectionListeners.size());
+            REJECTING_SUB_HANDLER_SHOULD_REJECT.set(true);
+            expectException("Rejected in onRead");
+            testHarness.sendMessageToCurrentHandler();
+            assertEquals(0, testHarness.nc().connectionListeners.size());
+        }
+    }
+
+    private static class ConnectionListenerSubHandler extends RejectingSubHandler implements ConnectionListener {
+
+        @Override
+        public void onConnected(int localIdentifier, int remoteIdentifier, boolean isAcceptor) {
+        }
+
+        @Override
+        public void onDisconnected(int localIdentifier, int remoteIdentifier, boolean isAcceptor) {
+        }
+    }
+
+    private static class RegisterableSubHandler extends RejectingSubHandler implements Registerable<RegisterableSubHandler> {
+
+        public static final String REGISTRY_KEY = "registryKey";
+
+        @Override
+        public Object registryKey() {
+            return REGISTRY_KEY;
+        }
+
+        @Override
+        public void registry(Map<Object, RegisterableSubHandler> registry) {
+            REGISTRY.set(registry);
+        }
+    }
+
+    private static class WritableRejectingSubHandler extends RejectingSubHandler implements WritableSubHandler<MyClusteredNetworkContext> {
+
+        @Override
+        public void onWrite(WireOut outWire) {
+            if (!rejected && REJECTING_SUB_HANDLER_SHOULD_REJECT.get()) {
+                rejected = true;
+                throw new RejectedHandlerException("Rejected in onWrite");
+            } else if (rejected) {
+                REJECTED_HANDLER_ONWRITE_CALLED.set(true);
+            }
+        }
+    }
+
+    private static class RejectingSubHandler extends AbstractSubHandler<MyClusteredNetworkContext> implements Marshallable {
+
+        protected boolean rejected = false;
+
+        @Override
+        public void onRead(@NotNull WireIn inWire, @NotNull WireOut outWire) {
+            if (!rejected && REJECTING_SUB_HANDLER_SHOULD_REJECT.get()) {
+                rejected = true;
+                throw new RejectedHandlerException("Rejected in onRead");
+            } else if (rejected) {
+                REJECTED_HANDLER_ONREAD_CALLED.set(true);
+            }
+        }
+
+        @Override
+        public void onInitialize(WireOut outWire) throws RejectedExecutionException {
+            if (!rejected && REJECTING_SUB_HANDLER_SHOULD_REJECT.get()) {
+                rejected = true;
+                throw new RejectedHandlerException("Rejected in onInitialize");
+            }
+        }
+    }
+
     private boolean messagesWereReceivedInRoundRobinOrder() {
         long offset = MESSAGES_RECEIVED_CIDS.get(0) - FIRST_CID;
         for (int i = 0; i < MESSAGES_RECEIVED_CIDS.size(); i++) {
@@ -251,9 +414,14 @@ public class UberHandlerTest extends NetworkTestCommon {
     }
 
     private void sendHandler(WireOut wireOut, int cid, Marshallable handler) {
-        wireOut.writeEventName(CoreFields.csp).text(TEST_HANDLERS_CSP)
+        wireOut.writeEventName(csp).text(TEST_HANDLERS_CSP)
                 .writeEventName(CoreFields.cid).int64(cid)
                 .writeEventName(CoreFields.handler).typedMarshallable(handler);
+    }
+
+    private void sendMessageToHandler(WireOut wireOut, int cid) {
+        wireOut.writeEventName(csp).text(TEST_HANDLERS_CSP)
+                .writeEventName(CoreFields.cid).int64(cid);
     }
 
     @NotNull
@@ -268,8 +436,21 @@ public class UberHandlerTest extends NetworkTestCommon {
     }
 
     static class MyClusteredNetworkContext extends VanillaClusteredNetworkContext<MyClusteredNetworkContext, MyClusterContext> {
+
+        public Set<ConnectionListener> connectionListeners = new IdentityHashSet<>();
+
         public MyClusteredNetworkContext(@NotNull MyClusterContext clusterContext) {
             super(clusterContext);
+        }
+
+        @Override
+        public void addConnectionListener(ConnectionListener connectionListener) {
+            connectionListeners.add(connectionListener);
+        }
+
+        @Override
+        public void removeConnectionListener(ConnectionListener connectionListener) {
+            connectionListeners.remove(connectionListener);
         }
     }
 
@@ -305,6 +486,9 @@ public class UberHandlerTest extends NetworkTestCommon {
 
         @Override
         protected void defaults() {
+            if (this.wireType() == null)
+                this.wireType(WireType.BINARY);
+
             if (this.wireOutPublisherFactory() == null)
                 this.wireOutPublisherFactory(VanillaWireOutPublisher::new);
 
@@ -498,6 +682,64 @@ public class UberHandlerTest extends NetworkTestCommon {
                 flaggedComplete = true;
                 Jvm.startup().on(getClass(), String.format("Handler with cid=%s finished", cid()));
             }
+        }
+    }
+
+    static class UberHandlerTestHarness extends AbstractCloseable {
+
+        private final MyClusterContext clusterContext;
+        private final MyClusteredNetworkContext nc;
+        private final UberHandler<MyClusteredNetworkContext> uberHandler;
+        private final Wire inWire;
+        private final Wire outWire;
+
+        public UberHandlerTestHarness() {
+            clusterContext = new MyClusterContext();
+            nc = new MyClusteredNetworkContext(clusterContext);
+            nc.wireOutPublisher(new VanillaWireOutPublisher(clusterContext.wireType()));
+            uberHandler = createHandler();
+            uberHandler.nc(nc);
+            inWire = WireType.BINARY.apply(Bytes.allocateElasticOnHeap());
+            outWire = WireType.BINARY.apply(Bytes.allocateElasticOnHeap());
+        }
+
+        private UberHandler<MyClusteredNetworkContext> createHandler() {
+            Wire wire = WireType.BINARY.apply(Bytes.allocateElasticOnHeap());
+            uberHandler(123, 456, WireType.BINARY).writeMarshallable(wire);
+            try (final DocumentContext documentContext = wire.readingDocument()) {
+                return wire.read(HANDLER).object(UberHandler.class);
+            }
+        }
+
+        private void registerSubHandler(WriteMarshallable subHandler) {
+            try (final DocumentContext documentContext = inWire.writingDocument(true)) {
+                final Wire documentWire = documentContext.wire();
+                documentWire.write(csp).text("12345");
+                documentWire.write(cid).int64(12345L);
+                documentWire.write(handler).typedMarshallable(subHandler);
+            }
+            uberHandler.process(inWire.bytes(), outWire.bytes(), nc);
+        }
+
+        public void callProcess() {
+            uberHandler.process(inWire.bytes(), outWire.bytes(), nc);
+        }
+
+        private void sendMessageToCurrentHandler() {
+            try (final DocumentContext documentContext = inWire.writingDocument(false)) {
+                final Wire documentWire = documentContext.wire();
+                documentWire.write("junk").text("to trigger an onRead");
+            }
+            uberHandler.process(inWire.bytes(), outWire.bytes(), nc);
+        }
+
+        public MyClusteredNetworkContext nc() {
+            return nc;
+        }
+
+        @Override
+        protected void performClose() throws IllegalStateException {
+            Closeable.closeQuietly(clusterContext, nc, uberHandler, inWire, outWire);
         }
     }
 }
