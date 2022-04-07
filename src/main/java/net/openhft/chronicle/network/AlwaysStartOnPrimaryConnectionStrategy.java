@@ -52,8 +52,8 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
     private int socketConnectionTimeoutMs = Jvm.getInteger("connectionStrategy.socketConnectionTimeoutMs", 1);
     private long pauseMillisBeforeReconnect = Jvm.getInteger("connectionStrategy.pauseMillisBeforeReconnect", 500);
     private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
-    private long minPauseSec = Jvm.getInteger("connectionStrategy.pause.min.secs", 5);
-    private long maxPauseSec = Jvm.getInteger("connectionStrategy.pause.max.secs", 5);
+    private long minPauseSec = ConnectionStrategy.super.minPauseSec();
+    private long maxPauseSec = ConnectionStrategy.super.maxPauseSec();
 
     @Override
     public AlwaysStartOnPrimaryConnectionStrategy open() {

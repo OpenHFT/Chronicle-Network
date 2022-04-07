@@ -185,10 +185,10 @@ public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
     }
 
     default long minPauseSec() {
-        return 5;
+        return Jvm.getInteger("connectionStrategy.pause.min.secs", 5);
     }
 
     default long maxPauseSec() {
-        return 5;
+        return Jvm.getInteger("connectionStrategy.pause.max.secs", 5);
     }
 }
