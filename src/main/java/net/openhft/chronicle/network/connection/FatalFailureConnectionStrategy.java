@@ -202,5 +202,4 @@ public class FatalFailureConnectionStrategy extends AbstractMarshallableCfg impl
         super.readMarshallable(wire);
         init();
     }
-
 }

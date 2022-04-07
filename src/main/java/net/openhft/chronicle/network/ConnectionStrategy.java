@@ -40,7 +40,6 @@ import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
 public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
 
-
     default ClientConnectionMonitor clientConnectionMonitor() {
         return new VanillaClientConnectionMonitor();
     }
