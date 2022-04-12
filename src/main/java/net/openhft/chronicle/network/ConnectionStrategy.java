@@ -183,5 +183,12 @@ public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
             throw new ClosedIllegalStateException("Closed");
         }
     }
-    
+
+    default long minPauseSec() {
+        return Jvm.getInteger("connectionStrategy.pause.min.secs", 5);
+    }
+
+    default long maxPauseSec() {
+        return Jvm.getInteger("connectionStrategy.pause.max.secs", 5);
+    }
 }

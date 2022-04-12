@@ -46,11 +46,14 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
 
     private static final Logger LOG = LoggerFactory.getLogger(AlwaysStartOnPrimaryConnectionStrategy.class);
 
+    private final transient AtomicBoolean isClosed = new AtomicBoolean(false);
     private int tcpBufferSize = Jvm.getInteger("tcp.client.buffer.size", TCP_BUFFER);
     private int pausePeriodMs = Jvm.getInteger("client.timeout", 500);
     private int socketConnectionTimeoutMs = Jvm.getInteger("connectionStrategy.socketConnectionTimeoutMs", 1);
     private long pauseMillisBeforeReconnect = Jvm.getInteger("connectionStrategy.pauseMillisBeforeReconnect", 500);
     private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
+    private long minPauseSec = ConnectionStrategy.super.minPauseSec();
+    private long maxPauseSec = ConnectionStrategy.super.maxPauseSec();
 
     @Override
     public AlwaysStartOnPrimaryConnectionStrategy open() {
@@ -164,8 +167,6 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
         return this;
     }
 
-    private final transient AtomicBoolean isClosed = new AtomicBoolean(false);
-
     @Override
     public void close() {
         isClosed.set(true);
@@ -174,5 +175,25 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
     @Override
     public boolean isClosed() {
         return isClosed.get();
+    }
+
+    @Override
+    public long minPauseSec() {
+        return minPauseSec;
+    }
+
+    @Override
+    public long maxPauseSec() {
+        return maxPauseSec;
+    }
+
+    public AlwaysStartOnPrimaryConnectionStrategy minPauseSec(long minPauseSec) {
+        this.minPauseSec = minPauseSec;
+        return this;
+    }
+
+    public AlwaysStartOnPrimaryConnectionStrategy maxPauseSec(long maxPauseSec) {
+        this.maxPauseSec = maxPauseSec;
+        return this;
     }
 }
