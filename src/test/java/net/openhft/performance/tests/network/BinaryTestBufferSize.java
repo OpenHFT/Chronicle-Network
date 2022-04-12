@@ -103,9 +103,9 @@ public class BinaryTestBufferSize {
 
         assert System.getProperty("TcpEventHandler.tcpBufferSize") == null;
         System.setProperty("TcpEventHandler.tcpBufferSize", Integer.toString(tcpBufferSize));
-        Bytes inBytes = null;
+        Bytes<?> inBytes = null;
 
-        Bytes outBytes = null;
+        Bytes<?> outBytes = null;
         try {
             outBytes = Bytes.elasticByteBuffer().writeUtf8(expectedMessage);
             final long totalBytes = outBytes.writePosition();

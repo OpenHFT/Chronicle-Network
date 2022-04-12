@@ -42,16 +42,16 @@ public class PingPongWithMains {
 
     private final String serverHostPort = "localhost:8097"; // localhost:8080
 
-    private static void testLatency(String desc, @NotNull Function<Bytes, Wire> wireWrapper, @NotNull ChronicleSocketChannel... sockets) throws IOException {
+    private static void testLatency(String desc, @NotNull Function<Bytes<?>, Wire> wireWrapper, @NotNull ChronicleSocketChannel... sockets) throws IOException {
         int tests = 40000;
         @NotNull long[] times = new long[tests * sockets.length];
         int count = 0;
         ByteBuffer out = ByteBuffer.allocateDirect(64 * 1024);
-        Bytes outBytes = Bytes.wrapForWrite(out);
+        Bytes<?> outBytes = Bytes.wrapForWrite(out);
         Wire outWire = wireWrapper.apply(outBytes);
 
         ByteBuffer in = ByteBuffer.allocateDirect(64 * 1024);
-        Bytes inBytes = Bytes.wrapForRead(in);
+        Bytes<?> inBytes = Bytes.wrapForRead(in);
         Wire inWire = wireWrapper.apply(inBytes);
         @NotNull TestData td = new TestData();
         @NotNull TestData td2 = new TestData();
