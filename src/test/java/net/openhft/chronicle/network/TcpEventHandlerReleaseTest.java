@@ -96,13 +96,6 @@ public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
 
         }
 
-/*
-        @Override
-        public void process(@NotNull Bytes<?> in, @NotNull Bytes<?> out, NetworkContext nc) {
-
-        }
-*/
-
         @Override
         public void close() {
         // Do nothing
@@ -117,11 +110,11 @@ public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
     /**
      * This is nasty, but the TcpEventHandler is very hard to test
      */
-    private static class BusyTcpEventHandler extends TcpEventHandler {
+    private static class BusyTcpEventHandler<N extends NetworkContext<N>> extends TcpEventHandler<N> {
 
         private boolean busy = true;
 
-        public BusyTcpEventHandler(@NotNull NetworkContext nc) {
+        public BusyTcpEventHandler(@NotNull N nc) {
             super(nc, true);
         }
 
@@ -131,12 +124,12 @@ public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
         }
     }
 
-    private static class BusyTcpHandler implements TcpHandler {
+    private static class BusyTcpHandler<N extends NetworkContext<N>>  implements TcpHandler<N> {
 
         private final AtomicInteger performedIdleWorkCount = new AtomicInteger();
 
         @Override
-        public void process(@NotNull Bytes in, @NotNull Bytes out, NetworkContext nc) {
+        public void process(@NotNull Bytes<?> in, @NotNull Bytes<?> out, N nc) {
         }
 
         @Override

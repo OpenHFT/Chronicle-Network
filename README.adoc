@@ -106,7 +106,7 @@ responding later to a client subscription.
  */
 public class WireEchoRequestHandler extends WireTcpHandler {
 
-    public WireEchoRequestHandler(@NotNull Function<Bytes, Wire> bytesToWire) {
+    public WireEchoRequestHandler(@NotNull Function<Bytes<?>, Wire> bytesToWire) {
         super(bytesToWire);
     }
 

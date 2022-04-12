@@ -1511,7 +1511,7 @@ public final class TcpChannelHub extends AbstractCloseable {
 
             // for sync
             if (o instanceof Bytes) {
-                @Nullable final Bytes bytes = (Bytes) o;
+                @Nullable final Bytes<?> bytes = (Bytes) o;
                 // for sync
                 //noinspection SynchronizationOnLocalVariableOrMethodParameter
                 synchronized (bytes) {
@@ -1544,7 +1544,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         private void processServerSystemMessage(final int header, final int messageSize) throws IOException {
 
             serverHeartBeatHandler.clear();
-            final Bytes bytes = serverHeartBeatHandler;
+            final Bytes<?> bytes = serverHeartBeatHandler;
 
             bytes.clear();
             @NotNull final ByteBuffer byteBuffer = (ByteBuffer) bytes.underlyingObject();
