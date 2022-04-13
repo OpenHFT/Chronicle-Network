@@ -120,5 +120,10 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
     default HandlerPriority periodicPriority() {
         return HandlerPriority.TIMER;
     }
+
+    /**
+     * Called when the outbound buffer becomes empty (edge-triggered)
+     */
+    default void onFlushed() {}
 }
 
