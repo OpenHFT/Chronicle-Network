@@ -74,6 +74,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     private static final int DEFAULT_MAX_MESSAGE_SIZE = 1 << 30;
     public static boolean DISABLE_TCP_NODELAY = Jvm.getBoolean("disable.tcp_nodelay");
 
+    private boolean flushedOut = false; // track output buffer empty state. interacts with NetworkContext onFlushed
+
     static {
         ThreadLogTypeElapsedRecord.loadClass();
         if (DISABLE_TCP_NODELAY) Jvm.startup().on(TcpEventHandler.class, "tcpNoDelay disabled");
@@ -507,10 +509,20 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         closeQuietly(tcpHandler, sc);
     }
 
+    boolean flushedOut(boolean flushed) {
+        // callback to nc if moving to flushed (from not-flushed)
+        if(flushed && !this.flushedOut)
+            nc.onFlushed();
+
+        this.flushedOut = flushed;
+        return flushed;
+    }
+
     @PackageLocal
     boolean tryWrite(final ByteBuffer outBB) throws IOException {
-        if (outBB.remaining() <= 0)
+        if(flushedOut(outBB.remaining() <= 0))
             return false;
+
         final int start = outBB.position();
         final long beginNs = System.nanoTime();
         assert !sc.isBlocking();
