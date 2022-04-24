@@ -46,9 +46,10 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
     private final long heartbeatIntervalMs;
     private final long heartbeatTimeoutMs;
     private final AtomicBoolean hasHeartbeats = new AtomicBoolean();
+    private final AtomicBoolean closed;
     private volatile long lastTimeMessageReceived;
     @Nullable
-    private ConnectionListener connectionMonitor;
+    private ConnectionListener connectionListener;
     @Nullable
     private Timer timer;
 
@@ -60,6 +61,7 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
     }
 
     private HeartbeatHandler(long heartbeatTimeoutMs, long heartbeatIntervalMs) {
+        closed = new AtomicBoolean(false);
         this.heartbeatTimeoutMs = heartbeatTimeoutMs;
         this.heartbeatIntervalMs = heartbeatIntervalMs;
         validateHeartbeatParameters(this.heartbeatTimeoutMs, this.heartbeatIntervalMs);
@@ -100,7 +102,7 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
 
         @NotNull final WriteMarshallable heartbeatMessage = new HeartbeatMessage();
 
-        connectionMonitor = nc().acquireConnectionListener();
+        connectionListener = nc().acquireConnectionListener();
         timer = new Timer(nc().eventLoop());
         startPeriodicHeartbeatCheck();
         startPeriodicallySendingHeartbeats(heartbeatMessage);
@@ -134,12 +136,19 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
 
     @Override
     public void close() {
-        if (connectionMonitor != null)
-            connectionMonitor.onDisconnected(localIdentifier(), remoteIdentifier(), nc().isAcceptor());
-        lastTimeMessageReceived = Long.MAX_VALUE;
-        Closeable closable = closable();
-        if (closable != null && !closable.isClosed()) {
-            Closeable.closeQuietly(closable);
+        if (closed.compareAndSet(false, true)) {
+            if (connectionListener != null) {
+                try {
+                    connectionListener.onDisconnected(localIdentifier(), remoteIdentifier(), nc().isAcceptor());
+                } catch (Exception e) {
+                    Jvm.error().on(getClass(), "Exception thrown by ConnectionListener#onDisconnected", e);
+                }
+            }
+            lastTimeMessageReceived = Long.MAX_VALUE;
+            Closeable closable = closable();
+            if (closable != null && !closable.isClosed()) {
+                Closeable.closeQuietly(closable);
+            }
         }
     }
 
@@ -224,9 +233,6 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
 
             if (hasHeartbeats != prev) {
                 if (!hasHeartbeats) {
-                    connectionMonitor.onDisconnected(HeartbeatHandler.this.localIdentifier(),
-                            HeartbeatHandler.this.remoteIdentifier(), HeartbeatHandler.this.nc().isAcceptor());
-
                     final Runnable socketReconnector = HeartbeatHandler.this.nc().socketReconnector();
                     if (socketReconnector == null)
                         Jvm.warn().on(getClass(), "socketReconnector == null");
@@ -237,8 +243,14 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
 
                     throw newClosedInvalidEventHandlerException();
                 } else
-                    connectionMonitor.onConnected(HeartbeatHandler.this.localIdentifier(),
-                            HeartbeatHandler.this.remoteIdentifier(), HeartbeatHandler.this.nc().isAcceptor());
+                    try {
+                        if (connectionListener != null) {
+                            connectionListener.onConnected(HeartbeatHandler.this.localIdentifier(),
+                                    HeartbeatHandler.this.remoteIdentifier(), HeartbeatHandler.this.nc().isAcceptor());
+                        }
+                    } catch (RuntimeException e) {
+                        Jvm.error().on(HeartbeatCheckHandler.class, "Exception thrown by ConnectionListener#onConnected", e);
+                    }
             }
 
             return true;

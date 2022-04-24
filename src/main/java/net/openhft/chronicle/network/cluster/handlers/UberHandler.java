@@ -22,7 +22,6 @@ import net.openhft.chronicle.core.annotation.UsedViaReflection;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.ClosedIllegalStateException;
 import net.openhft.chronicle.core.threads.EventLoop;
-import net.openhft.chronicle.network.ConnectionListener;
 import net.openhft.chronicle.network.api.session.SubHandler;
 import net.openhft.chronicle.network.api.session.WritableSubHandler;
 import net.openhft.chronicle.network.cluster.ClusteredNetworkContext;
@@ -149,17 +148,6 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         if (connectionChangedNotifier != null) {
             eventEmitterToken = connectionChangedNotifier.onConnectionChanged(false, nc, eventEmitterToken);
         }
-
-        try {
-            if (nc != null) {
-                final ConnectionListener listener = nc.acquireConnectionListener();
-                if (listener != null)
-                    listener.onDisconnected(localIdentifier, remoteIdentifier(), nc.isAcceptor());
-            }
-        } catch (Exception e) {
-            Jvm.error().on(getClass(), "close:", e);
-            throw Jvm.rethrow(e);
-        }
         Closeable.closeQuietly(writers);
         writers.clear();
         super.performClose();
@@ -187,7 +175,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
                 }
             }
 
-            onMessageReceivedOrWritten();
+            onMessageReceived();
 
             final Wire inWire = dc.wire();
             if (dc.isMetaData()) {
@@ -248,11 +236,6 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         }
     }
 
-    @Override
-    protected void onBytesWritten() {
-        onMessageReceivedOrWritten();
-    }
-
     /**
      * ready to accept wire
      *
@@ -286,7 +269,7 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         }
     }
 
-    private void onMessageReceivedOrWritten() {
+    private void onMessageReceived() {
         final HeartbeatEventHandler heartbeatEventHandler = heartbeatEventHandler();
         if (heartbeatEventHandler != null)
             heartbeatEventHandler.onMessageReceived();
