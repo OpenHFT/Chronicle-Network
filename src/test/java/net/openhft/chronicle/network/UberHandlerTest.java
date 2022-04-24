@@ -24,22 +24,19 @@ import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
 import net.openhft.chronicle.core.threads.EventLoop;
-import net.openhft.chronicle.core.util.ThrowingFunction;
-import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.WritableSubHandler;
 import net.openhft.chronicle.network.cluster.AbstractSubHandler;
-import net.openhft.chronicle.network.cluster.Cluster;
 import net.openhft.chronicle.network.cluster.HostDetails;
-import net.openhft.chronicle.network.cluster.VanillaClusteredNetworkContext;
 import net.openhft.chronicle.network.cluster.handlers.Registerable;
 import net.openhft.chronicle.network.cluster.handlers.RejectedHandlerException;
 import net.openhft.chronicle.network.cluster.handlers.UberHandler;
 import net.openhft.chronicle.network.connection.CoreFields;
 import net.openhft.chronicle.network.connection.VanillaWireOutPublisher;
+import net.openhft.chronicle.network.test.TestClusterContext;
+import net.openhft.chronicle.network.test.TestClusteredNetworkContext;
 import net.openhft.chronicle.threads.Pauser;
 import net.openhft.chronicle.threads.TimingPauser;
 import net.openhft.chronicle.wire.*;
-import org.apache.mina.util.IdentityHashSet;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,7 +47,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -58,12 +54,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import static net.openhft.chronicle.network.HeaderTcpHandler.HANDLER;
 import static net.openhft.chronicle.network.cluster.handlers.UberHandler.uberHandler;
 import static net.openhft.chronicle.network.connection.CoreFields.*;
+import static net.openhft.chronicle.network.test.TestClusterContext.forHosts;
 import static org.junit.jupiter.api.Assertions.*;
 
 class UberHandlerTest extends NetworkTestCommon {
@@ -110,8 +106,8 @@ class UberHandlerTest extends NetworkTestCommon {
         HostDetails initiatorHost = new HostDetails().hostId(2).connectUri("initiator");
         HostDetails acceptorHost = new HostDetails().hostId(1).connectUri("acceptor");
 
-        try (MyClusterContext acceptorCtx = clusterContext(acceptorHost, initiatorHost);
-             MyClusterContext initiatorCtx = clusterContext(initiatorHost, acceptorHost)) {
+        try (TestClusterContext acceptorCtx = forHosts(acceptorHost, initiatorHost);
+             TestClusterContext initiatorCtx = forHosts(initiatorHost, acceptorHost)) {
 
             acceptorCtx.cluster().start(acceptorHost.hostId());
             initiatorCtx.cluster().start(initiatorHost.hostId());
@@ -167,8 +163,8 @@ class UberHandlerTest extends NetworkTestCommon {
         HostDetails acceptorHost = new HostDetails().hostId(1).connectUri("acceptor");
         HostDetails acceptorHostWithInvalidId = new HostDetails().hostId(98).connectUri("acceptor");
 
-        try (MyClusterContext acceptorCtx = clusterContext(acceptorHost, initiatorHost);
-             MyClusterContext initiatorCtx = clusterContext(initiatorHost, acceptorHostWithInvalidId)) {
+        try (TestClusterContext acceptorCtx = forHosts(acceptorHost, initiatorHost);
+             TestClusterContext initiatorCtx = forHosts(initiatorHost, acceptorHostWithInvalidId)) {
 
             acceptorCtx.cluster().start(acceptorHost.hostId());
             initiatorCtx.cluster().start(initiatorHost.hostId());
@@ -190,8 +186,8 @@ class UberHandlerTest extends NetworkTestCommon {
         HostDetails initiatorHost = new HostDetails().hostId(2).connectUri("initiator");
         HostDetails acceptorHost = new HostDetails().hostId(1).connectUri("acceptor");
 
-        try (MyClusterContext acceptorCtx = clusterContext(acceptorHost, initiatorHost);
-             MyClusterContext initiatorCtx = clusterContext(initiatorHost, acceptorHost)) {
+        try (TestClusterContext acceptorCtx = forHosts(acceptorHost, initiatorHost);
+             TestClusterContext initiatorCtx = forHosts(initiatorHost, acceptorHost)) {
 
             acceptorCtx.cluster().start(acceptorHost.hostId());
             initiatorCtx.cluster().start(initiatorHost.hostId());
@@ -248,8 +244,8 @@ class UberHandlerTest extends NetworkTestCommon {
         HostDetails initiatorHost = new HostDetails().hostId(2).connectUri("initiator");
         HostDetails acceptorHost = new HostDetails().hostId(1).connectUri("acceptor");
 
-        try (MyClusterContext acceptorCtx = clusterContext(acceptorHost, initiatorHost);
-             MyClusterContext initiatorCtx = clusterContext(initiatorHost, acceptorHost)) {
+        try (TestClusterContext acceptorCtx = forHosts(acceptorHost, initiatorHost);
+             TestClusterContext initiatorCtx = forHosts(initiatorHost, acceptorHost)) {
 
             acceptorCtx.cluster().start(acceptorHost.hostId());
             initiatorCtx.cluster().start(initiatorHost.hostId());
@@ -383,7 +379,7 @@ class UberHandlerTest extends NetworkTestCommon {
         }
     }
 
-    private static class WritableRejectingSubHandler extends RejectingSubHandler implements WritableSubHandler<MyClusteredNetworkContext> {
+    private static class WritableRejectingSubHandler extends RejectingSubHandler implements WritableSubHandler<TestClusteredNetworkContext> {
 
         @Override
         public void onWrite(WireOut outWire) {
@@ -396,7 +392,7 @@ class UberHandlerTest extends NetworkTestCommon {
         }
     }
 
-    private static class RejectingSubHandler extends AbstractSubHandler<MyClusteredNetworkContext> implements Marshallable {
+    private static class RejectingSubHandler extends AbstractSubHandler<TestClusteredNetworkContext> implements Marshallable {
 
         protected boolean rejected = false;
 
@@ -438,89 +434,8 @@ class UberHandlerTest extends NetworkTestCommon {
                 .writeEventName(CoreFields.handler).typedMarshallable(handler);
     }
 
-    private void sendMessageToHandler(WireOut wireOut, int cid) {
-        wireOut.writeEventName(csp).text(TEST_HANDLERS_CSP)
-                .writeEventName(CoreFields.cid).int64(cid);
-    }
-
-    @NotNull
-    private MyClusterContext clusterContext(HostDetails... clusterHosts) {
-        MyClusterContext ctx = new MyClusterContext().wireType(WireType.BINARY).localIdentifier((byte) clusterHosts[0].hostId());
-        ctx.heartbeatIntervalMs(500);
-        MyCluster cluster = new MyCluster(ctx);
-        for (HostDetails details : clusterHosts) {
-            cluster.hostDetails.put(String.valueOf(details.hostId()), details);
-        }
-        return ctx;
-    }
-
-    static class MyClusteredNetworkContext extends VanillaClusteredNetworkContext<MyClusteredNetworkContext, MyClusterContext> {
-
-        public Set<ConnectionListener> connectionListeners = new IdentityHashSet<>();
-
-        public MyClusteredNetworkContext(@NotNull MyClusterContext clusterContext) {
-            super(clusterContext);
-        }
-
-        @Override
-        public void addConnectionListener(ConnectionListener connectionListener) {
-            connectionListeners.add(connectionListener);
-        }
-
-        @Override
-        public void removeConnectionListener(ConnectionListener connectionListener) {
-            connectionListeners.remove(connectionListener);
-        }
-    }
-
-    static class MyCluster extends Cluster<MyClusteredNetworkContext, MyClusterContext> {
-        MyCluster(MyClusterContext clusterContext) {
-            super();
-            clusterContext(clusterContext);
-            clusterContext.cluster(this);
-        }
-    }
-
-    static class MyClusterContext extends net.openhft.chronicle.network.cluster.ClusterContext<MyClusterContext, MyClusteredNetworkContext> {
-        @Override
-        protected String clusterNamePrefix() {
-            return "";
-        }
-
-        @NotNull
-        @Override
-        public ThrowingFunction<MyClusteredNetworkContext, TcpEventHandler<MyClusteredNetworkContext>, IOException> tcpEventHandlerFactory() {
-            return nc -> {
-                if (nc.isAcceptor()) {
-                    nc.wireOutPublisher(new VanillaWireOutPublisher(wireType()));
-                }
-                final TcpEventHandler<MyClusteredNetworkContext> handler = new TcpEventHandler<>(nc);
-                final Function<MyClusteredNetworkContext, TcpHandler<MyClusteredNetworkContext>> factory =
-                        unused -> new HeaderTcpHandler<>(handler, o -> (TcpHandler<MyClusteredNetworkContext>) o);
-                final WireTypeSniffingTcpHandler<MyClusteredNetworkContext> sniffer = new WireTypeSniffingTcpHandler<>(handler, factory);
-                handler.tcpHandler(sniffer);
-                return handler;
-            };
-        }
-
-        @Override
-        protected void defaults() {
-            if (this.wireType() == null)
-                this.wireType(WireType.BINARY);
-
-            if (this.wireOutPublisherFactory() == null)
-                this.wireOutPublisherFactory(VanillaWireOutPublisher::new);
-
-            if (serverThreadingStrategy() == null)
-                this.serverThreadingStrategy(ServerThreadingStrategy.SINGLE_THREADED);
-
-            if (this.networkContextFactory() == null)
-                this.networkContextFactory(MyClusteredNetworkContext::new);
-        }
-    }
-
     static class Sender extends AbstractCompleteFlaggingHandler
-            implements WritableSubHandler<MyClusteredNetworkContext>, Marshallable {
+            implements WritableSubHandler<TestClusteredNetworkContext>, Marshallable {
 
         public Sender() {
         }
@@ -557,7 +472,7 @@ class UberHandlerTest extends NetworkTestCommon {
     }
 
     static class Receiver extends AbstractCompleteFlaggingHandler
-            implements WritableSubHandler<MyClusteredNetworkContext>, Marshallable {
+            implements WritableSubHandler<TestClusteredNetworkContext>, Marshallable {
 
         @Override
         public void onRead(@NotNull WireIn inWire, @NotNull WireOut outWire) {
@@ -583,7 +498,7 @@ class UberHandlerTest extends NetworkTestCommon {
     }
 
     static class PingPongHandler extends AbstractCompleteFlaggingHandler implements
-            Marshallable, WritableSubHandler<MyClusteredNetworkContext> {
+            Marshallable, WritableSubHandler<TestClusteredNetworkContext> {
 
         private static final int LOGGING_INTERVAL = 50;
 
@@ -692,7 +607,7 @@ class UberHandlerTest extends NetworkTestCommon {
     /**
      * Just a common way of knowing when all handlers have stopped writing
      */
-    abstract static class AbstractCompleteFlaggingHandler extends AbstractSubHandler<MyClusteredNetworkContext> {
+    abstract static class AbstractCompleteFlaggingHandler extends AbstractSubHandler<TestClusteredNetworkContext> {
         private boolean flaggedComplete = false;
 
         protected void flagComplete() {
@@ -706,15 +621,15 @@ class UberHandlerTest extends NetworkTestCommon {
 
     static class UberHandlerTestHarness extends AbstractCloseable {
 
-        private final MyClusterContext clusterContext;
-        private final MyClusteredNetworkContext nc;
-        private final UberHandler<MyClusteredNetworkContext> uberHandler;
+        private final TestClusterContext clusterContext;
+        private final TestClusteredNetworkContext nc;
+        private final UberHandler<TestClusteredNetworkContext> uberHandler;
         private final Wire inWire;
         private final Wire outWire;
 
         public UberHandlerTestHarness() {
-            clusterContext = new MyClusterContext();
-            nc = new MyClusteredNetworkContext(clusterContext);
+            clusterContext = new TestClusterContext();
+            nc = new TestClusteredNetworkContext(clusterContext);
             nc.wireOutPublisher(new VanillaWireOutPublisher(clusterContext.wireType()));
             uberHandler = createHandler();
             uberHandler.nc(nc);
@@ -722,7 +637,7 @@ class UberHandlerTest extends NetworkTestCommon {
             outWire = WireType.BINARY.apply(Bytes.allocateElasticOnHeap());
         }
 
-        private UberHandler<MyClusteredNetworkContext> createHandler() {
+        private UberHandler<TestClusteredNetworkContext> createHandler() {
             Wire wire = WireType.BINARY.apply(Bytes.allocateElasticOnHeap());
             uberHandler(123, 456, WireType.BINARY).writeMarshallable(wire);
             try (final DocumentContext documentContext = wire.readingDocument()) {
@@ -752,7 +667,7 @@ class UberHandlerTest extends NetworkTestCommon {
             uberHandler.process(inWire.bytes(), outWire.bytes(), nc);
         }
 
-        public MyClusteredNetworkContext nc() {
+        public TestClusteredNetworkContext nc() {
             return nc;
         }
 
