@@ -18,15 +18,13 @@
 
 package net.openhft.chronicle.network.cluster;
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.VanillaNetworkContext;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class VanillaClusteredNetworkContext<T extends VanillaClusteredNetworkContext<T, C>, C extends ClusterContext<C, T>>
         extends VanillaNetworkContext<T> implements ClusteredNetworkContext<T> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(VanillaClusteredNetworkContext.class);
 
     @NotNull
     private final EventLoop eventLoop;
@@ -57,7 +55,7 @@ public class VanillaClusteredNetworkContext<T extends VanillaClusteredNetworkCon
     }
 
     private boolean logMissedHeartbeat() {
-        LOGGER.warn("Missed heartbeat on network context " + socketChannel());
+        Jvm.warn().on(VanillaClusteredNetworkContext.class, "Missed heartbeat on network context " + socketChannel());
         return false;
     }
 }
