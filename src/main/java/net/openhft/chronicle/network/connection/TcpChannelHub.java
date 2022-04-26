@@ -528,7 +528,7 @@ public final class TcpChannelHub extends AbstractCloseable {
     }
 
     private void awaitAckOfClosedMessage() {
-        // wait up to 25 ms to receive an close request acknowledgment from the server
+        // wait up to 25 ms to receive a close request acknowledgment from the server
         try {
             final boolean await = receivedClosedAcknowledgement.await(25, MILLISECONDS);
             if (!await)
@@ -1519,7 +1519,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                     bytes.ensureCapacity((long) SIZE_OF_SIZE + messageSize);
                     @Nullable final ByteBuffer byteBuffer = (ByteBuffer) bytes.underlyingObject();
                     byteBuffer.clear();
-                    // we have to first write the header back to the bytes so that is can be
+                    // we have to first write the header back to the bytes so that it can be
                     // viewed as a document
                     bytes.writeInt(0, header);
                     byteBuffer.position(SIZE_OF_SIZE);
@@ -1607,9 +1607,9 @@ public final class TcpChannelHub extends AbstractCloseable {
                             " channel is closed, name=" + name);
                 int numberOfBytesRead = clientChannel.read(buffer);
 
-                // we dont want to call isInterrupted every time so will only call it if we have read no bytes
+                // we don't want to call isInterrupted every time so will only call it if we have read no bytes
                 if (numberOfBytesRead == 0 && Thread.currentThread().isInterrupted())
-                    isShutdown = true;
+                    stop();
 
                 if (numberOfBytesRead == -1)
                     throw new ConnectionDroppedException("Disconnection to server=" + socketAddressSupplier +
@@ -1664,8 +1664,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                         Jvm.warn().on(TcpChannelHub.class, "\n========= THREAD DUMP =========\n" + sb);
                     }
 
-                    throw new ConnectionDroppedException(name + " the client is failing to get the" +
-                            " " +
+                    throw new ConnectionDroppedException(name + " the client is failing to get the " +
                             "data from the server, so we are going to drop the connection and " +
                             "reconnect.");
                 }
