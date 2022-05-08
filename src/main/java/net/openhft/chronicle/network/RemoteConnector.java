@@ -168,7 +168,6 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
                     // this can happen if the acceptor is in the process of shutting down
                     return false;
 
-
                 nc.socketChannel(sc);
                 nc.isAcceptor(false);
 
