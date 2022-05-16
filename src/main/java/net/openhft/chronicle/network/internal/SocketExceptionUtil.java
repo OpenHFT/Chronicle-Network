@@ -27,7 +27,8 @@ public final class SocketExceptionUtil {
 
         return isALinuxJava12OrLessConnectionResetException(e)
                 || isAWindowsConnectionResetException(e)
-                || isALinuxJava13OrGreaterConnectionResetException(e);
+                || isALinuxJava13OrGreaterConnectionResetException(e)
+                || isAWindowsEstablishedConnectionAbortedException(e);
     }
 
     private static boolean isALinuxJava13OrGreaterConnectionResetException(IOException e) {
@@ -40,6 +41,10 @@ public final class SocketExceptionUtil {
 
     private static boolean isALinuxJava12OrLessConnectionResetException(IOException e) {
         return e.getClass().equals(IOException.class) && "Connection reset by peer".equals(e.getMessage());
+    }
+
+    private static boolean isAWindowsEstablishedConnectionAbortedException(Exception e) {
+        return e.getClass().equals(IOException.class) && "An established connection was aborted by the software in your host machine".equals(e.getMessage());
     }
 
     private static final class Language {
