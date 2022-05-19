@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
+import java.util.BitSet;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -259,7 +260,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         //   int read = inBB.remaining() > 0 ? sc.read(inBB) : Integer.MAX_VALUE;
         final long elapsedNs = System.nanoTime() - beginNs;
         if (nbWarningEnabled && elapsedNs > NBR_WARNING_NANOS)
-            statusMonitorEventHandler.add(new ThreadLogTypeElapsedRecord(LogType.READ, elapsedNs));
+            statusMonitorEventHandler.add(
+                    new ThreadLogTypeElapsedRecord(LogType.READ, elapsedNs, Affinity.getCpu(), Affinity.getAffinity()));
 
         if (read == Integer.MAX_VALUE)
             onInBBFul();
@@ -517,7 +519,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         int wrote = sc.write(outBB);
         long elapsedNs = System.nanoTime() - beginNs;
         if (nbWarningEnabled && elapsedNs > NBW_WARNING_NANOS)
-            statusMonitorEventHandler.add(new ThreadLogTypeElapsedRecord(LogType.WRITE, elapsedNs));
+            statusMonitorEventHandler.add(
+                    new ThreadLogTypeElapsedRecord(LogType.WRITE, elapsedNs, Affinity.getCpu(), Affinity.getAffinity()));
 
         tcpHandler.onWriteTime(beginNs, outBB, start, outBB.position());
 
@@ -610,6 +613,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
         private final LogType logType;
         private final long elapsedNs;
+        private final int cpuId;
+        private final BitSet affinity;
 
         /**
          * Does nothing, just called to load the class eagerly
@@ -620,9 +625,13 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         }
 
         public ThreadLogTypeElapsedRecord(@NotNull final LogType logType,
-                                          final long elapsedNs) {
+                                          final long elapsedNs,
+                                          final int cpuId,
+                                          @Nullable final BitSet affinity) {
             this.logType = logType;
             this.elapsedNs = elapsedNs;
+            this.cpuId = cpuId;
+            this.affinity = affinity;
         }
     }
 
@@ -661,9 +670,9 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                             .append(" took ")
                             .append(msg.elapsedNs / 1000)
                             .append(" us, CPU: ")
-                            .append(Affinity.getCpu())
+                            .append(msg.cpuId)
                             .append(", affinity ")
-                            .append(Affinity.getAffinity());
+                            .append(msg.affinity);
 
                     // no point grabbing stack trace as thread has moved on
 
