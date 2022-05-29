@@ -105,7 +105,7 @@ public class SimpleServerAndClientTest extends NetworkTestCommon {
                         // opens a server socket, that does not mean that there is a server
                         // running to read this, for example if you commented out "createServer(desc, eg); "
                         // and this time out exception will be thrown
-                        expectException(exceptionKey -> exceptionKey.throwable == e, "Expected timeout");
+                        ignoreException(exceptionKey -> exceptionKey.throwable == e, "Expected timeout");
                         continue;
                     }
                     eg.stop();

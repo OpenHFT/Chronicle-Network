@@ -25,7 +25,7 @@ public class FileBasedHostnamePortLookupTableTest extends NetworkTestCommon {
     @Before
     public void setUp() {
         if (OS.isWindows()) {
-            expectException("Error deleting the shared lookup table");
+            ignoreException("Error deleting the shared lookup table");
         }
         IOTools.deleteDirWithFilesOrThrow(TEST_TABLE_FILENAME);
         lookupTable = new FileBasedHostnamePortLookupTable(TEST_TABLE_FILENAME);

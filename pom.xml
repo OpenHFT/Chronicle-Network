@@ -96,6 +96,19 @@
         <!-- test dependencies -->
 
         <dependency>
+            <groupId>net.openhft</groupId>
+            <artifactId>chronicle-test-framework</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>net.openhft</groupId>
+            <artifactId>chronicle-core</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
