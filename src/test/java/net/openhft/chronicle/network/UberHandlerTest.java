@@ -139,8 +139,8 @@ public class UberHandlerTest extends NetworkTestCommon {
     @Test
     public void testHandlerWillCloseWhenHostIdsAreWrong() throws IOException {
         expectException("Received a handler for host ID: 98, my host ID is: 1 this is probably a configuration error");
-        expectException("Closed");
-        expectException("SubHandler HeartbeatHandler");
+        ignoreException("Closed");
+        ignoreException("SubHandler HeartbeatHandler");
 
         TCPRegistry.createServerSocketChannelFor("initiator", "acceptor");
         HostDetails initiatorHost = new HostDetails().hostId(99).connectUri("initiator");
@@ -161,7 +161,6 @@ public class UberHandlerTest extends NetworkTestCommon {
             });
             Jvm.pause(2000);
             assertFalse(establishedConnection.get());
-            assertTrue(exceptions.keySet().stream().anyMatch(k -> k.throwable != null && k.throwable.getMessage().contains("Received a handler for host ID: 98, my host ID is: 1 this is probably a configuration error")));
         }
     }
 
