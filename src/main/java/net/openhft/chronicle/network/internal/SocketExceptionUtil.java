@@ -1,7 +1,10 @@
 package net.openhft.chronicle.network.internal;
 
+import net.openhft.chronicle.core.Jvm;
+
 import java.io.IOException;
 import java.net.SocketException;
+import java.util.Locale;
 
 public final class SocketExceptionUtil {
 
@@ -20,9 +23,46 @@ public final class SocketExceptionUtil {
      * @return true if the exception is one that signifies the connection was reset
      */
     public static boolean isAConnectionResetException(IOException e) {
-        String message = e.getMessage();
-        return message != null &&
-                (message.equals("Connection reset by peer")
-                        || e instanceof SocketException && message.equals("Connection reset"));
+        Language.warnOnce();
+
+        return isALinuxJava12OrLessConnectionResetException(e)
+                || isAWindowsConnectionResetException(e)
+                || isALinuxJava13OrGreaterConnectionResetException(e)
+                || isAWindowsEstablishedConnectionAbortedException(e)
+                || isAnOSXBrokenPipeException(e);
+    }
+
+    private static boolean isALinuxJava13OrGreaterConnectionResetException(IOException e) {
+        return e.getClass().equals(SocketException.class) && "Connection reset".equals(e.getMessage());
+    }
+
+    private static boolean isAWindowsConnectionResetException(IOException e) {
+        return e.getClass().equals(IOException.class) && "An existing connection was forcibly closed by the remote host".equals(e.getMessage());
+    }
+
+    private static boolean isALinuxJava12OrLessConnectionResetException(IOException e) {
+        return e.getClass().equals(IOException.class) && "Connection reset by peer".equals(e.getMessage());
+    }
+
+    private static boolean isAWindowsEstablishedConnectionAbortedException(Exception e) {
+        return e.getClass().equals(IOException.class) && "An established connection was aborted by the software in your host machine".equals(e.getMessage());
+    }
+
+    private static boolean isAnOSXBrokenPipeException(Exception e) {
+        return e.getClass().equals(IOException.class) && "Broken pipe".equals(e.getMessage());
+    }
+
+    private static final class Language {
+        static {
+            if (!Locale.getDefault().getLanguage().equals(Locale.ENGLISH.getLanguage())) {
+                Jvm.warn().on(SocketExceptionUtil.class,
+                        "Running under non-English locale '" + Locale.getDefault().getLanguage() +
+                                "', transient exceptions will be reported with higher level than necessary.");
+            }
+        }
+
+        static void warnOnce() {
+            // No-op.
+        }
     }
 }
