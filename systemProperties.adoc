@@ -5,18 +5,18 @@ Below, a number of relevant System Properties are listed.
 [cols=4*, options="header"]
 |===
 | Property Key | Default | Description | Java Variable Name (Type)
-| chronicle.network.callOnMissedHeartbeatOnDisconnect |`false` | If 'true', calls HeartBeatListener when we do not receive a heartbeat | _CALL_MISSED_HEARTBEAT_ON_DISCONNECT_ (boolean)
+| chronicle.network.callOnMissedHeartbeatOnDisconnect |`false` | Setting this property to "yes", "true" or "" will enable this feature and calls HeartBeatListener when we do not receive a heartbeat | _CALL_MISSED_HEARTBEAT_ON_DISCONNECT_ (boolean)
 | client.timeout | 500 | Number of milliseconds that code execution is paused by | _pausePeriodMs_ (int)
 | connectionStrategy.pauseMillisBeforeReconnect | 500 | Allows control of a backoff strategy, and returns how long in milliseconds to pause before attempting reconnect | pauseMillisBeforeReconnect (long)
 | connectionStrategy.pause.max.secs | 5 | The maximum amount of time between two events | _maxPauseSec_ (long)
 | connectionStrategy.pause.min.secs | 5 | The minimum amount of time between two events | _minPauseSec_ (long)
 | connectionStrategy.socketConnectionTimeoutMs | 1 | Minimum time before message displayed: "Timed out attempting to connect to " + socketAddress | socketConnectionTimeoutMs (int)
-| disable.tcp.nodelay | `false` | If 'true', displays message 'tcpNoDelay disabled' | _DISABLE_TCP_NODELAY_ (boolean)
-| ssl.test.payload | `false` | If 'true', returns testDataConnection | _SEND_DATA_BEFORE_SSL_HANDSHAKE_ (boolean)
+| disable.tcp.nodelay | `false` | Setting this property to "yes", "true" or "" displays message 'tcpNoDelay disabled' | _DISABLE_TCP_NODELAY_ (boolean)
+| ssl.test.payload | `false` | Setting this property to "yes", "true" or "", returns testDataConnection | _SEND_DATA_BEFORE_SSL_HANDSHAKE_ (boolean)
 | tcp.client.buffer.size | 0 | Gets or sets the suggested buffer size | _tcpBufferSize_ (int)
 | TcpEventHandler.targetWriteSize | 1024 | Used to check if ByteBuffer did write something | _TARGET_WRITE_SIZE_ (int)
 | tcp.event.monitor.secs | 10 | Sets the interval in between polls | _MONITOR_POLL_EVERY_SEC_ (int)
-| tcp.failover.time | 2_000 | Amount of time before the failover is used | _failoverTimeout_ (long)
+| tcp.failover.time | 2_000 MS | Amount of time before the failover is used | _failoverTimeout_ (long)
 | tcp.nbr.warning.nanos | 20_000_000L | Default warning threshold for NonBlockingReader| _NBR_WARNING_NANOS_ (long)
 | tcp.nbw.warning.nanos | 20_000_000L | Default warning threshold for NonBlockingPumpWriter| _NBW_WARNING_NANOS_ (long)
 |===
