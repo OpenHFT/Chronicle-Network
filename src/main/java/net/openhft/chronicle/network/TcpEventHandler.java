@@ -23,10 +23,7 @@ import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.core.annotation.PackageLocal;
-import net.openhft.chronicle.core.io.AbstractCloseable;
-import net.openhft.chronicle.core.io.ClosedIllegalStateException;
-import net.openhft.chronicle.core.io.IORuntimeException;
-import net.openhft.chronicle.core.io.QueryCloseable;
+import net.openhft.chronicle.core.io.*;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -155,7 +152,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         writeLog = new NetworkLog(this.sc, "write");
         nbWarningEnabled = Jvm.warn().isEnabled(getClass());
         statusMonitorEventHandler = new StatusMonitorEventHandler(getClass());
-        disableThreadSafetyCheck(true);
+        singleThreadedCheckDisabled(true);
 
         if (FIRST_HANDLER.compareAndSet(false, true))
             warmUp();
@@ -174,9 +171,9 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     }
 
     @Override
-    public void resetUsedByThread() {
-        super.resetUsedByThread();
-        ((AbstractCloseable) nc).resetUsedByThread();
+    public void singleThreadedCheckReset() {
+        super.singleThreadedCheckReset();
+        ((AbstractCloseable) nc).singleThreadedCheckReset();
     }
 
     public void reader(@NotNull final TcpEventHandler.SocketReader reader) {
@@ -350,6 +347,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         }
         long elapsedNs = System.nanoTime() - beginNs;
         Jvm.debug().on(TcpEventHandler.class, "... warmed up - took " + (elapsedNs / runs / 1e3) + " us avg");
+
+        ((AbstractReferenceCounted) inBBB).singleThreadedCheckReset();
     }
 
     private void checkBufSize(final int bufSize, final String name) {
