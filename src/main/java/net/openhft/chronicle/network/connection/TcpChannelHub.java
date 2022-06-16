@@ -310,7 +310,10 @@ public final class TcpChannelHub extends AbstractCloseable {
     void clear(@NotNull final Wire wire) {
         assert wire.startUse();
         try {
+            final Bytes<?> bytes = wire.bytes();
+            bytes.singleThreadedCheckReset();
             wire.clear();
+            bytes.singleThreadedCheckReset();
         } finally {
             assert wire.endUse();
         }
@@ -1809,7 +1812,6 @@ public final class TcpChannelHub extends AbstractCloseable {
                     try {
 
                         clear(outWire);
-                        outWire.bytes().singleThreadedCheckReset();
 
                         // resets the heartbeat timer
                         onMessageReceived();
