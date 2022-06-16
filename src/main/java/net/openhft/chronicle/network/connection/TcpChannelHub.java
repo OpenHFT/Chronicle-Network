@@ -152,6 +152,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         this.eventLoop = eventLoop;
         this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
         this.outWire = wireType.apply(elasticByteBuffer());
+        this.outWire.bytes().singleThreadedCheckDisabled(true);
         outWire.usePadding(TCP_USE_PADDING);
         // this.inWire = wireType.apply(elasticByteBuffer());
         this.name = name.trim();
