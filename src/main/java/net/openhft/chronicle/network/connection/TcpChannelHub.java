@@ -1809,6 +1809,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                     try {
 
                         clear(outWire);
+                        outWire.bytes().singleThreadedCheckReset();
 
                         // resets the heartbeat timer
                         onMessageReceived();
