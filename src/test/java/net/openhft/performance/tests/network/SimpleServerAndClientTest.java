@@ -35,8 +35,7 @@ import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.YamlLogging;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -44,11 +43,12 @@ import java.util.concurrent.TimeoutException;
 
 import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri;
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PADDING;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SimpleServerAndClientTest extends NetworkTestCommon {
+class SimpleServerAndClientTest extends NetworkTestCommon {
 
     @Test
-    public void test() throws IOException {
+    void test() throws IOException {
         YamlLogging.setAll(true);
 
         for (; ; ) {
@@ -94,7 +94,7 @@ public class SimpleServerAndClientTest extends NetworkTestCommon {
                         // read the reply and check the result
                         reply.readDocument(null, data -> {
                             @Nullable final String text = data.read("payloadResponse").text();
-                            Assert.assertEquals(expectedMessage, text);
+                            assertEquals(expectedMessage, text);
                         });
 
                     } catch (TimeoutException e) {

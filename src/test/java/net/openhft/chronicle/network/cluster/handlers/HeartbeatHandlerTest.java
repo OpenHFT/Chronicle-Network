@@ -3,9 +3,11 @@ package net.openhft.chronicle.network.cluster.handlers;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.wire.BinaryWire;
 import net.openhft.chronicle.wire.Wire;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class HeartbeatHandlerTest {
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+class HeartbeatHandlerTest {
 
     public static final long CID = 1234L;
     public static final int VALID_HEARTBEAT_TIMEOUT_MS = 1000;
@@ -13,44 +15,52 @@ public class HeartbeatHandlerTest {
     public static final int TOO_SMALL_HEARTBEAT_TIMEOUT_MS = 999;
     public static final int TOO_SMALL_HEARTBEAT_INTERVAL_MS = 499;
 
-    @Test(expected = IllegalArgumentException.class)
-    public void tooSmallHeartbeatIntervalMsThrowsIllegalArgumentException() {
-        HeartbeatHandler.heartbeatHandler(VALID_HEARTBEAT_TIMEOUT_MS, TOO_SMALL_HEARTBEAT_INTERVAL_MS, CID);
+    @Test
+    void tooSmallHeartbeatIntervalMsThrowsIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () ->
+                HeartbeatHandler.heartbeatHandler(VALID_HEARTBEAT_TIMEOUT_MS, TOO_SMALL_HEARTBEAT_INTERVAL_MS, CID));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void tooSmallHeartbeatIntervalMsThrowsIllegalArgumentExceptionConstructor() {
-        createByDeserialization(VALID_HEARTBEAT_TIMEOUT_MS, TOO_SMALL_HEARTBEAT_INTERVAL_MS);
+    @Test
+    void tooSmallHeartbeatIntervalMsThrowsIllegalArgumentExceptionConstructor() {
+        assertThrows(IllegalArgumentException.class, () ->
+            createByDeserialization(VALID_HEARTBEAT_TIMEOUT_MS, TOO_SMALL_HEARTBEAT_INTERVAL_MS));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void tooSmallHeartbeatTimeoutMsThrowsIllegalArgumentException() {
-        HeartbeatHandler.heartbeatHandler(TOO_SMALL_HEARTBEAT_TIMEOUT_MS, VALID_HEARTBEAT_INTERVAL_MS, CID);
+    @Test
+    void tooSmallHeartbeatTimeoutMsThrowsIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () ->
+            HeartbeatHandler.heartbeatHandler(TOO_SMALL_HEARTBEAT_TIMEOUT_MS, VALID_HEARTBEAT_INTERVAL_MS, CID));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void tooSmallHeartbeatTimeoutMsThrowsIllegalArgumentExceptionConstructor() {
-        createByDeserialization(TOO_SMALL_HEARTBEAT_TIMEOUT_MS, VALID_HEARTBEAT_INTERVAL_MS);
+    @Test
+    void tooSmallHeartbeatTimeoutMsThrowsIllegalArgumentExceptionConstructor() {
+        assertThrows(IllegalArgumentException.class, () ->
+            createByDeserialization(TOO_SMALL_HEARTBEAT_TIMEOUT_MS, VALID_HEARTBEAT_INTERVAL_MS));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void intervalEqualToTimeoutThrowsIllegalStateException() {
-        HeartbeatHandler.heartbeatHandler(VALID_HEARTBEAT_TIMEOUT_MS, VALID_HEARTBEAT_TIMEOUT_MS, CID);
+    @Test
+    void intervalEqualToTimeoutThrowsIllegalStateException() {
+        assertThrows(IllegalArgumentException.class, () ->
+            HeartbeatHandler.heartbeatHandler(VALID_HEARTBEAT_TIMEOUT_MS, VALID_HEARTBEAT_TIMEOUT_MS, CID));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void intervalEqualToTimeoutThrowsIllegalStateExceptionConstructor() {
-        createByDeserialization(VALID_HEARTBEAT_TIMEOUT_MS, VALID_HEARTBEAT_TIMEOUT_MS);
+    @Test
+    void intervalEqualToTimeoutThrowsIllegalStateExceptionConstructor() {
+        assertThrows(IllegalArgumentException.class, () ->
+            createByDeserialization(VALID_HEARTBEAT_TIMEOUT_MS, VALID_HEARTBEAT_TIMEOUT_MS));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void intervalGreaterThanTimeoutThrowsIllegalStateException() {
-        HeartbeatHandler.heartbeatHandler(VALID_HEARTBEAT_TIMEOUT_MS, VALID_HEARTBEAT_TIMEOUT_MS + 100, CID);
+    @Test
+    void intervalGreaterThanTimeoutThrowsIllegalStateException() {
+        assertThrows(IllegalArgumentException.class, () ->
+            HeartbeatHandler.heartbeatHandler(VALID_HEARTBEAT_TIMEOUT_MS, VALID_HEARTBEAT_TIMEOUT_MS + 100, CID));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void intervalGreaterThanTimeoutThrowsIllegalStateExceptionConstructor() {
-        createByDeserialization(VALID_HEARTBEAT_TIMEOUT_MS, VALID_HEARTBEAT_TIMEOUT_MS + 100);
+    @Test
+    void intervalGreaterThanTimeoutThrowsIllegalStateExceptionConstructor() {
+        assertThrows(IllegalArgumentException.class, () ->
+            createByDeserialization(VALID_HEARTBEAT_TIMEOUT_MS, VALID_HEARTBEAT_TIMEOUT_MS + 100));
     }
 
     private void createByDeserialization(long heartbeatTimeoutMs, long heartbeatIntervalMs) {

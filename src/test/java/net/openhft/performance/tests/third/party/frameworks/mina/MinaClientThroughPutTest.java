@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 
 import static net.openhft.chronicle.core.Jvm.pause;
 
-public class MinaClientThroughPutTest extends NetworkTestCommon {
+class MinaClientThroughPutTest extends NetworkTestCommon {
 
     private static final String DEFAULT_PORT = Integer.toString(MinaEchoServer.PORT);
     private static final int PORT = Integer.parseInt(System.getProperty("port", DEFAULT_PORT));

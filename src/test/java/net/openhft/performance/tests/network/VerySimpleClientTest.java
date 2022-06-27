@@ -48,16 +48,17 @@ import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.Wires;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PADDING;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class VerySimpleClientTest extends NetworkTestCommon {
+class VerySimpleClientTest extends NetworkTestCommon {
 
     public static final WireType WIRE_TYPE = WireType.BINARY;
     final Wire outWire = WIRE_TYPE.apply(Bytes.elasticByteBuffer());
@@ -73,8 +74,8 @@ public class VerySimpleClientTest extends NetworkTestCommon {
         inWire.usePadding(TCP_USE_PADDING);
     }
 
-    @Before
-    public void setUp() throws IOException {
+    @BeforeEach
+    void setUp() throws IOException {
         @NotNull String desc = "host.port";
         TCPRegistry.createServerSocketChannelFor(desc);
         eg = EventGroup.builder().build();
@@ -85,8 +86,8 @@ public class VerySimpleClientTest extends NetworkTestCommon {
 
     }
 
-    @Override
-    protected void preAfter() {
+    @AfterEach
+    void tearDown() {
         Closeable.closeQuietly(sc, eg, client);
         TcpChannelHub.closeAllHubs();
         inWire.bytes().releaseLast();
@@ -94,7 +95,7 @@ public class VerySimpleClientTest extends NetworkTestCommon {
     }
 
     @Test
-    public void test() throws IOException {
+    void test() throws IOException {
         // create the message to send§
         final long tid = 0;
         outWire.clear();
@@ -117,7 +118,7 @@ public class VerySimpleClientTest extends NetworkTestCommon {
         readDocument(inWire);
 
         inWire.readDocument(null, data -> {
-            Assert.assertEquals(expectedMessage, data.read("payloadResponse").text());
+            assertEquals(expectedMessage, data.read("payloadResponse").text());
         });
 
     }

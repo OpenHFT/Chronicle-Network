@@ -32,7 +32,7 @@ import java.util.Arrays;
 
 import static net.openhft.chronicle.core.Jvm.pause;
 
-public class MinaClientLatencyTest extends NetworkTestCommon {
+class MinaClientLatencyTest extends NetworkTestCommon {
 
     public static final String DEFAULT_PORT = Integer.toString(MinaEchoServer.PORT);
     static final int PORT = Integer.parseInt(System.getProperty("port", DEFAULT_PORT));

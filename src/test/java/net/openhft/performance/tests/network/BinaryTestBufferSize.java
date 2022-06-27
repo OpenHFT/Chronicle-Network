@@ -43,45 +43,50 @@ import net.openhft.chronicle.network.tcp.ChronicleSocket;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.threads.EventGroup;
 import org.jetbrains.annotations.NotNull;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class BinaryTestBufferSize {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+class BinaryTestBufferSize {
     private static final @NotNull
     String desc = "host.port";
     private EventLoop eg;
     private ThreadDump threadDump;
 
-    @Before
-    public void threadDump() {
+    @BeforeEach
+    void threadDump() {
         threadDump = new ThreadDump();
     }
 
-    @After
+    @AfterEach
     public void checkThreadDump() {
         threadDump.assertNoNewThreads();
     }
 
-    @Before
-    public void setUp() throws IOException {
+    @BeforeEach
+    void setUp() throws IOException {
         TCPRegistry.createServerSocketChannelFor(desc);
         eg = EventGroup.builder().build();
         eg.start();
         createServer(desc, eg);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         eg.stop();
         TcpChannelHub.closeAllHubs();
         TCPRegistry.reset();
     }
 
-    @Ignore("TODO FIX")
+    @Disabled("TODO FIX")
     @Test
-    public void test() throws IOException {
+    void test() throws IOException {
         sendAndReceive(64 << 10);
     }
 
@@ -134,7 +139,7 @@ public class BinaryTestBufferSize {
                // System.out.println("count=" + count);
 
             inBytes.readLimit(totalRead);
-            Assert.assertEquals(expectedMessage, inBytes.readUtf8());
+            assertEquals(expectedMessage, inBytes.readUtf8());
 
         } finally {
             inBytes.releaseLast();

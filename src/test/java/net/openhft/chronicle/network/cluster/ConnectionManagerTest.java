@@ -3,40 +3,38 @@ package net.openhft.chronicle.network.cluster;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.NetworkTestCommon;
 import net.openhft.chronicle.network.VanillaNetworkContext;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
-public class ConnectionManagerTest extends NetworkTestCommon {
+class ConnectionManagerTest extends NetworkTestCommon {
 
     private ConnectionManager<TestNetworkContext> connectionManager;
     private TestNetworkContext networkContext;
 
-    @Mock
     private ConnectionManager.ConnectionListener<TestNetworkContext> listener1;
-    @Mock
     private ConnectionManager.ConnectionListener<TestNetworkContext> listener2;
 
-    @Before
+    @BeforeEach
+    @SuppressWarnings("unchecked")
     public void setUp() {
+        listener1 = Mockito.mock(ConnectionManager.ConnectionListener.class);
+        listener2 = Mockito.mock(ConnectionManager.ConnectionListener.class);
         connectionManager = new ConnectionManager<>();
         networkContext = new TestNetworkContext();
     }
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    void closeNetworkContext() {
         Closeable.closeQuietly(networkContext);
     }
 
     @Test
-    public void onConnectionChangedExecutesAllListeners() {
+    void onConnectionChangedExecutesAllListeners() {
         connectionManager.addListener(listener1);
         connectionManager.addListener(listener2);
         connectionManager.onConnectionChanged(true, networkContext, null);
@@ -45,7 +43,7 @@ public class ConnectionManagerTest extends NetworkTestCommon {
     }
 
     @Test
-    public void onConnectionChangedOnlyExecutesListenersWhenConnectionStateChanges() {
+    void onConnectionChangedOnlyExecutesListenersWhenConnectionStateChanges() {
         connectionManager.addListener(listener1);
         connectionManager.addListener(listener2);
         ConnectionManager.EventEmitterToken token = connectionManager.onConnectionChanged(true, networkContext, null);
@@ -61,7 +59,7 @@ public class ConnectionManagerTest extends NetworkTestCommon {
     }
 
     @Test
-    public void executeNewListenersWillOnlyExecuteNonExecutedListeners() {
+    void executeNewListenersWillOnlyExecuteNonExecutedListeners() {
         connectionManager.addListener(listener1);
         ConnectionManager.EventEmitterToken token = connectionManager.onConnectionChanged(true, networkContext, null);
         connectionManager.onConnectionChanged(true, networkContext, token);
@@ -77,7 +75,7 @@ public class ConnectionManagerTest extends NetworkTestCommon {
     }
 
     @Test
-    public void executeNewListenersWillExecuteAllListenersOnFirstCall() {
+    void executeNewListenersWillExecuteAllListenersOnFirstCall() {
         final ConnectionManager.EventEmitterToken eventEmitterToken = connectionManager.onConnectionChanged(true, networkContext, null);
         connectionManager.addListener(listener1);
         connectionManager.addListener(listener2);
@@ -87,7 +85,7 @@ public class ConnectionManagerTest extends NetworkTestCommon {
     }
 
     @Test
-    public void executeNewListenersWillNotExecuteListenersThatPreviouslyThrewIllegalStateException() {
+    void executeNewListenersWillNotExecuteListenersThatPreviouslyThrewIllegalStateException() {
         doThrow(IllegalStateException.class).when(listener2).onConnectionChange(any(), anyBoolean());
         final ConnectionManager.EventEmitterToken eventEmitterToken = connectionManager.onConnectionChanged(true, networkContext, null);
         connectionManager.addListener(listener1);
@@ -98,7 +96,7 @@ public class ConnectionManagerTest extends NetworkTestCommon {
     }
 
     @Test
-    public void onConnectionChangedWorksWhenThereAreNoListeners() {
+    void onConnectionChangedWorksWhenThereAreNoListeners() {
         final ConnectionManager.EventEmitterToken token = connectionManager.onConnectionChanged(true, networkContext, null);
         connectionManager.addListener(listener1);
         connectionManager.onConnectionChanged(false, networkContext, token);
@@ -106,7 +104,7 @@ public class ConnectionManagerTest extends NetworkTestCommon {
     }
 
     @Test
-    public void executeNewListenersWorksWhenThereAreNoListeners() {
+    void executeNewListenersWorksWhenThereAreNoListeners() {
         final ConnectionManager.EventEmitterToken token = connectionManager.onConnectionChanged(true, networkContext, null);
         connectionManager.executeNewListeners(networkContext, token);
         connectionManager.addListener(listener1);

@@ -9,12 +9,12 @@ import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.threads.Pauser;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
@@ -31,7 +31,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Arrays.stream;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
  * IMPORTANT - each event handler MUST run in its own thread, as the handshake is a
@@ -43,8 +44,7 @@ import static org.junit.Assert.assertTrue;
  * return ServerThreadingStrategy.MULTI_THREADED_BUSY_WAITING;
  * }
  */
-@RunWith(Parameterized.class)
-@Ignore
+@Disabled
 public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
 
     private static final boolean DEBUG = Jvm.getBoolean("NonClusteredSslIntegrationTest.debug");
@@ -60,7 +60,6 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
         this.mode = mode;
     }
 
-    @Parameterized.Parameters(name = "{0}")
     public static List<Object[]> params() {
         final List<Object[]> params = new ArrayList<>();
         stream(Mode.values()).forEach(m -> params.add(new Object[]{m.name(), m}));
@@ -69,12 +68,11 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
     }
 
     private static void waitForLatch(final CountingTcpHandler handler) throws InterruptedException {
-        assertTrue("Handler for " + handler.label + " did not startup within timeout at " + Instant.now(),
-                handler.latch.await(25, TimeUnit.SECONDS));
+        assertTrue(handler.latch.await(25, TimeUnit.SECONDS), "Handler for " + handler.label + " did not startup within timeout at " + Instant.now());
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         TCPRegistry.reset();
         TCPRegistry.createServerSocketChannelFor("client", "server");
 
@@ -92,9 +90,11 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
 
     }
 
-    @Test(timeout = 40_000L)
-    public void shouldCommunicate() throws Exception {
-        Assume.assumeFalse("BI_DIRECTIONAL mode sometimes hangs during handshake", mode == Mode.BI_DIRECTIONAL);
+    @ParameterizedTest
+    @MethodSource("params")
+    @Timeout(40_000L)
+    void shouldCommunicate() throws Exception {
+        assumeFalse(mode == Mode.BI_DIRECTIONAL, "BI_DIRECTIONAL mode sometimes hangs during handshake");
         client.start();
         server.start();
         doConnect();
@@ -113,8 +113,8 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
         }
     }
 
-    @Override
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         client.close();
         client.stop();
         server.close();

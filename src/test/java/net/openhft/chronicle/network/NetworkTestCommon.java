@@ -8,8 +8,8 @@ import net.openhft.chronicle.core.threads.CleaningThread;
 import net.openhft.chronicle.core.threads.ThreadDump;
 import net.openhft.chronicle.core.time.SystemTimeProvider;
 import net.openhft.chronicle.testframework.internal.ExceptionTracker;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 import java.util.function.Predicate;
 
@@ -18,8 +18,8 @@ public class NetworkTestCommon {
     protected ThreadDump threadDump;
     private ExceptionTracker<ExceptionKey> exceptionTracker;
 
-    @Before
-    public void enableReferenceTracing() {
+    @BeforeEach
+    void enableReferenceTracing() {
         AbstractReferenceCounted.enableReferenceTracing();
     }
 
@@ -27,8 +27,8 @@ public class NetworkTestCommon {
         AbstractReferenceCounted.assertReferencesReleased();
     }
 
-    @Before
-    public void threadDump() {
+    @BeforeEach
+    void threadDump() {
         threadDump = new ThreadDump();
     }
 
@@ -36,8 +36,8 @@ public class NetworkTestCommon {
         threadDump.assertNoNewThreads();
     }
 
-    @Before
-    public void recordExceptions() {
+    @BeforeEach
+    void recordExceptions() {
         exceptionTracker = JvmExceptionTracker.create();
         exceptionTracker.ignoreException("unable to connect to any of the hosts");
     }
@@ -58,9 +58,8 @@ public class NetworkTestCommon {
         exceptionTracker.checkExceptions();
     }
 
-    @After
-    public void afterChecks() {
-        preAfter();
+    @AfterEach
+    void afterChecks() {
         SystemTimeProvider.CLOCK = SystemTimeProvider.INSTANCE;
 
         CleaningThread.performCleanup(Thread.currentThread());
@@ -74,14 +73,5 @@ public class NetworkTestCommon {
         assertReferencesReleased();
         checkThreadDump();
         checkExceptions();
-        tearDown();
-    }
-
-    protected void preAfter() {
-
-    }
-
-    protected void tearDown() {
-
     }
 }
