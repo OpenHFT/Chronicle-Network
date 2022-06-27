@@ -4,31 +4,25 @@ import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.network.api.TcpHandler;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
+class TcpEventHandlerReleaseTest extends NetworkTestCommon {
     private static final String hostPort = "host.port";
 
-    @Before
-    public void setUp() throws IOException {
+    @BeforeEach
+    void setUp() throws IOException {
         TCPRegistry.createServerSocketChannelFor(hostPort);
     }
 
-    @Override
-    protected void preAfter() {
-        super.preAfter();
-        TCPRegistry.reset();
-    }
-
     @Test
-    public void testRelease() throws IOException {
+    void testRelease() throws IOException {
         try (TcpEventHandler t = createTcpEventHandler()) {
             t.loopFinished();
             t.close();
@@ -37,7 +31,7 @@ public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
     }
 
     @Test
-    public void testBuffersReleasedWhenSocketChannelClosed() throws IOException {
+    void testBuffersReleasedWhenSocketChannelClosed() throws IOException {
         try (TcpEventHandler t = createTcpEventHandler()) {
             t.socketChannel().close();
             try {
@@ -52,7 +46,7 @@ public class TcpEventHandlerReleaseTest extends NetworkTestCommon {
     }
 
     @Test
-    public void performIdleWorkIsOnlyCalledWhenHandlerIsBusyOrOneHundredIterations() throws IOException, InvalidEventHandlerException {
+    void performIdleWorkIsOnlyCalledWhenHandlerIsBusyOrOneHundredIterations() throws IOException, InvalidEventHandlerException {
         NetworkContext nc = new VanillaNetworkContext();
         nc.socketChannel(TCPRegistry.createSocketChannel(hostPort));
         BusyTcpEventHandler tcpEventHandler = new BusyTcpEventHandler(nc);

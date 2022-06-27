@@ -1,46 +1,17 @@
 package net.openhft.chronicle.network;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
-@RunWith(Parameterized.class)
-public class TCPRegistryTest extends NetworkTestCommon {
-
-    private final boolean useCrossProcess;
-
-    public TCPRegistryTest(boolean useCrossProcess) {
-        this.useCrossProcess = useCrossProcess;
-    }
-
-    @Parameterized.Parameters(name = "useCrossProcess = {0}")
-    public static Collection<Object> params() {
-        return Arrays.asList(false, true);
-    }
-
-    @Before
-    public void setUp() {
-        if (useCrossProcess) {
-            TCPRegistry.useCrossProcessRegistry();
-        }
-    }
-
-    @After
-    public void tearDown() {
-        TCPRegistry.useInMemoryRegistry();
-    }
+public abstract class TCPRegistryTest extends NetworkTestCommon {
 
     @Test
-    public void testResetClearsRegistry() throws IOException {
+    void testResetClearsRegistry() throws IOException {
         TCPRegistry.createServerSocketChannelFor("host1", "host2", "host3");
         assertNotNull(TCPRegistry.lookup("host1"));
         assertNotNull(TCPRegistry.lookup("host2"));
@@ -52,7 +23,7 @@ public class TCPRegistryTest extends NetworkTestCommon {
     }
 
     @Test
-    public void testResetIsIdempotent() throws IOException {
+    void testResetIsIdempotent() throws IOException {
         TCPRegistry.createServerSocketChannelFor("host1", "host2", "host3");
         TCPRegistry.reset();
         TCPRegistry.reset();

@@ -19,15 +19,16 @@ package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.wire.Marshallable;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Checks that {@link FatalFailureConnectionStrategy} can be used in YAML config.
  */
-public class FatalFailureConnectionStrategyTest {
+class FatalFailureConnectionStrategyTest {
     @Test
-    public void testFromYaml() {
+    void testFromYaml() {
         TCPRegistry.reset();
         final FatalFailureConnectionStrategy strategy = new FatalFailureConnectionStrategy(3, false);
 
@@ -37,7 +38,7 @@ public class FatalFailureConnectionStrategyTest {
                         "  blocking: false\n" +
                         "}");
 
-        Assert.assertNotNull(strategyFromYaml);
+        assertNotNull(strategyFromYaml);
 
         final String expectedToString = "!FatalFailureConnectionStrategy {\n" +
                 "  attempts: 3,\n" +
@@ -46,16 +47,16 @@ public class FatalFailureConnectionStrategyTest {
                 "  }\n" +
                 "}\n";
 
-        Assert.assertEquals(expectedToString, strategy.toString());
-        Assert.assertEquals(strategy.toString(), strategyFromYaml.toString());
+        assertEquals(expectedToString, strategy.toString());
+        assertEquals(strategy.toString(), strategyFromYaml.toString());
 
-        Assert.assertFalse(strategy.isClosed());
-        Assert.assertFalse(strategyFromYaml.isClosed());
+        assertFalse(strategy.isClosed());
+        assertFalse(strategyFromYaml.isClosed());
 
         strategy.close();
         strategyFromYaml.close();
 
-        Assert.assertTrue(strategy.isClosed());
-        Assert.assertTrue(strategyFromYaml.isClosed());
+        assertTrue(strategy.isClosed());
+        assertTrue(strategyFromYaml.isClosed());
     }
 }

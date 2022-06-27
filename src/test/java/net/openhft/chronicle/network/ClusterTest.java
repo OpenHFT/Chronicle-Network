@@ -6,28 +6,30 @@ import net.openhft.chronicle.network.cluster.ClusteredNetworkContext;
 import net.openhft.chronicle.wire.Marshallable;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-public class ClusterTest extends NetworkTestCommon {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+class ClusterTest extends NetworkTestCommon {
 
     @Test
-    public <T extends ClusteredNetworkContext<T>> void testDeepCopy() {
+    <T extends ClusteredNetworkContext<T>> void testDeepCopy() {
         MyClusterContext<T> cc = new MyClusterContext<T>().value(22).wireType(WireType.TEXT);
         String s = Marshallable.$toString(cc);
         MyClusterContext<T> o = Marshallable.fromString(s);
-        Assert.assertEquals(cc.value, o.value);
+        assertEquals(cc.value, o.value);
         MyClusterContext<T> cc2 = cc.deepCopy();
-        Assert.assertEquals(cc.value, cc2.value);
+        assertEquals(cc.value, cc2.value);
 
         try (Cluster<T, MyClusterContext<T>> c = new MyCluster()) {
             c.clusterContext(cc);
             try (Cluster<T, MyClusterContext<T>> c2 = c.deepCopy()) {
                 MyClusterContext<T> mcc = c2.clusterContext();
-                Assert.assertNotNull(mcc);
-                Assert.assertEquals(22, mcc.value);
+                assertNotNull(mcc);
+                assertEquals(22, mcc.value);
             }
         }
     }
