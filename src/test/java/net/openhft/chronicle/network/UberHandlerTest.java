@@ -1,6 +1,5 @@
 package net.openhft.chronicle.network;
 
-import jdk.nashorn.internal.ir.annotations.Ignore;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.AbstractCloseable;
@@ -26,6 +25,7 @@ import org.apache.mina.util.IdentityHashSet;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -307,8 +307,8 @@ class UberHandlerTest extends NetworkTestCommon {
         }
     }
 
-//    @Test
-    @Ignore(/* TODO FIX TEST */)
+    @Test
+    @Disabled(/* TODO FIX TEST */)
     void removeHandlerUnregistersRegisterableHandlers() {
         try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
             testHarness.registerSubHandler(new RegisterableSubHandler());
@@ -328,8 +328,8 @@ class UberHandlerTest extends NetworkTestCommon {
         }
     }
 
-    //    @Test
-    @Ignore(/* TODO FIX TEST */)
+    @Test
+    @Disabled(/* TODO FIX TEST */)
     void removeHandlerRemovesConnectionListenerHandlersFromNetworkContext() {
         try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
             testHarness.registerSubHandler(new ConnectionListenerSubHandler());
