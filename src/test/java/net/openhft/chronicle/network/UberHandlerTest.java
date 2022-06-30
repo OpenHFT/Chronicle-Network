@@ -261,7 +261,7 @@ class UberHandlerTest extends NetworkTestCommon {
             expectException("Rejected in onInitialize");
             REJECTING_SUB_HANDLER_SHOULD_REJECT.set(true);
             testHarness.registerSubHandler(new WritableRejectingSubHandler());
-            ignoreException("handler == null, check that the Csp/Cid has been sent");
+            expectException("handler == null, check that the Csp/Cid has been sent");
             testHarness.sendMessageToCurrentHandler();
             testHarness.callProcess();
             assertFalse(REJECTED_HANDLER_ONREAD_CALLED.get());
@@ -276,7 +276,7 @@ class UberHandlerTest extends NetworkTestCommon {
             expectException("Rejected in onRead");
             REJECTING_SUB_HANDLER_SHOULD_REJECT.set(true);
             testHarness.sendMessageToCurrentHandler();
-            ignoreException("handler == null, check that the Csp/Cid has been sent");
+            expectException("handler == null, check that the Csp/Cid has been sent");
             testHarness.sendMessageToCurrentHandler();
             testHarness.callProcess();
             assertFalse(REJECTED_HANDLER_ONWRITE_CALLED.get());
@@ -291,7 +291,7 @@ class UberHandlerTest extends NetworkTestCommon {
             expectException("Rejected in onWrite");
             REJECTING_SUB_HANDLER_SHOULD_REJECT.set(true);
             testHarness.callProcess();
-            ignoreException("handler == null, check that the Csp/Cid has been sent");
+            expectException("handler == null, check that the Csp/Cid has been sent");
             testHarness.sendMessageToCurrentHandler();
             testHarness.callProcess();
             assertFalse(REJECTED_HANDLER_ONWRITE_CALLED.get());
@@ -308,7 +308,6 @@ class UberHandlerTest extends NetworkTestCommon {
     }
 
     @Test
-    @Disabled(/* TODO FIX TEST */)
     void removeHandlerUnregistersRegisterableHandlers() {
         try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
             testHarness.registerSubHandler(new RegisterableSubHandler());
@@ -329,7 +328,6 @@ class UberHandlerTest extends NetworkTestCommon {
     }
 
     @Test
-    @Disabled(/* TODO FIX TEST */)
     void removeHandlerRemovesConnectionListenerHandlersFromNetworkContext() {
         try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
             testHarness.registerSubHandler(new ConnectionListenerSubHandler());
