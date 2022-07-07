@@ -1,0 +1,25 @@
+== System Properties
+Below, a number of relevant System Properties are listed.
+
+
+NOTE: All boolean properties below are read using link:https://javadoc.io/static/net.openhft/chronicle-core/2.23ea13/net/openhft/chronicle/core/Jvm.html#getBoolean-java.lang.String-[net.openhft.chronicle.core.Jvm.getBoolean(java.lang.String)], and so are enabled if either `-Dflag` or `-Dflag=true` or `-Dflag=yes`
+
+.System properties
+[cols=4*, options="header"]
+|===
+| Property Key | Default | Description | Java Variable Name (Type)
+| chronicle.network.callOnMissedHeartbeatOnDisconnect |`false` | If enabled, calls HeartBeatListener when we do not receive a heartbeat | _CALL_MISSED_HEARTBEAT_ON_DISCONNECT_ (boolean)
+| client.timeout | 500 | Number of milliseconds after which a client is timed out if they cannot to a host port | _pausePeriodMs_ (int)
+| connectionStrategy.pauseMillisBeforeReconnect | 500 | Allows control of a backoff strategy, and returns how long in milliseconds to pause before attempting reconnect | pauseMillisBeforeReconnect (long)
+| connectionStrategy.pause.max.secs | 5 | Controls how frequently the ConnectionStrategy.connect method is called | _maxPauseSec_ (long)
+| connectionStrategy.pause.min.secs | 5 | Controls how frequently the ConnectionStrategy.connect method is called | _minPauseSec_ (long)
+| connectionStrategy.socketConnectionTimeoutMs | 1 | Minimum time before message displayed: "Timed out attempting to connect to " + socketAddress | socketConnectionTimeoutMs (int)
+| disable.tcp.nodelay | `false` | If enabled, displays message 'tcpNoDelay disabled' and allows sending of successive small packets on the network | _DISABLE_TCP_NODELAY_ (boolean)
+| ssl.test.payload | `false` | If enabled, triggers testDataConnection to encode ByteBuffer message while there is at least one remaining element in the ByteBuffer | _SEND_DATA_BEFORE_SSL_HANDSHAKE_ (boolean)
+| tcp.client.buffer.size | 0 | Gets or sets the tcp buffer size | _tcpBufferSize_ (int)
+| TcpEventHandler.targetWriteSize | 1024 | Determines the size of what is trying to be written to the ByteBuffer to check if ByteBuffer has capacity | _TARGET_WRITE_SIZE_ (int)
+| tcp.event.monitor.secs | 10 | Sets the interval in between polls | _MONITOR_POLL_EVERY_SEC_ (int)
+| tcp.failover.time | 2_000 MS | Amount of time before the TCP session timeout is triggered | _failoverTimeout_ (long)
+| tcp.nbr.warning.nanos | 20_000_000L | Threshold before warning is triggered that non-blocking socket is being read to | _NBR_WARNING_NANOS_ (long)
+| tcp.nbw.warning.nanos | 20_000_000L | Threshold before warning is triggered that non-blocking socket is being written to | _NBW_WARNING_NANOS_ (long)
+|===
