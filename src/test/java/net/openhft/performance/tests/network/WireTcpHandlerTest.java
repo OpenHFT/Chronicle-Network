@@ -25,9 +25,8 @@ import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -45,20 +44,10 @@ TextWire: Loop back echo latency was 7.4/8.9 12/20 108/925 us for 50/90 99/99.9 
 BinaryWire: Loop back echo latency was 6.6/8.0 9/11 19/3056 us for 50/90 99/99.9 99.99/worst %tile
 RawWire: Loop back echo latency was 5.9/6.8 8/10 12/80 us for 50/90 99/99.9 99.99/worst %tile
  */
-@RunWith(value = Parameterized.class)
-public class WireTcpHandlerTest extends NetworkTestCommon {
+class WireTcpHandlerTest extends NetworkTestCommon {
 
     public static final int SIZE_OF_SIZE = 4;
 
-    private final String desc;
-    private final WireType wireType;
-
-    public WireTcpHandlerTest(String desc, WireType wireWrapper) {
-        this.desc = desc;
-        this.wireType = wireWrapper;
-    }
-
-    @Parameterized.Parameters(name = "{0}")
     public static Collection<Object[]> combinations() {
         return Arrays.asList(
                 new Object[]{"TextWire", WireType.TEXT},
@@ -134,8 +123,9 @@ public class WireTcpHandlerTest extends NetworkTestCommon {
         );
     }
 
-    @Test
-    public void testProcess() throws IOException {
+    @ParameterizedTest
+    @MethodSource("combinations")
+    void testProcess(String desc, WireType wireType) throws IOException {
         boolean logging = YamlLogging.showClientReads();
         YamlLogging.setAll(false);
 

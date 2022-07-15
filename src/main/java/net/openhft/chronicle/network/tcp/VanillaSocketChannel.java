@@ -34,7 +34,7 @@ public class VanillaSocketChannel extends AbstractCloseable implements Chronicle
 
     public VanillaSocketChannel(SocketChannel socketChannel) {
         this.socketChannel = socketChannel;
-        disableThreadSafetyCheck(true);
+        singleThreadedCheckDisabled(true);
     }
 
     @Override

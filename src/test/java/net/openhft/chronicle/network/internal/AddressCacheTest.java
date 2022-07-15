@@ -1,38 +1,38 @@
 package net.openhft.chronicle.network.internal;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.function.ThrowingRunnable;
+import net.openhft.chronicle.core.util.ThrowingRunnable;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.security.Security;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class AddressCacheTest {
+class AddressCacheTest {
 
     private static final String NETWORK_ADDRESS_CACHE_TTL = "networkaddress.cache.ttl";
     private static final String DEFAULT_NETWORK_ADDRESS_CACHE_TTL = "-1";
     private AddressCache addressCache;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         addressCache = new AddressCache();
     }
 
     @Test
-    public void addingEntryWillMakeItAvailableForLookup() {
+    void addingEntryWillMakeItAvailableForLookup() {
         addressCache.add("test-123", "google.com", 123);
         assertEquals(addressCache.lookup("test-123"), new InetSocketAddress("google.com", 123));
     }
 
     @Test
-    public void entriesAreUnavailableUntilAdded() {
+    void entriesAreUnavailableUntilAdded() {
         assertNull(addressCache.lookup("test-123"));
     }
 
     @Test
-    public void clearingWillMakeItUnavailableForLookup() {
+    void clearingWillMakeItUnavailableForLookup() {
         addressCache.add("test-123", "google.com", 123);
         assertEquals(addressCache.lookup("test-123"), new InetSocketAddress("google.com", 123));
         addressCache.clear();
@@ -40,7 +40,7 @@ public class AddressCacheTest {
     }
 
     @Test
-    public void resolvedAddressesAreCachedWhenCachingIsEnabled() throws Throwable {
+    void resolvedAddressesAreCachedWhenCachingIsEnabled() throws Throwable {
         withNetworkAddressCacheTtl("100", () -> {
             addressCache.add("test-123", "google.com", 123);
             InetSocketAddress original = addressCache.lookup("test-123");
@@ -49,7 +49,7 @@ public class AddressCacheTest {
     }
 
     @Test
-    public void resolvedAddressesAreCachedWhenCachingForeverIsEnabled() throws Throwable {
+    void resolvedAddressesAreCachedWhenCachingForeverIsEnabled() throws Throwable {
         withNetworkAddressCacheTtl("-1", () -> {
             addressCache.add("test-123", "google.com", 123);
             InetSocketAddress original = addressCache.lookup("test-123");
@@ -58,7 +58,7 @@ public class AddressCacheTest {
     }
 
     @Test
-    public void resolvedAddressesAreNotCachedWhenCachingIsDisabled() throws Throwable {
+    void resolvedAddressesAreNotCachedWhenCachingIsDisabled() throws Throwable {
         withNetworkAddressCacheTtl("0", () -> {
             addressCache.add("test-123", "google.com", 123);
             InetSocketAddress original = addressCache.lookup("test-123");
@@ -66,7 +66,7 @@ public class AddressCacheTest {
         });
     }
 
-    private void withNetworkAddressCacheTtl(String ttlValue, ThrowingRunnable testCode) throws Throwable {
+    private void withNetworkAddressCacheTtl(String ttlValue, ThrowingRunnable<?> testCode) throws Throwable {
         Security.setProperty(NETWORK_ADDRESS_CACHE_TTL, ttlValue);
         try {
             testCode.run();

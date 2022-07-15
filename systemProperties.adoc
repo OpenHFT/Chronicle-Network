@@ -21,4 +21,3 @@ NOTE: All boolean properties below are read using link:https://javadoc.io/static
 | tcp.failover.time | 2_000 MS | Amount of time before the TCP session timeout is triggered | _failoverTimeout_ (long)
 | tcp.nbr.warning.nanos | 20_000_000L | Threshold before warning is triggered that non-blocking socket is being read to | _NBR_WARNING_NANOS_ (long)
 | tcp.nbw.warning.nanos | 20_000_000L | Threshold before warning is triggered that non-blocking socket is being written to | _NBW_WARNING_NANOS_ (long)
-|===

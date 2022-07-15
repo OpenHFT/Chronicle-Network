@@ -39,7 +39,7 @@ import static net.openhft.chronicle.core.Jvm.pause;
 /**
  * The simple client, which sends a message to the echo server and waits for response
  */
-public class GrizzlyClientThroughPutTest extends NetworkTestCommon {
+class GrizzlyClientThroughPutTest extends NetworkTestCommon {
 
     static final String DEFAULT_PORT = Integer.toString(GrizzlyEchoServer.PORT);
     static final int PORT = Integer.parseInt(System.getProperty("port", DEFAULT_PORT));

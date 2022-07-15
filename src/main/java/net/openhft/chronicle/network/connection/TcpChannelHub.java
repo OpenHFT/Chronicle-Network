@@ -152,6 +152,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         this.eventLoop = eventLoop;
         this.tcpBufferSize = Integer.getInteger("tcp.client.buffer.size", TCP_BUFFER);
         this.outWire = wireType.apply(elasticByteBuffer());
+        this.outWire.bytes().singleThreadedCheckDisabled(true);
         outWire.usePadding(TCP_USE_PADDING);
         // this.inWire = wireType.apply(elasticByteBuffer());
         this.name = name.trim();
@@ -173,7 +174,7 @@ public final class TcpChannelHub extends AbstractCloseable {
         // has to be done last as it starts a thread which uses this class.
         this.tcpSocketConsumer = new TcpSocketConsumer();
 
-        disableThreadSafetyCheck(true);
+        singleThreadedCheckDisabled(true);
     }
 
     private static int getTcpBufferSize() {
@@ -310,7 +311,10 @@ public final class TcpChannelHub extends AbstractCloseable {
     void clear(@NotNull final Wire wire) {
         assert wire.startUse();
         try {
+            final Bytes<?> bytes = wire.bytes();
+            bytes.singleThreadedCheckReset();
             wire.clear();
+            bytes.singleThreadedCheckReset();
         } finally {
             assert wire.endUse();
         }
@@ -1103,10 +1107,12 @@ public final class TcpChannelHub extends AbstractCloseable {
 
             final long beginMs = System.currentTimeMillis();
             final Wire wire = syncInWireThreadLocal.get();
-            IOTools.unmonitor(wire.bytes());
-            wire.clear();
+            final Bytes<?> bytes = wire.bytes();
 
-            @NotNull final Bytes<?> bytes = wire.bytes();
+            // this is synchronized when used
+            bytes.singleThreadedCheckDisabled(true);
+            IOTools.unmonitor(bytes);
+            wire.clear();
             ((ByteBuffer) bytes.underlyingObject()).clear();
 
             //noinspection SynchronizationOnLocalVariableOrMethodParameter

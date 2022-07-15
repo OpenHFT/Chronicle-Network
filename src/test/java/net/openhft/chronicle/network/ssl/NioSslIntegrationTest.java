@@ -8,9 +8,9 @@ import net.openhft.chronicle.network.tcp.ChronicleServerSocketFactory;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory;
 import net.openhft.chronicle.threads.NamedThreadFactory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -22,27 +22,26 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class NioSslIntegrationTest extends NetworkTestCommon {
+final class NioSslIntegrationTest extends NetworkTestCommon {
     private static final boolean SEND_DATA_BEFORE_SSL_HANDSHAKE = Jvm.getBoolean("ssl.test.payload");
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         // https://bugs.openjdk.java.net/browse/JDK-8211426
         if (Jvm.majorVersion() >= 11)
             System.setProperty("jdk.tls.server.protocols", "TLSv1.2");
     }
 
-    @After
-    public void teardown() {
+    @AfterEach
+    void teardown() {
         System.clearProperty("jdk.tls.server.protocols");
     }
 
     @Test
-    public void shouldEncryptAndDecryptTraffic() throws Exception {
+    void shouldEncryptAndDecryptTraffic() throws Exception {
         final ExecutorService threadPool = Executors.newFixedThreadPool(2,
                 new NamedThreadFactory("test"));
 
@@ -105,7 +104,7 @@ public final class NioSslIntegrationTest extends NetworkTestCommon {
         }
 
         message.flip();
-        assertThat(new String(message.array()), is("test message"));
+        assertEquals("test message", new String(message.array()));
     }
 
     private static final class Client extends AbstractSocketBufferHandler {

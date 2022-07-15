@@ -7,7 +7,7 @@ import net.openhft.chronicle.network.tcp.ChronicleServerSocketChannel;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory;
 import net.openhft.chronicle.threads.Threads;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -18,15 +18,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static net.openhft.chronicle.network.internal.SocketExceptionUtil.isAConnectionResetException;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class SocketExceptionUtilTest extends NetworkTestCommon {
+class SocketExceptionUtilTest extends NetworkTestCommon {
 
     /**
      * Original means of detection
      */
     @Test
-    public void isAConnectionResetExceptionReturnsTrueWhenMessageMatches() {
+    void isAConnectionResetExceptionReturnsTrueWhenMessageMatches() {
         assertTrue(isAConnectionResetException(new IOException("Connection reset by peer")));
     }
 
@@ -36,23 +36,23 @@ public class SocketExceptionUtilTest extends NetworkTestCommon {
      * Thrown in JDK 13 and above
      */
     @Test
-    public void isAConnectionResetExceptionReturnsTrueForSocketExceptionWithShorterMessage() {
+    void isAConnectionResetExceptionReturnsTrueForSocketExceptionWithShorterMessage() {
         assertTrue(isAConnectionResetException(new SocketException("Connection reset")));
     }
 
     @Test
-    public void isAConnectionResetExceptionReturnsFalseForOtherExceptions() {
+    void isAConnectionResetExceptionReturnsFalseForOtherExceptions() {
         assertFalse(isAConnectionResetException(new SocketException("Something else happened")));
         assertFalse(isAConnectionResetException(new IOException("Something else happened")));
     }
 
     @Test
-    public void isAConnectionResetIsRobustAgainstNullMessages() {
+    void isAConnectionResetIsRobustAgainstNullMessages() {
         assertFalse(isAConnectionResetException(new IOException()));
     }
 
     @Test
-    public void testConnectionResetDetectionForLocales() throws IOException {
+    void testConnectionResetDetectionForLocales() throws IOException {
         final Locale originalDefault = Locale.getDefault();
         try {
             Locale.setDefault(Locale.KOREA);

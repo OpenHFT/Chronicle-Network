@@ -5,9 +5,10 @@ import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IOTools;
 import net.openhft.chronicle.network.NetworkTestCommon;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -15,15 +16,15 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 import static java.lang.String.format;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class FileBasedHostnamePortLookupTableTest extends NetworkTestCommon {
+class FileBasedHostnamePortLookupTableTest extends NetworkTestCommon {
 
     public static final String TEST_TABLE_FILENAME = "FileBasedHostnamePortLookupTableTest";
     private FileBasedHostnamePortLookupTable lookupTable;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         if (OS.isWindows()) {
             ignoreException("Error deleting the shared lookup table");
         }
@@ -31,13 +32,13 @@ public class FileBasedHostnamePortLookupTableTest extends NetworkTestCommon {
         lookupTable = new FileBasedHostnamePortLookupTable(TEST_TABLE_FILENAME);
     }
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    public void closeLookupTable() {
         Closeable.closeQuietly(lookupTable);
     }
 
     @Test
-    public void shouldStoreAndRetrieve() {
+    void shouldStoreAndRetrieve() {
         final InetSocketAddress localhost = new InetSocketAddress("localhost", 1234);
         lookupTable.put("aaa", localhost);
         assertEquals(localhost, lookupTable.lookup("aaa"));
@@ -46,7 +47,7 @@ public class FileBasedHostnamePortLookupTableTest extends NetworkTestCommon {
     }
 
     @Test
-    public void shouldClear() {
+    void shouldClear() {
         final InetSocketAddress localhost = new InetSocketAddress("localhost", 1234);
         lookupTable.put("aaa", localhost);
         assertEquals(localhost, lookupTable.lookup("aaa"));
@@ -55,7 +56,7 @@ public class FileBasedHostnamePortLookupTableTest extends NetworkTestCommon {
     }
 
     @Test
-    public void shouldGetAliases() {
+    void shouldGetAliases() {
         final InetSocketAddress localhost = new InetSocketAddress("localhost", 1234);
         lookupTable.put("aaa", localhost);
         lookupTable.put("bbb", localhost);
@@ -64,7 +65,7 @@ public class FileBasedHostnamePortLookupTableTest extends NetworkTestCommon {
     }
 
     @Test
-    public void shouldImplementForEach() {
+    void shouldImplementForEach() {
         final InetSocketAddress localhost = new InetSocketAddress("localhost", 1234);
         lookupTable.put("aaa", localhost);
         lookupTable.put("bbb", localhost);
@@ -78,7 +79,7 @@ public class FileBasedHostnamePortLookupTableTest extends NetworkTestCommon {
     }
 
     @Test
-    public void entriesShouldBeVisibleAcrossInstances() throws IOException {
+    void entriesShouldBeVisibleAcrossInstances() throws IOException {
         try (FileBasedHostnamePortLookupTable table1 = new FileBasedHostnamePortLookupTable(TEST_TABLE_FILENAME);
              FileBasedHostnamePortLookupTable table2 = new FileBasedHostnamePortLookupTable(TEST_TABLE_FILENAME)) {
             table1.put("aaa", InetSocketAddress.createUnresolved("aaa", 111));
@@ -88,8 +89,9 @@ public class FileBasedHostnamePortLookupTableTest extends NetworkTestCommon {
         }
     }
 
-    @Test(timeout = 20_000)
-    public void doShouldWorkConcurrently() {
+    @Test
+    @Timeout(20_000)
+    void doShouldWorkConcurrently() {
         int seq = doShouldWorkConcurrently(false);
         int para = doShouldWorkConcurrently(true);
         assertTrue(seq > 0);
@@ -112,7 +114,7 @@ public class FileBasedHostnamePortLookupTableTest extends NetworkTestCommon {
                     InetSocketAddress address = InetSocketAddress.createUnresolved(description, i);
                     table.put(description, address);
                     InetSocketAddress lookup = table.lookup(description);
-                    assertNotNull(description, lookup);
+                    assertNotNull(lookup, description);
                 }
                 Set<String> missing = new LinkedHashSet<>(allMyAliases);
                 missing.removeAll(table.aliases());
@@ -126,7 +128,7 @@ public class FileBasedHostnamePortLookupTableTest extends NetworkTestCommon {
     }
 
     @Test
-    public void mappingsAreEqualRegardlessOfResolution() {
+    void mappingsAreEqualRegardlessOfResolution() {
         final FileBasedHostnamePortLookupTable.ProcessScopedMapping unresolved
                 = new FileBasedHostnamePortLookupTable.ProcessScopedMapping(123, InetSocketAddress.createUnresolved("localhost", 456));
         final FileBasedHostnamePortLookupTable.ProcessScopedMapping resolved
@@ -135,7 +137,7 @@ public class FileBasedHostnamePortLookupTableTest extends NetworkTestCommon {
     }
 
     @Test
-    public void mappingsHaveSameHashCodeRegardlessOfResolution() {
+    void mappingsHaveSameHashCodeRegardlessOfResolution() {
         final FileBasedHostnamePortLookupTable.ProcessScopedMapping unresolved
                 = new FileBasedHostnamePortLookupTable.ProcessScopedMapping(123, InetSocketAddress.createUnresolved("localhost", 456));
         final FileBasedHostnamePortLookupTable.ProcessScopedMapping resolved
@@ -143,8 +145,8 @@ public class FileBasedHostnamePortLookupTableTest extends NetworkTestCommon {
         assertEquals(unresolved.hashCode(), resolved.hashCode());
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void addressIsMandatory() {
-        lookupTable.put("something", null);
+    @Test
+    void addressIsMandatory() {
+        assertThrows(IllegalArgumentException.class, () -> lookupTable.put("something", null));
     }
 }

@@ -8,21 +8,21 @@ import net.openhft.chronicle.network.connection.VanillaWireOutPublisher;
 import net.openhft.chronicle.threads.EventGroupBuilder;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class ClusterAcceptorEventHandlerTest {
+class ClusterAcceptorEventHandlerTest {
 
     @Test
-    public void willPopulateNetworkStatsListenerWhenNetworkStatsListenerFactorySpecified() throws IOException {
+    void willPopulateNetworkStatsListenerWhenNetworkStatsListenerFactorySpecified() throws IOException {
         TCPRegistry.createServerSocketChannelFor("testAcceptor");
         final MyClusterContext acceptorContext = new MyClusterContext();
         final NetworkStatsListener<MyClusteredNetworkContext> nsl = mock(NetworkStatsListener.class);

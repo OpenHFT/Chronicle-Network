@@ -23,9 +23,10 @@ import net.openhft.chronicle.threads.TimingPauser;
 import net.openhft.chronicle.wire.*;
 import org.apache.mina.util.IdentityHashSet;
 import org.jetbrains.annotations.NotNull;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,9 +46,9 @@ import java.util.stream.IntStream;
 import static net.openhft.chronicle.network.HeaderTcpHandler.HANDLER;
 import static net.openhft.chronicle.network.cluster.handlers.UberHandler.uberHandler;
 import static net.openhft.chronicle.network.connection.CoreFields.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class UberHandlerTest extends NetworkTestCommon {
+class UberHandlerTest extends NetworkTestCommon {
 
     private static final int SIZE_OF_BIG_PAYLOAD = 200 * 1024;
     private static final int ROUNDS_PER_SIZE_CYCLE = 100;
@@ -65,8 +66,8 @@ public class UberHandlerTest extends NetworkTestCommon {
     private static final AtomicBoolean REJECTING_SUB_HANDLER_SHOULD_REJECT = new AtomicBoolean(false);
     private static final AtomicReference<Map<Object, RegisterableSubHandler>> REGISTRY = new AtomicReference<>();
 
-    @Before
-    public void before() {
+    @BeforeEach
+    void before() {
         YamlLogging.setAll(false);
         System.setProperty("TcpEventHandler.tcpBufferSize", "131072");
         COUNTERS_PER_CID.clear();
@@ -80,13 +81,13 @@ public class UberHandlerTest extends NetworkTestCommon {
         REGISTRY.set(null);
     }
 
-    @After
+    @AfterEach
     public void after() {
         System.clearProperty("TcpEventHandler.tcpBufferSize");
     }
 
     @Test
-    public void testUberHandlerWithMultipleSubHandlersAndHeartbeats() throws IOException, TimeoutException {
+    void testUberHandlerWithMultipleSubHandlersAndHeartbeats() throws IOException, TimeoutException {
         TCPRegistry.createServerSocketChannelFor("initiator", "acceptor");
         HostDetails initiatorHost = new HostDetails().hostId(2).connectUri("initiator");
         HostDetails acceptorHost = new HostDetails().hostId(1).connectUri("acceptor");
@@ -116,10 +117,11 @@ public class UberHandlerTest extends NetworkTestCommon {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void constructorWillThrowIfLocalAndRemoteIdentifiersAreTheSame() {
+    @Test
+    void constructorWillThrowIfLocalAndRemoteIdentifiersAreTheSame() {
         Wire wire = new BinaryWire(Bytes.allocateElasticOnHeap());
-        uberHandler(123, 123, WireType.BINARY).writeMarshallable(wire);
+        final WriteMarshallable writeMarshallable = uberHandler(123, 123, WireType.BINARY);
+        assertThrows(IllegalArgumentException.class, () -> writeMarshallable.writeMarshallable(wire));
     }
 
     private void stopAndWaitTillAllHandlersEnd() throws TimeoutException {
@@ -137,7 +139,7 @@ public class UberHandlerTest extends NetworkTestCommon {
     }
 
     @Test
-    public void testHandlerWillCloseWhenHostIdsAreWrong() throws IOException {
+    void testHandlerWillCloseWhenHostIdsAreWrong() throws IOException {
         expectException("Received a handler for host ID: 98, my host ID is: 1 this is probably a configuration error");
         ignoreException("Closed");
         ignoreException("SubHandler HeartbeatHandler");
@@ -165,7 +167,7 @@ public class UberHandlerTest extends NetworkTestCommon {
     }
 
     @Test
-    public void newConnectionListenersAreExecutedOnEventLoopForExistingConnections() throws IOException, TimeoutException {
+    void newConnectionListenersAreExecutedOnEventLoopForExistingConnections() throws IOException, TimeoutException {
         TCPRegistry.createServerSocketChannelFor("initiator", "acceptor");
         HostDetails initiatorHost = new HostDetails().hostId(2).connectUri("initiator");
         HostDetails acceptorHost = new HostDetails().hostId(1).connectUri("acceptor");
@@ -223,7 +225,7 @@ public class UberHandlerTest extends NetworkTestCommon {
      * where 1 gets to fill the buffer every time and can starve 2, 3, 4
      */
     @Test
-    public void testBusyWritingHandlersAreCalledFirstInRoundRobin() throws IOException, TimeoutException {
+    void testBusyWritingHandlersAreCalledFirstInRoundRobin() throws IOException, TimeoutException {
         TCPRegistry.createServerSocketChannelFor("initiator", "acceptor");
         HostDetails initiatorHost = new HostDetails().hostId(2).connectUri("initiator");
         HostDetails acceptorHost = new HostDetails().hostId(1).connectUri("acceptor");
@@ -254,7 +256,7 @@ public class UberHandlerTest extends NetworkTestCommon {
     }
 
     @Test
-    public void rejectedOnInitializeHandlersAreRemovedFromReadAndWrite() {
+    void rejectedOnInitializeHandlersAreRemovedFromReadAndWrite() {
         try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
             expectException("Rejected in onInitialize");
             REJECTING_SUB_HANDLER_SHOULD_REJECT.set(true);
@@ -268,7 +270,7 @@ public class UberHandlerTest extends NetworkTestCommon {
     }
 
     @Test
-    public void rejectedOnReadHandlersAreRemoveFromReadAndWrite() {
+    void rejectedOnReadHandlersAreRemoveFromReadAndWrite() {
         try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
             testHarness.registerSubHandler(new WritableRejectingSubHandler());
             expectException("Rejected in onRead");
@@ -283,7 +285,7 @@ public class UberHandlerTest extends NetworkTestCommon {
     }
 
     @Test
-    public void rejectedOnWriteHandlersAreRemoveFromReadAndWrite() {
+    void rejectedOnWriteHandlersAreRemoveFromReadAndWrite() {
         try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
             testHarness.registerSubHandler(new WritableRejectingSubHandler());
             expectException("Rejected in onWrite");
@@ -298,7 +300,7 @@ public class UberHandlerTest extends NetworkTestCommon {
     }
 
     @Test
-    public void addHandlerRegistersRegisterableHandlers() {
+    void addHandlerRegistersRegisterableHandlers() {
         try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
             testHarness.registerSubHandler(new RegisterableSubHandler());
             assertEquals(REGISTRY.get().get(RegisterableSubHandler.REGISTRY_KEY).getClass(), RegisterableSubHandler.class);
@@ -306,7 +308,7 @@ public class UberHandlerTest extends NetworkTestCommon {
     }
 
     @Test
-    public void removeHandlerUnregistersRegisterableHandlers() {
+    void removeHandlerUnregistersRegisterableHandlers() {
         try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
             testHarness.registerSubHandler(new RegisterableSubHandler());
             assertEquals(REGISTRY.get().get(RegisterableSubHandler.REGISTRY_KEY).getClass(), RegisterableSubHandler.class);
@@ -318,7 +320,7 @@ public class UberHandlerTest extends NetworkTestCommon {
     }
 
     @Test
-    public void addHandlerAddsConnectionListenerHandlersToNetworkContext() {
+    void addHandlerAddsConnectionListenerHandlersToNetworkContext() {
         try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
             testHarness.registerSubHandler(new ConnectionListenerSubHandler());
             assertEquals(1, testHarness.nc().connectionListeners.size());
@@ -326,7 +328,7 @@ public class UberHandlerTest extends NetworkTestCommon {
     }
 
     @Test
-    public void removeHandlerRemovesConnectionListenerHandlersFromNetworkContext() {
+    void removeHandlerRemovesConnectionListenerHandlersFromNetworkContext() {
         try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
             testHarness.registerSubHandler(new ConnectionListenerSubHandler());
             assertEquals(1, testHarness.nc().connectionListeners.size());

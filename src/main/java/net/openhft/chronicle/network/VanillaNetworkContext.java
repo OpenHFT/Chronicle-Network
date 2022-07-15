@@ -43,7 +43,7 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
     private ServerThreadingStrategy serverThreadingStrategy = ServerThreadingStrategy.SINGLE_THREADED;
 
     public VanillaNetworkContext() {
-        disableThreadSafetyCheck(true);
+        singleThreadedCheckDisabled(true);
     }
 
     @Override

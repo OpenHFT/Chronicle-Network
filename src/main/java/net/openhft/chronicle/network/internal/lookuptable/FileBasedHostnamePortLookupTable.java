@@ -56,7 +56,7 @@ public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable
             long pagesForMinimum = (long) Math.ceil(((float) MINIMUM_INITIAL_FILE_SIZE_BYTES) / OS.SAFE_PAGE_SIZE);
             actualBytesSize = pagesForMinimum * OS.SAFE_PAGE_SIZE;
             sharedTableBytes = MappedBytes.mappedBytes(sharedTableFile, actualBytesSize, OS.SAFE_PAGE_SIZE, false);
-            sharedTableBytes.disableThreadSafetyCheck(true);
+            sharedTableBytes.singleThreadedCheckDisabled(true);
             sharedTableWire = new JSONWire(sharedTableBytes);
             sharedTableWire.consumePadding();
         } catch (IOException e) {

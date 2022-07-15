@@ -6,7 +6,7 @@ import net.openhft.chronicle.network.TcpEventHandler;
 import net.openhft.chronicle.threads.Pauser;
 import net.openhft.chronicle.threads.TimingPauser;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.concurrent.Semaphore;
@@ -14,31 +14,30 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class ClusterContextTest {
+class ClusterContextTest {
 
     @Test
-    public void testStatesAreStillInTheCorrectOrder() {
+    void testStatesAreStillInTheCorrectOrder() {
         // We rely on the ordering of these
-        assertArrayEquals(ClusterContext.Status.values(),
-                new ClusterContext.Status[]{
-                        ClusterContext.Status.NOT_CLOSED,
-                        ClusterContext.Status.STOPPING,
-                        ClusterContext.Status.CLOSING,
-                        ClusterContext.Status.CLOSED,
-                });
+        assertArrayEquals(new ClusterContext.Status[]{
+                ClusterContext.Status.NOT_CLOSED,
+                ClusterContext.Status.STOPPING,
+                ClusterContext.Status.CLOSING,
+                ClusterContext.Status.CLOSED,
+        }, ClusterContext.Status.values());
     }
 
     @Test
-    public void isClosingAndIsClosedReturnFalseWhenNotClosed() {
+    void isClosingAndIsClosedReturnFalseWhenNotClosed() {
         final TestClusterContext testClusterContext = new TestClusterContext();
         assertFalse(testClusterContext.isClosed());
         assertFalse(testClusterContext.isClosing());
     }
 
     @Test
-    public void isClosingAndIsClosedReturnsFalseWhenWeAreInPerformStopMethod() throws InterruptedException {
+    void isClosingAndIsClosedReturnsFalseWhenWeAreInPerformStopMethod() throws InterruptedException {
         BlockingTestClusterContext tcc = new BlockingTestClusterContext();
         tcc.closeGate.release();
         Thread t = new Thread(tcc::close);
@@ -53,7 +52,7 @@ public class ClusterContextTest {
     }
 
     @Test
-    public void isClosingReturnsTrueAndIsClosedReturnsFalseWhenWeAreInPerformCloseMethod() throws InterruptedException {
+    void isClosingReturnsTrueAndIsClosedReturnsFalseWhenWeAreInPerformCloseMethod() throws InterruptedException {
         BlockingTestClusterContext tcc = new BlockingTestClusterContext();
         tcc.stopGate.release();
         Thread t = new Thread(tcc::close);
@@ -68,7 +67,7 @@ public class ClusterContextTest {
     }
 
     @Test
-    public void isClosingAndIsClosedReturnTrueWhenClosed() throws TimeoutException {
+    void isClosingAndIsClosedReturnTrueWhenClosed() throws TimeoutException {
         TestClusterContext tcc = new TestClusterContext();
         tcc.close();
         TimingPauser pauser = Pauser.balanced();
@@ -78,7 +77,7 @@ public class ClusterContextTest {
     }
 
     @Test
-    public void subsequentThreadsBlockUntilClosedWhenCloseIsCalledByMultiThreads() throws InterruptedException {
+    void subsequentThreadsBlockUntilClosedWhenCloseIsCalledByMultiThreads() throws InterruptedException {
         BlockingTestClusterContext tcc = new BlockingTestClusterContext();
         tcc.stopGate.release();
         Thread firstCloser = new Thread(tcc::close);

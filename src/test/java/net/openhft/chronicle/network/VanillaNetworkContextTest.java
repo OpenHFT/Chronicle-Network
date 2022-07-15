@@ -3,18 +3,18 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.core.io.BackgroundResourceReleaser;
 import net.openhft.chronicle.threads.Pauser;
 import net.openhft.chronicle.threads.TimingPauser;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class VanillaNetworkContextTest extends NetworkTestCommon {
+class VanillaNetworkContextTest extends NetworkTestCommon {
 
     @Test
-    public void networkStatsListenerShouldNotBeClosedOnBackgroundResourceReleaserThread() throws TimeoutException {
+    void networkStatsListenerShouldNotBeClosedOnBackgroundResourceReleaserThread() throws TimeoutException {
         final VanillaNetworkContext<?> vanillaNetworkContext = new VanillaNetworkContext<>();
         AtomicReference<Boolean> wasClosedInBackgroundReleaserThread = new AtomicReference<>();
         vanillaNetworkContext.networkStatsListener(new NetworkStatsAdapter() {
