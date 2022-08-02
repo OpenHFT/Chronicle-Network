@@ -63,7 +63,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
      * Maximum number of iterations we can go without performing idle work (to prevent starvation in busy handlers)
      */
     private static final int MAX_ITERATIONS_BETWEEN_IDLE_WORK = 100;
-    private static final boolean CALL_MISSED_HEARTBEAT_ON_DISCONNECT = Jvm.getBoolean("chronicle.network.callOnMissedHeartbeatOnDisconnect");
+    @Deprecated(/* To be removed in x.24 */)
+    private static final boolean CALL_MISSED_HEARTBEAT_ON_DISCONNECT;
     private static final int MONITOR_POLL_EVERY_SEC = Jvm.getInteger("tcp.event.monitor.secs", 10);
     private static final long NBR_WARNING_NANOS = Jvm.getLong("tcp.nbr.warning.nanos", 20_000_000L);
     private static final long NBW_WARNING_NANOS = Jvm.getLong("tcp.nbw.warning.nanos", 20_000_000L);
@@ -77,6 +78,10 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     static {
         ThreadLogTypeElapsedRecord.loadClass();
         if (DISABLE_TCP_NODELAY) Jvm.startup().on(TcpEventHandler.class, "tcpNoDelay disabled");
+        final String cmhodPropertyName = "chronicle.network.callOnMissedHeartbeatOnDisconnect";
+        CALL_MISSED_HEARTBEAT_ON_DISCONNECT = Jvm.getBoolean(cmhodPropertyName);
+        if (CALL_MISSED_HEARTBEAT_ON_DISCONNECT)
+            Jvm.warn().on(TcpEventHandler.class, cmhodPropertyName + " is deprecated and will be removed in x.24");
     }
 
     private TcpEventHandler.SocketReader reader = new DefaultSocketReader();
