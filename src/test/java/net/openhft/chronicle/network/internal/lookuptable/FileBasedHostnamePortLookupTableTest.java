@@ -90,7 +90,7 @@ class FileBasedHostnamePortLookupTableTest extends NetworkTestCommon {
     }
 
     @Test
-    @Timeout(20_000)
+    @Timeout(20)
     void doShouldWorkConcurrently() {
         int seq = doShouldWorkConcurrently(false);
         int para = doShouldWorkConcurrently(true);

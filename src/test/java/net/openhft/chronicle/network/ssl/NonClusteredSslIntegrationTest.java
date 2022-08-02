@@ -11,7 +11,6 @@ import net.openhft.chronicle.threads.Pauser;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -32,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 
 import static java.util.Arrays.stream;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
  * IMPORTANT - each event handler MUST run in its own thread, as the handshake is a
@@ -40,11 +38,12 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
  * as subsequent invocations of the TcpEventHandler may consume socket data during the
  * handshake.
  * <p>
+ * <code>
  * public ServerThreadingStrategy serverThreadingStrategy() {
- * return ServerThreadingStrategy.MULTI_THREADED_BUSY_WAITING;
+ *     return ServerThreadingStrategy.CONCURRENT;
  * }
+ * </code>
  */
-@Disabled
 public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
 
     private static final boolean DEBUG = Jvm.getBoolean("NonClusteredSslIntegrationTest.debug");
@@ -54,15 +53,11 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
     private final CountingTcpHandler serverAcceptor = new CountingTcpHandler("server-acceptor");
     private final CountingTcpHandler clientInitiator = new CountingTcpHandler("client-initiator");
     private final CountingTcpHandler serverInitiator = new CountingTcpHandler("server-initiator");
-    private final Mode mode;
-
-    public NonClusteredSslIntegrationTest(final String name, final Mode mode) {
-        this.mode = mode;
-    }
+    private Mode mode;
 
     public static List<Object[]> params() {
         final List<Object[]> params = new ArrayList<>();
-        stream(Mode.values()).forEach(m -> params.add(new Object[]{m.name(), m}));
+        stream(Mode.values()).forEach(m -> params.add(new Object[]{m}));
 
         return params;
     }
@@ -92,9 +87,12 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
 
     @ParameterizedTest
     @MethodSource("params")
-    @Timeout(40_000L)
-    void shouldCommunicate() throws Exception {
-        assumeFalse(mode == Mode.BI_DIRECTIONAL, "BI_DIRECTIONAL mode sometimes hangs during handshake");
+    @Timeout(5)
+    void shouldCommunicate(final Mode mode) throws Exception {
+        // Socket reconnector not provided.
+        ignoreException("socketReconnector == null");
+
+        this.mode = mode;
         client.start();
         server.start();
         doConnect();
@@ -114,11 +112,11 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
     }
 
     @AfterEach
-    void tearDown() {
-        client.close();
+    void cleanUp() {
         client.stop();
-        server.close();
+        client.close();
         server.stop();
+        server.close();
         TCPRegistry.reset();
         TCPRegistry.assertAllServersStopped();
     }
@@ -203,22 +201,22 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
                     in.read(tmp);
                     if (DEBUG) {
                         if (len > 10) {
-                           // System.out.printf("%s received payload of length %d%n", label, len);
-                           // System.out.println(in);
+                            System.out.printf("%s received payload of length %d%n", label, len);
+                            System.out.println(in);
                         } else {
-                           // System.out.printf("%s received [%d] %d/%s%n", label, tmp.length, received, new String(tmp, StandardCharsets.US_ASCII));
+                            System.out.printf("%s received [%d] %d/%s%n", label, tmp.length, received, new String(tmp, StandardCharsets.US_ASCII));
                         }
                     }
                     operationCount++;
                 } else if (!nc.isAcceptor()) {
+                    final String payload = "ping-" + (counter - 1);
                     if (System.currentTimeMillis() > lastSent + 100L) {
                         out.writeInt(0xFEDCBA98);
                         out.writeLong((counter++));
-                        final String payload = "ping-" + (counter - 1);
                         out.writeInt(payload.length());
                         out.write(payload.getBytes(StandardCharsets.US_ASCII));
                         if (DEBUG) {
-                           // System.out.printf("%s sent [%d] %d/%s%n", label, payload.length(), counter - 1, payload);
+                            System.out.printf("%s sent [%d] %d/%s%n", label, payload.length(), counter - 1, payload);
                         }
                         operationCount++;
                         lastSent = System.currentTimeMillis();

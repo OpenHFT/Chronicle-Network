@@ -23,7 +23,7 @@ class AlwaysStartOnPrimaryConnectionStrategyTest extends NetworkTestCommon {
     }
 
     @Test
-    @Timeout(1_000)
+    @Timeout(1)
     void connect_attempts_should_stop_when_thread_is_interrupted() throws InterruptedException {
         Thread thread = new Thread(() -> {
             ConnectionStrategy strategy = new AlwaysStartOnPrimaryConnectionStrategy();
