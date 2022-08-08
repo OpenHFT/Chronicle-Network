@@ -19,6 +19,7 @@
 package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.ManagedCloseable;
 import net.openhft.chronicle.network.NetworkContextManager;
 import net.openhft.chronicle.network.TcpEventHandler;
@@ -103,6 +104,7 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
             stateMachine.close();
         }
         delegate.close();
+        bufferHandler.close();
     }
 
     /**

@@ -251,7 +251,7 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
         }
     }
 
-    private static final class StubNetworkContext
+    static final class StubNetworkContext
             extends VanillaNetworkContext<StubNetworkContext>
             implements SslNetworkContext<StubNetworkContext> {
         @Override
