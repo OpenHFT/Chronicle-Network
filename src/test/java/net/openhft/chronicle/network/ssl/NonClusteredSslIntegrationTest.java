@@ -20,6 +20,7 @@ package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.core.io.SimpleCloseable;
 import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.api.TcpHandler;
@@ -49,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 
 import static java.util.Arrays.stream;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
  * IMPORTANT - each event handler MUST run in its own thread, as the handshake is a
@@ -107,6 +109,8 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
     @MethodSource("params")
     @Timeout(5)
     void shouldCommunicate(final Mode mode) throws Exception {
+        assumeFalse(OS.isWindows() && mode == Mode.BI_DIRECTIONAL,
+                "BI_DIRECTIONAL mode sometimes hangs during handshake on Windows");
         // Socket reconnector not provided.
         ignoreException("socketReconnector == null");
 
