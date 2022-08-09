@@ -19,10 +19,17 @@
 package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.core.io.IOTools;
+import net.openhft.chronicle.bytes.BytesStore;
+import net.openhft.chronicle.bytes.internal.HeapBytesStore;
+import net.openhft.chronicle.bytes.internal.NativeBytesStore;
+import net.openhft.chronicle.core.internal.util.DirectBufferUtil;
+import net.openhft.chronicle.core.io.ReferenceOwner;
+import net.openhft.chronicle.core.io.SimpleCloseable;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.api.TcpHandler;
 
+import java.lang.ref.Reference;
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 
 /**
@@ -35,12 +42,17 @@ import java.nio.ByteBuffer;
  *
  * @param <N> the type of {@link NetworkContext}
  */
-public final class BytesBufferHandler<N extends NetworkContext<N>> implements BufferHandler {
+public final class BytesBufferHandler<N extends NetworkContext<N>> extends SimpleCloseable implements BufferHandler {
     private static final Bytes<ByteBuffer> EMPTY_APPLICATION_INPUT = Bytes.wrapForRead(ByteBuffer.allocate(0));
     private TcpHandler<N> delegateHandler;
     private Bytes<ByteBuffer> input;
     private Bytes<ByteBuffer> output;
     private N networkContext;
+
+    private Reference<ByteBuffer> decryptedInBuf;
+    private Bytes<ByteBuffer> decryptedInput;
+    private Reference<ByteBuffer> decryptedOutBuf;
+    private Bytes<ByteBuffer> decryptedOutput;
 
     public void set(
             final TcpHandler<N> delegate,
@@ -59,9 +71,7 @@ public final class BytesBufferHandler<N extends NetworkContext<N>> implements Bu
     @Override
     public int readData(final ByteBuffer target) {
         final int toRead = Math.min(target.remaining(), (int) input.readRemaining());
-        for (int i = 0; i < toRead; i++) {
-            target.put(input.readByte());
-        }
+        input.read(target);
         return toRead;
     }
 
@@ -70,26 +80,59 @@ public final class BytesBufferHandler<N extends NetworkContext<N>> implements Bu
      */
     @Override
     public void handleDecryptedData(final ByteBuffer input, final ByteBuffer output) {
-        final Bytes<ByteBuffer> applicationInput;
-        if (input.position() != 0) {
+        boolean atStart = input.position() == 0;
+        if (!atStart) {
             input.flip();
-            applicationInput = Bytes.wrapForRead(input);
-            IOTools.unmonitor(applicationInput); // temporary wrapper
-        } else {
+        }
+
+        prepareBuffers(input, output);
+
+        Bytes<ByteBuffer> applicationInput = decryptedInput;
+        if (atStart) {
             applicationInput = EMPTY_APPLICATION_INPUT;
         }
 
-        final Bytes<ByteBuffer> applicationOutput = Bytes.wrapForWrite(output);
-        try {
-            delegateHandler.process(applicationInput, applicationOutput, networkContext);
-            output.position((int) applicationOutput.writePosition());
-        } finally {
-            applicationOutput.releaseLast();
-        }
+        delegateHandler.process(applicationInput, decryptedOutput, networkContext);
+        output.position((int) decryptedOutput.writePosition());
 
-        input.position((int) applicationInput.readPosition());
-        if (applicationInput.readPosition() != 0) {
+        input.position((int) decryptedInput.readPosition());
+        if (decryptedInput.readPosition() != 0) {
             input.compact();
+        }
+    }
+
+    private void prepareBuffers(ByteBuffer input, ByteBuffer output) {
+        if ((decryptedInBuf == null || input != decryptedInBuf.get()) || decryptedInput == null) {
+            if (decryptedInput != null) decryptedInput.releaseLast();
+
+            decryptedInput = wrap(input);
+            decryptedInBuf = new WeakReference<>(input);
+        }
+        decryptedInput.readPosition(input.position());
+        decryptedInput.readLimit(input.limit());
+
+        if ((decryptedOutBuf == null || output != decryptedOutBuf.get()) || decryptedOutput == null) {
+            if (decryptedOutput != null) decryptedOutput.releaseLast();
+
+            decryptedOutput = wrap(output);
+            decryptedOutBuf = new WeakReference<>(output);
+        }
+        decryptedOutput.writePosition(output.position());
+        decryptedOutput.writeLimit(output.limit());
+    }
+
+    /**
+     * Modified {@link BytesStore#wrap(ByteBuffer)} that does not take ownership of bb and does not release it.
+     */
+    private Bytes<ByteBuffer> wrap(ByteBuffer bb) {
+        BytesStore<?, ByteBuffer> bs = bb.isDirect()
+                ? new NativeBytesStore<>(DirectBufferUtil.addressOrThrow(bb), bb.capacity())
+                : HeapBytesStore.wrap(bb);
+
+        try {
+            return bs.bytesForRead();
+        } finally {
+            bs.release(ReferenceOwner.INIT);
         }
     }
 
@@ -105,9 +148,16 @@ public final class BytesBufferHandler<N extends NetworkContext<N>> implements Bu
                 (output.writeRemaining() > Integer.MAX_VALUE ?
                         Integer.MAX_VALUE : output.writeRemaining());
         final int toWrite = Math.min(encrypted.remaining(), writeRemaining);
-        for (int i = 0; i < toWrite; i++) {
-            output.writeByte(encrypted.get());
-        }
+        output.writeSome(encrypted);
         return toWrite;
+    }
+
+    @Override
+    protected void performClose() {
+        if (decryptedOutput != null)
+            decryptedOutput.releaseLast();
+
+        if (decryptedInput != null)
+            decryptedInput.releaseLast();
     }
 }
