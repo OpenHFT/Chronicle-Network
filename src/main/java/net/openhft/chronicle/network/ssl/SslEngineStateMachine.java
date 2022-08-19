@@ -174,7 +174,6 @@ final class SslEngineStateMachine {
         }
 
         outboundApplicationData.clear();
-        inboundEncodedData.clear();
         outboundApplicationData.clear();
         outboundEncodedData.clear();
         inHandshake = false;
