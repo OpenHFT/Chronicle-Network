@@ -113,7 +113,6 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
         System.clearProperty("jdk.tls.server.protocols");
     }
 
-
     @ParameterizedTest
     @MethodSource("params")
     @Timeout(5)

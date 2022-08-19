@@ -36,6 +36,9 @@ import java.nio.ByteBuffer;
  * <p>
  * Further operation is delegated to the {@link SslEngineStateMachine} class, which manages the conversion of data between plain-text and cipher-text
  * either end of the network connection.
+ * <p>
+ * It is advised to force TLS version 1.2 to be used with this handler, such as by setting system
+ * property {@code jdk.tls.server.protocols} to {@code TLSv1.2}.
  *
  * @param <N> the type of NetworkContext
  */
