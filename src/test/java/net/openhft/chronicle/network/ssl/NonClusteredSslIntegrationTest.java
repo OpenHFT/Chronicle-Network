@@ -88,6 +88,10 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
 
     @BeforeEach
     void setUp() throws Exception {
+        // https://bugs.openjdk.java.net/browse/JDK-8211426
+        if (Jvm.majorVersion() >= 11)
+            System.setProperty("jdk.tls.server.protocols", "TLSv1.2");
+
         TCPRegistry.reset();
         TCPRegistry.createServerSocketChannelFor("client", "server");
 
@@ -102,8 +106,13 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
             eventHandler.tcpHandler(getTcpHandler(serverAcceptor));
             return eventHandler;
         }, StubNetworkContext::new));
-
     }
+
+    @AfterEach
+    void teardown() {
+        System.clearProperty("jdk.tls.server.protocols");
+    }
+
 
     @ParameterizedTest
     @MethodSource("params")
