@@ -19,7 +19,6 @@
 package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.core.io.IORuntimeException;
-import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +43,8 @@ import java.time.Instant;
 final class SslEngineStateMachine {
     private static final Logger LOGGER = LoggerFactory.getLogger(SslEngineStateMachine.class);
 
+    private static final int HANDSHAKE_BUFFER_CAPACITY = 32768;
+
     private final BufferHandler bufferHandler;
     private final boolean isAcceptor;
 
@@ -55,39 +56,141 @@ final class SslEngineStateMachine {
     private ByteBuffer[] precomputedWrapArray;
     private ByteBuffer[] precomputedUnwrapArray;
 
-    SslEngineStateMachine(
-            final BufferHandler bufferHandler, final boolean isAcceptor) {
+    private boolean inHandshake = true;
+
+    SslEngineStateMachine(final BufferHandler bufferHandler, final boolean isAcceptor) {
         this.bufferHandler = bufferHandler;
         this.isAcceptor = isAcceptor;
     }
 
-    void initialise(SSLContext ctx, ChronicleSocketChannel channel) {
+    void initialise(SSLContext ctx) {
         try {
-            channel.configureBlocking(false);
             engine = ctx.createSSLEngine();
             engine.setUseClientMode(!isAcceptor);
             if (isAcceptor) {
                 engine.setNeedClientAuth(true);
             }
-            outboundApplicationData = ByteBuffer.allocateDirect(engine.getSession().getApplicationBufferSize());
-            outboundEncodedData = ByteBuffer.allocateDirect(engine.getSession().getPacketBufferSize());
-            inboundApplicationData = ByteBuffer.allocateDirect(engine.getSession().getApplicationBufferSize());
-            inboundEncodedData = ByteBuffer.allocateDirect(engine.getSession().getPacketBufferSize());
+            engine.beginHandshake();
+
+            outboundApplicationData = ByteBuffer.allocateDirect(Math.max(engine.getSession().getApplicationBufferSize(), HANDSHAKE_BUFFER_CAPACITY));
+            outboundEncodedData = ByteBuffer.allocateDirect(Math.max(engine.getSession().getPacketBufferSize(), HANDSHAKE_BUFFER_CAPACITY));
+            inboundApplicationData = ByteBuffer.allocateDirect(Math.max(engine.getSession().getApplicationBufferSize(), HANDSHAKE_BUFFER_CAPACITY));
+            inboundEncodedData = ByteBuffer.allocateDirect(Math.max(engine.getSession().getPacketBufferSize(), HANDSHAKE_BUFFER_CAPACITY));
             // eliminates array creation on each call to SSLEngine.wrap()
             precomputedWrapArray = new ByteBuffer[]{outboundApplicationData};
             precomputedUnwrapArray = new ByteBuffer[]{inboundApplicationData};
-
-            new Handshaker().performHandshake(engine, channel);
         } catch (IOException e) {
             throw new RuntimeException("Unable to perform handshake at " + Instant.now(), e);
         }
     }
 
+    boolean performHandshake() throws IOException {
+        SSLEngineResult.HandshakeStatus status = engine.getHandshakeStatus();
+        SSLEngineResult result;
+
+        boolean reportedInitialStatus = false;
+        SSLEngineResult.HandshakeStatus lastStatus = status;
+
+        boolean didSomething = false;
+
+        while (status != SSLEngineResult.HandshakeStatus.FINISHED &&
+                status != SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) {
+            if (!reportedInitialStatus) {
+                LOGGER.debug("initial status {}", status);
+                reportedInitialStatus = true;
+            }
+            if (status != lastStatus) {
+                LOGGER.debug("status change to {}", status);
+                lastStatus = status;
+            }
+            switch (status) {
+                case NEED_UNWRAP:
+                    final int read = bufferHandler.readData(inboundEncodedData);
+                    if (read > 0) {
+                        didSomething = true;
+                    }
+
+                    inboundEncodedData.flip();
+                    final int dataReceived = inboundEncodedData.remaining();
+                    result = engine.unwrap(inboundEncodedData, outboundApplicationData);
+                    if (dataReceived > 0) {
+                        LOGGER.debug("Received {} from handshake peer", dataReceived);
+                    }
+                    inboundEncodedData.compact();
+
+                    switch (result.getStatus()) {
+                        case OK:
+                            break;
+                        case BUFFER_UNDERFLOW:
+                            LOGGER.debug("Not enough data read from remote end ({})", dataReceived);
+                            break;
+                        default:
+                            LOGGER.error("Bad handshake status: {}/{}",
+                                    result.getStatus(), result.getHandshakeStatus());
+                            break;
+                    }
+                    break;
+                case NEED_WRAP:
+                    outboundEncodedData.clear();
+                    result = engine.wrap(outboundApplicationData, outboundEncodedData);
+
+                    switch (result.getStatus()) {
+                        case OK:
+                            outboundEncodedData.flip();
+                            int remaining = outboundEncodedData.remaining();
+                            int wrote = bufferHandler.writeData(outboundEncodedData);
+                            if (wrote < remaining) {
+                                throw new IOException("Handshake message did not fit in buffer");
+                            }
+
+                            LOGGER.debug("Wrote {} to handshake peer", wrote);
+
+                            didSomething = true;
+                            break;
+                        default:
+                            throw new UnsupportedOperationException(result.getStatus().toString());
+                    }
+                    break;
+                case NEED_TASK:
+                    Runnable delegatedTask;
+                    while ((delegatedTask = engine.getDelegatedTask()) != null) {
+                        try {
+                            delegatedTask.run();
+                            LOGGER.debug("Ran task {}", delegatedTask);
+                            didSomething = true;
+                        } catch (RuntimeException e) {
+                            LOGGER.error("Delegated task threw exception", e);
+                        }
+                    }
+                    break;
+            }
+
+            status = engine.getHandshakeStatus();
+
+            if (!didSomething)
+                return false;
+
+            didSomething = false;
+        }
+
+        outboundApplicationData.clear();
+        inboundEncodedData.clear();
+        outboundApplicationData.clear();
+        outboundEncodedData.clear();
+        inHandshake = false;
+
+        return true;
+    }
+
     public boolean action() {
         final int read;
         boolean busy = false;
-        bufferHandler.handleDecryptedData(inboundApplicationData, outboundApplicationData);
         try {
+            if (inHandshake)
+                return performHandshake();
+
+            bufferHandler.handleDecryptedData(inboundApplicationData, outboundApplicationData);
+
             if (outboundApplicationData.position() != 0) {
 
                 outboundApplicationData.flip();

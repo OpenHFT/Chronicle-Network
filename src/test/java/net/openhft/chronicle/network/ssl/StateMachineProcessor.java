@@ -18,7 +18,6 @@
 
 package net.openhft.chronicle.network.ssl;
 
-import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.threads.Pauser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,22 +30,19 @@ final class StateMachineProcessor implements Runnable {
     private final SSLContext context;
     private final SslEngineStateMachine stateMachine;
     private final Pauser pauser = Pauser.balanced();
-    private final ChronicleSocketChannel channel;
     private volatile boolean running = true;
 
-    StateMachineProcessor(final ChronicleSocketChannel channel,
-                          final boolean isAcceptor,
+    StateMachineProcessor(final boolean isAcceptor,
                           final SSLContext context,
                           final BufferHandler bufferHandler) {
         this.context = context;
-        this.channel = channel;
         stateMachine = new SslEngineStateMachine(bufferHandler, isAcceptor);
     }
 
     @Override
     public void run() {
         try {
-            stateMachine.initialise(context, channel);
+            stateMachine.initialise(context);
 
             while (!Thread.currentThread().isInterrupted() && running) {
                 while (running && stateMachine.action()) {

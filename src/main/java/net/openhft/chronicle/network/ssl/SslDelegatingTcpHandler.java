@@ -19,19 +19,14 @@
 package net.openhft.chronicle.network.ssl;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.ManagedCloseable;
 import net.openhft.chronicle.network.NetworkContextManager;
 import net.openhft.chronicle.network.TcpEventHandler;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
-import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.time.Instant;
 
 /**
  * This class is designed to wrap a standard {@link TcpHandler}, providing symmetric encryption/decryption transparently to the underlying handler.
@@ -46,12 +41,9 @@ import java.time.Instant;
  */
 public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
         implements TcpHandler<N>, NetworkContextManager<N> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SslDelegatingTcpHandler.class);
-
     private final TcpHandler<N> delegate;
     private final BytesBufferHandler<N> bufferHandler = new BytesBufferHandler<>();
     private SslEngineStateMachine stateMachine;
-    private boolean handshakeComplete;
 
     public SslDelegatingTcpHandler(final TcpHandler<N> delegate) {
         this.delegate = delegate;
@@ -65,14 +57,9 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
         if (delegate instanceof ManagedCloseable)
             ((ManagedCloseable) delegate).throwExceptionIfClosed();
 
-        if (!handshakeComplete) {
-            try {
-                doHandshake(nc);
-            } catch (Throwable t) {
-                LOGGER.error("Failed to complete SSL handshake at " + Instant.now(), t);
-                throw new IllegalStateException("Unable to perform handshake", t);
-            }
-            handshakeComplete = true;
+        if (stateMachine == null) {
+            stateMachine = new SslEngineStateMachine(bufferHandler, nc.isAcceptor());
+            stateMachine.initialise(nc.sslContext());
         }
 
         bufferHandler.set(delegate, (Bytes<ByteBuffer>) in, (Bytes<ByteBuffer>)out, nc);
@@ -130,14 +117,6 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
      * {@inheritDoc}
      */
     @Override
-    public void onReadComplete() {
-        delegate.onReadComplete();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public boolean hasClientClosed() {
         return delegate.hasClientClosed();
     }
@@ -166,11 +145,5 @@ public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
         if (delegate instanceof NetworkContextManager) {
             ((NetworkContextManager<N>) delegate).nc(nc);
         }
-    }
-
-    private void doHandshake(final N nc) {
-        stateMachine = new SslEngineStateMachine(bufferHandler, nc.isAcceptor());
-        ChronicleSocketChannel socketChannel = nc.socketChannel();
-        stateMachine.initialise(nc.sslContext(), socketChannel);
     }
 }
