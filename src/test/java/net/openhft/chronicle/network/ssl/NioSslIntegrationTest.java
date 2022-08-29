@@ -76,14 +76,14 @@ final class NioSslIntegrationTest extends NetworkTestCommon {
 
             final Client client = new Client(channel);
 
-            final StateMachineProcessor clientProcessor = new StateMachineProcessor(channel, false,
+            final StateMachineProcessor clientProcessor = new StateMachineProcessor(false,
                     SSLContextLoader.getInitialisedContext(), client);
 
             final ChronicleSocketChannel serverConnection = serverChannel.accept();
             serverConnection.configureBlocking(false);
 
             final Server server = new Server(serverConnection);
-            final StateMachineProcessor serverProcessor = new StateMachineProcessor(serverConnection, true,
+            final StateMachineProcessor serverProcessor = new StateMachineProcessor(true,
                     SSLContextLoader.getInitialisedContext(), server);
 
             while (!(channel.finishConnect() && serverConnection.finishConnect())) {
@@ -172,6 +172,7 @@ final class NioSslIntegrationTest extends NetworkTestCommon {
             if (lastReceivedMessage.remaining() != lastReceivedMessage.capacity() && lastReceivedMessage.hasRemaining()) {
                 output.put("echo: ".getBytes(StandardCharsets.US_ASCII));
                 output.put(lastReceivedMessage);
+                lastReceivedMessage.clear();
             }
         }
     }
