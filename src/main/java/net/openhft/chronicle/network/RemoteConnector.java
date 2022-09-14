@@ -185,7 +185,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
 
                 throw InvalidEventHandlerException.reusable();
             } catch (AlreadyConnectedException | AsynchronousCloseException | UnsupportedAddressTypeException e) {
-                Jvm.debug().on(getClass(), "Unable to connect to " + address, e);
+                Jvm.warn().on(getClass(), "Unable to connect to " + address, e);
                 throw InvalidEventHandlerException.reusable();
             } catch (IOException | IORuntimeException | UnresolvedAddressException e) {
                 // UnresolvedAddressException: host configuration can change over time, See https://github.com/OpenHFT/Chronicle-Network/issues/136
