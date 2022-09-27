@@ -52,10 +52,6 @@ public interface TcpHandler<N extends NetworkContext<N>> extends ClientClosedPro
                              final int position) {
     }
 
-    @Deprecated(/* unused, no replacement. To be removed in x.24 */)
-    default void onReadComplete() {
-    }
-
     /**
      * Perform any low priority work, called when the handler is not busy, or after it has been
      * busy for a long time.

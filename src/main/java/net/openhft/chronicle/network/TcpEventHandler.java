@@ -63,8 +63,6 @@ public class TcpEventHandler<T extends NetworkContext<T>>
      * Maximum number of iterations we can go without performing idle work (to prevent starvation in busy handlers)
      */
     private static final int MAX_ITERATIONS_BETWEEN_IDLE_WORK = 100;
-    @Deprecated(/* To be removed in x.24 */)
-    private static final boolean CALL_MISSED_HEARTBEAT_ON_DISCONNECT;
     private static final int MONITOR_POLL_EVERY_SEC = Jvm.getInteger("tcp.event.monitor.secs", 10);
     private static final long NBR_WARNING_NANOS = Jvm.getLong("tcp.nbr.warning.nanos", 20_000_000L);
     private static final long NBW_WARNING_NANOS = Jvm.getLong("tcp.nbw.warning.nanos", 20_000_000L);
@@ -78,10 +76,6 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     static {
         ThreadLogTypeElapsedRecord.loadClass();
         if (DISABLE_TCP_NODELAY) Jvm.startup().on(TcpEventHandler.class, "tcpNoDelay disabled");
-        final String cmhodPropertyName = "chronicle.network.callOnMissedHeartbeatOnDisconnect";
-        CALL_MISSED_HEARTBEAT_ON_DISCONNECT = Jvm.getBoolean(cmhodPropertyName);
-        if (CALL_MISSED_HEARTBEAT_ON_DISCONNECT)
-            Jvm.warn().on(TcpEventHandler.class, cmhodPropertyName + " is deprecated and will be removed in x.24");
     }
 
     private TcpEventHandler.SocketReader reader = new DefaultSocketReader();
@@ -491,17 +485,6 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             } else if (!(e instanceof ClosedByInterruptException)) {
                 Jvm.warn().on(getClass(), "", e);
             }
-
-            // The remote server has sent you a RST packet, which indicates an immediate dropping of the connection,
-            // rather than the usual handshake. This bypasses the normal half-closed state transition.
-            // I like this description: "Connection reset by peer" is the TCP/IP equivalent
-            // of slamming the phone back on the hook.
-            if (CALL_MISSED_HEARTBEAT_ON_DISCONNECT) {
-                HeartbeatListener heartbeatListener = nc.heartbeatListener();
-                if (heartbeatListener != null)
-                    heartbeatListener.onMissedHeartbeat();
-            }
-
         } finally {
             closeAndStartReconnector();
         }

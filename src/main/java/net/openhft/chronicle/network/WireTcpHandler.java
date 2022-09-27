@@ -160,38 +160,31 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
      * process all messages in this batch, provided there is plenty of output space.
      */
     private void onRead0() {
-        assert inWire.startUse();
-
         ensureCapacity();
 
-        try {
+        long index = -1;
+        while (!inWire.bytes().isEmpty()) {
 
-            long index = -1;
-            while (!inWire.bytes().isEmpty()) {
+            try (DocumentContext dc = inWire.readingDocument()) {
+                if (!dc.isPresent())
+                    return;
 
-                try (DocumentContext dc = inWire.readingDocument()) {
-                    if (!dc.isPresent())
-                        return;
+                // if the last iteration didn't consume anything (rolled back) then break
+                if (dc.index() == index) {
+                    dc.rollbackOnClose();
+                    return;
+                }
+                index = dc.index();
 
-                    // if the last iteration didn't consume anything (rolled back) then break
-                    if (dc.index() == index) {
-                        dc.rollbackOnClose();
-                        return;
-                    }
-                    index = dc.index();
-
-                    try {
-                        if (YamlLogging.showServerReads())
-                            logYaml(dc);
-                        onRead(dc, outWire);
-                        onWrite(outWire);
-                    } catch (Exception e) {
-                        Jvm.warn().on(getClass(), "inWire=" + inWire.getClass() + ",yaml=" + Wires.fromSizePrefixedBlobs(dc), e);
-                    }
+                try {
+                    if (YamlLogging.showServerReads())
+                        logYaml(dc);
+                    onRead(dc, outWire);
+                    onWrite(outWire);
+                } catch (Exception e) {
+                    Jvm.warn().on(getClass(), "inWire=" + inWire.getClass() + ",yaml=" + Wires.fromSizePrefixedBlobs(dc), e);
                 }
             }
-        } finally {
-            assert inWire.endUse();
         }
     }
 
@@ -221,17 +214,13 @@ public abstract class WireTcpHandler<T extends NetworkContext<T>>
             initialiseInWire(wireType, in);
         }
 
-        assert inWire.startUse();
         if (inWire.bytes() != in) {
             initialiseInWire(wireType, in);
         }
-        assert inWire.endUse();
 
         boolean replace = outWire == null;
         if (!replace) {
-            assert outWire.startUse();
             replace = outWire.bytes() != out;
-            assert outWire.endUse();
         }
         if (replace) {
             initialiseOutWire(out, wireType);
