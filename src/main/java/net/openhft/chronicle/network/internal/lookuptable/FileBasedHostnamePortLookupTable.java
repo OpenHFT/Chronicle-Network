@@ -135,7 +135,6 @@ public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable
     }
 
     private void writeToTable() {
-        assert sharedTableWire.startUse();
         sharedTableBytes.reserve(this);
         try {
             sharedTableWire.clear();
@@ -143,7 +142,6 @@ public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable
             zeroOutRemainingBytes((int) sharedTableBytes.writePosition());
         } finally {
             sharedTableBytes.release(this);
-            assert sharedTableWire.endUse();
         }
     }
 
@@ -161,7 +159,6 @@ public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable
     private void readFromTable() {
         final StringBuilder sb = Wires.acquireStringBuilder();
         final ProcessScopedMapping reusableMapping = new ProcessScopedMapping();
-        assert sharedTableWire.startUse();
         sharedTableBytes.reserve(this);
         try {
             sharedTableBytes.readPosition(0);
@@ -188,7 +185,6 @@ public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable
             }
         } finally {
             sharedTableBytes.release(this);
-            assert sharedTableWire.endUse();
         }
     }
 

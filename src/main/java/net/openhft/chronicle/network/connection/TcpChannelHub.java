@@ -309,15 +309,10 @@ public final class TcpChannelHub extends AbstractCloseable {
     }
 
     void clear(@NotNull final Wire wire) {
-        assert wire.startUse();
-        try {
-            final Bytes<?> bytes = wire.bytes();
-            bytes.singleThreadedCheckReset();
-            wire.clear();
-            bytes.singleThreadedCheckReset();
-        } finally {
-            assert wire.endUse();
-        }
+        final Bytes<?> bytes = wire.bytes();
+        bytes.singleThreadedCheckReset();
+        wire.clear();
+        bytes.singleThreadedCheckReset();
     }
 
     /**
@@ -580,7 +575,6 @@ public final class TcpChannelHub extends AbstractCloseable {
         assert outBytesLock().isHeldByCurrentThread();
 
         try {
-            assert wire.startUse();
             @Nullable ChronicleSocketChannel clientChannel = this.clientChannel;
 
             // wait for the channel to be non null
@@ -589,9 +583,9 @@ public final class TcpChannelHub extends AbstractCloseable {
                     return;
                 }
                 final byte[] bytes = wire.bytes().toByteArray();
-                assert wire.endUse();
+
                 condition.await(10, TimeUnit.SECONDS);
-                assert wire.startUse();
+
                 wire.clear();
                 wire.bytes().write(bytes);
             }
@@ -621,8 +615,6 @@ public final class TcpChannelHub extends AbstractCloseable {
             Jvm.pause(500);
             throw new ConnectionDroppedException(e);
 
-        } finally {
-            assert wire.endUse();
         }
     }
 
@@ -670,85 +662,80 @@ public final class TcpChannelHub extends AbstractCloseable {
         assert outBytesLock.isHeldByCurrentThread();
 
         long start = System.currentTimeMillis();
-        assert outWire.startUse();
+        @NotNull final Bytes<?> bytes = outWire.bytes();
+        @Nullable final ByteBuffer outBuffer = (ByteBuffer) bytes.underlyingObject();
+        outBuffer.limit((int) bytes.writePosition());
+        outBuffer.position(0);
+
+        // this check ensure that a put does not occur while currently re-subscribing
+        assert outBytesLock().isHeldByCurrentThread();
+
+        boolean isOutBufferFull = false;
+        logToStandardOutMessageSent(outWire, outBuffer);
+        updateLargestChunkSoFarSize(outBuffer);
+
         try {
-            @NotNull final Bytes<?> bytes = outWire.bytes();
-            @Nullable final ByteBuffer outBuffer = (ByteBuffer) bytes.underlyingObject();
-            outBuffer.limit((int) bytes.writePosition());
-            outBuffer.position(0);
 
-            // this check ensure that a put does not occur while currently re-subscribing
-            assert outBytesLock().isHeldByCurrentThread();
+            int prevRemaining = outBuffer.remaining();
+            while (outBuffer.remaining() > 0) {
 
-            boolean isOutBufferFull = false;
-            logToStandardOutMessageSent(outWire, outBuffer);
-            updateLargestChunkSoFarSize(outBuffer);
+                // if the socket was changed, we need to resend using this one instead
+                // unless the client channel still has not be set, then we will use this one
+                // this can happen during the handshaking phase of a new connection
 
-            try {
+                if (clientChannel != this.clientChannel)
+                    throw new ConnectionDroppedException("Connection has Changed");
 
-                int prevRemaining = outBuffer.remaining();
-                while (outBuffer.remaining() > 0) {
+                int len = clientChannel.write(outBuffer);
 
-                    // if the socket was changed, we need to resend using this one instead
-                    // unless the client channel still has not be set, then we will use this one
-                    // this can happen during the handshaking phase of a new connection
-
-                    if (clientChannel != this.clientChannel)
-                        throw new ConnectionDroppedException("Connection has Changed");
-
-                    int len = clientChannel.write(outBuffer);
-
-                    if (len == -1)
-                        throw new IORuntimeException("Disconnection to server=" +
-                                socketAddressSupplier + ", name=" + name);
+                if (len == -1)
+                    throw new IORuntimeException("Disconnection to server=" +
+                            socketAddressSupplier + ", name=" + name);
 
 //                    if (Jvm.isDebugEnabled(TcpChannelHub.class))
 //                        Jvm.debug().on(TcpChannelHub.class, "W:" + len + ",socket=" + socketAddressSupplier.get());
 
-                    // reset the timer if we wrote something.
-                    if (prevRemaining != outBuffer.remaining()) {
-                        start = System.currentTimeMillis();
-                        isOutBufferFull = false;
-                        //  if (Jvm.isDebug() && outBuffer.remaining() == 0)
-                        //    //  System.out.println("W: " + (prevRemaining - outBuffer
-                        //          .remaining()));
-                        prevRemaining = outBuffer.remaining();
+                // reset the timer if we wrote something.
+                if (prevRemaining != outBuffer.remaining()) {
+                    start = System.currentTimeMillis();
+                    isOutBufferFull = false;
+                    //  if (Jvm.isDebug() && outBuffer.remaining() == 0)
+                    //    //  System.out.println("W: " + (prevRemaining - outBuffer
+                    //          .remaining()));
+                    prevRemaining = outBuffer.remaining();
 
-                        if (tcpSocketConsumer != null)
-                            tcpSocketConsumer.lastTimeMessageReceivedOrSent = start;
+                    if (tcpSocketConsumer != null)
+                        tcpSocketConsumer.lastTimeMessageReceivedOrSent = start;
 
-                    } else {
-                        if (!isOutBufferFull && Jvm.isDebug() && debugEnabled)
-                            Jvm.debug().on(TcpChannelHub.class, "----> TCP write buffer is FULL! " + outBuffer.remaining() + " bytes" +
-                                    " remaining.");
-                        isOutBufferFull = true;
+                } else {
+                    if (!isOutBufferFull && Jvm.isDebug() && debugEnabled)
+                        Jvm.debug().on(TcpChannelHub.class, "----> TCP write buffer is FULL! " + outBuffer.remaining() + " bytes" +
+                                " remaining.");
+                    isOutBufferFull = true;
 
-                        long writeTime = System.currentTimeMillis() - start;
+                    long writeTime = System.currentTimeMillis() - start;
 
-                        // the reason that this is so large is that results from a bootstrap can
-                        // take a very long time to send all the data from the server to the client
-                        // we don't want this to fail as it will cause a disconnection !
-                        if (writeTime > TimeUnit.MINUTES.toMillis(15)) {
+                    // the reason that this is so large is that results from a bootstrap can
+                    // take a very long time to send all the data from the server to the client
+                    // we don't want this to fail as it will cause a disconnection !
+                    if (writeTime > TimeUnit.MINUTES.toMillis(15)) {
 
-                            writeTimeout(outBuffer, writeTime);
-                            return;
-                        }
-
-                        // its important to yield, if the read buffer gets full
-                        // we wont be able to write, lets give some time to the read thread !
-                        Thread.yield();
+                        writeTimeout(outBuffer, writeTime);
+                        return;
                     }
-                }
-            } catch (IOException e) {
-                closeSocket();
-                throw e;
-            }
 
-            outBuffer.clear();
-            bytes.clear();
-        } finally {
-            assert outWire.endUse();
+                    // its important to yield, if the read buffer gets full
+                    // we wont be able to write, lets give some time to the read thread !
+                    Thread.yield();
+                }
+            }
+        } catch (IOException e) {
+            closeSocket();
+            throw e;
         }
+
+        outBuffer.clear();
+        bytes.clear();
     }
 
     private void writeTimeout(@Nullable ByteBuffer outBuffer, long writeTime) {
@@ -1297,7 +1284,6 @@ public final class TcpChannelHub extends AbstractCloseable {
 
             try {
                 assert inWire != null;
-                assert inWire.startUse();
 
                 while (!isShuttingdown()) {
 
@@ -1689,7 +1675,6 @@ public final class TcpChannelHub extends AbstractCloseable {
         }
 
         private void sendHeartbeat0() {
-            assert outWire.startUse();
             try {
                 if (outWire.bytes().writePosition() > 4)
                     return;
@@ -1721,8 +1706,6 @@ public final class TcpChannelHub extends AbstractCloseable {
                 if (!TcpChannelHub.this.isClosed())
                     throw e;
 
-            } finally {
-                assert outWire.endUse();
             }
         }
 
@@ -1892,7 +1875,6 @@ public final class TcpChannelHub extends AbstractCloseable {
         private Wire createWire() {
             final Wire wire = wireType.apply(elasticByteBuffer());
             wire.usePadding(TCP_USE_PADDING);
-            assert wire.startUse();
             return wire;
         }
 
