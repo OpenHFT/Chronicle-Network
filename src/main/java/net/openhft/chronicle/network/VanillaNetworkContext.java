@@ -41,7 +41,7 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
     @Nullable
     private NetworkStatsListener<T> networkStatsListener;
 
-    @Deprecated(/* To be considered for removal in x.24 */)
+    @Deprecated(/* To be considered for removal in x.25 */)
     private ServerThreadingStrategy serverThreadingStrategy = ServerThreadingStrategy.SINGLE_THREADED;
 
     public VanillaNetworkContext() {
@@ -208,13 +208,13 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
         return this.networkStatsListener;
     }
 
-    @Deprecated(/* To be considered for removal in x.24 */)
+    @Deprecated(/* To be considered for removal in x.25 */)
     @Override
     public ServerThreadingStrategy serverThreadingStrategy() {
         return serverThreadingStrategy;
     }
 
-    @Deprecated(/* To be considered for removal in x.24 */)
+    @Deprecated(/* To be considered for removal in x.25 */)
     @Override
     public T serverThreadingStrategy(ServerThreadingStrategy serverThreadingStrategy) {
         throwExceptionIfClosedInSetter();

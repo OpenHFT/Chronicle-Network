@@ -17,12 +17,12 @@
  */
 package net.openhft.chronicle.network;
 
-@Deprecated(/* To be considered for removal in x.24 */)
+@Deprecated(/* To be considered for removal in x.25 */)
 public enum ServerThreadingStrategy {
 
     SINGLE_THREADED("uses a single threaded prioritised event loop," +
             " where the reads take priority over the asynchronous writes"),
-    @Deprecated(/* To be considered for removal in x.24 */)
+    @Deprecated(/* To be considered for removal in x.25 */)
     CONCURRENT("each client connection is partitioned to a limit number of threads, " +
             "This is ideal when you have a small number of client connections on a server with a large number of free cores");
 
