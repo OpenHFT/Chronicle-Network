@@ -47,7 +47,7 @@ public class FastJ8SocketChannel extends VanillaSocketChannel {
         if (buf == null)
             throw new NullPointerException();
 
-        if (isBlocking() || isClosed() || !IOTools.isDirectBuffer(buf))
+        if (isBlocking() || isClosed() || !IOTools.isDirectBuffer(buf) || !super.isOpen())
             return super.read(buf);
         return read0(buf);
     }
