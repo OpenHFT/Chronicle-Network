@@ -55,7 +55,7 @@ import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.*;
 import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
 import static net.openhft.chronicle.core.Jvm.getInteger;
-import static net.openhft.chronicle.network.internal.SocketExceptionUtil.isAConnectionResetException;
+import static net.openhft.chronicle.core.io.IOTools.isClosedException;
 
 /**
  * The TcpChannelHub is used to send your messages to the server and then read the servers response. The TcpChannelHub ensures that each response is
@@ -1346,8 +1346,8 @@ public final class TcpChannelHub extends AbstractCloseable {
                             if (e instanceof ConnectionDroppedException) {
                                 if (debugEnabled)
                                     Jvm.debug().on(TcpChannelHub.class, "reconnecting due to dropped connection " + ((message == null) ? "" : message));
-                            } else if (e instanceof IOException && isAConnectionResetException((IOException) e)) {
-                                Jvm.warn().on(TcpChannelHub.class, "reconnecting due to \"Connection reset by peer\" " + message);
+                            } else if (isClosedException(e)) {
+                                Jvm.warn().on(TcpChannelHub.class, "reconnecting due to connection being closed " + message);
                             } else {
                                 Jvm.warn().on(TcpChannelHub.class, "reconnecting due to unexpected exception", e);
                             }
