@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.util.Locale;
 
+@Deprecated(/* to be removed in x.25 */)
 public final class SocketExceptionUtil {
 
     private SocketExceptionUtil() {
@@ -37,9 +38,13 @@ public final class SocketExceptionUtil {
      * to make logging less noisy, false negatives are acceptable and expected. It should
      * not produce false positives, but there's no guarantees it doesn't.
      *
+     * @deprecated To be removed in x.25
+     * @see net.openhft.chronicle.core.io.IOTools#isClosedException(java.lang.Exception)
+     *
      * @param e The exception
      * @return true if the exception is one that signifies the connection was reset
      */
+    @Deprecated(/* to be removed in x.25 */)
     public static boolean isAConnectionResetException(IOException e) {
         Language.warnOnce();
 
