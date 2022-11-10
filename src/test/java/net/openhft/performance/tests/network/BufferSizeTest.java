@@ -53,7 +53,7 @@ import java.nio.ByteBuffer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class BinaryTestBufferSize {
+class BufferSizeTest {
     private static final @NotNull
     String desc = "host.port";
     private EventLoop eg;
