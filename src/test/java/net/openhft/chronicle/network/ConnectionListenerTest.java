@@ -149,7 +149,7 @@ class ConnectionListenerTest extends NetworkTestCommon {
             initiatorCtx.addConnectionListener(initiatorCounter);
 
             // only start acceptor
-            acceptorCtx.cluster().start(initiatorHost.hostId());
+            acceptorCtx.cluster().start(acceptorHost.hostId());
             Jvm.pause(1_000);
         }
         assertEquals(0, acceptorCounter.onConnectedCalls);
