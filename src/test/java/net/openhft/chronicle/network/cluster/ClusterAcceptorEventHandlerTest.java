@@ -37,29 +37,32 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-class ClusterAcceptorEventHandlerTest {
+class ClusterAcceptorEventHandlerTest extends NetworkTestCommon {
 
     @Test
     void willPopulateNetworkStatsListenerWhenNetworkStatsListenerFactorySpecified() throws IOException {
         TCPRegistry.createServerSocketChannelFor("testAcceptor");
-        final MyClusterContext acceptorContext = new MyClusterContext();
-        final NetworkStatsListener<MyClusteredNetworkContext> nsl = mock(NetworkStatsListener.class);
-        acceptorContext.networkStatsListenerFactory(clusterContext -> nsl);
-        final ClusterAcceptorEventHandler<MyClusterContext, MyClusteredNetworkContext> acceptorEventHandler
-                = new ClusterAcceptorEventHandler<>("testAcceptor", acceptorContext);
-        EventLoop eventLoop = EventGroupBuilder.builder().build();
-        eventLoop.addHandler(acceptorEventHandler);
-        eventLoop.start();
-        final MyClusterContext initiaitorContext = new MyClusterContext();
-        HostConnector<MyClusteredNetworkContext, MyClusterContext> connector
-                = new HostConnector<>(initiaitorContext, new RemoteConnector<>(initiaitorContext.tcpEventHandlerFactory()), 1, "testAcceptor");
-        connector.connect();
-        initiaitorContext.eventLoop().start();
-        while (acceptorContext.tcpEventHandlers.size() == 0) {
-            Jvm.pause(10);
+        try (final MyClusterContext acceptorContext = new MyClusterContext()) {
+            final NetworkStatsListener<MyClusteredNetworkContext> nsl = mock(NetworkStatsListener.class);
+            acceptorContext.networkStatsListenerFactory(clusterContext -> nsl);
+            final ClusterAcceptorEventHandler<MyClusterContext, MyClusteredNetworkContext> acceptorEventHandler
+                    = new ClusterAcceptorEventHandler<>("testAcceptor", acceptorContext);
+            try (EventLoop eventLoop = EventGroupBuilder.builder().build()) {
+                eventLoop.addHandler(acceptorEventHandler);
+                eventLoop.start();
+                try (final MyClusterContext initiatorContext = new MyClusterContext()) {
+                    HostConnector<MyClusteredNetworkContext, MyClusterContext> connector
+                            = new HostConnector<>(initiatorContext, new RemoteConnector<>(initiatorContext.tcpEventHandlerFactory()), 1, "testAcceptor");
+                    connector.connect();
+                    initiatorContext.eventLoop().start();
+                    while (acceptorContext.tcpEventHandlers.size() == 0) {
+                        Jvm.pause(10);
+                    }
+                    assertSame(nsl, acceptorContext.tcpEventHandlers.get(0).nc.networkStatsListener());
+                    verify(nsl).networkContext(any(MyClusteredNetworkContext.class));
+                }
+            }
         }
-        assertSame(nsl, acceptorContext.tcpEventHandlers.get(0).nc.networkStatsListener());
-        verify(nsl).networkContext(any(MyClusteredNetworkContext.class));
     }
 
     static class MyClusterContext extends ClusterContext<MyClusterContext, MyClusteredNetworkContext> {
