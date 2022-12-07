@@ -58,7 +58,7 @@ import java.util.stream.IntStream;
 
 import static net.openhft.chronicle.network.HeaderTcpHandler.HANDLER;
 import static net.openhft.chronicle.network.cluster.handlers.UberHandler.uberHandler;
-import static net.openhft.chronicle.network.connection.CoreFields.*;
+import static net.openhft.chronicle.network.connection.CoreFields.csp;
 import static net.openhft.chronicle.network.test.TestClusterContext.forHosts;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -275,7 +275,7 @@ class UberHandlerTest extends NetworkTestCommon {
             expectException("Rejected in onInitialize");
             REJECTING_SUB_HANDLER_SHOULD_REJECT.set(true);
             testHarness.registerSubHandler(new WritableRejectingSubHandler());
-            expectException("handler == null, check that the Csp/Cid has been sent");
+            // This message will be silently dropped
             testHarness.sendMessageToCurrentHandler();
             testHarness.callProcess();
             assertFalse(REJECTED_HANDLER_ONREAD_CALLED.get());
@@ -290,7 +290,7 @@ class UberHandlerTest extends NetworkTestCommon {
             expectException("Rejected in onRead");
             REJECTING_SUB_HANDLER_SHOULD_REJECT.set(true);
             testHarness.sendMessageToCurrentHandler();
-            expectException("handler == null, check that the Csp/Cid has been sent");
+            // This message will be silently dropped
             testHarness.sendMessageToCurrentHandler();
             testHarness.callProcess();
             assertFalse(REJECTED_HANDLER_ONWRITE_CALLED.get());
@@ -305,7 +305,7 @@ class UberHandlerTest extends NetworkTestCommon {
             expectException("Rejected in onWrite");
             REJECTING_SUB_HANDLER_SHOULD_REJECT.set(true);
             testHarness.callProcess();
-            expectException("handler == null, check that the Csp/Cid has been sent");
+            // This message will be silently dropped
             testHarness.sendMessageToCurrentHandler();
             testHarness.callProcess();
             assertFalse(REJECTED_HANDLER_ONWRITE_CALLED.get());
@@ -350,6 +350,32 @@ class UberHandlerTest extends NetworkTestCommon {
             expectException("Rejected in onRead");
             testHarness.sendMessageToCurrentHandler();
             assertEquals(0, testHarness.nc().connectionListeners.size());
+        }
+    }
+
+    @Test
+    void warningIsLoggedWhenRemovedHandlersAreSwitchedTo() {
+        try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
+            final int removedHandlerCid = 1234;
+            testHarness.registerSubHandler(new RejectingSubHandler(), removedHandlerCid, "test/removed-handler");
+            REJECTING_SUB_HANDLER_SHOULD_REJECT.set(true);
+            expectException("Rejected in onRead");
+            testHarness.sendMessageToCurrentHandler();
+            expectException("Installing no-op handler to drop messages for removed handler (cid=1234, csp=test/removed-handler)");
+            testHarness.switchToSubHandler(removedHandlerCid);
+            // This should be silently ignored
+            testHarness.sendMessageToCurrentHandler();
+        }
+    }
+
+    @Test
+    void warningIsLoggedWhenNonExistentHandlerIsSwitchedToAndMessagesReceived() {
+        try (final UberHandlerTestHarness testHarness = new UberHandlerTestHarness()) {
+            testHarness.registerSubHandler(new RejectingSubHandler(), 456, "existing-handler");
+            expectException("handler not found : for CID=1234, known cids={456");
+            testHarness.switchToSubHandler(1234);
+            expectException("Dropped message because handler == null, check that the Csp/Cid has been sent. (lastCid=1234)");
+            testHarness.sendMessageToCurrentHandler();
         }
     }
 
@@ -646,11 +672,15 @@ class UberHandlerTest extends NetworkTestCommon {
         }
 
         private void registerSubHandler(WriteMarshallable subHandler) {
+            registerSubHandler(subHandler, 12345L, "12345");
+        }
+
+        private void registerSubHandler(WriteMarshallable subHandler, long cid, String csp) {
             try (final DocumentContext documentContext = inWire.writingDocument(true)) {
                 final Wire documentWire = documentContext.wire();
-                documentWire.write(csp).text("12345");
-                documentWire.write(cid).int64(12345L);
-                documentWire.write(handler).typedMarshallable(subHandler);
+                documentWire.write(CoreFields.csp).text(csp);
+                documentWire.write(CoreFields.cid).int64(cid);
+                documentWire.write(CoreFields.handler).typedMarshallable(subHandler);
             }
             uberHandler.process(inWire.bytes(), outWire.bytes(), nc);
         }
@@ -663,6 +693,14 @@ class UberHandlerTest extends NetworkTestCommon {
             try (final DocumentContext documentContext = inWire.writingDocument(false)) {
                 final Wire documentWire = documentContext.wire();
                 documentWire.write("junk").text("to trigger an onRead");
+            }
+            uberHandler.process(inWire.bytes(), outWire.bytes(), nc);
+        }
+
+        private void switchToSubHandler(long cid) {
+            try (final DocumentContext documentContext = inWire.writingDocument(true)) {
+                final Wire documentWire = documentContext.wire();
+                documentWire.write(CoreFields.cid).int64(cid);
             }
             uberHandler.process(inWire.bytes(), outWire.bytes(), nc);
         }

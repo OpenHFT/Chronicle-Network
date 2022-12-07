@@ -15,6 +15,8 @@
  */
 package net.openhft.chronicle.network.cluster.handlers;
 
+import gnu.trove.map.TLongObjectMap;
+import gnu.trove.map.hash.TLongObjectHashMap;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.network.ConnectionListener;
@@ -24,6 +26,7 @@ import net.openhft.chronicle.network.api.session.SubHandler;
 import net.openhft.chronicle.network.api.session.WritableSubHandler;
 import net.openhft.chronicle.network.cluster.HeartbeatEventHandler;
 import net.openhft.chronicle.network.connection.CoreFields;
+import net.openhft.chronicle.network.internal.cluster.handlers.NoOpHandler;
 import net.openhft.chronicle.wire.ValueIn;
 import net.openhft.chronicle.wire.WireIn;
 import net.openhft.chronicle.wire.Wires;
@@ -43,8 +46,10 @@ public abstract class CspTcpHandler<T extends NetworkContext<T>> extends WireTcp
     protected final List<WritableSubHandler<T>> writers = new CopyOnWriteArrayList<>();
 
     @NotNull
-    private final Map<Long, SubHandler<T>> cidToHandle = new HashMap<>();
+    private final TLongObjectMap<SubHandler<T>> cidToHandle = new TLongObjectHashMap<>();
     private final Map<Object, SubHandler<T>> registry = new HashMap<>();
+    @NotNull
+    private final TLongObjectMap<String> removedHandlers = new TLongObjectHashMap<>();
     @Nullable
     private SubHandler<T> handler;
     @Nullable
@@ -69,15 +74,16 @@ public abstract class CspTcpHandler<T extends NetworkContext<T>> extends WireTcp
             writers.remove(handler);
         }
         if (handler instanceof Registerable) {
-            registry.remove(((Registerable<?>)handler).registryKey());
+            registry.remove(((Registerable<?>) handler).registryKey());
         }
         if (handler instanceof ConnectionListener) {
             nc().removeConnectionListener((ConnectionListener) handler);
         }
         if (this.handler == handler) {
-            this.handler = null;
+            this.handler = NoOpHandler.instance();
             this.lastCid = 0;
         }
+        removedHandlers.put(handler.cid(), handler.csp());
         Closeable.closeQuietly(handler);
     }
 
@@ -138,16 +144,17 @@ public abstract class CspTcpHandler<T extends NetworkContext<T>> extends WireTcp
                 if (handler instanceof ConnectionListener)
                     nc().addConnectionListener((ConnectionListener) handler);
 
-                if (handler() instanceof HeartbeatEventHandler) {
+                if (handler instanceof HeartbeatEventHandler) {
                     assert heartbeatEventHandler == null : "its assumed that you will only have a " +
                             "single heartbeatReceiver per connection";
-                    heartbeatEventHandler = (HeartbeatEventHandler) handler();
+                    heartbeatEventHandler = (HeartbeatEventHandler) handler;
                 }
 
                 handler.cid(cid);
                 handler.csp(csp);
                 lastCid = cid;
                 cidToHandle.put(cid, handler);
+                removedHandlers.remove(cid);
 
                 if (handler instanceof WritableSubHandler)
                     writers.add(((WritableSubHandler<T>) handler));
@@ -162,14 +169,23 @@ public abstract class CspTcpHandler<T extends NetworkContext<T>> extends WireTcp
             handler = cidToHandle.get(cid);
 
             if (handler == null) {
-                throw new IllegalStateException("handler not found : for CID=" + cid + ", " +
-                        "known cids=" + cidToHandle.keySet());
+                if (removedHandlers.containsKey(cid)) {
+                    Jvm.warn().on(CspTcpHandler.class, "Installing no-op handler to drop messages for removed handler (cid=" + cid + ", csp=" + removedHandlers.get(cid) + ")");
+                    handler = NoOpHandler.instance();
+                } else {
+                    throw new IllegalStateException("handler not found : for CID=" + cid + ", " +
+                            "known cids=" + cidToHandle.keySet());
+                }
             }
         } else {
             throw new IllegalStateException("expecting either csp or cid, event=" + event);
         }
 
         return false;
+    }
+
+    protected long lastCid() {
+        return lastCid;
     }
 
     @Nullable
