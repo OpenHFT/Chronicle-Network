@@ -65,7 +65,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
         CLOSED
     }
 
-    // todo should be final
+    // todo: make final in x.25
     public static PauserMode DEFAULT_PAUSER_MODE = PauserMode.busy;
     private transient Function<WireType, WireOutPublisher> wireOutPublisherFactory;
     private transient Function<C, NetworkStatsListener<T>> networkStatsListenerFactory;
@@ -80,8 +80,8 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     private Function<C, T> networkContextFactory;
     private long heartbeatTimeoutMs = 40_000;
     private long heartbeatIntervalMs = 20_000;
-    private Supplier<Pauser> pauserSupplier = DEFAULT_PAUSER_MODE;
-    private Supplier<Pauser> replicationPauserSupplier = null;
+    private Supplier<Pauser> pauserSupplier;
+    private Supplier<Pauser> replicationPauserSupplier;
     private String affinityCPU;
     private WireType wireType;
     private byte localIdentifier;
@@ -133,7 +133,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
 
         if (hd.connectUri() == null)
             return;
-        acceptorLoop = new BlockingEventLoop(eventLoop(), clusterNamePrefix() + "acceptor-" + localIdentifier);
+        acceptorLoop = new BlockingEventLoop(eventLoop(), clusterNamePrefix() + "acceptor-" + localIdentifier, Pauser.balanced());
         try {
             acceptorEventHandler = new ClusterAcceptorEventHandler<>(hd.connectUri(), castThis());
 
@@ -170,7 +170,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
             return el;
 
         return this.eventLoop = EventGroupBuilder.builder()
-                .withPauser(pauserSupplier.get())
+                .withPauser(pauserSupplier != null ? pauserSupplier.get() : null)
                 .withReplicationPauser(replicationPauserSupplier != null ? replicationPauserSupplier.get() : null)
                 .withReplicationBinding(affinityCPU)
                 .withName(clusterNamePrefix())
@@ -226,7 +226,10 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
         this.cluster = cluster;
     }
 
-    protected abstract void defaults();
+    protected void defaults() {
+        pauserSupplier = DEFAULT_PAUSER_MODE;
+        replicationPauserSupplier = null;
+    }
 
     @NotNull
     public C localIdentifier(byte localIdentifier) {
