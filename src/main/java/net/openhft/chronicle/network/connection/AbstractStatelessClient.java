@@ -105,15 +105,32 @@ public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
         if (args.length == 1) {
             return toParameters(eventId, args[0]);
         }
-        // Todo: Unwind this double dynamic lambda. See https://github.com/OpenHFT/Chronicle-Network/issues/59
-        return out ->
-                out.marshallable(m -> {
-                    @NotNull final WireKey[] paramNames = eventId.params();
-                    for (int i = 0; i < paramNames.length; i++) {
-                        @NotNull final ValueOut vo = m.write(paramNames[i]);
-                        vo.object(args[i]);
-                    }
-                });
+
+        return new ParametersWriter(eventId, args);
+    }
+
+    private static class ParametersWriter implements WriteValue, WriteMarshallable {
+        private final ParameterizeWireKey eventId;
+        private final Object[] args;
+
+        public ParametersWriter(ParameterizeWireKey eventId, Object[] args) {
+            this.eventId = eventId;
+            this.args = args;
+        }
+
+        @Override
+        public void writeMarshallable(@NotNull WireOut wire) {
+            @NotNull final WireKey[] paramNames = eventId.params();
+            for (int i = 0; i < paramNames.length; i++) {
+                @NotNull final ValueOut vo = wire.write(paramNames[i]);
+                vo.object(args[i]);
+            }
+        }
+
+        @Override
+        public void writeValue(ValueOut out) {
+            out.marshallable(this);
+        }
     }
 
     @Nullable
