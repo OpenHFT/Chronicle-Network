@@ -18,14 +18,32 @@
 
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.network.internal.lookuptable.FileBasedHostnamePortLookupTable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
 
 class CrossProcessTCPRegistryTest extends TCPRegistryTest {
 
     @BeforeEach
     void setUp() {
         TCPRegistry.useCrossProcessRegistry();
+    }
+
+    @Test
+    void resetOnFreshRegistryWillClearExistingEntries() throws IOException {
+        final String hostAlias = "should_be_cleared";
+        try (final FileBasedHostnamePortLookupTable lookupTable = new FileBasedHostnamePortLookupTable()) {
+            // write an alias to the lookup table file
+            lookupTable.put(hostAlias, new InetSocketAddress(0));
+            // reset before static lookup table is lazily created
+            TCPRegistry.reset();
+            // this should not log any warnings, the alias should be clear
+            TCPRegistry.createServerSocketChannelFor(hostAlias);
+        }
     }
 
     @AfterEach

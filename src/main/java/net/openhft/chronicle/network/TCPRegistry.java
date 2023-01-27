@@ -83,6 +83,7 @@ public enum TCPRegistry {
     }
 
     public static void reset() {
+        lookupTable();  // initialise the lookup table so persistent tables are cleared
         Closeable.closeQuietly(DESC_TO_SERVER_SOCKET_CHANNEL_MAP.values());
         Closeable.closeQuietly(lookupTable);
         lookupTable = null;
