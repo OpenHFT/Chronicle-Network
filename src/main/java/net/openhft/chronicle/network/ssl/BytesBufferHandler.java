@@ -40,8 +40,11 @@ import java.nio.ByteBuffer;
  * The delegate {@link TcpHandler} will be invoked with decrypted input data, and its
  * output will be encrypted read for transmission over a socket.
  *
+ * @deprecated To be removed in x.25
+ *
  * @param <N> the type of {@link NetworkContext}
  */
+@Deprecated(/* To be removed in x.25 */)
 public final class BytesBufferHandler<N extends NetworkContext<N>> extends SimpleCloseable implements BufferHandler {
     private static final Bytes<ByteBuffer> EMPTY_APPLICATION_INPUT = Bytes.wrapForRead(ByteBuffer.allocate(0));
     private TcpHandler<N> delegateHandler;

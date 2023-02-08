@@ -40,8 +40,11 @@ import java.nio.ByteBuffer;
  * It is advised to force TLS version 1.2 to be used with this handler, such as by setting system
  * property {@code jdk.tls.server.protocols} to {@code TLSv1.2}.
  *
+ * @deprecated To be removed in x.25
+ *
  * @param <N> the type of NetworkContext
  */
+@Deprecated(/* To be removed in x.25 */)
 public final class SslDelegatingTcpHandler<N extends SslNetworkContext<N>>
         implements TcpHandler<N>, NetworkContextManager<N> {
     private final TcpHandler<N> delegate;

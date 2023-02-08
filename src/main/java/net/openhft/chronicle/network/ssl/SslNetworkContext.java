@@ -22,6 +22,7 @@ import net.openhft.chronicle.network.NetworkContext;
 
 import javax.net.ssl.SSLContext;
 
+@Deprecated(/* To be removed in x.25 */)
 public interface SslNetworkContext<T extends NetworkContext<T>>
         extends NetworkContext<T> {
     SSLContext sslContext();
