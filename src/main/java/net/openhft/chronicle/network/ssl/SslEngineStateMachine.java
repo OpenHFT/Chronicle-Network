@@ -39,7 +39,10 @@ import java.time.Instant;
  * <p>
  * <code>initialise</code> is a blocking operation that will only return when a successful
  * SSL handshake has occurred, or if an exception occurred.
+ *
+ * @deprecated To be removed in x.25
  */
+@Deprecated(/* To be removed in x.25 */)
 final class SslEngineStateMachine {
     private static final Logger LOGGER = LoggerFactory.getLogger(SslEngineStateMachine.class);
 

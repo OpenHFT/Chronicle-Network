@@ -25,7 +25,10 @@ import java.nio.ByteBuffer;
  * This class handles the bridge between two sets of buffers:
  * - socket-side data - encrypted, handled by <code>readData</code>, <code>writeData</code>
  * - application-side data - decrypted, handled by <code>handleDecryptedData</code>
+ *
+ * @deprecated To be removed in x.25
  */
+@Deprecated(/* To be removed in x.25 */)
 public interface BufferHandler {
     /**
      * Read encrypted data from an input into the supplied buffer.
