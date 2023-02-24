@@ -72,14 +72,11 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
         if (eventLoop instanceof ManagedCloseable)
             ((ManagedCloseable) eventLoop).throwExceptionIfClosed();
 
-        @NotNull
-        final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
-
         @NotNull final RCEventHandler handler = new RCEventHandler(
                 remoteHostPort,
                 nc,
                 eventLoop,
-                address, retryInterval);
+                retryInterval);
 
         eventLoop.addHandler(handler);
     }
@@ -105,7 +102,6 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
 
     private final class RCEventHandler extends AbstractCloseable implements EventHandler, Closeable {
 
-        private final InetSocketAddress address;
         private final AtomicLong nextPeriod = new AtomicLong();
         private final String remoteHostPort;
         private final T nc;
@@ -115,12 +111,10 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
         RCEventHandler(final String remoteHostPort,
                        final T nc,
                        @NotNull final EventLoop eventLoop,
-                       @NotNull final InetSocketAddress address,
                        final long retryInterval) {
             this.remoteHostPort = remoteHostPort;
             this.nc = nc;
             this.eventLoop = eventLoop;
-            this.address = address;
             this.retryInterval = retryInterval;
             // add an initial delay to reduce the possibility of successful connecting to a process which is shutting down
             // this does not eliminate the issue, but is rather a tactical work around.
@@ -158,6 +152,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
             ChronicleSocketChannel sc = null;
             final TcpEventHandler<T> eventHandler;
 
+            final InetSocketAddress address = TCPRegistry.lookup(remoteHostPort);
             try {
                 sc = RemoteConnector.this.openSocketChannel(address);
 
