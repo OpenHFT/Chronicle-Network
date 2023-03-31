@@ -144,9 +144,9 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         //We have to provide back pressure to restrict the buffer growing beyond,2GB because it reverts to
         // being Native bytes, we should also provide back pressure if we are not able to keep up
         inBBB = Bytes.elasticByteBuffer(TCP_BUFFER + OS.pageSize(), max(TCP_BUFFER + OS.pageSize(), DEFAULT_MAX_MESSAGE_SIZE))
-                .unchecked(!TCP_UNCHECKED_BUFFER);
+                .unchecked(TCP_UNCHECKED_BUFFER);
         outBBB = Bytes.elasticByteBuffer(TCP_BUFFER, max(TCP_BUFFER, DEFAULT_MAX_MESSAGE_SIZE))
-                .unchecked(!TCP_UNCHECKED_BUFFER);
+                .unchecked(TCP_UNCHECKED_BUFFER);
 
         // must be set after we take a slice();
         outBBB.underlyingObject().limit(0);
