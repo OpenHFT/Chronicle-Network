@@ -58,6 +58,8 @@ public class NetworkTestCommon {
     void recordExceptions() {
         exceptionTracker = JvmExceptionTracker.create();
         exceptionTracker.ignoreException("unable to connect to any of the hosts");
+        exceptionTracker.ignoreException("Warming up");
+        exceptionTracker.ignoreException("warmed up");
     }
 
     public void expectException(String message) {

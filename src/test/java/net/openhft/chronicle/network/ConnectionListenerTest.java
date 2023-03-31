@@ -53,6 +53,7 @@ class ConnectionListenerTest extends NetworkTestCommon {
 
     @Test
     void onConnectAndOnDisconnectAreCalledOnce_WhenConnectionTimesOut_InUberHandler() {
+        ignoreException("THIS IS NOT AN ERROR");
         expectException("missed heartbeat, lastTimeMessageReceived=");
         try (TestClusterContext acceptorCtx = forHosts(acceptorHost, initiatorHost);
              TestClusterContext initiatorCtx = forHosts(initiatorHost, acceptorHost)) {
