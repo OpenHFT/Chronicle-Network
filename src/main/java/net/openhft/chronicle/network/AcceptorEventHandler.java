@@ -32,11 +32,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
-import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
 public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractCloseable implements EventHandler {
@@ -132,8 +132,11 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractC
     }
 
     private void closeSocket() {
-        ssc.socket().close();
-        ssc.close();
+        //noinspection ConstantConditions
+        if (ssc == null)
+            return;
+        closeQuietly(ssc.socket());
+        closeQuietly(ssc);
     }
 
     @NotNull
