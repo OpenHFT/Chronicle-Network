@@ -28,6 +28,7 @@ class ConnectionListenerTest extends NetworkTestCommon {
         acceptorHost = new HostDetails().hostId(1).connectUri("acceptor");
         acceptorCounter = new CountingConnectionListener();
         initiatorCounter = new CountingConnectionListener();
+        ignoreException("core-event-loop thread has blocked for");
     }
 
     @Test
@@ -55,6 +56,7 @@ class ConnectionListenerTest extends NetworkTestCommon {
     void onConnectAndOnDisconnectAreCalledOnce_WhenConnectionTimesOut_InUberHandler() {
         ignoreException("THIS IS NOT AN ERROR");
         expectException("missed heartbeat, lastTimeMessageReceived=");
+
         try (TestClusterContext acceptorCtx = forHosts(acceptorHost, initiatorHost);
              TestClusterContext initiatorCtx = forHosts(initiatorHost, acceptorHost)) {
             initiatorCtx.overrideNetworkContextTimeout(5_000); // we want the heartbeat handler to timeout
