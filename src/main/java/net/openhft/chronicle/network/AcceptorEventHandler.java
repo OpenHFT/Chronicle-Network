@@ -36,7 +36,6 @@ import java.nio.channels.ClosedChannelException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
 public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractCloseable implements EventHandler {
