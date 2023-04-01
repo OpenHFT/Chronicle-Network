@@ -132,11 +132,10 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractC
     }
 
     private void closeSocket() {
-        //noinspection ConstantConditions
-        if (ssc == null)
-            return;
-        closeQuietly(ssc.socket());
-        closeQuietly(ssc);
+        // this can be null if we're partially initialised
+        if (ssc != null) {
+            Closeable.closeQuietly(ssc.socket(), ssc);
+        }
     }
 
     @NotNull
