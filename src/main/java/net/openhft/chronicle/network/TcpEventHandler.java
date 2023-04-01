@@ -70,7 +70,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     private static final AtomicBoolean FIRST_HANDLER = new AtomicBoolean();
     private static final int DEFAULT_MAX_MESSAGE_SIZE = 1 << 30;
     public static boolean DISABLE_TCP_NODELAY = Jvm.getBoolean("disable.tcp_nodelay");
-    private static boolean TCP_UNCHECKED_BUFFER = Jvm.getBoolean("tcp.unchecked.buffer", true);
+    private static boolean TCP_UNCHECKED_BUFFER = Jvm.getBoolean("tcp.unchecked.buffer");
 
     private boolean flushedOut = false; // track output buffer empty state. interacts with NetworkContext onFlushed
 
