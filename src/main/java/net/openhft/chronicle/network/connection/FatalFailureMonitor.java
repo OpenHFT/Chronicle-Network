@@ -30,6 +30,7 @@ public interface FatalFailureMonitor {
     FatalFailureMonitor NO_OP = new FatalFailureMonitor() {
         @Override
         public void onFatalFailure(@Nullable String name, String message) {
+            // Do nothing
         }
     };
 

@@ -72,6 +72,7 @@ class AlwaysStartOnPrimaryConnectionStrategyTest extends NetworkTestCommon {
     }
 
     @Test
+    @Timeout(10)
     void testLocalBinding() throws InterruptedException, IOException {
         final AlwaysStartOnPrimaryConnectionStrategy strategy = new AlwaysStartOnPrimaryConnectionStrategy();
         final String localSocketBindingHost = "127.0.0.75";

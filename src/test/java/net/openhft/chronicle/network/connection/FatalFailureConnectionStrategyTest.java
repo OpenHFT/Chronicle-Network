@@ -23,6 +23,7 @@ import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.network.util.TestServer;
 import net.openhft.chronicle.wire.Marshallable;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -71,6 +72,7 @@ class FatalFailureConnectionStrategyTest {
     }
 
     @Test
+    @Timeout(10)
     void testLocalBinding() throws InterruptedException, IOException {
         final FatalFailureConnectionStrategy strategy = new FatalFailureConnectionStrategy(1, true);
         final String localSocketBindingHost = "127.0.0.75";
