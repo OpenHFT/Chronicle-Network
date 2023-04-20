@@ -76,8 +76,8 @@ class AlwaysStartOnPrimaryConnectionStrategyTest extends NetworkTestCommon {
         final AlwaysStartOnPrimaryConnectionStrategy strategy = new AlwaysStartOnPrimaryConnectionStrategy();
         final String localSocketBindingHost = "127.0.0.75";
         int localPort = getAvailablePortNumber();
-        strategy.localSocketBindingHost(localSocketBindingHost)
-                .localSocketBindingPort(localPort);
+        strategy.localSocketBindingHost(localSocketBindingHost);
+        strategy.localSocketBindingPort(localPort);
         try (TestServer testServer = new TestServer("localBindingTestServer")) {
             testServer.prepareToAcceptAConnection();
             Jvm.pause(100);

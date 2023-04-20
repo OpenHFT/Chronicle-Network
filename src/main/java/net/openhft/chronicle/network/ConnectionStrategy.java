@@ -29,6 +29,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -162,9 +164,12 @@ public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
      * Get the local socket to bind the connection to
      *
      * @return the local socket to bind to or null to not bind to any local socket
+     * @throws SocketException If an I/O error occurs
+     * @throws UnknownHostException If an adddress cannot be resolved
+     * @throws IllegalStateException If a hostname or interface has no matching addresses
      */
     @Nullable
-    default InetSocketAddress localSocketBinding() {
+    default InetSocketAddress localSocketBinding() throws SocketException, UnknownHostException, IllegalStateException {
         return null;
     }
 }

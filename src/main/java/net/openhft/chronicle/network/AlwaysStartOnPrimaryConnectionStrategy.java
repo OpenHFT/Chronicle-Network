@@ -18,11 +18,11 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.network.connection.AbstractConnectionStrategy;
 import net.openhft.chronicle.network.connection.ClientConnectionMonitor;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
-import net.openhft.chronicle.wire.AbstractMarshallableCfg;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
-import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 
 /**
  * Loops through all the hosts:ports ( in order ) starting at the primary, till it finds a host that it can connect to.
@@ -42,26 +41,15 @@ import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
  * If all the host:ports have been attempted since the last connection was established, no successful connection can be found,
  * then null is returned, and the fatalFailureMonitor.onFatalFailure() is triggered
  */
-public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallableCfg implements ConnectionStrategy {
+public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractConnectionStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(AlwaysStartOnPrimaryConnectionStrategy.class);
 
-    private final transient AtomicBoolean isClosed = new AtomicBoolean(false);
-    private int tcpBufferSize = Jvm.getInteger("tcp.client.buffer.size", TCP_BUFFER);
     private int pausePeriodMs = Jvm.getInteger("client.timeout", 500);
     private int socketConnectionTimeoutMs = Jvm.getInteger("connectionStrategy.socketConnectionTimeoutMs", 1);
     private long pauseMillisBeforeReconnect = Jvm.getInteger("connectionStrategy.pauseMillisBeforeReconnect", 500);
-    private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
-    private long minPauseSec = ConnectionStrategy.super.minPauseSec();
-    private long maxPauseSec = ConnectionStrategy.super.maxPauseSec();
-    private String localSocketBindingHost;
-    private int localSocketBindingPort = 0;
-
-    @Override
-    public AlwaysStartOnPrimaryConnectionStrategy open() {
-        isClosed.set(false);
-        return this;
-    }
+    private long minPauseSec = defaultMinPauseSec();
+    private long maxPauseSec = defaultMaxPauseSec();
 
     public AlwaysStartOnPrimaryConnectionStrategy clientConnectionMonitor(ClientConnectionMonitor fatalFailureMonitor) {
         this.clientConnectionMonitor = fatalFailureMonitor;
@@ -173,16 +161,6 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
     }
 
     @Override
-    public void close() {
-        isClosed.set(true);
-    }
-
-    @Override
-    public boolean isClosed() {
-        return isClosed.get();
-    }
-
-    @Override
     public long minPauseSec() {
         return minPauseSec;
     }
@@ -199,22 +177,6 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
 
     public AlwaysStartOnPrimaryConnectionStrategy maxPauseSec(long maxPauseSec) {
         this.maxPauseSec = maxPauseSec;
-        return this;
-    }
-
-    @Override
-    public @Nullable InetSocketAddress localSocketBinding() {
-        // Create a new InetSocketAddress each time to allow host to be re-resolved
-        return localSocketBindingHost != null ? new InetSocketAddress(localSocketBindingHost, localSocketBindingPort) : null;
-    }
-
-    public AlwaysStartOnPrimaryConnectionStrategy localSocketBindingHost(String localSocketBindingHost) {
-        this.localSocketBindingHost = localSocketBindingHost;
-        return this;
-    }
-
-    public AlwaysStartOnPrimaryConnectionStrategy localSocketBindingPort(int localSocketBindingPort) {
-        this.localSocketBindingPort = localSocketBindingPort;
         return this;
     }
 }

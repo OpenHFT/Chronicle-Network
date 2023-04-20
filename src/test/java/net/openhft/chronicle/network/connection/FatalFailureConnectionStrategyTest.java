@@ -49,14 +49,16 @@ class FatalFailureConnectionStrategyTest {
         assertNotNull(strategyFromYaml);
 
         final String expectedToString = "!FatalFailureConnectionStrategy {\n" +
-                "  attempts: 3,\n" +
-                "  tcpBufferSize: " + TcpChannelHub.TCP_BUFFER + ",\n" +
-                "  clientConnectionMonitor: !VanillaClientConnectionMonitor {\n" +
-                "  }\n" +
+                "  attempts: 3\n" +
                 "}\n";
 
         assertEquals(expectedToString, strategy.toString());
         assertEquals(strategy.toString(), strategyFromYaml.toString());
+
+        assertEquals(TcpChannelHub.TCP_BUFFER, strategy.tcpBufferSize);
+        assertEquals(TcpChannelHub.TCP_BUFFER, strategyFromYaml.tcpBufferSize);
+        assertNotNull(strategy.clientConnectionMonitor);
+        assertNotNull(strategyFromYaml.clientConnectionMonitor);
 
         assertFalse(strategy.isClosed());
         assertFalse(strategyFromYaml.isClosed());
@@ -67,7 +69,6 @@ class FatalFailureConnectionStrategyTest {
         assertTrue(strategy.isClosed());
         assertTrue(strategyFromYaml.isClosed());
     }
-
 
     @Test
     void testLocalBinding() throws InterruptedException, IOException {
