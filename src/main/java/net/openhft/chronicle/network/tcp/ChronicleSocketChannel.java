@@ -19,6 +19,7 @@
 package net.openhft.chronicle.network.tcp;
 
 import net.openhft.chronicle.core.io.Closeable;
+import net.openhft.chronicle.network.ChronicleSocketChannelBuilder;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -30,6 +31,10 @@ import java.nio.channels.SocketChannel;
 
 public interface ChronicleSocketChannel extends Closeable {
 
+    static ChronicleSocketChannelBuilder builder(InetSocketAddress socketAddress) {
+        return new ChronicleSocketChannelBuilder(socketAddress);
+    }
+
     int read(ByteBuffer byteBuffer) throws IOException;
 
     int write(ByteBuffer byteBuffer) throws IOException;
@@ -39,6 +44,8 @@ public interface ChronicleSocketChannel extends Closeable {
     void configureBlocking(boolean blocking) throws IOException;
 
     InetSocketAddress getLocalAddress() throws IOException;
+
+    void bind(InetSocketAddress localAddress) throws IOException;
 
     InetSocketAddress getRemoteAddress() throws IOException;
 

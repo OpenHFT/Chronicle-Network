@@ -17,16 +17,24 @@
  */
 package net.openhft.chronicle.network.connection;
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.network.TCPRegistry;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
+import net.openhft.chronicle.network.util.TestServer;
 import net.openhft.chronicle.wire.Marshallable;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+
+import static net.openhft.chronicle.network.util.TestUtil.getAvailablePortNumber;
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Checks that {@link FatalFailureConnectionStrategy} can be used in YAML config.
- */
 class FatalFailureConnectionStrategyTest {
+
+    /**
+     * Checks that {@link FatalFailureConnectionStrategy} can be used in YAML config.
+     */
     @Test
     void testFromYaml() {
         TCPRegistry.reset();
@@ -58,5 +66,25 @@ class FatalFailureConnectionStrategyTest {
 
         assertTrue(strategy.isClosed());
         assertTrue(strategyFromYaml.isClosed());
+    }
+
+
+    @Test
+    void testLocalBinding() throws InterruptedException, IOException {
+        final FatalFailureConnectionStrategy strategy = new FatalFailureConnectionStrategy(1, true);
+        final String localSocketBindingHost = "127.0.0.75";
+        int localPort = getAvailablePortNumber();
+        strategy.localSocketBindingHost(localSocketBindingHost);
+        strategy.localSocketBindingPort(localPort);
+        try (TestServer testServer = new TestServer("localBindingTestServer")) {
+            testServer.prepareToAcceptAConnection();
+            Jvm.pause(100);
+            try (final ChronicleSocketChannel channel = strategy.connect("local_server", SocketAddressSupplier.uri(testServer.uri()), false, null)) {
+                assertNotNull(channel);
+                final InetSocketAddress localSocketAddress = (InetSocketAddress) channel.socket().getLocalSocketAddress();
+                assertEquals(localPort, localSocketAddress.getPort());
+                assertEquals(localSocketBindingHost, localSocketAddress.getHostName());
+            }
+        }
     }
 }

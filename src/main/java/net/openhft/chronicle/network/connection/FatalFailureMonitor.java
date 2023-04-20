@@ -25,6 +25,15 @@ public interface FatalFailureMonitor {
     Logger LOG = LoggerFactory.getLogger(FatalFailureMonitor.class);
 
     /**
+     * A no-op implementation
+     */
+    FatalFailureMonitor NO_OP = new FatalFailureMonitor() {
+        @Override
+        public void onFatalFailure(@Nullable String name, String message) {
+        }
+    };
+
+    /**
      * called if all the connection attempts/(and/or timeouts) determined by the connection strategy has been exhausted
      *
      * @param name    the name of the connection

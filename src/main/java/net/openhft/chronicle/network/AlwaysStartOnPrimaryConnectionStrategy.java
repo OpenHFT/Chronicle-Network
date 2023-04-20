@@ -54,6 +54,8 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
     private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
     private long minPauseSec = ConnectionStrategy.super.minPauseSec();
     private long maxPauseSec = ConnectionStrategy.super.maxPauseSec();
+    private String localSocketBindingHost;
+    private int localSocketBindingPort = 0;
 
     @Override
     public AlwaysStartOnPrimaryConnectionStrategy open() {
@@ -82,6 +84,9 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
             socketAddressSupplier.resetToPrimary();
         else
             socketAddressSupplier.failoverToNextAddress();
+
+        if (fatalFailureMonitor == null)
+            fatalFailureMonitor = FatalFailureMonitor.NO_OP;
 
         for (; ; ) {
             throwExceptionIfClosed();
@@ -194,6 +199,22 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
 
     public AlwaysStartOnPrimaryConnectionStrategy maxPauseSec(long maxPauseSec) {
         this.maxPauseSec = maxPauseSec;
+        return this;
+    }
+
+    @Override
+    public @Nullable InetSocketAddress localSocketBinding() {
+        // Create a new InetSocketAddress each time to allow host to be re-resolved
+        return localSocketBindingHost != null ? new InetSocketAddress(localSocketBindingHost, localSocketBindingPort) : null;
+    }
+
+    public AlwaysStartOnPrimaryConnectionStrategy localSocketBindingHost(String localSocketBindingHost) {
+        this.localSocketBindingHost = localSocketBindingHost;
+        return this;
+    }
+
+    public AlwaysStartOnPrimaryConnectionStrategy localSocketBindingPort(int localSocketBindingPort) {
+        this.localSocketBindingPort = localSocketBindingPort;
         return this;
     }
 }

@@ -22,21 +22,15 @@ import net.openhft.chronicle.core.io.ClosedIllegalStateException;
 import net.openhft.chronicle.network.connection.ClientConnectionMonitor;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
-import net.openhft.chronicle.network.tcp.ChronicleSocket;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
-import net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory;
 import net.openhft.chronicle.wire.Marshallable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
-
-import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
 public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
 
@@ -44,52 +38,16 @@ public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
         return new VanillaClientConnectionMonitor();
     }
 
+    /**
+     * @deprecated Use {@link ChronicleSocketChannel#builder(InetSocketAddress)} instead
+     */
+    @Deprecated(/* To be removed in x.26 */)
     @Nullable
     static ChronicleSocketChannel socketChannel(@NotNull InetSocketAddress socketAddress, int tcpBufferSize, int socketConnectionTimeoutMs) throws IOException {
-
-        final ChronicleSocketChannel result = ChronicleSocketChannelFactory.wrap();
-        @Nullable Selector selector = null;
-        boolean failed = true;
-        try {
-            result.configureBlocking(false);
-            ChronicleSocket socket = result.socket();
-            if (!TcpEventHandler.DISABLE_TCP_NODELAY) socket.setTcpNoDelay(true);
-            socket.setReceiveBufferSize(tcpBufferSize);
-            socket.setSendBufferSize(tcpBufferSize);
-            socket.setSoTimeout(0);
-            socket.setSoLinger(false, 0);
-            result.connect(socketAddress);
-
-            selector = Selector.open();
-            result.register(selector, SelectionKey.OP_CONNECT);
-
-            int select = selector.select(socketConnectionTimeoutMs);
-            if (select == 0) {
-                if (Jvm.isDebugEnabled(ConnectionStrategy.class))
-                    Jvm.debug().on(ConnectionStrategy.class, "Timed out attempting to connect to " + socketAddress);
-                return null;
-            } else {
-                try {
-                    if (!result.finishConnect())
-                        return null;
-
-                } catch (IOException e) {
-                    if (Jvm.isDebugEnabled(ConnectionStrategy.class))
-                        Jvm.debug().on(ConnectionStrategy.class, "Failed to connect to " + socketAddress + " " + e);
-                    return null;
-                }
-            }
-
-            failed = false;
-            return result;
-
-        } catch (Exception e) {
-            return null;
-        } finally {
-            closeQuietly(selector);
-            if (failed)
-                closeQuietly(result);
-        }
+        return ChronicleSocketChannel.builder(socketAddress)
+                .tcpBufferSize(tcpBufferSize)
+                .socketConnectionTimeoutMs(socketConnectionTimeoutMs)
+                .open();
     }
 
     /**
@@ -128,7 +86,11 @@ public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
                                                      int socketConnectionTimeoutMs) throws IOException, InterruptedException {
         assert timeoutMs > 0;
         long start = System.currentTimeMillis();
-        ChronicleSocketChannel sc = socketChannel(socketAddress, tcpBufferSize, socketConnectionTimeoutMs);
+        ChronicleSocketChannel sc = ChronicleSocketChannel.builder(socketAddress)
+                .tcpBufferSize(tcpBufferSize)
+                .socketConnectionTimeoutMs(socketConnectionTimeoutMs)
+                .localBinding(localSocketBinding())
+                .open();
         if (sc != null)
             return sc;
 
@@ -141,7 +103,11 @@ public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
                 Jvm.warn().on(ConnectionStrategy.class, "Timed out attempting to connect to " + socketAddress);
                 return null;
             }
-            sc = socketChannel(socketAddress, tcpBufferSize, socketConnectionTimeoutMs);
+            sc = ChronicleSocketChannel.builder(socketAddress)
+                    .tcpBufferSize(tcpBufferSize)
+                    .socketConnectionTimeoutMs(socketConnectionTimeoutMs)
+                    .localBinding(localSocketBinding())
+                    .open();
             if (sc != null)
                 return sc;
             Thread.yield();
@@ -190,5 +156,15 @@ public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
 
     default long maxPauseSec() {
         return Jvm.getInteger("connectionStrategy.pause.max.secs", 5);
+    }
+
+    /**
+     * Get the local socket to bind the connection to
+     *
+     * @return the local socket to bind to or null to not bind to any local socket
+     */
+    @Nullable
+    default InetSocketAddress localSocketBinding() {
+        return null;
     }
 }

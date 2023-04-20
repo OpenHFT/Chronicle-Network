@@ -66,6 +66,8 @@ public class FatalFailureConnectionStrategy extends AbstractMarshallableCfg impl
     private final boolean blocking;
     private int tcpBufferSize;
     private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
+    private String localSocketBindingHost;
+    private int localSocketBindingPort = 0;
     private transient AtomicBoolean isClosed;
     private transient boolean hasSentFatalFailure;
 
@@ -201,5 +203,20 @@ public class FatalFailureConnectionStrategy extends AbstractMarshallableCfg impl
     public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
         super.readMarshallable(wire);
         init();
+    }
+
+    @Override
+    public @Nullable InetSocketAddress localSocketBinding() {
+        return localSocketBindingHost != null ? new InetSocketAddress(localSocketBindingHost, localSocketBindingPort) : null;
+    }
+
+    public FatalFailureConnectionStrategy localSocketBindingHost(String localSocketBindingHost) {
+        this.localSocketBindingHost = localSocketBindingHost;
+        return this;
+    }
+
+    public FatalFailureConnectionStrategy localSocketBindingPort(int localSocketBindingPort) {
+        this.localSocketBindingPort = localSocketBindingPort;
+        return this;
     }
 }
