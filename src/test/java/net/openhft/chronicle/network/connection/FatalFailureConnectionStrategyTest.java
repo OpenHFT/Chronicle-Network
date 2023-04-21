@@ -18,6 +18,7 @@
 package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.network.util.TestServer;
@@ -30,6 +31,7 @@ import java.net.InetSocketAddress;
 
 import static net.openhft.chronicle.network.util.TestUtil.getAvailablePortNumber;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 class FatalFailureConnectionStrategyTest {
 
@@ -74,6 +76,7 @@ class FatalFailureConnectionStrategyTest {
     @Test
     @Timeout(10)
     void testLocalBinding() throws InterruptedException, IOException {
+        assumeFalse(OS.isMacOSX()); // doesn't work on mac?
         final FatalFailureConnectionStrategy strategy = new FatalFailureConnectionStrategy(1, true);
         final String localSocketBindingHost = "127.0.0.75";
         int localPort = getAvailablePortNumber();

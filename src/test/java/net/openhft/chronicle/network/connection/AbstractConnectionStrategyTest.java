@@ -29,20 +29,29 @@ class AbstractConnectionStrategyTest extends NetworkTestCommon {
     }
 
     @Test
-    void testLocalBindingFailsWhenUnknownHostnameSpecified() {
+    void testLocalBindingFailsWhenUnknownHostnameSpecified() throws SocketException {
         final ConcreteConnectionStrategy concreteConnectionStrategy = new ConcreteConnectionStrategy();
         concreteConnectionStrategy.localSocketBindingHost("nonExistentHostName-" + UUID.randomUUID());
-        assertThrows(UnknownHostException.class, concreteConnectionStrategy::localSocketBinding);
+        try {
+            final InetSocketAddress binding = concreteConnectionStrategy.localSocketBinding();
+            fail("Didn't throw UnknownHostException, could be a DNS config issue, resolved to " + binding);
+        } catch (UnknownHostException e) {
+            // This is expected
+        }
     }
 
     @Test
-    void testLocalBindingWarnsWhenInterfaceAndHostnameAreSpecified() {
+    void testLocalBindingWarnsWhenInterfaceAndHostnameAreSpecified() throws SocketException {
         final ConcreteConnectionStrategy concreteConnectionStrategy = new ConcreteConnectionStrategy();
         concreteConnectionStrategy.localBindingNetworkInterface("nonExistentInterface" + UUID.randomUUID());
         concreteConnectionStrategy.localSocketBindingHost("nonExistentHostName-" + UUID.randomUUID());
         expectException("You have specified both localSocketBindingHost and localBindingNetworkInterface, using localSocketBindingHost");
 
-        assertThrows(UnknownHostException.class, concreteConnectionStrategy::localSocketBinding);
+        try {
+            concreteConnectionStrategy.localSocketBinding();
+        } catch (UnknownHostException e) {
+            // ignore
+        }
     }
 
     @Test

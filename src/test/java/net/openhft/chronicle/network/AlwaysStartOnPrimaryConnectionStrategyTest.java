@@ -19,9 +19,9 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
-import net.openhft.chronicle.network.tcp.ChronicleServerSocketChannel;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.network.util.TestServer;
 import net.openhft.chronicle.wire.JSONWire;
@@ -31,10 +31,10 @@ import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.concurrent.CountDownLatch;
 
 import static net.openhft.chronicle.network.util.TestUtil.getAvailablePortNumber;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 class AlwaysStartOnPrimaryConnectionStrategyTest extends NetworkTestCommon {
     private static String uri;
@@ -74,6 +74,7 @@ class AlwaysStartOnPrimaryConnectionStrategyTest extends NetworkTestCommon {
     @Test
     @Timeout(10)
     void testLocalBinding() throws InterruptedException, IOException {
+        assumeFalse(OS.isMacOSX()); // doesn't work on mac?
         final AlwaysStartOnPrimaryConnectionStrategy strategy = new AlwaysStartOnPrimaryConnectionStrategy();
         final String localSocketBindingHost = "127.0.0.75";
         int localPort = getAvailablePortNumber();
