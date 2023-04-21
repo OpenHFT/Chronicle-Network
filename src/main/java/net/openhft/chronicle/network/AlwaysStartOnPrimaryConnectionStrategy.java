@@ -18,11 +18,11 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.network.connection.AbstractConnectionStrategy;
 import net.openhft.chronicle.network.connection.ClientConnectionMonitor;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
-import net.openhft.chronicle.wire.AbstractMarshallableCfg;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -30,11 +30,9 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
-import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 
 /**
  * Loops through all the hosts:ports ( in order ) starting at the primary, till it finds a host that it can connect to.
@@ -42,24 +40,15 @@ import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
  * If all the host:ports have been attempted since the last connection was established, no successful connection can be found,
  * then null is returned, and the fatalFailureMonitor.onFatalFailure() is triggered
  */
-public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallableCfg implements ConnectionStrategy {
+public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractConnectionStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(AlwaysStartOnPrimaryConnectionStrategy.class);
 
-    private final transient AtomicBoolean isClosed = new AtomicBoolean(false);
-    private int tcpBufferSize = Jvm.getInteger("tcp.client.buffer.size", TCP_BUFFER);
     private int pausePeriodMs = Jvm.getInteger("client.timeout", 500);
     private int socketConnectionTimeoutMs = Jvm.getInteger("connectionStrategy.socketConnectionTimeoutMs", 1);
     private long pauseMillisBeforeReconnect = Jvm.getInteger("connectionStrategy.pauseMillisBeforeReconnect", 500);
-    private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
-    private long minPauseSec = ConnectionStrategy.super.minPauseSec();
-    private long maxPauseSec = ConnectionStrategy.super.maxPauseSec();
-
-    @Override
-    public AlwaysStartOnPrimaryConnectionStrategy open() {
-        isClosed.set(false);
-        return this;
-    }
+    private long minPauseSec = defaultMinPauseSec();
+    private long maxPauseSec = defaultMaxPauseSec();
 
     public AlwaysStartOnPrimaryConnectionStrategy clientConnectionMonitor(ClientConnectionMonitor fatalFailureMonitor) {
         this.clientConnectionMonitor = fatalFailureMonitor;
@@ -82,6 +71,9 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
             socketAddressSupplier.resetToPrimary();
         else
             socketAddressSupplier.failoverToNextAddress();
+
+        if (fatalFailureMonitor == null)
+            fatalFailureMonitor = FatalFailureMonitor.NO_OP;
 
         for (; ; ) {
             throwExceptionIfClosed();
@@ -165,16 +157,6 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractMarshallable
     public AlwaysStartOnPrimaryConnectionStrategy pauseMillisBeforeReconnect(long pauseMillisBeforeReconnect) {
         this.pauseMillisBeforeReconnect = pauseMillisBeforeReconnect;
         return this;
-    }
-
-    @Override
-    public void close() {
-        isClosed.set(true);
-    }
-
-    @Override
-    public boolean isClosed() {
-        return isClosed.get();
     }
 
     @Override

@@ -18,22 +18,15 @@
 package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.core.io.IORuntimeException;
-import net.openhft.chronicle.network.ConnectionStrategy;
-import net.openhft.chronicle.network.VanillaClientConnectionMonitor;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
-import net.openhft.chronicle.wire.AbstractMarshallableCfg;
-import net.openhft.chronicle.wire.WireIn;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
-import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
 
 /**
  * @author Rob Austin.
@@ -59,15 +52,19 @@ import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
  * --h.     Connection attempt no 3 with DR1:  failed
  * --i.      Connection attempt no 3 with DR2:  failed   implies:   Attempt 3 finished. Fatal Failure is raised
  */
-public class FatalFailureConnectionStrategy extends AbstractMarshallableCfg implements ConnectionStrategy {
+public class FatalFailureConnectionStrategy extends AbstractConnectionStrategy {
     private static final long PAUSE = TimeUnit.MILLISECONDS.toNanos(300);
 
     private final int attempts;
     private final boolean blocking;
-    private int tcpBufferSize;
-    private ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
-    private transient AtomicBoolean isClosed;
     private transient boolean hasSentFatalFailure;
+
+    /**
+     * Needed in order for marshalling to work properly
+     */
+    FatalFailureConnectionStrategy() {
+        this(1, false);
+    }
 
     /**
      * @param attempts the number of attempts before a onFatalFailure() reported
@@ -75,22 +72,6 @@ public class FatalFailureConnectionStrategy extends AbstractMarshallableCfg impl
     public FatalFailureConnectionStrategy(int attempts, boolean blocking) {
         this.attempts = attempts;
         this.blocking = blocking;
-
-        init();
-    }
-
-    /**
-     * Initializes missing optional and transient fields to default values.
-     */
-    private void init() {
-        if (tcpBufferSize == 0)
-            tcpBufferSize = Jvm.getInteger("tcp.client.buffer.size", TCP_BUFFER);
-
-        if (isClosed == null)
-            isClosed = new AtomicBoolean(false);
-
-        if (clientConnectionMonitor == null)
-            clientConnectionMonitor = new VanillaClientConnectionMonitor();
     }
 
     @Override
@@ -179,27 +160,5 @@ public class FatalFailureConnectionStrategy extends AbstractMarshallableCfg impl
                 LockSupport.parkNanos(PAUSE);
             }
         }
-    }
-
-    @Override
-    public void close() {
-        isClosed.set(true);
-    }
-
-    @Override
-    public boolean isClosed() {
-        return isClosed.get();
-    }
-
-    @Override
-    public FatalFailureConnectionStrategy open() {
-        isClosed.set(false);
-        return this;
-    }
-
-    @Override
-    public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
-        super.readMarshallable(wire);
-        init();
     }
 }
