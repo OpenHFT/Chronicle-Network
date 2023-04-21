@@ -56,7 +56,7 @@ public class NetworkTestCommon {
 
     @BeforeEach
     void recordExceptions() {
-        exceptionTracker = JvmExceptionTracker.create();
+        exceptionTracker = JvmExceptionTracker.create(false);
         exceptionTracker.ignoreException("unable to connect to any of the hosts");
     }
 

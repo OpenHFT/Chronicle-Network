@@ -56,6 +56,8 @@ public interface ChronicleSocket {
 
     Object getRemoteSocketAddress();
 
+    Object getLocalSocketAddress();
+
     int getLocalPort();
 
 }

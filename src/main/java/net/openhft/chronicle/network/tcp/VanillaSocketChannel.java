@@ -88,6 +88,11 @@ public class VanillaSocketChannel extends AbstractCloseable implements Chronicle
     }
 
     @Override
+    public void bind(final InetSocketAddress localAddress) throws IOException {
+        socketChannel.bind(localAddress);
+    }
+
+    @Override
     public InetSocketAddress getRemoteAddress() throws IORuntimeException {
         try {
             return (InetSocketAddress) socketChannel.getRemoteAddress();

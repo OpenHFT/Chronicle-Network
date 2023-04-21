@@ -18,17 +18,23 @@
 
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.core.Jvm;
+import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
+import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
+import net.openhft.chronicle.network.util.TestServer;
 import net.openhft.chronicle.wire.JSONWire;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static net.openhft.chronicle.network.util.TestUtil.getAvailablePortNumber;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 class AlwaysStartOnPrimaryConnectionStrategyTest extends NetworkTestCommon {
     private static String uri;
@@ -42,12 +48,11 @@ class AlwaysStartOnPrimaryConnectionStrategyTest extends NetworkTestCommon {
 
     @Test
     @Timeout(1)
-    void connect_attempts_should_stop_when_thread_is_interrupted() throws InterruptedException {
+    void connectAttemptsShouldStopWhenThreadIsInterrupted() throws InterruptedException {
         Thread thread = new Thread(() -> {
             ConnectionStrategy strategy = new AlwaysStartOnPrimaryConnectionStrategy();
             try {
-                strategy.connect("unavailable_uri", SocketAddressSupplier.uri(uri), false, new FatalFailureMonitor() {
-                });
+                strategy.connect("unavailable_uri", SocketAddressSupplier.uri(uri), false, FatalFailureMonitor.NO_OP);
             } catch (InterruptedException e) {
                 fail("AlwaysStartOnPrimaryConnectionStrategy#connect should not have propagated the " + e.getClass());
             }
@@ -58,13 +63,33 @@ class AlwaysStartOnPrimaryConnectionStrategyTest extends NetworkTestCommon {
     }
 
     @Test
-    void test() {
+    void testIsSerializable() {
         TCPRegistry.reset();
         final AlwaysStartOnPrimaryConnectionStrategy alwaysStartOnPrimaryConnectionStrategy = new AlwaysStartOnPrimaryConnectionStrategy();
         JSONWire jsonWire = new JSONWire().useTypes(true);
         jsonWire.getValueOut().object(alwaysStartOnPrimaryConnectionStrategy);
         assertEquals("{\"@AlwaysStartOnPrimaryConnectionStrategy\":{}}", jsonWire.bytes().toString());
+    }
 
+    @Test
+    @Timeout(10)
+    void testLocalBinding() throws InterruptedException, IOException {
+        assumeFalse(OS.isMacOSX()); // doesn't work on mac?
+        final AlwaysStartOnPrimaryConnectionStrategy strategy = new AlwaysStartOnPrimaryConnectionStrategy();
+        final String localSocketBindingHost = "127.0.0.75";
+        int localPort = getAvailablePortNumber();
+        strategy.localSocketBindingHost(localSocketBindingHost);
+        strategy.localSocketBindingPort(localPort);
+        try (TestServer testServer = new TestServer("localBindingTestServer")) {
+            testServer.prepareToAcceptAConnection();
+            Jvm.pause(100);
+            try (final ChronicleSocketChannel channel = strategy.connect("local_server", SocketAddressSupplier.uri(testServer.uri()), false, null)) {
+                assertNotNull(channel);
+                final InetSocketAddress localSocketAddress = (InetSocketAddress) channel.socket().getLocalSocketAddress();
+                assertEquals(localPort, localSocketAddress.getPort());
+                assertEquals(localSocketBindingHost, localSocketAddress.getHostName());
+            }
+        }
     }
 
 }

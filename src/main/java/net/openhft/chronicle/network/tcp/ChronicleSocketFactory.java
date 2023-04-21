@@ -81,12 +81,14 @@ public enum ChronicleSocketFactory {
             }
 
             @Override
+            public Object getLocalSocketAddress() {
+                return socket.getLocalSocketAddress();
+            }
+
+            @Override
             public int getLocalPort() {
                 return socket.getLocalPort();
             }
-
-        }
-
-                ;
+        };
     }
 }
