@@ -174,7 +174,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
                 eventHandler = tcpHandlerSupplier.apply(nc);
 
             } catch (ClosedIllegalStateException e) {
-                Jvm.debug().on(getClass(), "Already closed while connecting to " + address, e);
+                Jvm.warn().on(getClass(), "Already closed while connecting to " + address, e);
                 // may be already closed by socketReconnector in HostConnector
                 closeSocket(sc);
 

@@ -19,7 +19,6 @@ package net.openhft.chronicle.network.cluster.handlers;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.annotation.UsedViaReflection;
-import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.core.threads.Timer;
 import net.openhft.chronicle.core.threads.VanillaEventHandler;
@@ -48,6 +47,7 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
     private final AtomicBoolean hasHeartbeats = new AtomicBoolean();
     private final AtomicBoolean closed;
     private volatile long lastTimeMessageReceived;
+    private volatile boolean hasTimedOut = false;
     @Nullable
     private ConnectionListener connectionListener;
     @Nullable
@@ -145,16 +145,17 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
                 }
             }
             lastTimeMessageReceived = Long.MAX_VALUE;
-            Closeable closable = closable();
-            if (closable != null && !closable.isClosed()) {
-                Closeable.closeQuietly(closable);
-            }
         }
     }
 
     @Override
     public void onMessageReceived() {
         lastTimeMessageReceived = System.currentTimeMillis();
+    }
+
+    @Override
+    public boolean hasTimedOut() {
+        return hasTimedOut;
     }
 
     private VanillaEventHandler heartbeatCheck() {
@@ -225,23 +226,16 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
         @Override
         public boolean action() throws InvalidEventHandlerException {
 
-            if (HeartbeatHandler.this.closable().isClosed())
-                throw newClosedInvalidEventHandlerException();
+            if (HeartbeatHandler.this.isClosed())
+                throw InvalidEventHandlerException.reusable();
 
             boolean hasHeartbeats = HeartbeatHandler.this.hasReceivedHeartbeat();
             boolean prev = HeartbeatHandler.this.hasHeartbeats.getAndSet(hasHeartbeats);
 
             if (hasHeartbeats != prev) {
                 if (!hasHeartbeats) {
-                    final Runnable socketReconnector = HeartbeatHandler.this.nc().socketReconnector();
-                    if (socketReconnector == null)
-                        Jvm.warn().on(getClass(), "socketReconnector == null");
-                    else
-                        socketReconnector.run();
-
-                    HeartbeatHandler.this.close();
-
-                    throw newClosedInvalidEventHandlerException();
+                    HeartbeatHandler.this.hasTimedOut = true;
+                    throw InvalidEventHandlerException.reusable();
                 } else
                     try {
                         if (connectionListener != null) {
@@ -272,7 +266,7 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
         @Override
         public boolean action() throws InvalidEventHandlerException {
             if (HeartbeatHandler.this.isClosed())
-                throw newClosedInvalidEventHandlerException();
+                throw InvalidEventHandlerException.reusable();
             // we will only publish a heartbeat if the wire out publisher is empty
             WireOutPublisher wireOutPublisher = HeartbeatHandler.this.nc().wireOutPublisher();
             if (wireOutPublisher.isEmpty())
@@ -298,9 +292,4 @@ public final class HeartbeatHandler<T extends ClusteredNetworkContext<T>> extend
             return "HeartbeatMessage{" + cid() + "}";
         }
     }
-
-    InvalidEventHandlerException newClosedInvalidEventHandlerException() {
-        return new InvalidEventHandlerException("closed");
-    }
-
 }

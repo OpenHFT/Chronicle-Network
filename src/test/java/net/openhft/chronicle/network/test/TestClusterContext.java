@@ -47,6 +47,15 @@ public class TestClusterContext extends ClusterContext<TestClusterContext, TestC
         this.returnNullConnectionListener = true;
     }
 
+    /**
+     * This allows the configuration of a timeout that applies to the {@link NetworkContext} without it applying to the
+     * {@link net.openhft.chronicle.network.cluster.handlers.HeartbeatHandler}, to allow simulation of a timeout at the network layer.
+     * <p>
+     * Use {@link ClusterContext#heartbeatTimeoutMs()} to configure a timeout that applies to the both HeartbeatHandler and NetworkContext
+     *
+     * @param overrideNetworkContextTimeout The timeout in milliseconds to apply at the NetworkContext level
+     * @return this
+     */
     public TestClusterContext overrideNetworkContextTimeout(long overrideNetworkContextTimeout) {
         this.overrideNetworkContextTimeout = overrideNetworkContextTimeout;
         return this;
