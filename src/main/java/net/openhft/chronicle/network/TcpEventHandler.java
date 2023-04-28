@@ -197,6 +197,11 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         if (tcpHandler == null)
             return false;
 
+        if (tcpHandler.hasTimedOut()) {
+            closeAndStartReconnector();
+            return false;
+        }
+
         try {
             return action0();
         } catch (InvalidEventHandlerException t) {
@@ -321,6 +326,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
      * Closes the channel and triggers asynchronous reconnecting if it's a connector.
      */
     private void closeAndStartReconnector() {
+        Jvm.debug().on(TcpEventHandler.class, "Closing and starting reconnector");
         close();
         if (!nc.isAcceptor()) {
             final Runnable socketReconnector = nc.socketReconnector();

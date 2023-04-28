@@ -58,4 +58,12 @@ public interface TcpHandler<N extends NetworkContext<N>> extends ClientClosedPro
      */
     default void performIdleWork() {
     }
+
+    /**
+     * Check if an application-layer timeout has occurred, if this returns true,
+     * the current connection will be dropped and a reconnection attempt will be made
+     */
+    default boolean hasTimedOut() {
+        return false;
+    }
 }
