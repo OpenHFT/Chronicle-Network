@@ -20,4 +20,13 @@ package net.openhft.chronicle.network.cluster;
 @FunctionalInterface
 public interface HeartbeatEventHandler {
     void onMessageReceived();
+
+    /**
+     * Has a timeout been detected?
+     *
+     * @return true if a timeout has been detected, false otherwise
+     */
+    default boolean hasTimedOut() {
+        return false;
+    }
 }
