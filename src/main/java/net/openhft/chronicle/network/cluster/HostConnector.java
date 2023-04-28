@@ -20,12 +20,15 @@ package net.openhft.chronicle.network.cluster;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.NetworkStatsListener;
 import net.openhft.chronicle.network.RemoteConnector;
+import net.openhft.chronicle.network.api.session.SessionProvider;
 import net.openhft.chronicle.network.cluster.handlers.HeartbeatHandler;
 import net.openhft.chronicle.network.cluster.handlers.UberHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
+import net.openhft.chronicle.wire.DocumentContext;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
 import java.util.concurrent.atomic.AtomicReference;
@@ -57,11 +60,20 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
     private final AtomicReference<WireOutPublisher> wireOutPublisher = new AtomicReference<>();
     @NotNull
     private final EventLoop eventLoop;
+    private final SessionProvider sessionProvider;
 
     HostConnector(@NotNull final C clusterContext,
                   @NotNull final RemoteConnector<T> remoteConnector,
                   final int remoteId,
                   final String connectUri) {
+        this(clusterContext, remoteConnector, remoteId, connectUri, null);
+    }
+
+    HostConnector(@NotNull final C clusterContext,
+                  @NotNull final RemoteConnector<T> remoteConnector,
+                  final int remoteId,
+                  final String connectUri,
+                  @Nullable final SessionProvider sessionProvider) {
         this.connectionManager = clusterContext.connectionManager(remoteId);
         this.clusterContext = clusterContext;
         this.remoteId = remoteId;
@@ -72,6 +84,7 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
         this.wireType = clusterContext.wireType();
         this.wireOutPublisherFactory = clusterContext.wireOutPublisherFactory();
         this.eventLoop = clusterContext.eventLoop();
+        this.sessionProvider = sessionProvider;
     }
 
     @Override
@@ -141,6 +154,15 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
             final NetworkStatsListener<T> networkStatsListener = networkStatsListenerFactory.apply(clusterContext);
             nc.networkStatsListener(networkStatsListener);
             networkStatsListener.networkContext(nc);
+        }
+
+        if (sessionProvider != null) {
+            wireOutPublisher.publish(
+                 wire -> {
+                    try (final DocumentContext ignored = wire.writingDocument(true)) {
+                        sessionProvider.get().writeMarshallable(wire);
+                    }
+                });
         }
 
         wireOutPublisher.publish(UberHandler.uberHandler(
