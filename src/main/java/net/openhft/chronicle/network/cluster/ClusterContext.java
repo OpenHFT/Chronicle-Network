@@ -30,6 +30,7 @@ import net.openhft.chronicle.network.NetworkStatsListener;
 import net.openhft.chronicle.network.RemoteConnector;
 import net.openhft.chronicle.network.ServerThreadingStrategy;
 import net.openhft.chronicle.network.TcpEventHandler;
+import net.openhft.chronicle.network.api.session.SessionProvider;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.threads.*;
 import net.openhft.chronicle.wire.*;
@@ -88,6 +89,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     private ServerThreadingStrategy serverThreadingStrategy;
     private long retryInterval = 1_000L;
     private String procPrefix;
+    private SessionProvider sessionProvider;
 
     protected ClusterContext() {
         defaults();
@@ -111,7 +113,8 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
         @NotNull final HostConnector<T, C> hostConnector = new HostConnector<>(castThis(),
                 new RemoteConnector<>(tcpEventHandlerFactory()),
                 hd.hostId(),
-                hd.connectUri());
+                hd.connectUri(),
+                sessionProvider);
         closeables.add(hostConnector);
         if (isClosed()) {
             Closeable.closeQuietly(hostConnector);
@@ -344,6 +347,15 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
 
     public long retryInterval() {
         return retryInterval;
+    }
+
+    public C sessionProvider(SessionProvider sessionProvider) {
+        this.sessionProvider = sessionProvider;
+        return castThis();
+    }
+
+    public SessionProvider sessionProvider() {
+        return sessionProvider;
     }
 
     @Override
