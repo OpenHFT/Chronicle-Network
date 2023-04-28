@@ -25,8 +25,6 @@ import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.api.session.SubHandler;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
 
@@ -35,7 +33,6 @@ import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PAD
 public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseable implements TcpHandler<T> {
 
     public static final String HANDLER = "handler";
-    private static final Logger LOG = LoggerFactory.getLogger(HeaderTcpHandler.class);
     @NotNull
     private final TcpEventHandler<T> handlerManager;
     @NotNull
@@ -67,7 +64,7 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseab
                 return;
 
             if (YamlLogging.showServerReads())
-                LOG.info("nc.isAcceptor=" + nc.isAcceptor() +
+                Jvm.startup().on(getClass(), "nc.isAcceptor=" + nc.isAcceptor() +
                         ", read:\n" + Wires.fromSizePrefixedBlobs(in, start, in.readLimit() - start));
 
             final long readPosition = inWire.bytes().readPosition();
@@ -95,7 +92,6 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseab
             if (o instanceof SubHandler) {
                 Jvm.warn().on(getClass(), "SubHandler " + o + " sent before UberHandler, closing.");
                 close();
-
             } else {
                 Jvm.warn().on(getClass(), "wirein=" + Wires.fromSizePrefixedBlobs(inWire), e);
             }
