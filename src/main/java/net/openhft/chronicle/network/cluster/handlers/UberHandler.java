@@ -265,6 +265,12 @@ public final class UberHandler<T extends ClusteredNetworkContext<T>> extends Csp
         }
     }
 
+    @Override
+    public boolean hasTimedOut() {
+        final HeartbeatEventHandler heartbeatEventHandler = heartbeatEventHandler();
+        return heartbeatEventHandler != null && heartbeatEventHandler.hasTimedOut();
+    }
+
     private void onMessageReceived() {
         final HeartbeatEventHandler heartbeatEventHandler = heartbeatEventHandler();
         if (heartbeatEventHandler != null)

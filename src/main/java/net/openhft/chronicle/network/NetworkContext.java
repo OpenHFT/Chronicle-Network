@@ -83,6 +83,13 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
         return Jvm.isDebug() ? ConnectionListeners.LOGGING : ConnectionListeners.NONE;
     }
 
+    /**
+     * This should only ever be executed from {@link TcpEventHandler#closeAndStartReconnector()} if
+     * you're adding a call to it from somewhere else you're potentially
+     * re-introducing <a href="https://github.com/OpenHFT/Chronicle-Network/issues/240">this issue</a>
+     *
+     * @return the runnable that orchestrates reconnection
+     */
     Runnable socketReconnector();
 
     @NotNull
@@ -124,6 +131,7 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
     /**
      * Called when the outbound buffer becomes empty (edge-triggered)
      */
-    default void onFlushed() {}
+    default void onFlushed() {
+    }
 }
 

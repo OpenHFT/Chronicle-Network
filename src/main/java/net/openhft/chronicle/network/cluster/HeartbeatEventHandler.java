@@ -20,4 +20,8 @@ package net.openhft.chronicle.network.cluster;
 @FunctionalInterface
 public interface HeartbeatEventHandler {
     void onMessageReceived();
+
+    default boolean hasTimedOut() {
+        return false;
+    }
 }
