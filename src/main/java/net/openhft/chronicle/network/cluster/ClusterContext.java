@@ -31,9 +31,7 @@ import net.openhft.chronicle.network.ServerThreadingStrategy;
 import net.openhft.chronicle.network.TcpEventHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.threads.*;
-import net.openhft.chronicle.wire.SelfDescribingMarshallable;
-import net.openhft.chronicle.wire.WireIn;
-import net.openhft.chronicle.wire.WireType;
+import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -348,6 +346,11 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
         defaults();
         super.readMarshallable(wire);
+    }
+
+    @Override
+    public void writeMarshallable(@NotNull WireOut wire) {
+        Wires.writeMarshallable(this, wire, false);
     }
 
     @Override
