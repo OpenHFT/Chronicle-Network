@@ -22,6 +22,7 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.core.io.InvalidMarshallableException;
 import net.openhft.chronicle.core.io.ManagedCloseable;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.util.ThrowingFunction;
@@ -31,9 +32,7 @@ import net.openhft.chronicle.network.ServerThreadingStrategy;
 import net.openhft.chronicle.network.TcpEventHandler;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.threads.*;
-import net.openhft.chronicle.wire.SelfDescribingMarshallable;
-import net.openhft.chronicle.wire.WireIn;
-import net.openhft.chronicle.wire.WireType;
+import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -351,6 +350,11 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
         defaults();
         super.readMarshallable(wire);
+    }
+
+    @Override
+    public void writeMarshallable(@NotNull WireOut wire) throws InvalidMarshallableException {
+        Wires.writeMarshallable(this, wire, false);
     }
 
     @Override
