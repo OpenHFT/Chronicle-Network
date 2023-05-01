@@ -202,9 +202,11 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
         try {
             return action0();
+        } catch (InvalidEventHandlerException t) {
+            throw t;
         } catch (Throwable t) {
             if (this.isClosed())
-                throw new InvalidEventHandlerException();
+                throw new InvalidEventHandlerException(t);
             throw Jvm.rethrow(t);
         }
     }
