@@ -28,9 +28,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.lang.String.format;
@@ -97,7 +97,7 @@ class FileBasedHostnamePortLookupTableTest extends NetworkTestCommon {
     }
 
     @Test
-    void entriesShouldBeVisibleAcrossInstances() throws IOException {
+    void entriesShouldBeVisibleAcrossInstances() {
         try (FileBasedHostnamePortLookupTable table1 = new FileBasedHostnamePortLookupTable(TEST_TABLE_FILENAME);
              FileBasedHostnamePortLookupTable table2 = new FileBasedHostnamePortLookupTable(TEST_TABLE_FILENAME)) {
             table1.put("aaa", InetSocketAddress.createUnresolved("aaa", 111));
@@ -119,30 +119,36 @@ class FileBasedHostnamePortLookupTableTest extends NetworkTestCommon {
 
     public int doShouldWorkConcurrently(boolean parallel) {
         long start = System.currentTimeMillis();
-        IntStream stream = IntStream.range(0, Math.min(16, Runtime.getRuntime().availableProcessors()));
+        final int numProcessors = Math.min(16, Runtime.getRuntime().availableProcessors());
+        IntStream stream = IntStream.range(0, numProcessors);
         if (parallel)
             stream = stream.parallel();
 
-        return stream.map(myId -> {
-            try (FileBasedHostnamePortLookupTable table = new FileBasedHostnamePortLookupTable(TEST_TABLE_FILENAME)) {
-                Set<String> allMyAliases = new HashSet<>();
-                for (int i = 0; i < 200 && start + 2000 > System.currentTimeMillis(); i++) {
-                    String description = format("0." + (parallel ? "1" : "0") + ".%d.%d", myId, i);
-                    allMyAliases.add(description);
-                    InetSocketAddress address = InetSocketAddress.createUnresolved(description, i);
-                    table.put(description, address);
-                    InetSocketAddress lookup = table.lookup(description);
-                    assertNotNull(lookup, description);
-                }
-                Set<String> missing = new LinkedHashSet<>(allMyAliases);
-                missing.removeAll(table.aliases());
-                if (!missing.isEmpty())
-                    fail("Missing hosts " + missing);
-                return allMyAliases.size();
-            } catch (IOException e) {
-                throw new AssertionError("Error creating lookup table", e);
+        List<FileBasedHostnamePortLookupTable> tables = IntStream.range(0, numProcessors)
+                .mapToObj(id -> new FileBasedHostnamePortLookupTable(TEST_TABLE_FILENAME))
+                .collect(Collectors.toList());
+
+        final int sum = stream.map(myId -> {
+            FileBasedHostnamePortLookupTable table = tables.get(myId);
+            Set<String> allMyAliases = new HashSet<>();
+            for (int i = 0; i < 200 && start + 2000 > System.currentTimeMillis(); i++) {
+                String description = format("0." + (parallel ? "1" : "0") + ".%d.%d", myId, i);
+                allMyAliases.add(description);
+                InetSocketAddress address = InetSocketAddress.createUnresolved(description, i);
+                table.put(description, address);
+                InetSocketAddress lookup = table.lookup(description);
+                assertNotNull(lookup, description);
             }
+            Set<String> missing = new LinkedHashSet<>(allMyAliases);
+            missing.removeAll(table.aliases());
+            if (!missing.isEmpty())
+                fail("Missing hosts " + missing);
+            return allMyAliases.size();
         }).sum();
+
+        // Need to do this in parallel because they all time out on Windows (and take 1s)
+        tables.stream().parallel().forEach(Closeable::closeQuietly);
+        return sum;
     }
 
     @Test
