@@ -18,6 +18,7 @@
 
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.network.internal.lookuptable.FileBasedHostnamePortLookupTable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +31,9 @@ class CrossProcessTCPRegistryTest extends TCPRegistryTest {
 
     @BeforeEach
     void setUp() {
+        if (OS.isWindows()) {
+            ignoreException("Error deleting the shared lookup table");
+        }
         TCPRegistry.useCrossProcessRegistry();
     }
 

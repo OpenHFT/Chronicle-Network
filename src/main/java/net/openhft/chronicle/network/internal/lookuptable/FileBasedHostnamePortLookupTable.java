@@ -21,9 +21,7 @@ package net.openhft.chronicle.network.internal.lookuptable;
 import net.openhft.chronicle.bytes.MappedBytes;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.OS;
-import net.openhft.chronicle.core.io.Closeable;
-import net.openhft.chronicle.core.io.IORuntimeException;
-import net.openhft.chronicle.core.io.ReferenceOwner;
+import net.openhft.chronicle.core.io.*;
 import net.openhft.chronicle.network.HostnamePortLookupTable;
 import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
@@ -37,6 +35,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
@@ -47,13 +46,14 @@ import static net.openhft.chronicle.core.util.Time.sleep;
 /**
  * Stores the mappings in a shared file, will work across processes
  */
-public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable, java.io.Closeable, ReferenceOwner {
+public class FileBasedHostnamePortLookupTable extends AbstractCloseable implements HostnamePortLookupTable, java.io.Closeable, ReferenceOwner {
 
     private static final long MINIMUM_INITIAL_FILE_SIZE_BYTES = 1_024L * 512L; // We want to prevent resizing
     private static final long LOCK_TIMEOUT_MS = 10_000;
     private static final int DELETE_TABLE_FILE_TIMEOUT_MS = 1_000;
     private static final int PID = Jvm.getProcessId();
     private static final String DEFAULT_FILE_NAME = "shared_hostname_mappings";
+    private static final ReentrantLock PROCESS_FILE_LOCK = new ReentrantLock();
 
     private final JSONWire sharedTableWire;
     private final MappedBytes sharedTableBytes;
@@ -212,39 +212,55 @@ public class FileBasedHostnamePortLookupTable implements HostnamePortLookupTable
         Throwable lastThrown = null;
         int count;
         for (count = 1; System.currentTimeMillis() < timeoutAt; count++) {
-            try (FileLock fileLock = sharedTableBytes.mappedFile().tryLock(0, Long.MAX_VALUE, shared)) {
-                if (fileLock != null) {
-                    try {
-                        T t = supplier.get();
-                        long elapsedMs = System.currentTimeMillis() - startMs;
-                        if (elapsedMs > 100)
-                            Jvm.perf().on(getClass(), "Took " + elapsedMs / 1000.0 + " seconds to obtain the lock on " + sharedTableFile, lastThrown);
-                        return t;
-                    } catch (OverlappingFileLockException e) {
-                        throw new RuntimeException("Attempted to resize the underlying bytes, increase the MINIMUM_INITIAL_FILE_SIZE_BYTES or make this work with resizing!", e);
+            if (PROCESS_FILE_LOCK.tryLock()) {
+                try (FileLock fileLock = sharedTableBytes.mappedFile().tryLock(0, Long.MAX_VALUE, shared)) {
+                    if (fileLock != null) {
+                        try {
+                            T t = supplier.get();
+                            logDetailsOfSlowAcquire(startMs, lastThrown);
+                            return t;
+                        } catch (OverlappingFileLockException e) {
+                            throw new RuntimeException("Attempted to resize the underlying bytes, increase the MINIMUM_INITIAL_FILE_SIZE_BYTES or make this work with resizing!", e);
+                        }
                     }
+                } catch (IOException | OverlappingFileLockException e) {
+                    // failed to acquire the lock, wait until other operation completes
+                    lastThrown = e;
+                } finally {
+                    PROCESS_FILE_LOCK.unlock();
                 }
-            } catch (IOException | OverlappingFileLockException e) {
-                // failed to acquire the lock, wait until other operation completes
-                lastThrown = e;
             }
             int delay = Math.min(250, count * count);
             sleep(delay, MILLISECONDS);
         }
+        logVerboseDetailsOfAcquireLockFailure(startMs, lastThrown, count);
+        throw new IllegalStateException("Couldn't acquire lock on shared mapping file " + sharedTableFile, lastThrown);
+    }
+
+    private void logDetailsOfSlowAcquire(long startMs, Throwable lastThrown) {
+        long elapsedMs = System.currentTimeMillis() - startMs;
+        if (elapsedMs > 100)
+            Jvm.perf().on(getClass(), "Took " + elapsedMs / 1000.0 + " seconds to obtain the lock on " + sharedTableFile, lastThrown);
+    }
+
+    private void logVerboseDetailsOfAcquireLockFailure(long startMs, Throwable lastThrown, int count) {
         if (Jvm.isDebugEnabled(FileBasedHostnamePortLookupTable.class)) {
             final long elapsedMs = System.currentTimeMillis() - startMs;
             final String message = "Failed to acquire lock on the shared mappings file. Retrying, file=" + sharedTableFile + ", count=" + count + ", elapsed=" + elapsedMs + " ms";
             Jvm.debug().on(FileBasedHostnamePortLookupTable.class, message, lastThrown);
         }
-        RuntimeException re = new RuntimeException("Couldn't acquire lock on shared mapping file " + sharedTableFile);
-        re.initCause(lastThrown);
-        throw re;
     }
 
     @Override
-    public synchronized void close() throws IOException {
+    protected synchronized void performClose() {
+        lockFileAndDo(() -> {
+            allMappings.clear();
+            sharedTableWire.clear();
+            zeroOutRemainingBytes(0);
+        }, false);
         Closeable.closeQuietly(sharedTableWire, sharedTableBytes);
         long endTime = System.currentTimeMillis() + DELETE_TABLE_FILE_TIMEOUT_MS;
+        BackgroundResourceReleaser.releasePendingResources();
         while (sharedTableFile.exists()) {
             sharedTableFile.delete();
             if (System.currentTimeMillis() > endTime) {
