@@ -51,4 +51,7 @@ public interface NetworkStatsListener<N extends NetworkContext<N>> extends Close
 
     default void procPrefix(String procPrefix) {
     }
+
+    default void onReceiveLatency(long nanosecondLatency) {
+    }
 }
