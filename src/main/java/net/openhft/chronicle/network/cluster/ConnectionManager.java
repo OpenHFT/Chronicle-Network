@@ -21,20 +21,24 @@ import net.openhft.chronicle.network.NetworkContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.IdentityHashMap;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static java.util.Collections.newSetFromMap;
 
 public class ConnectionManager<T extends NetworkContext<T>> {
 
     private static final int EMPTY_SEQUENCE = -1;
-    private final Set<ConnectionListenerHolder<?>> connectionListeners = newSetFromMap(new IdentityHashMap<>());
+    private final List<ConnectionListenerHolder<T>> connectionListeners = new ArrayList<>();
     private final AtomicInteger lastListenerAddedSequence = new AtomicInteger(EMPTY_SEQUENCE);
 
     public synchronized void addListener(@NotNull ConnectionListener<T> connectionListener) {
+        //noinspection ForLoopReplaceableByForEach
+        for (int i = 0; i < connectionListeners.size(); i++) {
+            if (connectionListeners.get(i).connectionListener() == connectionListener) {
+                return;
+            }
+        }
         connectionListeners.add(new ConnectionListenerHolder<>(lastListenerAddedSequence.incrementAndGet(), connectionListener));
     }
 
@@ -75,16 +79,18 @@ public class ConnectionManager<T extends NetworkContext<T>> {
     private synchronized void executeListenersWithSequenceGreaterThan(int lowerSequenceLimit,
                                                                       @NotNull final T nc,
                                                                       @NotNull EventEmitterToken token) {
-        connectionListeners.forEach(l -> {
+        //noinspection ForLoopReplaceableByForEach
+        for (int i = 0; i < connectionListeners.size(); i++) {
+            ConnectionListenerHolder<T> l = connectionListeners.get(i);
             if (l.sequence > lowerSequenceLimit) {
                 try {
-                    ((ConnectionListenerHolder<T>)l).connectionListener.onConnectionChange(nc, token.connected.get());
+                    l.connectionListener.onConnectionChange(nc, token.connected.get());
                 } catch (IllegalStateException ignore) {
                     // this is already logged
                 }
                 token.latestSequenceExecuted = Math.max(token.latestSequenceExecuted, l.sequence);
             }
-        });
+        }
     }
 
     @FunctionalInterface
@@ -105,9 +111,13 @@ public class ConnectionManager<T extends NetworkContext<T>> {
         private final int sequence;
         private final ConnectionListener<C> connectionListener;
 
-        public ConnectionListenerHolder(int sequence, ConnectionListener<C> connectionListener) {
+        public ConnectionListenerHolder(int sequence, @NotNull ConnectionListener<C> connectionListener) {
             this.sequence = sequence;
             this.connectionListener = connectionListener;
+        }
+
+        public ConnectionListener<C> connectionListener() {
+            return connectionListener;
         }
     }
 
