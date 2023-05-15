@@ -130,6 +130,14 @@ class ConnectionManagerTest extends NetworkTestCommon {
         verify(listener1).onConnectionChange(networkContext, true);
     }
 
+    @Test
+    void addConnectionListenerIsIdempotent() {
+        connectionManager.addListener(listener1);
+        connectionManager.addListener(listener1);
+        connectionManager.onConnectionChanged(true, networkContext, null);
+        verify(listener1).onConnectionChange(networkContext, true);
+    }
+
     static class TestNetworkContext extends VanillaNetworkContext<TestNetworkContext> {
     }
 }
