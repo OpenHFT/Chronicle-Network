@@ -768,7 +768,7 @@ public final class TcpChannelHub extends AbstractCloseable {
             if (bytes.readRemaining() > 0)
                 Jvm.debug().on(TcpChannelHub.class,
                         ((!YamlLogging.title.isEmpty()) ? "### " + YamlLogging
-                                .title + "\n" : "") + "" +
+                                .title + "\n" : "") +
                                 YamlLogging.writeMessage() + (YamlLogging.writeMessage().isEmpty() ?
                                 "" : "\n\n") +
                                 "sends:\n\n" +
@@ -1424,7 +1424,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                     return false;
 
                 // this loop if to handle the rare case where we receive the tid before its been registered by this class
-                for (; !isShuttingdown() && c.isOpen(); ) {
+                while (!isShuttingdown() && c.isOpen()) {
 
                     o = map.get(tid);
 
@@ -1637,8 +1637,8 @@ public final class TcpChannelHub extends AbstractCloseable {
                 }
 
                 if (isShutdown)
-                    throw new ConnectionDroppedException(name + " is shutdown, was connected to " +
-                            "" + socketAddressSupplier);
+                    throw new ConnectionDroppedException(name + " is shutdown, was connected to "
+                            + socketAddressSupplier);
 
                 if (lastTimeMessageReceivedOrSent + 60_000 < System.currentTimeMillis()) {
 
@@ -1694,7 +1694,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                     public void onConsumer(@NotNull WireIn inWire) {
                         long roundTipTimeMicros = NANOSECONDS.toMicros(System.nanoTime() - l);
                         if (debugEnabled)
-                            Jvm.perf().on(TcpChannelHub.class, "heartbeat round trip time=" + roundTipTimeMicros + "" +
+                            Jvm.perf().on(TcpChannelHub.class, "heartbeat round trip time=" + roundTipTimeMicros +
                                     " server=" + socketAddressSupplier);
 
                         inWire.clear();

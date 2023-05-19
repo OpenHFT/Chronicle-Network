@@ -96,7 +96,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractConnectionSt
 
                 if (socketChannel == null) {
                     if (Jvm.isDebugEnabled(getClass()))
-                        Jvm.debug().on(getClass(), "unable to connected to " + socketAddressSupplier.toString());
+                        Jvm.debug().on(getClass(), "unable to connected to " + socketAddressSupplier);
 
                     // at end
                     if (isAtEnd(socketAddressSupplier)) {

@@ -130,7 +130,7 @@ public class FatalFailureConnectionStrategy extends AbstractConnectionStrategy {
                 socketChannel = openSocketChannel(socketAddress, tcpBufferSize, millis);
 
                 if (socketChannel == null) {
-                    Jvm.warn().on(getClass(), "unable to connected to " + socketAddressSupplier.toString() + ", name=" + name);
+                    Jvm.warn().on(getClass(), "unable to connected to " + socketAddressSupplier + ", name=" + name);
                     failures++;
                     socketAddressSupplier.failoverToNextAddress();
                     LockSupport.parkNanos(PAUSE);
