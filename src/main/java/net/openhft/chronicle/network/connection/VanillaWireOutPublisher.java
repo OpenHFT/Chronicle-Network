@@ -110,6 +110,8 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
         throwExceptionIfClosed();
 
         synchronized (lock()) {
+            throwExceptionIfClosed();
+
             return wire.bytes().writePosition() < TcpChannelHub.TCP_SAFE_SIZE; // don't attempt
             // to fill the buffer completely.
         }
@@ -117,33 +119,42 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
 
     @Override
     public void put(final Object key, @NotNull WriteMarshallable event) {
+        if (logIfClosed()) return;
+
+        // writes the data and its size
+        synchronized (lock()) {
+            Wire wire = this.wire;
+            if (logIfClosed()) return;
+
+            Bytes<?> bytes = wire.bytes();
+            final long start = bytes.writePosition();
+            event.writeMarshallable(wire);
+            if (YamlLogging.showServerWrites()) {
+
+                long rp = bytes.readPosition();
+                long rl = bytes.readLimit();
+                long wl = bytes.writeLimit();
+                try {
+                    long len = bytes.writePosition() - start;
+                    bytes.readPositionRemaining(start, len);
+                    String message = Wires.fromSizePrefixedBlobs(wire);
+                    LOG.info("Server " + connectionDescription + " is about to send async event:" + message);
+                } finally {
+                    bytes.writeLimit(wl).readLimit(rl).readPosition(rp);
+                }
+            }
+        }
+    }
+
+    private boolean logIfClosed() {
         try {
             throwExceptionIfClosed();
 
         } catch (ClosedIllegalStateException ise) {
             Jvm.debug().on(getClass(), "Server " + connectionDescription + " message ignored as closed", ise);
-            return;
+            return true;
         }
-
-        // writes the data and its size
-        synchronized (lock()) {
-            final long start = wire.bytes().writePosition();
-            event.writeMarshallable(wire);
-            if (YamlLogging.showServerWrites()) {
-
-                long rp = wire.bytes().readPosition();
-                long rl = wire.bytes().readLimit();
-                long wl = wire.bytes().writeLimit();
-                try {
-                    long len = wire.bytes().writePosition() - start;
-                    wire.bytes().readPositionRemaining(start, len);
-                    String message = Wires.fromSizePrefixedBlobs(wire);
-                    LOG.info("Server " + connectionDescription + " is about to send async event:" + message);
-                } finally {
-                    wire.bytes().writeLimit(wl).readLimit(rl).readPosition(rp);
-                }
-            }
-        }
+        return false;
     }
 
     private Object lock() {
@@ -167,6 +178,8 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
             return;
 
         synchronized (lock()) {
+            throwExceptionIfClosed();
+
             wire = wireType0.apply(bytes);
             wire.usePadding(TCP_USE_PADDING);
         }
@@ -175,7 +188,8 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     @Override
     public void clear() {
         synchronized (lock()) {
-            wire.clear();
+            if (wire != null)
+                wire.clear();
         }
     }
 
