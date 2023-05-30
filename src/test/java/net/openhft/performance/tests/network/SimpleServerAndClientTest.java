@@ -35,7 +35,6 @@ import net.openhft.chronicle.wire.WireType;
 import net.openhft.chronicle.wire.YamlLogging;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -48,7 +47,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SimpleServerAndClientTest extends NetworkTestCommon {
 
-    @Disabled("https://github.com/OpenHFT/Chronicle-Core/issues/516")
     @Test
     void test() throws IOException {
         YamlLogging.setAll(true);

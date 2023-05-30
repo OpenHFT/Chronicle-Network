@@ -1595,7 +1595,7 @@ public final class TcpChannelHub extends AbstractCloseable {
             while (buffer.remaining() > 0) {
                 @Nullable final ChronicleSocketChannel clientChannel = TcpChannelHub.this.clientChannel;
                 if (clientChannel == null)
-                    throw new IOException("Disconnection to server=" + socketAddressSupplier +
+                    throw new ConnectionDroppedException("Disconnection to server=" + socketAddressSupplier +
                             " channel is closed, name=" + name);
                 int numberOfBytesRead = clientChannel.read(buffer);
 
