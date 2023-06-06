@@ -59,6 +59,11 @@ public class NetworkStats extends SelfDescribingMarshallable {
         return this;
     }
 
+    /**
+     * Bytes written per second
+     *
+     * @return write Bytes/sec
+     */
     public long writeBps() {
         return writeBps;
     }
@@ -68,6 +73,11 @@ public class NetworkStats extends SelfDescribingMarshallable {
         return this;
     }
 
+    /**
+     * Bytes read per second
+     *
+     * @return read Bytes/sec
+     */
     public long readBps() {
         return readBps;
     }
@@ -104,6 +114,11 @@ public class NetworkStats extends SelfDescribingMarshallable {
         return this;
     }
 
+    /**
+     * Timestamp of last update to this, from {@link System#currentTimeMillis()}
+     *
+     * @return timestamp in millis
+     */
     public long timestamp() {
         return timestamp;
     }
@@ -113,6 +128,11 @@ public class NetworkStats extends SelfDescribingMarshallable {
         return this;
     }
 
+    /**
+     * Socket polls per second
+     *
+     * @return socket polls/sec
+     */
     public long socketPollRate() {
         return socketPollRate;
     }
@@ -122,6 +142,11 @@ public class NetworkStats extends SelfDescribingMarshallable {
         return this;
     }
 
+    /**
+     * Local identifier (hostId)
+     *
+     * @return local hostId
+     */
     public int localIdentifier() {
         return localIdentifier;
     }
@@ -212,6 +237,11 @@ public class NetworkStats extends SelfDescribingMarshallable {
         return this;
     }
 
+    /**
+     * Remote host name as determined at connection time
+     *
+     * @return remote host name
+     */
     public String remoteHostName() {
         return remoteHostName;
     }
@@ -221,6 +251,11 @@ public class NetworkStats extends SelfDescribingMarshallable {
         return this;
     }
 
+    /**
+     * Remote port as determined at connection time
+     *
+     * @return remote port
+     */
     public int remotePort() {
         return remotePort;
     }
