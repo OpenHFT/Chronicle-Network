@@ -43,15 +43,32 @@ public interface NetworkStatsListener<N extends NetworkContext<N>> extends Close
 
     void networkContext(N networkContext);
 
+    /**
+     * Called periodically (see tcp.event.monitor.secs system property) with summary network stats
+     *
+     * @param writeBps write Bytes/sec
+     * @param readBps read Bytes/sec
+     * @param socketPollCountPerSecond socket poll count/sec
+     */
     void onNetworkStats(long writeBps, long readBps, long socketPollCountPerSecond);
 
     void onHostPort(String hostName, int port);
 
+    /**
+     * Notification of individual round trip latency, called only if acknowledge enabled
+     *
+     * @param nanosecondLatency latency
+     */
     void onRoundTripLatency(long nanosecondLatency);
 
     default void procPrefix(String procPrefix) {
     }
 
+    /**
+     * Notification of individual message one way trip latency (requires sender's clock to be synchronised with receiver's)
+     *
+     * @param nanosecondLatency latency
+     */
     default void onReceiveLatency(long nanosecondLatency) {
     }
 }
