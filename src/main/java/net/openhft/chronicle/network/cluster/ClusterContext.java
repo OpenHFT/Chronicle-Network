@@ -135,7 +135,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
 
         if (hd.connectUri() == null)
             return;
-        acceptorLoop = new BlockingEventLoop(eventLoop(), clusterNamePrefix() + "acceptor-" + localIdentifier, Pauser.balanced());
+        acceptorLoop = new BlockingEventLoop(eventLoop(), clusterNamePrefix() + "acceptor-" + localIdentifier, Pauser::balanced);
         try {
             acceptorEventHandler = new ClusterAcceptorEventHandler<>(hd.connectUri(), castThis());
 
