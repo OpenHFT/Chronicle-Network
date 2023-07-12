@@ -19,6 +19,11 @@ package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.wire.WireOut;
 import org.jetbrains.annotations.NotNull;
+
+/**
+ * @deprecated This has been moved to DataGrid without a replacement
+ */
+@Deprecated(/* For removal in x.25 */)
 public abstract class AbstractAsyncSubscription implements AsyncSubscription {
 
     private final long tid;

@@ -32,28 +32,25 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.ThreadDump;
-import net.openhft.chronicle.network.AcceptorEventHandler;
-import net.openhft.chronicle.network.TCPRegistry;
-import net.openhft.chronicle.network.TcpEventHandler;
-import net.openhft.chronicle.network.VanillaNetworkContext;
-import net.openhft.chronicle.network.connection.TcpChannelHub;
+import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.tcp.ChronicleSocket;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.threads.EventGroup;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class BufferSizeTest {
+class BufferSizeTest extends NetworkTestCommon {
     private static final @NotNull
     String desc = "host.port";
     private EventLoop eg;
@@ -79,12 +76,10 @@ class BufferSizeTest {
 
     @AfterEach
     public void tearDown() {
-        eg.stop();
-        TcpChannelHub.closeAllHubs();
+        closeQuietly(eg);
         TCPRegistry.reset();
     }
 
-    @Disabled("TODO FIX")
     @Test
     void test() throws IOException {
         sendAndReceive(64 << 10);
@@ -135,8 +130,9 @@ class BufferSizeTest {
                 totalRead += read;
                 ++count;
             }
-            if (count > 1)
-               // System.out.println("count=" + count);
+            if (count > 1) {
+                Jvm.startup().on(BufferSizeTest.class, "count=" + count);
+            }
 
             inBytes.readLimit(totalRead);
             assertEquals(expectedMessage, inBytes.readUtf8());
@@ -171,7 +167,5 @@ class BufferSizeTest {
                 () -> (T) new VanillaNetworkContext());
 
         eg.addHandler(eah);
-        ChronicleSocketChannel sc = TCPRegistry.createSocketChannel(desc);
-        sc.configureBlocking(false);
     }
 }

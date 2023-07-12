@@ -20,7 +20,6 @@ package net.openhft.performance.tests.network;
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.*;
-import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.threads.EventGroup;
 import net.openhft.chronicle.wire.*;
@@ -34,7 +33,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Function;
 
-import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PADDING;
+import static net.openhft.chronicle.network.NetworkUtil.TCP_USE_PADDING;
 import static net.openhft.performance.tests.network.LegacyHanderFactory.simpleTcpEventHandlerFactory;
 
 /*
@@ -144,7 +143,6 @@ class WireTcpHandlerTest extends NetworkTestCommon {
                 testLatency(desc, wireType, sc);
 
                 eg.stop();
-                TcpChannelHub.closeAllHubs();
             }
         }
         YamlLogging.setAll(logging);

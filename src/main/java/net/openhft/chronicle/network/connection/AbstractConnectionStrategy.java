@@ -15,10 +15,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
+import static net.openhft.chronicle.network.NetworkUtil.TCP_BUFFER_SIZE;
 
 public abstract class AbstractConnectionStrategy extends AbstractMarshallableCfg implements ConnectionStrategy {
-    protected int tcpBufferSize = Jvm.getInteger("tcp.client.buffer.size", TCP_BUFFER);
+    protected int tcpBufferSize = Jvm.getInteger("tcp.client.buffer.size", TCP_BUFFER_SIZE);
     private final transient AtomicBoolean isClosed = new AtomicBoolean(false);
     protected ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
     protected String localSocketBindingHost;

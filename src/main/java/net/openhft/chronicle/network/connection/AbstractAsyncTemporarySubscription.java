@@ -20,6 +20,10 @@ package net.openhft.chronicle.network.connection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * @deprecated This has been moved to DataGrid without a replacement
+ */
+@Deprecated(/* For removal in x.25 */)
 public abstract class AbstractAsyncTemporarySubscription extends AbstractAsyncSubscription
         implements AsyncTemporarySubscription {
 

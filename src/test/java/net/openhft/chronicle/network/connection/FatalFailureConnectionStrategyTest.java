@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Timeout;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
+import static net.openhft.chronicle.network.NetworkUtil.TCP_BUFFER_SIZE;
 import static net.openhft.chronicle.network.util.TestUtil.getAvailablePortNumber;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
@@ -58,8 +59,8 @@ class FatalFailureConnectionStrategyTest {
         assertEquals(expectedToString, strategy.toString());
         assertEquals(strategy.toString(), strategyFromYaml.toString());
 
-        assertEquals(TcpChannelHub.TCP_BUFFER, strategy.tcpBufferSize);
-        assertEquals(TcpChannelHub.TCP_BUFFER, strategyFromYaml.tcpBufferSize);
+        assertEquals(TCP_BUFFER_SIZE, strategy.tcpBufferSize);
+        assertEquals(TCP_BUFFER_SIZE, strategyFromYaml.tcpBufferSize);
         assertNotNull(strategy.clientConnectionMonitor);
         assertNotNull(strategyFromYaml.clientConnectionMonitor);
 

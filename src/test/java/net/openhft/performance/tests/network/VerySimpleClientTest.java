@@ -32,14 +32,12 @@
 package net.openhft.performance.tests.network;
 
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.core.io.AbstractReferenceCounted;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.network.AcceptorEventHandler;
 import net.openhft.chronicle.network.NetworkTestCommon;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.VanillaNetworkContext;
-import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.network.tcp.ChronicleSocket;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.threads.EventGroup;
@@ -55,7 +53,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PADDING;
+import static net.openhft.chronicle.network.NetworkUtil.TCP_USE_PADDING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class VerySimpleClientTest extends NetworkTestCommon {
@@ -89,7 +87,6 @@ class VerySimpleClientTest extends NetworkTestCommon {
     @AfterEach
     void tearDown() {
         Closeable.closeQuietly(sc, eg, client);
-        TcpChannelHub.closeAllHubs();
         inWire.bytes().releaseLast();
         outWire.bytes().releaseLast();
     }
