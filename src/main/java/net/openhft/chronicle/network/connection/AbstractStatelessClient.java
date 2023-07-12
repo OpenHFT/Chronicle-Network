@@ -40,6 +40,10 @@ import java.util.function.Function;
 import static java.lang.ThreadLocal.withInitial;
 import static net.openhft.chronicle.network.connection.CoreFields.reply;
 
+/**
+ * @deprecated This has been moved to DataGrid without a replacement
+ */
+@Deprecated(/* For removal in x.25 */)
 public abstract class AbstractStatelessClient<E extends ParameterizeWireKey>
         extends SimpleCloseable
         implements Closeable {

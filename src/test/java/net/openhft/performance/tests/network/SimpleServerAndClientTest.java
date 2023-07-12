@@ -42,8 +42,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 
+import static net.openhft.chronicle.network.NetworkUtil.TCP_USE_PADDING;
 import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri;
-import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PADDING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SimpleServerAndClientTest extends NetworkTestCommon {

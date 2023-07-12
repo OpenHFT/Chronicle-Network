@@ -28,7 +28,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;
 
-import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PADDING;
+import static net.openhft.chronicle.network.NetworkUtil.TCP_USE_PADDING;
 
 public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseable implements TcpHandler<T> {
 

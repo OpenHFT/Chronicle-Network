@@ -25,7 +25,6 @@ import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.core.util.ThrowingFunction;
-import net.openhft.chronicle.network.connection.TcpChannelHub;
 import net.openhft.chronicle.network.tcp.ChronicleSocket;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory;
@@ -45,6 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
+import static net.openhft.chronicle.network.NetworkUtil.TCP_BUFFER_SIZE;
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
 public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseable {
@@ -56,7 +56,7 @@ public class RemoteConnector<T extends NetworkContext<T>> extends SimpleCloseabl
     private final List<java.io.Closeable> closeables = Collections.synchronizedList(new ArrayList<>());
 
     public RemoteConnector(@NotNull final ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpEventHandlerFactory) {
-        this.tcpBufferSize = Jvm.getInteger("tcp.client.buffer.size", TcpChannelHub.TCP_BUFFER);
+        this.tcpBufferSize = Jvm.getInteger("tcp.client.buffer.size", TCP_BUFFER_SIZE);
         this.tcpHandlerSupplier = tcpEventHandlerFactory;
     }
 

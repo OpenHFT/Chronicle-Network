@@ -13,13 +13,13 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
-import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
+import static net.openhft.chronicle.network.NetworkUtil.TCP_BUFFER_SIZE;
 
 public class ChronicleSocketChannelBuilder {
 
     @NotNull
     private final InetSocketAddress socketAddress;
-    private int tcpBufferSize = Jvm.getInteger("tcp.client.buffer.size", TCP_BUFFER);
+    private int tcpBufferSize = Jvm.getInteger("tcp.client.buffer.size", TCP_BUFFER_SIZE);
     private int socketConnectionTimeoutMs = Jvm.getInteger("client.timeout", 500);
     @Nullable
     private InetSocketAddress localBinding;

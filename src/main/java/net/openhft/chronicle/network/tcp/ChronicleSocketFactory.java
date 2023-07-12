@@ -18,7 +18,7 @@
 
 package net.openhft.chronicle.network.tcp;
 
-import net.openhft.chronicle.network.connection.TcpChannelHub;
+import net.openhft.chronicle.network.NetworkUtil;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -32,7 +32,7 @@ public enum ChronicleSocketFactory {
 
             @Override
             public void setTcpNoDelay(final boolean tcpNoDelay) throws SocketException {
-                TcpChannelHub.setTcpNoDelay(socket, tcpNoDelay);
+                NetworkUtil.setTcpNoDelay(socket, tcpNoDelay);
             }
 
             @Override

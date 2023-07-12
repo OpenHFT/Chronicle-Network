@@ -26,8 +26,8 @@ import net.openhft.chronicle.wire.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static net.openhft.chronicle.network.NetworkUtil.TCP_USE_PADDING;
 import static net.openhft.chronicle.network.connection.CoreFields.reply;
-import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PADDING;
 import static net.openhft.chronicle.wire.WireType.BINARY;
 import static net.openhft.chronicle.wire.WireType.DELTA_BINARY;
 import static net.openhft.chronicle.wire.WriteMarshallable.EMPTY;

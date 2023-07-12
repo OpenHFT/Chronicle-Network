@@ -52,7 +52,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static java.lang.Math.max;
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.core.io.IOTools.isClosedException;
-import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_BUFFER;
+import static net.openhft.chronicle.network.NetworkUtil.TCP_BUFFER_SIZE;
 
 public class TcpEventHandler<T extends NetworkContext<T>>
         extends AbstractCloseable
@@ -128,9 +128,9 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             if (!DISABLE_TCP_NODELAY)
                 sock.setTcpNoDelay(true);
 
-            if (TCP_BUFFER >= 64 << 10) {
-                sock.setReceiveBufferSize(TCP_BUFFER);
-                sock.setSendBufferSize(TCP_BUFFER);
+            if (TCP_BUFFER_SIZE >= 64 << 10) {
+                sock.setReceiveBufferSize(TCP_BUFFER_SIZE);
+                sock.setSendBufferSize(TCP_BUFFER_SIZE);
 
                 checkBufSize(sock.getReceiveBufferSize(), "recv");
                 checkBufSize(sock.getSendBufferSize(), "send");
@@ -143,9 +143,9 @@ public class TcpEventHandler<T extends NetworkContext<T>>
 
         //We have to provide back pressure to restrict the buffer growing beyond,2GB because it reverts to
         // being Native bytes, we should also provide back pressure if we are not able to keep up
-        inBBB = Bytes.elasticByteBuffer(TCP_BUFFER + OS.pageSize(), max(TCP_BUFFER + OS.pageSize(), DEFAULT_MAX_MESSAGE_SIZE))
+        inBBB = Bytes.elasticByteBuffer(TCP_BUFFER_SIZE + OS.pageSize(), max(TCP_BUFFER_SIZE + OS.pageSize(), DEFAULT_MAX_MESSAGE_SIZE))
                 .unchecked(TCP_UNCHECKED_BUFFER);
-        outBBB = Bytes.elasticByteBuffer(TCP_BUFFER, max(TCP_BUFFER, DEFAULT_MAX_MESSAGE_SIZE))
+        outBBB = Bytes.elasticByteBuffer(TCP_BUFFER_SIZE, max(TCP_BUFFER_SIZE, DEFAULT_MAX_MESSAGE_SIZE))
                 .unchecked(TCP_UNCHECKED_BUFFER);
 
         // must be set after we take a slice();
@@ -362,8 +362,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     }
 
     private void checkBufSize(final int bufSize, final String name) {
-        if (bufSize < TCP_BUFFER) {
-            LOG.warn("Attempted to set " + name + " tcp buffer to " + TCP_BUFFER + " but kernel only allowed " + bufSize);
+        if (bufSize < TCP_BUFFER_SIZE) {
+            LOG.warn("Attempted to set " + name + " tcp buffer to " + TCP_BUFFER_SIZE + " but kernel only allowed " + bufSize);
         }
     }
 
@@ -456,7 +456,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         if (inBBB.readRemaining() == 0) {
             clearBuffer();
 
-        } else if (inBBB.readPosition() > TCP_BUFFER / 4) {
+        } else if (inBBB.readPosition() > TCP_BUFFER_SIZE / 4) {
             compactBuffer();
             busy = true;
         }

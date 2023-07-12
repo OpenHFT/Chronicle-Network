@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 
-import static net.openhft.chronicle.network.connection.TcpChannelHub.TCP_USE_PADDING;
+import static net.openhft.chronicle.network.NetworkUtil.*;
 
 public class VanillaWireOutPublisher extends AbstractCloseable implements WireOutPublisher {
 
@@ -39,7 +39,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
     private String connectionDescription = "?";
 
     public VanillaWireOutPublisher(@NotNull WireType wireType) {
-        bytes = Bytes.elasticByteBuffer(TcpChannelHub.TCP_BUFFER);
+        bytes = Bytes.elasticByteBuffer(TCP_BUFFER_SIZE);
         final WireType wireType0 = wireType == WireType.DELTA_BINARY ? WireType.BINARY : wireType;
         wire = wireType0.apply(bytes);
         wire.usePadding(TCP_USE_PADDING);
@@ -67,7 +67,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
                 if (YamlLogging.showServerWrites())
                     logBuffer();
 
-                if (bytes.writePosition() > TcpChannelHub.TCP_BUFFER)
+                if (bytes.writePosition() > TCP_BUFFER_SIZE)
                     return; // Write next time to prevent TCP buffer overflow.
 
                 bytes.write(this.bytes);
@@ -110,7 +110,7 @@ public class VanillaWireOutPublisher extends AbstractCloseable implements WireOu
         throwExceptionIfClosed();
 
         synchronized (lock()) {
-            return wire.bytes().writePosition() < TcpChannelHub.TCP_SAFE_SIZE; // don't attempt
+            return wire.bytes().writePosition() < TCP_SAFE_SIZE; // don't attempt
             // to fill the buffer completely.
         }
     }
