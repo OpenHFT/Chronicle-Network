@@ -19,16 +19,16 @@
 package net.openhft.chronicle.network;
 
 
-import net.openhft.chronicle.core.Jvm;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public abstract class TCPRegistryTest extends NetworkTestCommon {
+
+    public static final String SYSTEM_PROPERTY_LOOKUP = "systemPropertyLookup";
 
     @Test
     void testResetClearsRegistry() throws IOException {
@@ -67,45 +67,45 @@ public abstract class TCPRegistryTest extends NetworkTestCommon {
     @Test
     public void lookup_lookupViaSystemProperty_empty() {
         try {
-            System.setProperty("xyz", "");
-            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> TCPRegistry.lookup("xyz"));
-            assertEquals("Alias xyz as  malformed, expected hostname:port", exception.getMessage());
+            System.setProperty(SYSTEM_PROPERTY_LOOKUP, "");
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> TCPRegistry.lookup(SYSTEM_PROPERTY_LOOKUP));
+            assertEquals("Alias systemPropertyLookup as  malformed, expected hostname:port", exception.getMessage());
         } finally {
-            System.clearProperty("xyz");
+            System.clearProperty(SYSTEM_PROPERTY_LOOKUP);
         }
     }
 
     @Test
     public void lookup_lookupViaSystemProperty_nullHostname() {
         try {
-            System.setProperty("xyz", "null:");
-            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> TCPRegistry.lookup("xyz"));
+            System.setProperty(SYSTEM_PROPERTY_LOOKUP, "null:");
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> TCPRegistry.lookup(SYSTEM_PROPERTY_LOOKUP));
             assertEquals("Invalid hostname \"null\"", exception.getMessage());
         } finally {
-            System.clearProperty("xyz");
+            System.clearProperty(SYSTEM_PROPERTY_LOOKUP);
         }
     }
 
     @Test
     public void lookup_lookupViaSystemProperty_invalidPort() {
         try {
-            System.setProperty("xyz", "a:z");
-            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> TCPRegistry.lookup("xyz"));
-            assertEquals("Alias xyz as a:z malformed, expected hostname:port with port as a number", exception.getMessage());
+            System.setProperty(SYSTEM_PROPERTY_LOOKUP, "a:z");
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> TCPRegistry.lookup(SYSTEM_PROPERTY_LOOKUP));
+            assertEquals("Alias systemPropertyLookup as a:z malformed, expected hostname:port with port as a number", exception.getMessage());
         } finally {
-            System.clearProperty("xyz");
+            System.clearProperty(SYSTEM_PROPERTY_LOOKUP);
         }
     }
 
     @Test
     public void lookup_lookupViaSystemProperty_wellFormed() {
         try {
-            System.setProperty("xyz", "host:9999");
-            InetSocketAddress address = TCPRegistry.lookup("xyz");
+            System.setProperty(SYSTEM_PROPERTY_LOOKUP, "host:9999");
+            InetSocketAddress address = TCPRegistry.lookup(SYSTEM_PROPERTY_LOOKUP);
             assertEquals("host", address.getHostName());
             assertEquals(9999, address.getPort());
         } finally {
-            System.clearProperty("xyz");
+            System.clearProperty(SYSTEM_PROPERTY_LOOKUP);
         }
     }
 
