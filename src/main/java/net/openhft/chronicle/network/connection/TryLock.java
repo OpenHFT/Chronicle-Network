@@ -17,6 +17,11 @@
  */
 package net.openhft.chronicle.network.connection;
 
+
+/**
+ * @deprecated This has been moved to DataGrid without a replacement
+ */
+@Deprecated(/* For removal in x.25 */)
 public enum TryLock {
 
     LOCK, TRY_LOCK_IGNORE, TRY_LOCK_WARN
