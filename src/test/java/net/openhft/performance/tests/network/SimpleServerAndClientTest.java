@@ -46,6 +46,10 @@ import static net.openhft.chronicle.network.NetworkUtil.TCP_USE_PADDING;
 import static net.openhft.chronicle.network.connection.SocketAddressSupplier.uri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+/**
+ * @deprecated This has been moved to DataGrid without a replacement
+ */
+@Deprecated(/* For removal in x.25 */)
 class SimpleServerAndClientTest extends NetworkTestCommon {
 
     @Test

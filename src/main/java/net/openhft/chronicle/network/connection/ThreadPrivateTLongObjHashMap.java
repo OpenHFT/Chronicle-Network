@@ -34,11 +34,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Class to determine if several threads are using a TLongObjectMap.
- *
+ * <p>
  * This class should not be used in production code.
  *
  * @param <V> value type
+ * @deprecated To be removed in x.25 with no replacement
  */
+@Deprecated(/* For removal in x.25 */)
 public final class ThreadPrivateTLongObjHashMap<V> implements TLongObjectMap<V> {
 
     private final TLongObjectMap<V> delegate;
@@ -222,5 +224,5 @@ public final class ThreadPrivateTLongObjHashMap<V> implements TLongObjectMap<V> 
                         ));
             }
         }
- }
+    }
 }

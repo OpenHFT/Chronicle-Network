@@ -25,6 +25,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * @deprecated This has been moved to DataGrid without a replacement
+ */
+@Deprecated(/* For removal in x.25 */)
 class TraceLock extends ReentrantLock {
 
     private static final long serialVersionUID = 1997992705529515418L;
