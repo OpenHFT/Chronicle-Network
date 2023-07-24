@@ -26,10 +26,16 @@ import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.Closeable;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
 public class VanillaNetworkContext<T extends NetworkContext<T>> extends AbstractCloseable implements NetworkContext<T> {
 
+    private final Set<Closeable> closeListeners = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private ChronicleSocketChannel socketChannel;
     private boolean isAcceptor = true;
     private HeartbeatListener heartbeatListener;
@@ -58,9 +64,9 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
      * the background resource releaser would end up calling close on the
      * network stats listener. The FixNetworkContext also had some listeners
      * that were being called after the fact by background resource releaser.
-     *
+     * <p>
      * see https://github.com/ChronicleEnterprise/Chronicle-FIX/issues/716
-     *
+     * <p>
      * The {@link net.openhft.chronicle.network.tcp.VanillaSocketChannel}
      * is released in the background itself and the {@link WireOutPublisher}
      * could be made to do so if it's slow
@@ -175,7 +181,7 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
 
     @Override
     protected void performClose() {
-        closeQuietly(socketChannel, wireOutPublisher, networkStatsListener);
+        closeQuietly(socketChannel, wireOutPublisher, networkStatsListener, closeListeners);
     }
 
     @Override
@@ -225,5 +231,10 @@ public class VanillaNetworkContext<T extends NetworkContext<T>> extends Abstract
 
     private T self() {
         return (T) this;
+    }
+
+    @Override
+    public void addCloseListener(Closeable closeable) {
+        closeListeners.add(closeable);
     }
 }

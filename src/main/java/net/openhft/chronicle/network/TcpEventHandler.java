@@ -23,7 +23,10 @@ import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.Maths;
 import net.openhft.chronicle.core.OS;
 import net.openhft.chronicle.core.annotation.PackageLocal;
-import net.openhft.chronicle.core.io.*;
+import net.openhft.chronicle.core.io.AbstractCloseable;
+import net.openhft.chronicle.core.io.ClosedIllegalStateException;
+import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.core.io.QueryCloseable;
 import net.openhft.chronicle.core.threads.EventHandler;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.HandlerPriority;
@@ -198,7 +201,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             return false;
 
         if (tcpHandler.hasTimedOut()) {
-            closeAndStartReconnector();
+            close();
             return false;
         }
 
@@ -239,7 +242,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                 busy = readAction(busy);
 
             } catch (ClosedChannelException e) {
-                closeAndStartReconnector();
+                close();
                 throw new InvalidEventHandlerException(e);
             } catch (IOException e) {
                 handleIOE(e);
@@ -294,14 +297,14 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                         lastTickReadTime += heartbeatListener.lingerTimeBeforeDisconnect();
                     } else {
                         tcpHandler.onEndOfConnection(true);
-                        closeAndStartReconnector();
+                        close();
                         throw new InvalidEventHandlerException("heartbeat timeout");
                     }
                 }
             }
         } else {
             // read == -1, socketChannel has reached end-of-stream
-            closeAndStartReconnector();
+            close();
 
             throw new InvalidEventHandlerException("socket closed " + sc);
         }
@@ -319,21 +322,6 @@ public class TcpEventHandler<T extends NetworkContext<T>>
             iterationsSinceIdle = 0;
         } else {
             iterationsSinceIdle++;
-        }
-    }
-
-    /**
-     * Closes the channel and triggers asynchronous reconnecting if it's a connector.
-     */
-    private void closeAndStartReconnector() {
-        Jvm.debug().on(TcpEventHandler.class, "Closing and starting reconnector");
-        close();
-        if (!nc.isAcceptor()) {
-            final Runnable socketReconnector = nc.socketReconnector();
-            if (socketReconnector == null)
-                Jvm.warn().on(getClass(), "socketReconnector == null");
-            else
-                socketReconnector.run();
         }
     }
 
@@ -497,7 +485,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                 Jvm.warn().on(getClass(), "", e);
             }
         } finally {
-            closeAndStartReconnector();
+            close();
         }
     }
 
@@ -505,7 +493,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
     protected void performClose() {
         final T nc = this.nc;
         if (nc != null)
-            closeQuietly(nc, nc.socketReconnector(), nc.networkStatsListener());
+            closeQuietly(nc, nc.networkStatsListener());
         closeQuietly(tcpHandler, sc);
     }
 
@@ -538,7 +526,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         writeLog.log(outBB, start, outBB.position());
 
         if (wrote < 0) {
-            closeAndStartReconnector();
+            close();
         } else if (wrote > 0) {
             outBB.compact().flip();
             outBBB.writePosition(outBB.limit());
@@ -566,7 +554,7 @@ public class TcpEventHandler<T extends NetworkContext<T>>
                     busy = tryWrite(outBB);
             }
         } catch (ClosedChannelException cce) {
-            closeAndStartReconnector();
+            close();
         } catch (IOException e) {
             handleIOE(e);
         }

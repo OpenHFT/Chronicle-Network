@@ -18,6 +18,7 @@
 package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.core.threads.EventLoop;
+import net.openhft.chronicle.network.IHostConnector;
 import net.openhft.chronicle.network.NetworkStatsListener;
 import net.openhft.chronicle.network.RemoteConnector;
 import net.openhft.chronicle.network.api.session.SessionProvider;
@@ -36,7 +37,7 @@ import java.util.function.Function;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
-public class HostConnector<T extends ClusteredNetworkContext<T>, C extends ClusterContext<C, T>> implements Closeable {
+public class LegacyHostConnector<T extends ClusteredNetworkContext<T>, C extends ClusterContext<C, T>> implements Closeable, IHostConnector {
 
     private interface ClosableRunnable extends Runnable, Closeable {
     }
@@ -62,18 +63,18 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
     private final EventLoop eventLoop;
     private final SessionProvider sessionProvider;
 
-    HostConnector(@NotNull final C clusterContext,
-                  @NotNull final RemoteConnector<T> remoteConnector,
-                  final int remoteId,
-                  final String connectUri) {
+    LegacyHostConnector(@NotNull final C clusterContext,
+                        @NotNull final RemoteConnector<T> remoteConnector,
+                        final int remoteId,
+                        final String connectUri) {
         this(clusterContext, remoteConnector, remoteId, connectUri, null);
     }
 
-    HostConnector(@NotNull final C clusterContext,
-                  @NotNull final RemoteConnector<T> remoteConnector,
-                  final int remoteId,
-                  final String connectUri,
-                  @Nullable final SessionProvider sessionProvider) {
+    LegacyHostConnector(@NotNull final C clusterContext,
+                        @NotNull final RemoteConnector<T> remoteConnector,
+                        final int remoteId,
+                        final String connectUri,
+                        @Nullable final SessionProvider sessionProvider) {
         this.connectionManager = clusterContext.connectionManager(remoteId);
         this.clusterContext = clusterContext;
         this.remoteId = remoteId;
@@ -144,7 +145,7 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
 
                     @Override
                     public void close() {
-                        HostConnector.this.close();
+                        LegacyHostConnector.this.close();
                     }
                 })
                 .serverThreadingStrategy(clusterContext.serverThreadingStrategy())
@@ -158,11 +159,11 @@ public class HostConnector<T extends ClusteredNetworkContext<T>, C extends Clust
 
         if (sessionProvider != null) {
             wireOutPublisher.publish(
-                 wire -> {
-                    try (final DocumentContext ignored = wire.writingDocument(true)) {
-                        sessionProvider.get().writeMarshallable(wire);
-                    }
-                });
+                    wire -> {
+                        try (final DocumentContext ignored = wire.writingDocument(true)) {
+                            sessionProvider.get().writeMarshallable(wire);
+                        }
+                    });
         }
 
         wireOutPublisher.publish(UberHandler.uberHandler(

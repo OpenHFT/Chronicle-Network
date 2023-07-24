@@ -36,7 +36,7 @@
             <dependency>
                 <groupId>net.openhft</groupId>
                 <artifactId>third-party-bom</artifactId>
-                <version>3.22.3</version>
+                <version>3.23.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -192,7 +192,7 @@
                         <configuration>
                             <referenceVersion>2.24ea0</referenceVersion>
                             <artifactsURI>https://teamcity.chronicle.software/repository/download</artifactsURI>
-                            <binaryCompatibilityPercentageRequired>97.6</binaryCompatibilityPercentageRequired>
+                            <binaryCompatibilityPercentageRequired>97.1</binaryCompatibilityPercentageRequired>
                         </configuration>
                     </execution>
                 </executions>

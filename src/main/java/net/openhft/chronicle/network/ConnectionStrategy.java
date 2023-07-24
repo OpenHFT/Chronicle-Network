@@ -102,7 +102,7 @@ public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
                 throw new InterruptedException();
             long startMs = System.currentTimeMillis();
             if (start + timeoutMs < startMs) {
-                Jvm.warn().on(ConnectionStrategy.class, "Timed out attempting to connect to " + socketAddress);
+                Jvm.startup().on(ConnectionStrategy.class, "Timed out attempting to connect to " + socketAddress);
                 return null;
             }
             sc = ChronicleSocketChannel.builder(socketAddress)

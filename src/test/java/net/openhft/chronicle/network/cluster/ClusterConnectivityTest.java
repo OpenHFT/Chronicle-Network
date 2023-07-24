@@ -2,9 +2,7 @@ package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.util.ThrowingRunnable;
-import net.openhft.chronicle.network.ConnectionListener;
-import net.openhft.chronicle.network.NetworkTestCommon;
-import net.openhft.chronicle.network.TCPRegistry;
+import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.test.TestCluster;
 import net.openhft.chronicle.network.test.TestClusterContext;
 import net.openhft.chronicle.testframework.internal.network.proxy.TcpProxy;
@@ -128,9 +126,9 @@ class ClusterConnectivityTest extends NetworkTestCommon {
         final TestClusterContext clusterContext = new TestClusterContext();
         clusterContextConfigurer.accept(clusterContext);
         TestCluster cluster = new TestCluster(clusterContext);
-        cluster.hostDetails.put("host1", new HostDetails().hostId(1).connectUri("host.one"));
-        cluster.hostDetails.put("host2", new HostDetails().hostId(2).connectUri("host.two"));
-        cluster.hostDetails.put("host3", new HostDetails().hostId(3).connectUri("host.three"));
+        cluster.hostDetails.put("host1", new HostDetails().hostId(1).connectUri("host.one").connectionStrategy(createConnectionStrategy()));
+        cluster.hostDetails.put("host2", new HostDetails().hostId(2).connectUri("host.two").connectionStrategy(createConnectionStrategy()));
+        cluster.hostDetails.put("host3", new HostDetails().hostId(3).connectUri("host.three").connectionStrategy(createConnectionStrategy()));
         switch (forHost) {
             case 3:
                 cluster.hostDetails.get("host2").connectUri("localhost:" + hostTwoProxy.socketAddress().getPort());
@@ -140,6 +138,10 @@ class ClusterConnectivityTest extends NetworkTestCommon {
             default:
         }
         return cluster;
+    }
+
+    private ConnectionStrategy createConnectionStrategy() {
+        return new AlwaysStartOnPrimaryConnectionStrategy().minPauseSec(0).maxPauseSec(0);
     }
 
     private class MatrixUpdatingConnectionListener implements ConnectionListener {

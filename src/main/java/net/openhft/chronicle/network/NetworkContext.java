@@ -90,6 +90,7 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
      *
      * @return the runnable that orchestrates reconnection
      */
+    @Deprecated(/* This approach has been removed */)
     Runnable socketReconnector();
 
     @NotNull
@@ -132,6 +133,13 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
      * Called when the outbound buffer becomes empty (edge-triggered)
      */
     default void onFlushed() {
+    }
+
+    /**
+     * Add a listener that will be called back when this NetworkContext is closed
+     */
+    default void addCloseListener(java.io.Closeable closeable) {
+        throw new UnsupportedOperationException("Close listeners not supported by this NetworkContext implementation");
     }
 }
 

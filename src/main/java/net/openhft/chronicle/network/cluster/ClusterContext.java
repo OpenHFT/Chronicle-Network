@@ -26,10 +26,7 @@ import net.openhft.chronicle.core.io.InvalidMarshallableException;
 import net.openhft.chronicle.core.io.ManagedCloseable;
 import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.util.ThrowingFunction;
-import net.openhft.chronicle.network.NetworkStatsListener;
-import net.openhft.chronicle.network.RemoteConnector;
-import net.openhft.chronicle.network.ServerThreadingStrategy;
-import net.openhft.chronicle.network.TcpEventHandler;
+import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.api.session.SessionProvider;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.threads.*;
@@ -73,7 +70,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     private transient Cluster<T, C> cluster;
     private transient EventLoop acceptorLoop;
     private transient ClusterAcceptorEventHandler<C, T> acceptorEventHandler;
-    private final transient TIntObjectMap<HostConnector<T, C>> hostConnectors = new TIntObjectHashMap<>();
+    private final transient TIntObjectMap<IHostConnector<T, C>> hostConnectors = new TIntObjectHashMap<>();
     private final transient TIntObjectMap<ConnectionManager<T>> connManagers = new TIntObjectHashMap<>();
     private final transient AtomicReference<Status> status = new AtomicReference<>(Status.NOT_CLOSED);
     private final transient List<java.io.Closeable> closeables = new CopyOnWriteArrayList<>();
@@ -110,11 +107,18 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
         if (localIdentifier <= hd.hostId())
             return;
 
-        @NotNull final HostConnector<T, C> hostConnector = new HostConnector<>(castThis(),
-                new RemoteConnector<>(tcpEventHandlerFactory()),
+//        @NotNull final LegacyHostConnector<T, C> hostConnector = new LegacyHostConnector<>(castThis(),
+//                new RemoteConnector<>(tcpEventHandlerFactory()),
+//                hd.hostId(),
+//                hd.connectUri(),
+//                sessionProvider);
+        @NotNull final IHostConnector<T, C> hostConnector = new BetterHostConnector<>(
+                castThis(),
                 hd.hostId(),
-                hd.connectUri(),
-                sessionProvider);
+                hd.connectionStrategy(),
+                // not sure about this, do we define accept socket separately from connect sockets?
+                hd.remoteConnectUris() != null ? hd.remoteConnectUris() : new String[]{hd.connectUri()},
+                tcpEventHandlerFactory());
         closeables.add(hostConnector);
         if (isClosed()) {
             Closeable.closeQuietly(hostConnector);

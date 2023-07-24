@@ -51,8 +51,8 @@ class ClusterAcceptorEventHandlerTest extends NetworkTestCommon {
                 eventLoop.addHandler(acceptorEventHandler);
                 eventLoop.start();
                 try (final MyClusterContext initiatorContext = new MyClusterContext()) {
-                    HostConnector<MyClusteredNetworkContext, MyClusterContext> connector
-                            = new HostConnector<>(initiatorContext, new RemoteConnector<>(initiatorContext.tcpEventHandlerFactory()), 1, "testAcceptor");
+                    LegacyHostConnector<MyClusteredNetworkContext, MyClusterContext> connector
+                            = new LegacyHostConnector<>(initiatorContext, new RemoteConnector<>(initiatorContext.tcpEventHandlerFactory()), 1, "testAcceptor");
                     connector.connect();
                     initiatorContext.eventLoop().start();
                     while (acceptorContext.tcpEventHandlers.size() == 0) {

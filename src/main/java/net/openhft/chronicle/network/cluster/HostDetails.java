@@ -17,6 +17,7 @@
  */
 package net.openhft.chronicle.network.cluster;
 
+import net.openhft.chronicle.network.ConnectionStrategy;
 import net.openhft.chronicle.wire.SelfDescribingMarshallable;
 import org.jetbrains.annotations.NotNull;
 
@@ -25,6 +26,8 @@ public class HostDetails extends SelfDescribingMarshallable {
     private int hostId;
     private int tcpBufferSize;
     private String connectUri;
+    private ConnectionStrategy connectionStrategy;
+    private String[] remoteConnectUris;
 
     public int tcpBufferSize() {
         return tcpBufferSize;
@@ -36,6 +39,11 @@ public class HostDetails extends SelfDescribingMarshallable {
         return this;
     }
 
+    /**
+     * This is the URI of the socked we bind to, to accept connections
+     *
+     * @return The socket URI (e.g. "192.168.1.35:9876", or "0.0.0.0:2345" to bind to all addresses)
+     */
     public String connectUri() {
         return connectUri;
     }
@@ -53,6 +61,36 @@ public class HostDetails extends SelfDescribingMarshallable {
     @NotNull
     public HostDetails connectUri(@NotNull String connectUri) {
         this.connectUri = connectUri;
+        return this;
+    }
+
+    /**
+     * A list of URIs remote nodes should use to connect to this host
+     * <p>
+     * Leave as null if {@link #connectUri()} is the only address used to establish connections
+     *
+     * @return The list of URIs to round-robin over to connect to this host, or null to use {@link #connectUri()}
+     */
+    public String[] remoteConnectUris() {
+        return remoteConnectUris;
+    }
+
+    public HostDetails remoteConnectUris(String[] socketConnectHostPort) {
+        this.remoteConnectUris = socketConnectHostPort;
+        return this;
+    }
+
+    /**
+     * The connection strategy to use to connect to this host
+     *
+     * @return The connection strategy, or null to use the default
+     */
+    public ConnectionStrategy connectionStrategy() {
+        return connectionStrategy;
+    }
+
+    public HostDetails connectionStrategy(ConnectionStrategy connectionStrategy) {
+        this.connectionStrategy = connectionStrategy;
         return this;
     }
 }
