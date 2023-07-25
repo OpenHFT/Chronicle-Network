@@ -40,6 +40,10 @@ import java.nio.channels.ClosedChannelException;
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
+/**
+ * @deprecated Basically a duplicate of {@link net.openhft.chronicle.network.AcceptorEventHandler}, so being removed in x.25
+ */
+@Deprecated(/* For removal in x.25 */)
 public class ClusterAcceptorEventHandler<C extends ClusterContext<C, T>, T extends ClusteredNetworkContext<T>> extends AbstractCloseable implements EventHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClusterAcceptorEventHandler.class);
     @NotNull

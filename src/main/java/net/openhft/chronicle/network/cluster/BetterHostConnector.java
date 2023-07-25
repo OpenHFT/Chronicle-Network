@@ -1,11 +1,10 @@
-package net.openhft.chronicle.network;
+package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.util.ThrowingFunction;
+import net.openhft.chronicle.network.*;
 import net.openhft.chronicle.network.api.session.SessionProvider;
-import net.openhft.chronicle.network.cluster.ClusterContext;
-import net.openhft.chronicle.network.cluster.ClusteredNetworkContext;
 import net.openhft.chronicle.network.cluster.handlers.HeartbeatHandler;
 import net.openhft.chronicle.network.cluster.handlers.UberHandler;
 import net.openhft.chronicle.network.connection.ConnectorEventHandler;

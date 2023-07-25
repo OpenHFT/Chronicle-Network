@@ -561,6 +561,17 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         return busy;
     }
 
+    /**
+     * This is a horrible piece of API just present for use by the
+     * Queueless message writer in FIX. We should move Queuless to
+     * using a dedicated ring buffer and get rid of this monstrosity
+     * ASAP. Until then, please don't use it for anything else.
+     * Please?
+     */
+    public void exposeOutBufferToTcpHandler() {
+        tcpHandler.setOutBufferSupplier(() -> outBBB);
+    }
+
     private enum LogType {
         READ("read"), WRITE("write");
 

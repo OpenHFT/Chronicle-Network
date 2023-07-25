@@ -17,6 +17,7 @@
  */
 package net.openhft.chronicle.network;
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.Closeable;
 import net.openhft.chronicle.core.threads.EventHandler;
@@ -27,8 +28,6 @@ import net.openhft.chronicle.network.tcp.ChronicleServerSocket;
 import net.openhft.chronicle.network.tcp.ChronicleServerSocketChannel;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
@@ -36,14 +35,13 @@ import java.nio.channels.ClosedChannelException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 
 public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractCloseable implements EventHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AcceptorEventHandler.class);
     @NotNull
     private final Function<T, TcpEventHandler<T>> handlerFactory;
     @NotNull
-
     private final ChronicleServerSocketChannel ssc;
     @NotNull
     private final Supplier<T> ncFactory;
@@ -91,7 +89,7 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractC
             throw new InvalidEventHandlerException();
 
         try {
-            LOGGER.debug("accepting {}", ssc);
+            Jvm.debug().on(AcceptorEventHandler.class, "accepting " + ssc);
 
             final ChronicleSocketChannel sc = acceptStrategy.accept(ssc);
 
@@ -105,8 +103,13 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractC
                 nc.isAcceptor(true);
                 NetworkStatsListener<T> nl = nc.networkStatsListener();
                 notifyHostPort(sc, nl);
-                TcpEventHandler<T> apply = handlerFactory.apply(nc);
-                eventLoop.addHandler(apply);
+                TcpEventHandler<T> tcpEventHandler = handlerFactory.apply(nc);
+                tcpEventHandler.exposeOutBufferToTcpHandler();
+
+                if (isClosed())
+                    closeQuietly(tcpEventHandler);
+                else
+                    eventLoop.addHandler(tcpEventHandler);
             }
         } catch (AsynchronousCloseException e) {
             closeSocket();
@@ -117,12 +120,10 @@ public class AcceptorEventHandler<T extends NetworkContext<T>> extends AbstractC
                 throw new InvalidEventHandlerException();
             else
                 throw new InvalidEventHandlerException(e);
-        } catch (
-                Exception e) {
-
+        } catch (Exception e) {
             if (!isClosed() && !eventLoop.isClosing()) {
                 final ChronicleServerSocket socket = ssc.socket();
-                LOGGER.warn("{}, port={}", hostPort, socket == null ? "unknown" : socket.getLocalPort(), e);
+                Jvm.warn().on(AcceptorEventHandler.class, hostPort + ", port=" + (socket == null ? "unknown" : socket.getLocalPort()), e);
             }
             closeSocket();
             throw new InvalidEventHandlerException(e);

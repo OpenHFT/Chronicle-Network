@@ -21,9 +21,27 @@ package net.openhft.chronicle.network.ssl;
 import net.openhft.chronicle.network.NetworkContext;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
+import java.security.cert.Certificate;
 
-@Deprecated(/* To be removed in x.25 */)
-public interface SslNetworkContext<T extends NetworkContext<T>>
-        extends NetworkContext<T> {
+public interface SslNetworkContext<T extends NetworkContext<T>> extends NetworkContext<T> {
+    /**
+     * @return SSL/TLS context used by this session, or {@code null} if SSL/TLS is not used
+     */
     SSLContext sslContext();
+
+    /**
+     * @return SSL/TLS parameters used by this session, or {@code null} for JSSE defaults
+     */
+    SSLParameters sslParameters();
+
+    /**
+     * @param sslParameters SSL/TLS parameters used by this session, or {@code null} for JSSE defaults
+     */
+    T sslParameters(SSLParameters sslParameters);
+
+    /**
+     * Sets certificate chain presented by peer.
+     */
+    void peerCertificates(Certificate[] certificates);
 }

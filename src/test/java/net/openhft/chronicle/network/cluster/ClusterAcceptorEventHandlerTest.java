@@ -39,6 +39,7 @@ import static org.mockito.Mockito.verify;
 
 class ClusterAcceptorEventHandlerTest extends NetworkTestCommon {
 
+    // TODO: Move this test in to ClusterContextTest (or wherever that code ends up)
     @Test
     void willPopulateNetworkStatsListenerWhenNetworkStatsListenerFactorySpecified() throws IOException {
         TCPRegistry.createServerSocketChannelFor("testAcceptor");

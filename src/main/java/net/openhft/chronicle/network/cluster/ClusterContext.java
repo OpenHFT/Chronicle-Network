@@ -69,7 +69,7 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
     protected transient EventLoop eventLoop;
     private transient Cluster<T, C> cluster;
     private transient EventLoop acceptorLoop;
-    private transient ClusterAcceptorEventHandler<C, T> acceptorEventHandler;
+    private transient AcceptorEventHandler<T> acceptorEventHandler;
     private final transient TIntObjectMap<IHostConnector<T, C>> hostConnectors = new TIntObjectHashMap<>();
     private final transient TIntObjectMap<ConnectionManager<T>> connManagers = new TIntObjectHashMap<>();
     private final transient AtomicReference<Status> status = new AtomicReference<>(Status.NOT_CLOSED);
@@ -141,13 +141,36 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
             return;
         acceptorLoop = new BlockingEventLoop(eventLoop(), clusterNamePrefix() + "acceptor-" + localIdentifier, Pauser::balanced);
         try {
-            acceptorEventHandler = new ClusterAcceptorEventHandler<>(hd.connectUri(), castThis());
+            acceptorEventHandler = new AcceptorEventHandler<>(hd.connectUri(), this::createTcpEventHandler, this::createAcceptorNetworkContext);
 
             acceptorLoop.addHandler(acceptorEventHandler);
         } catch (IOException ex) {
             throw new IORuntimeException("Couldn't start replication", ex);
         }
         acceptorLoop.start();
+    }
+
+    /**
+     * Need to suppress the IOException, what to do?
+     */
+    private TcpEventHandler<T> createTcpEventHandler(T nc) {
+        try {
+            return tcpEventHandlerFactory().apply(nc);
+        } catch (IOException e) {
+            throw new IllegalStateException("Exception creating the TCP event handler", e);
+        }
+    }
+
+    private T createAcceptorNetworkContext() {
+        final C clusterContext = castThis();
+        final T nc = networkContextFactory().apply(clusterContext);
+        nc.isAcceptor(true);
+        if (networkStatsListenerFactory() != null) {
+            final NetworkStatsListener<T> nsl = networkStatsListenerFactory().apply(clusterContext);
+            nc.networkStatsListener(nsl);
+            nsl.networkContext(nc);
+        }
+        return nc;
     }
 
     public ConnectionManager<T> connectionManager(int hostId) {

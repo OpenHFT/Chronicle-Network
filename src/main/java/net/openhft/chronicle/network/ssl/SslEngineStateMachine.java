@@ -1,56 +1,36 @@
-/*
- * Copyright 2016-2022 chronicle.software
- *
- *       https://chronicle.software
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package net.openhft.chronicle.network.ssl;
 
+import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.IORuntimeException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.openhft.chronicle.core.threads.EventHandler;
+import net.openhft.chronicle.core.threads.HandlerPriority;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.*;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.security.cert.Certificate;
 import java.time.Instant;
-import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * This class is responsible for the following:
  * <p>
- * 1. Pass decrypted input data to an underlying TcpHandler, accepting decrypted output data
+ * 1. Pass decrypted input data to an underlying {@link net.openhft.chronicle.network.api.TcpHandler}, accepting decrypted output data
  * 2. Read encrypted input data from the input buffer and decrypt it for the underlying TcpHandler
  * 3. Encrypt output data from the underlying TcpHandler, and write it to the output buffer
  * <p>
- * <code>initialise</code> is a blocking operation that will only return when a successful
- * SSL handshake has occurred, or if an exception occurred.
- *
- * @deprecated To be removed in x.25
+ * Blocking tasks presented by {@link SSLEngine} will be run on blocking event thread, thus avoiding potential delays on
+ * core event loop.
  */
-@Deprecated(/* To be removed in x.25 */)
-final class SslEngineStateMachine {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SslEngineStateMachine.class);
-
+final class SslEngineStateMachine implements EventHandler {
     private static final int HANDSHAKE_BUFFER_CAPACITY = 32768;
 
-    private final BufferHandler bufferHandler;
+    private final SslDelegatingTcpHandler<?> handler;
     private final boolean isAcceptor;
+    private final AtomicReference<FutureTask<SSLEngineResult.HandshakeStatus>> handshakeTaskFuture = new AtomicReference<>();
 
     private SSLEngine engine;
     private ByteBuffer outboundApplicationData;
@@ -61,17 +41,21 @@ final class SslEngineStateMachine {
     private ByteBuffer[] precomputedUnwrapArray;
 
     private boolean inHandshake = true;
+    private boolean socketClosed = false;
 
-    SslEngineStateMachine(final BufferHandler bufferHandler, final boolean isAcceptor) {
-        this.bufferHandler = bufferHandler;
+    SslEngineStateMachine(final SslDelegatingTcpHandler<?> handler, final boolean isAcceptor) {
+        this.handler = handler;
         this.isAcceptor = isAcceptor;
     }
 
-    void initialise(SSLContext ctx) {
+    void initialise(SSLContext ctx, SSLParameters sslParameters) {
         try {
             engine = ctx.createSSLEngine();
             engine.setUseClientMode(!isAcceptor);
-            if (isAcceptor) {
+            if (sslParameters != null) {
+                engine.setSSLParameters(sslParameters);
+            } else if (isAcceptor) {
+                engine.setWantClientAuth(true);
                 engine.setNeedClientAuth(true);
             }
             engine.beginHandshake();
@@ -89,7 +73,31 @@ final class SslEngineStateMachine {
     }
 
     boolean performHandshake() throws IOException {
-        SSLEngineResult.HandshakeStatus status = engine.getHandshakeStatus();
+        SSLEngineResult.HandshakeStatus status;
+
+        FutureTask<SSLEngineResult.HandshakeStatus> handshakeTask = handshakeTaskFuture.get();
+        if (handshakeTask != null) {
+            if (handshakeTask.isDone()) {
+                try {
+                    status = handshakeTask.get();
+                    Jvm.debug().on(SslEngineStateMachine.class, "Task finished");
+                } catch (ExecutionException ex) {
+                    Jvm.error().on(SslEngineStateMachine.class, "Delegated task threw exception", ex);
+                    throw new RuntimeException(ex);
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    Jvm.error().on(SslEngineStateMachine.class, "Delegated task threw exception", ex);
+                    throw new RuntimeException(ex);
+                } finally {
+                    handshakeTaskFuture.set(null);
+                }
+            } else {
+                return false;
+            }
+        } else {
+            status = engine.getHandshakeStatus();
+        }
+
         SSLEngineResult result;
 
         boolean reportedInitialStatus = false;
@@ -100,16 +108,16 @@ final class SslEngineStateMachine {
         while (status != SSLEngineResult.HandshakeStatus.FINISHED &&
                 status != SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) {
             if (!reportedInitialStatus) {
-                LOGGER.debug("initial status {}", status);
+                Jvm.debug().on(SslEngineStateMachine.class, String.format("initial status %s", status));
                 reportedInitialStatus = true;
             }
             if (status != lastStatus) {
-                LOGGER.debug("status change to {}", status);
+                Jvm.debug().on(SslEngineStateMachine.class, String.format("status change to %s", status));
                 lastStatus = status;
             }
             switch (status) {
                 case NEED_UNWRAP:
-                    final int read = bufferHandler.readData(inboundEncodedData);
+                    final int read = handler.readData(inboundEncodedData);
                     if (read > 0) {
                         didSomething = true;
                     }
@@ -117,20 +125,20 @@ final class SslEngineStateMachine {
                     inboundEncodedData.flip();
                     final int dataReceived = inboundEncodedData.remaining();
                     result = engine.unwrap(inboundEncodedData, outboundApplicationData);
-                    if (dataReceived > 0) {
-                        LOGGER.debug("Received {} from handshake peer", dataReceived);
-                    }
+                    if (dataReceived > 0)
+                        Jvm.debug().on(SslEngineStateMachine.class, String.format("Received %s from handshake peer", dataReceived));
+
                     inboundEncodedData.compact();
 
                     switch (result.getStatus()) {
                         case OK:
                             break;
                         case BUFFER_UNDERFLOW:
-                            LOGGER.debug("Not enough data read from remote end ({})", dataReceived);
+                            Jvm.debug().on(SslEngineStateMachine.class, String.format("Not enough data read from remote end (%s)", dataReceived));
                             break;
                         default:
-                            LOGGER.error("Bad handshake status: {}/{}",
-                                    result.getStatus(), result.getHandshakeStatus());
+                            Jvm.error().on(SslEngineStateMachine.class, String.format("Bad handshake status: %s/%s",
+                                    result.getStatus(), result.getHandshakeStatus()));
                             break;
                     }
                     break;
@@ -142,29 +150,28 @@ final class SslEngineStateMachine {
                         case OK:
                             outboundEncodedData.flip();
                             int remaining = outboundEncodedData.remaining();
-                            int wrote = bufferHandler.writeData(outboundEncodedData);
+                            int wrote = handler.writeData(outboundEncodedData);
                             if (wrote < remaining) {
                                 throw new IOException("Handshake message did not fit in buffer");
                             }
 
-                            LOGGER.debug("Wrote {} to handshake peer", wrote);
+                            Jvm.debug().on(SslEngineStateMachine.class, String.format("Wrote %s to handshake peer", wrote));
 
                             didSomething = true;
                             break;
+                        case CLOSED:
+                            socketClosed = true;
+                            return false;
                         default:
                             throw new UnsupportedOperationException(result.getStatus().toString());
                     }
                     break;
                 case NEED_TASK:
-                    Runnable delegatedTask;
-                    while ((delegatedTask = engine.getDelegatedTask()) != null) {
-                        try {
-                            delegatedTask.run();
-                            LOGGER.debug("Ran task {}", delegatedTask);
-                            didSomething = true;
-                        } catch (RuntimeException e) {
-                            LOGGER.error("Delegated task threw exception", e);
-                        }
+                    Runnable delegatedTask = engine.getDelegatedTask();
+                    if (delegatedTask != null) {
+                        handshakeTaskFuture.set(new FutureTask<>(delegatedTask, SSLEngineResult.HandshakeStatus.NEED_TASK));
+                        Jvm.debug().on(SslEngineStateMachine.class, String.format("Scheduled task %s", delegatedTask));
+                        didSomething = true;
                     }
                     break;
             }
@@ -185,58 +192,101 @@ final class SslEngineStateMachine {
         return true;
     }
 
-    public boolean action() {
-        final int read;
+    public Certificate[] peerCertificates() {
+        try {
+            return engine.getSession().getPeerCertificates();
+        } catch (SSLPeerUnverifiedException ex) {
+            return new Certificate[0];
+        }
+    }
+
+    private enum Op {
+        WRITE, HANDLE, READ_THEN_HANDLE;
+        public static final Op[] OPS = new Op[] {WRITE, HANDLE, WRITE, READ_THEN_HANDLE, WRITE};
+    }
+
+    public boolean advance() {
+        int read;
         boolean busy = false;
         try {
+            if (socketClosed)
+                return false;
+
             if (inHandshake)
                 return performHandshake();
 
-            bufferHandler.handleDecryptedData(inboundApplicationData, outboundApplicationData);
+            for (Op op : Op.OPS) {
+                switch (op) {
+                    case WRITE:
+                        if (outboundApplicationData.position() > 0 && outboundApplicationData.position() != outboundApplicationData.capacity())
+                            outboundApplicationData.flip();
 
-            if (outboundApplicationData.position() != 0) {
+                        if (outboundApplicationData.limit() != 0 && outboundApplicationData.limit() != outboundApplicationData.capacity()) {
+                            if (engine.wrap(precomputedWrapArray, outboundEncodedData).getStatus() == SSLEngineResult.Status.CLOSED) {
+                                Jvm.warn().on(SslEngineStateMachine.class, "Socket closed");
+                                socketClosed = true;
+                                return false;
+                            }
 
-                outboundApplicationData.flip();
+                            outboundApplicationData.compact();
+                        }
 
-                if (engine.wrap(precomputedWrapArray, outboundEncodedData).
-                        getStatus() == SSLEngineResult.Status.CLOSED) {
-                    LOGGER.warn("Socket closed");
-                    return false;
+                        if (outboundEncodedData.position() != 0) {
+                            outboundEncodedData.flip();
+                            handler.writeData(outboundEncodedData);
+                            busy |= outboundEncodedData.hasRemaining();
+                            outboundEncodedData.compact();
+                        }
+                        break;
+
+                    case HANDLE:
+                        boolean needCompact = inboundApplicationData.position() != 0;
+                        busy |= handler.handleDecryptedData(inboundApplicationData, outboundApplicationData);
+                        if (needCompact)
+                            inboundApplicationData.compact();
+                        break;
+
+                    case READ_THEN_HANDLE:
+                        read = handler.readData(inboundEncodedData);
+                        // Why different handling?
+                        if (read == -1)
+                            throw new IORuntimeException("Socket closed");
+
+                        busy |= read != 0;
+
+                        if (inboundEncodedData.position() != 0) {
+                            inboundEncodedData.flip();
+                            engine.unwrap(inboundEncodedData, precomputedUnwrapArray);
+                            busy |= inboundEncodedData.hasRemaining();
+                            inboundEncodedData.compact();
+                        }
+
+                        if (inboundApplicationData.position() != 0) {
+                            busy |= handler.handleDecryptedData(inboundApplicationData, outboundApplicationData);
+                            inboundApplicationData.compact();
+                        }
+                        break;
                 }
-                busy = outboundApplicationData.hasRemaining();
-                outboundApplicationData.compact();
-            }
-            if (outboundEncodedData.position() != 0) {
-                outboundEncodedData.flip();
-                bufferHandler.writeData(outboundEncodedData);
-                busy |= outboundEncodedData.hasRemaining();
-                outboundEncodedData.compact();
-            }
-
-            read = bufferHandler.readData(inboundEncodedData);
-            if (read == -1) {
-                throw new IORuntimeException("Socket closed");
-            }
-            busy |= read != 0;
-
-            if (inboundEncodedData.position() != 0) {
-                inboundEncodedData.flip();
-                engine.unwrap(inboundEncodedData, precomputedUnwrapArray);
-                busy |= inboundEncodedData.hasRemaining();
-                inboundEncodedData.compact();
-            }
-
-            if (inboundApplicationData.position() != 0) {
-                inboundApplicationData.flip();
-                bufferHandler.handleDecryptedData(inboundApplicationData, outboundApplicationData);
-                busy |= inboundApplicationData.hasRemaining();
-                inboundApplicationData.compact();
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
 
         return busy;
+    }
+
+    @Override
+    public HandlerPriority priority() {
+        return HandlerPriority.BLOCKING;
+    }
+
+    @Override
+    public boolean action() {
+        FutureTask<SSLEngineResult.HandshakeStatus> handshakeTask = handshakeTaskFuture.get();
+        if (handshakeTask != null && !handshakeTask.isDone())
+            handshakeTask.run();
+
+        return false;
     }
 
     void close() {

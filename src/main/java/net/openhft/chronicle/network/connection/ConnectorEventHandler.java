@@ -11,13 +11,19 @@ import net.openhft.chronicle.network.ConnectionStrategy;
 import net.openhft.chronicle.network.NetworkContext;
 import net.openhft.chronicle.network.NetworkStatsListener;
 import net.openhft.chronicle.network.TcpEventHandler;
+import net.openhft.chronicle.network.api.TcpHandler;
+import net.openhft.chronicle.network.ssl.SslDelegatingTcpHandler;
+import net.openhft.chronicle.network.ssl.SslNetworkContext;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.threads.LongPauser;
 import net.openhft.chronicle.threads.Pauser;
 import org.jetbrains.annotations.NotNull;
 
+import javax.net.ssl.SNIHostName;
+import javax.net.ssl.SSLParameters;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -120,40 +126,38 @@ public class ConnectorEventHandler<T extends NetworkContext<T>> extends Abstract
             }
 
             // if a connection failure to the primary had not logged in, it is not retried on fail-over
-//                nc.addCloseListener(() -> {
-//
-//                    if (loggingClientConnectionMonitor != null)
-//                        loggingClientConnectionMonitor.onDisconnected(connectionName, address);
-//                    hasLoggedInPreviously = nc.hasReceivedLoginResponse();
-//                    tcpHandler.updateBytesOutSupplier(() -> null);
-//                });
+            nc.addCloseListener(() -> {
+
+                if (clientConnectionMonitor != null)
+                    clientConnectionMonitor.onDisconnected(connectionName, address);
+//                hasLoggedInPreviously = nc.hasReceivedLoginResponse(); // TODO what to do about this
+            });
 
             try {
-                @NotNull final TcpEventHandler<T> eventHandler = tcpEventHandlerFactory.apply(nc);
-                socketChannel = newChannel;
-                eventHandlerAdder.accept(eventHandler);
-//                    tcpHandler.onConnected();
+                @NotNull final TcpEventHandler<T> tcpEventHandler = tcpEventHandlerFactory.apply(nc);
+                socketChannel = tcpEventHandler.socketChannel();
+                TcpHandler<T> tcpHandler = tcpEventHandler.tcpHandler();
+
+                if (nc instanceof SslNetworkContext) {
+                    SslNetworkContext<T> sslNc = (SslNetworkContext<T>) nc;
+                    if (sslNc.sslContext() != null) {
+                        sslNc.sslParameters(withSniHostName(sslNc.sslParameters(), socketAddress));
+
+                        SslDelegatingTcpHandler frontHandler =
+                                new SslDelegatingTcpHandler(eventHandlerAdder).delegate(tcpHandler);
+                        tcpEventHandler.tcpHandler(frontHandler);
+                    }
+                }
+                tcpEventHandler.exposeOutBufferToTcpHandler();
+
+                eventHandlerAdder.accept(tcpEventHandler);
+                tcpHandler.onConnected(nc);
 
             } catch (IOException e) {
                 // Should be a warning, but use INFO for now to allow running build-all
                 Jvm.startup().on(ConnectorEventHandler.class, "Error creating TCP event handler", e);
                 socketChannel = null;
             }
-
-//                tcpHandler.networkContext(nc);
-//                if (nc.sslContext() != null) {
-//                    nc.sslParameters(withSniHostName(nc.sslParameters(), socketAddress));
-//
-//                    SslDelegatingTcpHandler<FixNetworkContext> frontHandler =
-//                            new SslDelegatingTcpHandler<FixNetworkContext>(eventLoopAdder).delegate(tcpHandler);
-//                    tcpHandler.updateBytesOutSupplier(frontHandler::decryptedOutput);
-//                    eventHandler.tcpHandler(frontHandler);
-//                } else {
-//                    Bytes<ByteBuffer> outBytes = ConnectorEventHandler.getOutBytes(eventHandler);
-//                    tcpHandler.updateBytesOutSupplier(() -> outBytes);
-//                    eventHandler.tcpHandler(tcpHandler);
-//                }
-
         } else if (socketChannel != null && socketChannel.isClosed()) {
             closeQuietly(nc);
             nc = null;
@@ -180,5 +184,27 @@ public class ConnectorEventHandler<T extends NetworkContext<T>> extends Abstract
     @Override
     protected void performClose() throws IllegalStateException {
 
+    }
+
+    private SSLParameters withSniHostName(SSLParameters sslParameters, InetSocketAddress hostName) {
+        if (hostName == null)
+            return sslParameters;
+
+        String hostString = hostName.getHostString();
+        if (hostString.equals(hostName.getAddress().getHostAddress()) ||
+                hostString.equalsIgnoreCase("localhost"))
+            return sslParameters;
+
+        if (sslParameters == null) {
+            sslParameters = new SSLParameters();
+        } else {
+            if ((sslParameters.getSNIMatchers() != null && !sslParameters.getSNIMatchers().isEmpty()) ||
+                    (sslParameters.getServerNames() != null && !sslParameters.getServerNames().isEmpty()))
+                return sslParameters;
+        }
+
+        sslParameters.setServerNames(Collections.singletonList(new SNIHostName(hostString)));
+
+        return sslParameters;
     }
 }

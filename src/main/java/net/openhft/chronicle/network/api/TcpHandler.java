@@ -25,6 +25,7 @@ import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
+import java.util.function.Supplier;
 
 public interface TcpHandler<N extends NetworkContext<N>> extends ClientClosedProvider, Closeable {
 
@@ -50,6 +51,24 @@ public interface TcpHandler<N extends NetworkContext<N>> extends ClientClosedPro
                              final ByteBuffer byteBuffer,
                              final int start,
                              final int position) {
+    }
+
+    /**
+     * Called when a connection is established
+     *
+     * @param networkContext
+     */
+    default void onConnected(N networkContext) {
+    }
+
+    /**
+     * Provide a function that can be called to access the TCP handler's out buffer
+     * <p>
+     * Please don't ever use this for anything. Deprecated soon I hope.
+     *
+     * @param outBuffer The out buffer of the TCP handler, or some proxy for it
+     */
+    default void setOutBufferSupplier(Supplier<Bytes<ByteBuffer>> outBuffer) {
     }
 
     /**
