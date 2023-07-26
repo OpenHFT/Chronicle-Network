@@ -26,11 +26,14 @@ import net.openhft.chronicle.core.time.TimeProvider;
 import net.openhft.chronicle.network.api.TcpHandler;
 import net.openhft.chronicle.network.api.session.SessionDetailsProvider;
 import net.openhft.chronicle.network.connection.ConnectionListeners;
+import net.openhft.chronicle.network.connection.ConnectionState;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static net.openhft.chronicle.network.connection.ConnectionState.UNKNOWN;
 
 public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
 
@@ -141,5 +144,13 @@ public interface NetworkContext<T extends NetworkContext<T>> extends Closeable {
     default void addCloseListener(java.io.Closeable closeable) {
         throw new UnsupportedOperationException("Close listeners not supported by this NetworkContext implementation");
     }
-}
 
+    /**
+     * What state did the connection reach
+     *
+     * @return The {@link ConnectionState} the connection reached
+     */
+    default ConnectionState connectionStateReached() {
+        return UNKNOWN;
+    }
+}

@@ -56,6 +56,7 @@ import static java.util.concurrent.TimeUnit.*;
 import static net.openhft.chronicle.bytes.Bytes.elasticByteBuffer;
 import static net.openhft.chronicle.core.Jvm.getInteger;
 import static net.openhft.chronicle.core.io.IOTools.isClosedException;
+import static net.openhft.chronicle.network.connection.ConnectionState.FAILED;
 
 /**
  * The TcpChannelHub is used to send your messages to the server and then read the servers response. The TcpChannelHub ensures that each response is
@@ -1761,7 +1762,7 @@ public final class TcpChannelHub extends AbstractCloseable {
                     if (isShuttingdown())
                         break;
 
-                    socketChannel = connectionStrategy.connect(name, socketAddressSupplier, false, clientConnectionMonitor);
+                    socketChannel = connectionStrategy.connect(name, socketAddressSupplier, FAILED, clientConnectionMonitor);
 
                     if (socketChannel == null) {
                         continue;

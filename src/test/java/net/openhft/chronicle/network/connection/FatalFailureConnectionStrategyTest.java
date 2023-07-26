@@ -87,7 +87,7 @@ class FatalFailureConnectionStrategyTest extends NetworkTestCommon {
         try (TestServer testServer = new TestServer("localBindingTestServer")) {
             testServer.prepareToAcceptAConnection();
             Jvm.pause(100);
-            try (final ChronicleSocketChannel channel = strategy.connect("local_server", SocketAddressSupplier.uri(testServer.uri()), false, null)) {
+            try (final ChronicleSocketChannel channel = strategy.connect("local_server", SocketAddressSupplier.uri(testServer.uri()), ConnectionState.FAILED, null)) {
                 assertNotNull(channel);
                 final InetSocketAddress localSocketAddress = (InetSocketAddress) channel.socket().getLocalSocketAddress();
                 assertEquals(localPort, localSocketAddress.getPort());

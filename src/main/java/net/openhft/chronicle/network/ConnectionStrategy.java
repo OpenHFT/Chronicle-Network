@@ -20,6 +20,7 @@ package net.openhft.chronicle.network;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.ClosedIllegalStateException;
 import net.openhft.chronicle.network.connection.ClientConnectionMonitor;
+import net.openhft.chronicle.network.connection.ConnectionState;
 import net.openhft.chronicle.network.connection.FatalFailureMonitor;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
@@ -33,6 +34,9 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
+
+import static net.openhft.chronicle.network.connection.ConnectionState.ESTABLISHED;
+import static net.openhft.chronicle.network.connection.ConnectionState.FAILED;
 
 public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
 
@@ -61,11 +65,32 @@ public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
      * @param fatalFailureMonitor   this is invoked on failures
      * @return the SocketChannel
      * @throws InterruptedException if the channel is interrupted.
+     * @deprecated Use {@link #connect(String, SocketAddressSupplier, ConnectionState, FatalFailureMonitor)} instead
      */
-    ChronicleSocketChannel connect(@NotNull String name,
-                                   @NotNull SocketAddressSupplier socketAddressSupplier,
-                                   boolean didLogIn,
-                                   @NotNull FatalFailureMonitor fatalFailureMonitor) throws InterruptedException;
+    @Deprecated(/* For removal in x.25 */)
+    default ChronicleSocketChannel connect(@NotNull String name,
+                                           @NotNull SocketAddressSupplier socketAddressSupplier,
+                                           boolean didLogIn,
+                                           @NotNull FatalFailureMonitor fatalFailureMonitor) throws InterruptedException {
+        return connect(name, socketAddressSupplier, didLogIn ? ESTABLISHED : FAILED, fatalFailureMonitor);
+    }
+
+    /**
+     * Connects and returns a new SocketChannel.
+     *
+     * @param name                    the name of the connection, only used for logging
+     * @param socketAddressSupplier   to use for address
+     * @param previousConnectionState the state the previous connection reached
+     * @param fatalFailureMonitor     this is invoked on failures
+     * @return the SocketChannel
+     * @throws InterruptedException if the channel is interrupted.
+     */
+    default ChronicleSocketChannel connect(@NotNull String name,
+                                           @NotNull SocketAddressSupplier socketAddressSupplier,
+                                           @NotNull ConnectionState previousConnectionState,
+                                           @NotNull FatalFailureMonitor fatalFailureMonitor) throws InterruptedException {
+        return connect(name, socketAddressSupplier, previousConnectionState == ESTABLISHED, fatalFailureMonitor);
+    }
 
     @Nullable
     default ChronicleSocketChannel openSocketChannel(@NotNull InetSocketAddress socketAddress,
@@ -164,8 +189,8 @@ public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
      * Get the local socket to bind the connection to
      *
      * @return the local socket to bind to or null to not bind to any local socket
-     * @throws SocketException If an I/O error occurs
-     * @throws UnknownHostException If an adddress cannot be resolved
+     * @throws SocketException       If an I/O error occurs
+     * @throws UnknownHostException  If an adddress cannot be resolved
      * @throws IllegalStateException If a hostname or interface has no matching addresses
      */
     @Nullable

@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 
 import static net.openhft.chronicle.core.Jvm.debug;
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
+import static net.openhft.chronicle.network.connection.ConnectionState.UNKNOWN;
 
 /**
  * Repeatedly checks to see if a connection needs to be established or terminated and acts accordingly
@@ -51,6 +52,7 @@ public class ConnectorEventHandler<T extends NetworkContext<T>> extends Abstract
     private EventLoop eventLoop;
     private ChronicleSocketChannel socketChannel;
     private T nc;
+    private ConnectionState previousConnectionState = UNKNOWN;
 
     public ConnectorEventHandler(@NotNull Supplier<T> networkContextFactory,
                                  @NotNull SocketAddressSupplier socketAddressSupplier,
@@ -102,9 +104,7 @@ public class ConnectorEventHandler<T extends NetworkContext<T>> extends Abstract
 
             ChronicleSocketChannel newChannel = null;
             try {
-                // TODO: what does this mean in the generic network context?
-                final boolean didLogIn = false;
-                newChannel = connectionStrategy.connect(name, socketAddressSupplier, didLogIn, clientConnectionMonitor);
+                newChannel = connectionStrategy.connect(name, socketAddressSupplier, previousConnectionState, clientConnectionMonitor);
 
             } catch (ClosedIllegalStateException e) {
                 closeQuietly(this);
@@ -146,7 +146,7 @@ public class ConnectorEventHandler<T extends NetworkContext<T>> extends Abstract
 
                 if (clientConnectionMonitor != null)
                     clientConnectionMonitor.onDisconnected(connectionName, address);
-//                hasLoggedInPreviously = nc.hasReceivedLoginResponse(); // TODO what to do about this
+                previousConnectionState = nc.connectionStateReached();
             });
 
             try {

@@ -88,7 +88,7 @@ public class FatalFailureConnectionStrategy extends AbstractConnectionStrategy {
     @Override
     public ChronicleSocketChannel connect(@NotNull String name,
                                           @NotNull SocketAddressSupplier socketAddressSupplier,
-                                          boolean didLogIn,
+                                          @NotNull ConnectionState previousConnectionState,
                                           @Nullable FatalFailureMonitor fatalFailureMonitor) throws InterruptedException {
 
         if (socketAddressSupplier.size() == 0 && !hasSentFatalFailure && fatalFailureMonitor != null) {

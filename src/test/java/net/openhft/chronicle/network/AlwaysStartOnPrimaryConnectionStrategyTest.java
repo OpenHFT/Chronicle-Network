@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Timeout;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
+import static net.openhft.chronicle.network.connection.ConnectionState.FAILED;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
@@ -52,7 +53,7 @@ class AlwaysStartOnPrimaryConnectionStrategyTest extends NetworkTestCommon {
         Thread thread = new Thread(() -> {
             ConnectionStrategy strategy = new AlwaysStartOnPrimaryConnectionStrategy();
             try {
-                strategy.connect("unavailable_uri", SocketAddressSupplier.uri(uri), false, FatalFailureMonitor.NO_OP);
+                strategy.connect("unavailable_uri", SocketAddressSupplier.uri(uri), FAILED, FatalFailureMonitor.NO_OP);
             } catch (InterruptedException e) {
                 fail("AlwaysStartOnPrimaryConnectionStrategy#connect should not have propagated the " + e.getClass());
             }
@@ -83,7 +84,7 @@ class AlwaysStartOnPrimaryConnectionStrategyTest extends NetworkTestCommon {
         try (TestServer testServer = new TestServer("localBindingTestServer")) {
             testServer.prepareToAcceptAConnection();
             Jvm.pause(100);
-            try (final ChronicleSocketChannel channel = strategy.connect("local_server", SocketAddressSupplier.uri(testServer.uri()), false, null)) {
+            try (final ChronicleSocketChannel channel = strategy.connect("local_server", SocketAddressSupplier.uri(testServer.uri()), FAILED, null)) {
                 assertNotNull(channel);
                 final InetSocketAddress localSocketAddress = (InetSocketAddress) channel.socket().getLocalSocketAddress();
                 assertEquals(localPort, localSocketAddress.getPort());

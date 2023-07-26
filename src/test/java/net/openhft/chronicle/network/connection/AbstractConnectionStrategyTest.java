@@ -140,7 +140,7 @@ class AbstractConnectionStrategyTest extends NetworkTestCommon {
 
     private static class ConcreteConnectionStrategy extends AbstractConnectionStrategy {
         @Override
-        public ChronicleSocketChannel connect(@NotNull String name, @NotNull SocketAddressSupplier socketAddressSupplier, boolean didLogIn, @NotNull FatalFailureMonitor fatalFailureMonitor) throws InterruptedException {
+        public ChronicleSocketChannel connect(@NotNull String name, @NotNull SocketAddressSupplier socketAddressSupplier, @NotNull ConnectionState previousConnectionState, @NotNull FatalFailureMonitor fatalFailureMonitor) throws InterruptedException {
             // Do nothing
             return null;
         }

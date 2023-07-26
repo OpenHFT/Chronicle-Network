@@ -18,10 +18,7 @@
 package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
-import net.openhft.chronicle.network.connection.AbstractConnectionStrategy;
-import net.openhft.chronicle.network.connection.ClientConnectionMonitor;
-import net.openhft.chronicle.network.connection.FatalFailureMonitor;
-import net.openhft.chronicle.network.connection.SocketAddressSupplier;
+import net.openhft.chronicle.network.connection.*;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
+import static net.openhft.chronicle.network.connection.ConnectionState.ESTABLISHED;
 
 /**
  * Loops through all the hosts:ports ( in order ) starting at the primary, till it finds a host that it can connect to.
@@ -64,10 +62,10 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractConnectionSt
     @Override
     public ChronicleSocketChannel connect(@NotNull String name,
                                           @NotNull SocketAddressSupplier socketAddressSupplier,
-                                          boolean didLogIn,
+                                          @NotNull ConnectionState previousConnectionState,
                                           @Nullable FatalFailureMonitor fatalFailureMonitor) throws InterruptedException {
 
-        if (socketAddressSupplier.get() == null || didLogIn)
+        if (socketAddressSupplier.get() == null || previousConnectionState == ESTABLISHED)
             socketAddressSupplier.resetToPrimary();
         else
             socketAddressSupplier.failoverToNextAddress();
