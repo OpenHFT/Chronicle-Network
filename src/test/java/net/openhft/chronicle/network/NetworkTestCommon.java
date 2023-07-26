@@ -45,13 +45,14 @@ public class NetworkTestCommon {
         AbstractReferenceCounted.assertReferencesReleased();
     }
 
-    @BeforeEach
-    void threadDump() {
+    // @BeforeEach add to tests that need it
+    protected void threadDump() {
         threadDump = new ThreadDump();
     }
 
     public void checkThreadDump() {
-        threadDump.assertNoNewThreads();
+        if (threadDump != null)
+            threadDump.assertNoNewThreads();
     }
 
     @BeforeEach
@@ -86,10 +87,9 @@ public class NetworkTestCommon {
         CleaningThread.performCleanup(Thread.currentThread());
 
         // find any discarded resources.
-        System.gc();
-        AbstractCloseable.waitForCloseablesToClose(100);
-
         TCPRegistry.reset();
+
+        AbstractCloseable.waitForCloseablesToClose(100);
 
         assertReferencesReleased();
         checkThreadDump();

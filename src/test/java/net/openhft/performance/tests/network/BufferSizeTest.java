@@ -57,7 +57,7 @@ class BufferSizeTest extends NetworkTestCommon {
     private ThreadDump threadDump;
 
     @BeforeEach
-    void threadDump() {
+    protected void threadDump() {
         threadDump = new ThreadDump();
     }
 

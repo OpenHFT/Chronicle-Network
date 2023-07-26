@@ -19,6 +19,7 @@
 package net.openhft.chronicle.network.internal;
 
 import net.openhft.chronicle.core.util.ThrowingRunnable;
+import net.openhft.chronicle.network.NetworkTestCommon;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +28,7 @@ import java.security.Security;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class AddressCacheTest {
+class AddressCacheTest extends NetworkTestCommon {
 
     private static final String NETWORK_ADDRESS_CACHE_TTL = "networkaddress.cache.ttl";
     private static final String DEFAULT_NETWORK_ADDRESS_CACHE_TTL = "-1";

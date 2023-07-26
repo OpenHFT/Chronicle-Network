@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class FileBasedHostnamePortLookupTableTest extends NetworkTestCommon {
 
-    public static final String TEST_TABLE_FILENAME = "FileBasedHostnamePortLookupTableTest";
+    public static final String TEST_TABLE_FILENAME = OS.getTarget()+"/FileBasedHostnamePortLookupTableTest";
     private FileBasedHostnamePortLookupTable lookupTable;
 
     @BeforeEach
@@ -48,6 +48,11 @@ class FileBasedHostnamePortLookupTableTest extends NetworkTestCommon {
         }
         IOTools.deleteDirWithFilesOrThrow(TEST_TABLE_FILENAME);
         lookupTable = new FileBasedHostnamePortLookupTable(TEST_TABLE_FILENAME);
+    }
+    @Override
+    @BeforeEach
+    protected void threadDump() {
+        super.threadDump();
     }
 
     @AfterEach

@@ -74,6 +74,11 @@ public final class NonClusteredSslIntegrationTest extends NetworkTestCommon {
     private final CountingTcpHandler clientInitiator = new CountingTcpHandler("client-initiator");
     private final CountingTcpHandler serverInitiator = new CountingTcpHandler("server-initiator");
     private Mode mode;
+    @Override
+    @BeforeEach
+    protected void threadDump() {
+        super.threadDump();
+    }
 
     public static List<Object[]> params() {
         final List<Object[]> params = new ArrayList<>();

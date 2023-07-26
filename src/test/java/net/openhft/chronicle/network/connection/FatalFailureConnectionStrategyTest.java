@@ -19,10 +19,12 @@ package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.OS;
+import net.openhft.chronicle.network.NetworkTestCommon;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.network.util.TestServer;
 import net.openhft.chronicle.wire.Marshallable;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -34,7 +36,12 @@ import static net.openhft.chronicle.network.util.TestUtil.getAvailablePortNumber
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
-class FatalFailureConnectionStrategyTest {
+class FatalFailureConnectionStrategyTest extends NetworkTestCommon {
+    @Override
+    @BeforeEach
+    protected void threadDump() {
+        super.threadDump();
+    }
 
     /**
      * Checks that {@link FatalFailureConnectionStrategy} can be used in YAML config.

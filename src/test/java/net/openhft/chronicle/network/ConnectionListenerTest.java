@@ -31,6 +31,12 @@ class ConnectionListenerTest extends NetworkTestCommon {
         ignoreException("core-event-loop thread has blocked for");
     }
 
+    @Override
+    @BeforeEach
+    protected void threadDump() {
+        super.threadDump();
+    }
+
     @Test
     void onConnectAndOnDisconnectAreCalledOnce_OnOrderlyConnectionAndDisconnection() {
         try (TestClusterContext acceptorCtx = forHosts(acceptorHost, initiatorHost);

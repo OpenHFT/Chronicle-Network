@@ -44,6 +44,11 @@ class ClusterConnectivityTest extends NetworkTestCommon {
         executorService.submit(hostOneProxy);
         executorService.submit(hostTwoProxy);
     }
+    @Override
+    @BeforeEach
+    protected void threadDump() {
+        super.threadDump();
+    }
 
     @AfterEach
     void tearDown() {
