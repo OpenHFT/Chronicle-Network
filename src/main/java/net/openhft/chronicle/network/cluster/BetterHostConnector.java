@@ -51,7 +51,7 @@ public class BetterHostConnector<T extends ClusteredNetworkContext<T>, C extends
         }
 
         final SocketAddressSupplier socketAddressSupplier = new SocketAddressSupplier(connectUris, this.name);
-        connectorEventHandler = new ConnectorEventHandler<>(name, connectionStrategy, this::createNetworkContext, tcpEventHandlerFactory, () -> !isClosing(), socketAddressSupplier, clusterContext.eventLoop()::addHandler);
+        connectorEventHandler = new ConnectorEventHandler<>(this::createNetworkContext, socketAddressSupplier, connectionStrategy, name, tcpEventHandlerFactory, () -> !isClosing());
         clusterContext.eventLoop().addHandler(connectorEventHandler);
     }
 

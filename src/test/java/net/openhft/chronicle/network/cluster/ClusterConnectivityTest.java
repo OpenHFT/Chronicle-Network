@@ -19,8 +19,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
-import static net.openhft.chronicle.network.util.TestUtil.getAvailablePortNumber;
 import static net.openhft.chronicle.testframework.ExecutorServiceUtil.shutdownAndWaitForTermination;
+import static net.openhft.chronicle.testframework.NetworkUtil.getAvailablePort;
 import static net.openhft.chronicle.testframework.Waiters.waitForCondition;
 
 class ClusterConnectivityTest extends NetworkTestCommon {
@@ -37,8 +37,8 @@ class ClusterConnectivityTest extends NetworkTestCommon {
         connectedMatrix = new boolean[3][3];
         executorService = Executors.newCachedThreadPool();
         TCPRegistry.createServerSocketChannelFor("host.one", "host.two", "host.three");
-        hostOneProxy = new TcpProxy(getAvailablePortNumber(), TCPRegistry.lookup("host.one"), executorService);
-        hostTwoProxy = new TcpProxy(getAvailablePortNumber(), TCPRegistry.lookup("host.two"), executorService);
+        hostOneProxy = new TcpProxy(getAvailablePort(), TCPRegistry.lookup("host.one"), executorService);
+        hostTwoProxy = new TcpProxy(getAvailablePort(), TCPRegistry.lookup("host.two"), executorService);
         executorService.submit(hostOneProxy);
         executorService.submit(hostTwoProxy);
     }

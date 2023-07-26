@@ -19,6 +19,7 @@ package net.openhft.chronicle.network.connection;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.OS;
+import net.openhft.chronicle.network.NetworkTestCommon;
 import net.openhft.chronicle.network.TCPRegistry;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.network.util.TestServer;
@@ -30,11 +31,11 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import static net.openhft.chronicle.network.NetworkUtil.TCP_BUFFER_SIZE;
-import static net.openhft.chronicle.network.util.TestUtil.getAvailablePortNumber;
+import static net.openhft.chronicle.testframework.NetworkUtil.getAvailablePort;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
-class FatalFailureConnectionStrategyTest {
+class FatalFailureConnectionStrategyTest extends NetworkTestCommon {
 
     /**
      * Checks that {@link FatalFailureConnectionStrategy} can be used in YAML config.
@@ -80,7 +81,7 @@ class FatalFailureConnectionStrategyTest {
         assumeFalse(OS.isMacOSX()); // doesn't work on mac?
         final FatalFailureConnectionStrategy strategy = new FatalFailureConnectionStrategy(1, true);
         final String localSocketBindingHost = "127.0.0.75";
-        int localPort = getAvailablePortNumber();
+        int localPort = getAvailablePort();
         strategy.localSocketBindingHost(localSocketBindingHost);
         strategy.localSocketBindingPort(localPort);
         try (TestServer testServer = new TestServer("localBindingTestServer")) {

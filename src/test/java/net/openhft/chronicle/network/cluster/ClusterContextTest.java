@@ -20,6 +20,7 @@ package net.openhft.chronicle.network.cluster;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.util.ThrowingFunction;
+import net.openhft.chronicle.network.NetworkTestCommon;
 import net.openhft.chronicle.network.TcpEventHandler;
 import net.openhft.chronicle.threads.Pauser;
 import net.openhft.chronicle.threads.TimingPauser;
@@ -34,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ClusterContextTest {
+class ClusterContextTest extends NetworkTestCommon {
 
     @Test
     void testStatesAreStillInTheCorrectOrder() {

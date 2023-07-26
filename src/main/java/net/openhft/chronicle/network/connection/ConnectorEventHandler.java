@@ -5,6 +5,7 @@ import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.io.ClosedIllegalStateException;
 import net.openhft.chronicle.core.io.InvalidMarshallableException;
 import net.openhft.chronicle.core.threads.EventHandler;
+import net.openhft.chronicle.core.threads.EventLoop;
 import net.openhft.chronicle.core.threads.InvalidEventHandlerException;
 import net.openhft.chronicle.core.util.ThrowingFunction;
 import net.openhft.chronicle.network.ConnectionStrategy;
@@ -47,15 +48,25 @@ public class ConnectorEventHandler<T extends NetworkContext<T>> extends Abstract
     private final ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpEventHandlerFactory;
     private final SocketAddressSupplier socketAddressSupplier;
     private final Consumer<EventHandler> eventHandlerAdder;
+    private EventLoop eventLoop;
     private ChronicleSocketChannel socketChannel;
     private T nc;
 
-    public ConnectorEventHandler(String name,
-                                 ConnectionStrategy connectionStrategy,
-                                 Supplier<T> networkContextFactory,
-                                 @NotNull ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpEventHandlerFactory,
-                                 Supplier<Boolean> connecting,
+    public ConnectorEventHandler(@NotNull Supplier<T> networkContextFactory,
                                  @NotNull SocketAddressSupplier socketAddressSupplier,
+                                 @NotNull ConnectionStrategy connectionStrategy,
+                                 @NotNull String name,
+                                 @NotNull ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpEventHandlerFactory,
+                                 @NotNull Supplier<Boolean> connecting) {
+        this(networkContextFactory, socketAddressSupplier, connectionStrategy, name, tcpEventHandlerFactory, connecting, null);
+    }
+
+    public ConnectorEventHandler(@NotNull Supplier<T> networkContextFactory,
+                                 @NotNull SocketAddressSupplier socketAddressSupplier,
+                                 @NotNull ConnectionStrategy connectionStrategy,
+                                 @NotNull String name,
+                                 @NotNull ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpEventHandlerFactory,
+                                 @NotNull Supplier<Boolean> connecting,
                                  Consumer<EventHandler> eventHandlerAdder) {
         this.socketAddressSupplier = socketAddressSupplier;
         this.name = name;
@@ -63,11 +74,16 @@ public class ConnectorEventHandler<T extends NetworkContext<T>> extends Abstract
         this.connectionStrategy = connectionStrategy;
         this.networkContextFactory = networkContextFactory;
         this.tcpEventHandlerFactory = tcpEventHandlerFactory;
-        this.eventHandlerAdder = eventHandlerAdder;
+        this.eventHandlerAdder = eventHandlerAdder != null ? eventHandlerAdder : eh -> this.eventLoop.addHandler(eh);
 
         pauser = new LongPauser(0, 0, this.connectionStrategy.minPauseSec(), this.connectionStrategy.maxPauseSec(), TimeUnit.SECONDS);
         // eagerly load logger now to mitigate delays if it is used later
         debug().isEnabled(getClass());
+    }
+
+    @Override
+    public void eventLoop(EventLoop eventLoop) {
+        this.eventLoop = eventLoop;
     }
 
     @Override
@@ -150,8 +166,8 @@ public class ConnectorEventHandler<T extends NetworkContext<T>> extends Abstract
                 }
                 tcpEventHandler.exposeOutBufferToTcpHandler();
 
-                eventHandlerAdder.accept(tcpEventHandler);
                 tcpHandler.onConnected(nc);
+                eventHandlerAdder.accept(tcpEventHandler);
 
             } catch (IOException e) {
                 // Should be a warning, but use INFO for now to allow running build-all

@@ -1,5 +1,6 @@
 package net.openhft.chronicle.network.tcp;
 
+import net.openhft.chronicle.network.NetworkTestCommon;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -11,7 +12,7 @@ import java.nio.channels.SocketChannel;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class FastJ8SocketChannelTest {
+class FastJ8SocketChannelTest extends NetworkTestCommon {
 
     @Test
     void closedChannelExceptionIsThrownWhenAttemptIsMadeToReadFromClosedChannel() throws IOException {
@@ -19,9 +20,10 @@ class FastJ8SocketChannelTest {
             local.configureBlocking(false);
             try (final SocketChannel remote = SocketChannel.open(local.socket().getLocalSocketAddress())) {
                 remote.configureBlocking(false);
-                final FastJ8SocketChannel fastJ8SocketChannel = new FastJ8SocketChannel(remote);
-                remote.close();
-                assertThrows(ClosedChannelException.class, () -> fastJ8SocketChannel.read(ByteBuffer.allocateDirect(100)));
+                try (final FastJ8SocketChannel fastJ8SocketChannel = new FastJ8SocketChannel(remote)) {
+                    remote.close();
+                    assertThrows(ClosedChannelException.class, () -> fastJ8SocketChannel.read(ByteBuffer.allocateDirect(100)));
+                }
             }
         }
     }
@@ -32,9 +34,10 @@ class FastJ8SocketChannelTest {
             local.configureBlocking(false);
             try (final SocketChannel remote = SocketChannel.open(local.socket().getLocalSocketAddress())) {
                 remote.configureBlocking(false);
-                final FastJ8SocketChannel fastJ8SocketChannel = new FastJ8SocketChannel(remote);
-                remote.close();
-                assertThrows(ClosedChannelException.class, () -> fastJ8SocketChannel.write(ByteBuffer.allocateDirect(100)));
+                try (final FastJ8SocketChannel fastJ8SocketChannel = new FastJ8SocketChannel(remote)) {
+                    remote.close();
+                    assertThrows(ClosedChannelException.class, () -> fastJ8SocketChannel.write(ByteBuffer.allocateDirect(100)));
+                }
             }
         }
     }
