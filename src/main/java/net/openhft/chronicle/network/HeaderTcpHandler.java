@@ -34,13 +34,13 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseab
 
     public static final String HANDLER = "handler";
     @NotNull
-    private final TcpEventHandler<T> handlerManager;
+    private final TcpEventHandler<T> tcpEventHandler;
     @NotNull
     private final Function<Object, TcpHandler<T>> handlerFunction;
 
-    public HeaderTcpHandler(@NotNull final TcpEventHandler<T> handlerManager,
+    public HeaderTcpHandler(@NotNull final TcpEventHandler<T> tcpEventHandler,
                             @NotNull final Function<Object, TcpHandler<T>> handlerFunction) {
-        this.handlerManager = handlerManager;
+        this.tcpEventHandler = tcpEventHandler;
         this.handlerFunction = handlerFunction;
     }
 
@@ -82,7 +82,7 @@ public class HeaderTcpHandler<T extends NetworkContext<T>> extends SimpleCloseab
             if (handler instanceof NetworkContextManager)
                 ((NetworkContextManager<T>) handler).nc(nc);
 
-            handlerManager.tcpHandler(handler);
+            tcpEventHandler.tcpHandler(handler);
         } catch (Throwable e) {
             if (isClosed())
                 return;

@@ -35,14 +35,14 @@ import static net.openhft.chronicle.wire.WireType.*;
 public class WireTypeSniffingTcpHandler<T extends NetworkContext<T>> extends SimpleCloseable implements TcpHandler<T> {
 
     @NotNull
-    private final TcpEventHandler handlerManager;
+    private final TcpEventHandler<T> tcpEventHandler;
 
     @NotNull
     private final Function<T, TcpHandler<T>> delegateHandlerFactory;
 
-    public WireTypeSniffingTcpHandler(@NotNull final TcpEventHandler handlerManager,
+    public WireTypeSniffingTcpHandler(@NotNull final TcpEventHandler<T> tcpEventHandler,
                                       @NotNull final Function<T, TcpHandler<T>> delegateHandlerFactory) {
-        this.handlerManager = handlerManager;
+        this.tcpEventHandler = tcpEventHandler;
         this.delegateHandlerFactory = delegateHandlerFactory;
     }
 
@@ -87,7 +87,7 @@ public class WireTypeSniffingTcpHandler<T extends NetworkContext<T>> extends Sim
         if (handler instanceof NetworkContextManager)
             ((NetworkContextManager<T>) handler).nc(nc);
 
-        handlerManager.tcpHandler(handler);
+        tcpEventHandler.tcpHandler(handler);
     }
 
     @Override
