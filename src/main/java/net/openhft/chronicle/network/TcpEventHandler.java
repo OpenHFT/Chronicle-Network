@@ -187,6 +187,14 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         this.reader = reader;
     }
 
+    @SuppressWarnings("unchecked")
+    @Override
+    public void loopStarted() {
+        if (tcpHandler instanceof NetworkContextManager) {
+            ((NetworkContextManager<T>) tcpHandler).nc(nc);
+        }
+    }
+
     @Override
     public boolean action() throws InvalidEventHandlerException {
         Jvm.safepoint();

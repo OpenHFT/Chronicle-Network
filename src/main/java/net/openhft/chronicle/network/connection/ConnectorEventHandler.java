@@ -135,18 +135,18 @@ public class ConnectorEventHandler<T extends NetworkContext<T>> extends Abstract
 
             nc.socketChannel(newChannel);
 
-            final String connectionName = name;
             final InetSocketAddress address = getRemoteAddress(newChannel);
             if (clientConnectionMonitor != null) {
                 clientConnectionMonitor.onConnected(name, address);
             }
 
+            NetworkContext<T> networkContext = nc;
             // if a connection failure to the primary had not logged in, it is not retried on fail-over
             nc.addCloseListener(() -> {
 
                 if (clientConnectionMonitor != null)
-                    clientConnectionMonitor.onDisconnected(connectionName, address);
-                previousConnectionState = nc.connectionStateReached();
+                    clientConnectionMonitor.onDisconnected(name, address);
+                previousConnectionState = networkContext.connectionStateReached();
             });
 
             try {
@@ -166,7 +166,6 @@ public class ConnectorEventHandler<T extends NetworkContext<T>> extends Abstract
                 }
                 tcpEventHandler.exposeOutBufferToTcpHandler();
 
-                tcpHandler.onConnected(nc);
                 eventHandlerAdder.accept(tcpEventHandler);
 
             } catch (IOException e) {

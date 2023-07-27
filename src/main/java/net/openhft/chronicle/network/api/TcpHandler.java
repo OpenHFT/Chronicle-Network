@@ -54,14 +54,6 @@ public interface TcpHandler<N extends NetworkContext<N>> extends ClientClosedPro
     }
 
     /**
-     * Called when a connection is established
-     *
-     * @param networkContext
-     */
-    default void onConnected(N networkContext) {
-    }
-
-    /**
      * Provide a function that can be called to access the TCP handler's out buffer
      * <p>
      * Please don't ever use this for anything. Deprecated soon I hope.
