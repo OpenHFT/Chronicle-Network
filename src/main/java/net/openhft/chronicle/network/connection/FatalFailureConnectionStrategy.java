@@ -70,6 +70,14 @@ public class FatalFailureConnectionStrategy extends AbstractConnectionStrategy {
      * @param attempts the number of attempts before a onFatalFailure() reported
      */
     public FatalFailureConnectionStrategy(int attempts, boolean blocking) {
+        this(DefaultOpenSocketStrategy.INSTANCE, attempts, blocking);
+    }
+
+    /**
+     * @param attempts the number of attempts before a onFatalFailure() reported
+     */
+    public FatalFailureConnectionStrategy(OpenSocketStrategy openSocketStrategy, int attempts, boolean blocking) {
+        super(openSocketStrategy);
         this.attempts = attempts;
         this.blocking = blocking;
     }
@@ -127,7 +135,7 @@ public class FatalFailureConnectionStrategy extends AbstractConnectionStrategy {
                 }
 
                 long millis = TimeUnit.NANOSECONDS.toMillis(PAUSE);
-                socketChannel = openSocketChannel(socketAddress, tcpBufferSize, millis);
+                socketChannel = openSocketStrategy.openSocketChannel(this, socketAddress, tcpBufferSize, millis, 1);
 
                 if (socketChannel == null) {
                     Jvm.warn().on(getClass(), "unable to connected to " + socketAddressSupplier + ", name=" + name);

@@ -3,11 +3,15 @@ package net.openhft.chronicle.network.cluster;
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.AbstractCloseable;
 import net.openhft.chronicle.core.util.ThrowingFunction;
-import net.openhft.chronicle.network.*;
+import net.openhft.chronicle.network.ConnectionStrategy;
+import net.openhft.chronicle.network.IHostConnector;
+import net.openhft.chronicle.network.NetworkStatsListener;
+import net.openhft.chronicle.network.TcpEventHandler;
 import net.openhft.chronicle.network.api.session.SessionProvider;
 import net.openhft.chronicle.network.cluster.handlers.HeartbeatHandler;
 import net.openhft.chronicle.network.cluster.handlers.UberHandler;
 import net.openhft.chronicle.network.connection.ConnectorEventHandler;
+import net.openhft.chronicle.network.connection.RoundRobinConnectionStrategy;
 import net.openhft.chronicle.network.connection.SocketAddressSupplier;
 import net.openhft.chronicle.network.connection.WireOutPublisher;
 import net.openhft.chronicle.wire.DocumentContext;
@@ -40,7 +44,7 @@ public class BetterHostConnector<T extends ClusteredNetworkContext<T>, C extends
         this.connectUris = connectUris;
         this.tcpEventHandlerFactory = tcpEventHandlerFactory;
         this.name = clusterContext.localIdentifier() + " to " + remoteId;
-        this.connectionStrategy = connectionStrategy != null ? connectionStrategy : new AlwaysStartOnPrimaryConnectionStrategy();
+        this.connectionStrategy = connectionStrategy != null ? connectionStrategy : new RoundRobinConnectionStrategy();
     }
 
     @Override

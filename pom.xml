@@ -122,6 +122,13 @@
         </dependency>
 
         <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>4.9.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <scope>test</scope>
@@ -192,7 +199,7 @@
                         <configuration>
                             <referenceVersion>2.24ea0</referenceVersion>
                             <artifactsURI>https://teamcity.chronicle.software/repository/download</artifactsURI>
-                            <binaryCompatibilityPercentageRequired>96.8</binaryCompatibilityPercentageRequired>
+                            <binaryCompatibilityPercentageRequired>96.7</binaryCompatibilityPercentageRequired>
                         </configuration>
                     </execution>
                 </executions>

@@ -48,6 +48,14 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractConnectionSt
     private long minPauseSec = defaultMinPauseSec();
     private long maxPauseSec = defaultMaxPauseSec();
 
+    public AlwaysStartOnPrimaryConnectionStrategy() {
+        this(DefaultOpenSocketStrategy.INSTANCE);
+    }
+
+    public AlwaysStartOnPrimaryConnectionStrategy(OpenSocketStrategy openSocketStrategy) {
+        super(openSocketStrategy);
+    }
+
     public AlwaysStartOnPrimaryConnectionStrategy clientConnectionMonitor(ClientConnectionMonitor fatalFailureMonitor) {
         this.clientConnectionMonitor = fatalFailureMonitor;
         return this;
@@ -90,7 +98,7 @@ public class AlwaysStartOnPrimaryConnectionStrategy extends AbstractConnectionSt
                     continue;
                 }
 
-                socketChannel = openSocketChannel(socketAddress, tcpBufferSize, pausePeriodMs, socketConnectionTimeoutMs);
+                socketChannel = openSocketStrategy.openSocketChannel(this, socketAddress, tcpBufferSize, pausePeriodMs, socketConnectionTimeoutMs);
 
                 if (socketChannel == null) {
                     if (Jvm.isDebugEnabled(getClass()))

@@ -20,11 +20,20 @@ import static net.openhft.chronicle.network.NetworkUtil.TCP_BUFFER_SIZE;
 public abstract class AbstractConnectionStrategy extends AbstractMarshallableCfg implements ConnectionStrategy {
     protected int tcpBufferSize = Jvm.getInteger("tcp.client.buffer.size", TCP_BUFFER_SIZE);
     private final transient AtomicBoolean isClosed = new AtomicBoolean(false);
+    protected final transient OpenSocketStrategy openSocketStrategy;
     protected ClientConnectionMonitor clientConnectionMonitor = new VanillaClientConnectionMonitor();
     protected String localSocketBindingHost;
     protected int localSocketBindingPort = 0;
     protected String localBindingNetworkInterface;
     protected ProtocolFamily localBindingProtocolFamily;
+
+    public AbstractConnectionStrategy() {
+        this(DefaultOpenSocketStrategy.INSTANCE);
+    }
+
+    public AbstractConnectionStrategy(OpenSocketStrategy openSocketStrategy) {
+        this.openSocketStrategy = openSocketStrategy;
+    }
 
     @Override
     public @Nullable InetSocketAddress localSocketBinding() throws SocketException, UnknownHostException, IllegalStateException {

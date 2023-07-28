@@ -19,10 +19,7 @@ package net.openhft.chronicle.network;
 
 import net.openhft.chronicle.core.Jvm;
 import net.openhft.chronicle.core.io.ClosedIllegalStateException;
-import net.openhft.chronicle.network.connection.ClientConnectionMonitor;
-import net.openhft.chronicle.network.connection.ConnectionState;
-import net.openhft.chronicle.network.connection.FatalFailureMonitor;
-import net.openhft.chronicle.network.connection.SocketAddressSupplier;
+import net.openhft.chronicle.network.connection.*;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.wire.Marshallable;
 import org.jetbrains.annotations.NotNull;
@@ -32,8 +29,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 
 import static net.openhft.chronicle.network.connection.ConnectionState.ESTABLISHED;
 import static net.openhft.chronicle.network.connection.ConnectionState.FAILED;
@@ -92,6 +87,10 @@ public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
         return connect(name, socketAddressSupplier, previousConnectionState == ESTABLISHED, fatalFailureMonitor);
     }
 
+    /**
+     * @deprecated Moved to {@link net.openhft.chronicle.network.connection.OpenSocketStrategy}
+     */
+    @Deprecated(/* To be removed in x.25 */)
     @Nullable
     default ChronicleSocketChannel openSocketChannel(@NotNull InetSocketAddress socketAddress,
                                                      int tcpBufferSize,
@@ -105,49 +104,16 @@ public interface ConnectionStrategy extends Marshallable, java.io.Closeable {
 
     /**
      * the reason for this method is that unlike the selector it uses tick time
+     *
+     * @deprecated Moved to {@link net.openhft.chronicle.network.connection.OpenSocketStrategy#openSocketChannel(ConnectionStrategy, InetSocketAddress, int, long, int)}
      */
+    @Deprecated(/* To be removed in x.25 */)
     @Nullable
     default ChronicleSocketChannel openSocketChannel(@NotNull InetSocketAddress socketAddress,
                                                      int tcpBufferSize,
                                                      long timeoutMs,
                                                      int socketConnectionTimeoutMs) throws IOException, InterruptedException {
-        assert timeoutMs > 0;
-        long start = System.currentTimeMillis();
-        ChronicleSocketChannel sc = ChronicleSocketChannel.builder(socketAddress)
-                .tcpBufferSize(tcpBufferSize)
-                .socketConnectionTimeoutMs(socketConnectionTimeoutMs)
-                .localBinding(localSocketBinding())
-                .open();
-        if (sc != null)
-            return sc;
-
-        for (; ; ) {
-            throwExceptionIfClosed();
-            if (Thread.currentThread().isInterrupted())
-                throw new InterruptedException();
-            long startMs = System.currentTimeMillis();
-            if (start + timeoutMs < startMs) {
-                Jvm.startup().on(ConnectionStrategy.class, "Timed out attempting to connect to " + socketAddress);
-                return null;
-            }
-            sc = ChronicleSocketChannel.builder(socketAddress)
-                    .tcpBufferSize(tcpBufferSize)
-                    .socketConnectionTimeoutMs(socketConnectionTimeoutMs)
-                    .localBinding(localSocketBinding())
-                    .open();
-            if (sc != null)
-                return sc;
-            Thread.yield();
-            // If nothing is listening, socketChannel returns pretty much immediately so we support a pause here
-            pauseBeforeReconnect(startMs);
-        }
-    }
-
-    default void pauseBeforeReconnect(long startMs) {
-        long pauseMillis = (startMs + pauseMillisBeforeReconnect()) - System.currentTimeMillis();
-        if (Jvm.isDebugEnabled(this.getClass()))
-            Jvm.debug().on(this.getClass(), "Waiting for reconnect " + pauseMillis + " ms");
-        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(pauseMillis));
+        return DefaultOpenSocketStrategy.INSTANCE.openSocketChannel(this, socketAddress, tcpBufferSize, timeoutMs, socketConnectionTimeoutMs);
     }
 
     /**
