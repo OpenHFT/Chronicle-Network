@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 
 import static net.openhft.chronicle.core.Jvm.debug;
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
+import static net.openhft.chronicle.network.NetworkStatsListener.notifyHostPort;
 import static net.openhft.chronicle.network.connection.ConnectionState.UNKNOWN;
 
 /**
@@ -149,6 +150,8 @@ public class ConnectorEventHandler<T extends NetworkContext<T>> extends Abstract
                 previousConnectionState = networkContext.connectionStateReached();
             });
 
+            notifyHostPort(newChannel, nc.networkStatsListener());
+
             try {
                 @NotNull final TcpEventHandler<T> tcpEventHandler = tcpEventHandlerFactory.apply(nc);
                 socketChannel = tcpEventHandler.socketChannel();
@@ -198,7 +201,7 @@ public class ConnectorEventHandler<T extends NetworkContext<T>> extends Abstract
 
     @Override
     protected void performClose() throws IllegalStateException {
-
+        closeQuietly(socketChannel, nc);
     }
 
     private SSLParameters withSniHostName(SSLParameters sslParameters, InetSocketAddress hostName) {

@@ -107,16 +107,10 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
         if (localIdentifier <= hd.hostId())
             return;
 
-//        @NotNull final LegacyHostConnector<T, C> hostConnector = new LegacyHostConnector<>(castThis(),
-//                new RemoteConnector<>(tcpEventHandlerFactory()),
-//                hd.hostId(),
-//                hd.connectUri(),
-//                sessionProvider);
-        @NotNull final IHostConnector<T, C> hostConnector = new BetterHostConnector<>(
+        @NotNull final IHostConnector<T, C> hostConnector = new EventLoopHostConnector<>(
                 castThis(),
                 hd.hostId(),
                 hd.connectionStrategy(),
-                // not sure about this, do we define accept socket separately from connect sockets?
                 hd.remoteConnectUris() != null ? hd.remoteConnectUris() : new String[]{hd.connectUri()},
                 tcpEventHandlerFactory());
         closeables.add(hostConnector);
@@ -367,11 +361,19 @@ public abstract class ClusterContext<C extends ClusterContext<C, T>, T extends C
         return networkContextFactory;
     }
 
+    /**
+     * @deprecated Use {@link ConnectionStrategy#minPauseSec()} and {@link ConnectionStrategy#maxPauseSec()} instead
+     */
+    @Deprecated(/* To be removed in x.25 */)
     public C retryInterval(final long retryInterval) {
         this.retryInterval = retryInterval;
         return castThis();
     }
 
+    /**
+     * @deprecated Use {@link ConnectionStrategy#minPauseSec()} and {@link ConnectionStrategy#maxPauseSec()} instead
+     */
+    @Deprecated(/* To be removed in x.25 */)
     public long retryInterval() {
         return retryInterval;
     }

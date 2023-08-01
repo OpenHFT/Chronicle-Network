@@ -49,7 +49,7 @@ public class RoundRobinConnectionStrategy extends AbstractConnectionStrategy {
                     Jvm.warn().on(AlwaysStartOnPrimaryConnectionStrategy.class, "failed to obtain socketAddress");
                 } else {
                     socketChannel = openSocketStrategy.openSocketChannel(this, socketAddress, tcpBufferSize, pausePeriodMs, socketConnectionTimeoutMs);
-                    if (socketChannel != null) {
+                    if (socketChannel != null && socketChannel.isOpen()) {
                         Jvm.debug().on(getClass(), "successfully connected to " + socketAddressSupplier);
                         return socketChannel;
                     }

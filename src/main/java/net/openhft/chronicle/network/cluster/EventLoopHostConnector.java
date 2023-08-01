@@ -23,7 +23,7 @@ import java.util.function.Function;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
-public class BetterHostConnector<T extends ClusteredNetworkContext<T>, C extends ClusterContext<C, T>> extends AbstractCloseable implements IHostConnector<T, C> {
+public class EventLoopHostConnector<T extends ClusteredNetworkContext<T>, C extends ClusterContext<C, T>> extends AbstractCloseable implements IHostConnector<T, C> {
 
     private final String name;
     private final C clusterContext;
@@ -34,11 +34,11 @@ public class BetterHostConnector<T extends ClusteredNetworkContext<T>, C extends
     private ConnectorEventHandler<T> connectorEventHandler;
 
 
-    public BetterHostConnector(@NotNull final C clusterContext,
-                               final int remoteId,
-                               final ConnectionStrategy connectionStrategy,
-                               @NotNull final String[] connectUris,
-                               @NotNull final ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpEventHandlerFactory) {
+    public EventLoopHostConnector(@NotNull final C clusterContext,
+                                  final int remoteId,
+                                  final ConnectionStrategy connectionStrategy,
+                                  @NotNull final String[] connectUris,
+                                  @NotNull final ThrowingFunction<T, TcpEventHandler<T>, IOException> tcpEventHandlerFactory) {
         this.clusterContext = clusterContext;
         this.remoteId = remoteId;
         this.connectUris = connectUris;
@@ -49,8 +49,8 @@ public class BetterHostConnector<T extends ClusteredNetworkContext<T>, C extends
 
     @Override
     public void connect() {
-        if (connectUris == null || connectUris.length == 0 || Arrays.stream(connectUris).anyMatch(uri -> uri == null || uri.length() == 0)) {
-            Jvm.warn().on(BetterHostConnector.class, "ConnectURI was null or empty, not attempting to connect. connection=" + name);
+        if (connectUris == null || connectUris.length == 0 || Arrays.stream(connectUris).anyMatch(uri -> uri == null || uri.isEmpty())) {
+            Jvm.warn().on(EventLoopHostConnector.class, "ConnectURI was null or empty, not attempting to connect. connection=" + name);
             return;
         }
 

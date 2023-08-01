@@ -37,7 +37,11 @@ import java.util.function.Function;
 
 import static net.openhft.chronicle.core.io.Closeable.closeQuietly;
 
-public class LegacyHostConnector<T extends ClusteredNetworkContext<T>, C extends ClusterContext<C, T>> implements Closeable, IHostConnector {
+/**
+ * @deprecated Use {@link EventLoopHostConnector} instead
+ */
+@Deprecated(/* To be removed in x.25 */)
+public class LegacyHostConnector<T extends ClusteredNetworkContext<T>, C extends ClusterContext<C, T>> implements Closeable, IHostConnector<T, C> {
 
     private interface ClosableRunnable extends Runnable, Closeable {
     }
