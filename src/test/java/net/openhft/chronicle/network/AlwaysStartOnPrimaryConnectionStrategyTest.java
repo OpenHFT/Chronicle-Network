@@ -45,6 +45,11 @@ class AlwaysStartOnPrimaryConnectionStrategyTest extends NetworkTestCommon {
         TCPRegistry.createServerSocketChannelFor(hostPort);
         uri = TCPRegistry.acquireServerSocketChannel(hostPort).getLocalAddress().toString();
     }
+    @Override
+    @BeforeEach
+    protected void threadDump() {
+        super.threadDump();
+    }
 
     @Test
     @Timeout(1)

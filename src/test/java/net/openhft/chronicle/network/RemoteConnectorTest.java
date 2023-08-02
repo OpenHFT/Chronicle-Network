@@ -30,6 +30,12 @@ class RemoteConnectorTest extends NetworkTestCommon {
         remoteConnector = new RemoteConnector<>(this::createTcpEventHandler);
     }
 
+    @Override
+    @BeforeEach
+    protected void threadDump() {
+        super.threadDump();
+    }
+
     @Test
     @Timeout(3)
     void remoteConnectorLooksUpAddressOnEachIteration() throws IOException {

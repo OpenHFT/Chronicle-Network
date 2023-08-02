@@ -67,29 +67,29 @@ class TcpEventHandlerReleaseTest extends NetworkTestCommon {
     void performIdleWorkIsOnlyCalledWhenHandlerIsBusyOrOneHundredIterations() throws IOException, InvalidEventHandlerException {
         NetworkContext nc = new VanillaNetworkContext();
         nc.socketChannel(TCPRegistry.createSocketChannel(hostPort));
-        BusyTcpEventHandler tcpEventHandler = new BusyTcpEventHandler(nc);
-        final BusyTcpHandler tcpHandler = new BusyTcpHandler();
-        tcpEventHandler.tcpHandler(tcpHandler);
+        try (BusyTcpEventHandler tcpEventHandler = new BusyTcpEventHandler(nc)) {
+            final BusyTcpHandler tcpHandler = new BusyTcpHandler();
+            tcpEventHandler.tcpHandler(tcpHandler);
 
-        // not called when busy
-        tcpEventHandler.busy = true;
-        tcpEventHandler.action();
-        assertEquals(0, tcpHandler.performedIdleWorkCount.get());
-
-        // called when not busy
-        tcpEventHandler.busy = false;
-        tcpEventHandler.action();
-        assertEquals(1, tcpHandler.performedIdleWorkCount.get());
-
-        // called when not called for 101 iterations
-        tcpEventHandler.busy = true;
-        for (int i = 0; i < 101; i++) {
+            // not called when busy
+            tcpEventHandler.busy = true;
             tcpEventHandler.action();
+            assertEquals(0, tcpHandler.performedIdleWorkCount.get());
+
+            // called when not busy
+            tcpEventHandler.busy = false;
+            tcpEventHandler.action();
+            assertEquals(1, tcpHandler.performedIdleWorkCount.get());
+
+            // called when not called for 101 iterations
+            tcpEventHandler.busy = true;
+            for (int i = 0; i < 101; i++) {
+                tcpEventHandler.action();
+            }
+            assertEquals(1, tcpHandler.performedIdleWorkCount.get());
+            tcpEventHandler.action();
+            assertEquals(2, tcpHandler.performedIdleWorkCount.get());
         }
-        assertEquals(1, tcpHandler.performedIdleWorkCount.get());
-        tcpEventHandler.action();
-        assertEquals(2, tcpHandler.performedIdleWorkCount.get());
-        tcpEventHandler.close();
     }
 
     public TcpEventHandler createTcpEventHandler() throws IOException {

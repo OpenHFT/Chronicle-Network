@@ -507,6 +507,8 @@ public class TcpEventHandler<T extends NetworkContext<T>>
         if (nc != null)
             closeQuietly(nc, nc.socketReconnector(), nc.networkStatsListener());
         closeQuietly(tcpHandler, sc);
+        IOTools.unmonitor(inBBB);
+        IOTools.unmonitor(outBBB);
     }
 
     boolean flushedOut(boolean flushed) {

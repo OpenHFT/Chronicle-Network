@@ -94,6 +94,12 @@ class UberHandlerTest extends NetworkTestCommon {
         REGISTRY.set(null);
     }
 
+    @Override
+    @BeforeEach
+    protected void threadDump() {
+        super.threadDump();
+    }
+
     @AfterEach
     public void after() {
         System.clearProperty("TcpEventHandler.tcpBufferSize");

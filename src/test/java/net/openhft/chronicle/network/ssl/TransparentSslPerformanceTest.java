@@ -44,6 +44,12 @@ final class TransparentSslPerformanceTest extends NetworkTestCommon {
         TCPRegistry.createServerSocketChannelFor("client", "server");
     }
 
+    @Override
+    @BeforeEach
+    protected void threadDump() {
+        super.threadDump();
+    }
+
     @AfterEach
     void teardown() {
         System.clearProperty("jdk.tls.server.protocols");

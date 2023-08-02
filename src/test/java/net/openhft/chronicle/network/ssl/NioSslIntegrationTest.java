@@ -53,6 +53,12 @@ final class NioSslIntegrationTest extends NetworkTestCommon {
             System.setProperty("jdk.tls.server.protocols", "TLSv1.2");
     }
 
+    @Override
+    @BeforeEach
+    protected void threadDump() {
+        super.threadDump();
+    }
+
     @AfterEach
     void teardown() {
         System.clearProperty("jdk.tls.server.protocols");

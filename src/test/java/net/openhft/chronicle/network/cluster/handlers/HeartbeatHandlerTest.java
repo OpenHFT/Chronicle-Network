@@ -19,13 +19,14 @@
 package net.openhft.chronicle.network.cluster.handlers;
 
 import net.openhft.chronicle.bytes.Bytes;
+import net.openhft.chronicle.network.NetworkTestCommon;
 import net.openhft.chronicle.wire.BinaryWire;
 import net.openhft.chronicle.wire.Wire;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class HeartbeatHandlerTest {
+class HeartbeatHandlerTest extends NetworkTestCommon {
 
     public static final long CID = 1234L;
     public static final int VALID_HEARTBEAT_TIMEOUT_MS = 1000;
@@ -82,7 +83,7 @@ class HeartbeatHandlerTest {
     }
 
     private void createByDeserialization(long heartbeatTimeoutMs, long heartbeatIntervalMs) {
-        Wire wire = new BinaryWire(Bytes.elasticByteBuffer());
+        Wire wire = new BinaryWire(Bytes.allocateElasticOnHeap());
         wire.write("heartbeatTimeoutMs").int64(heartbeatTimeoutMs);
         wire.write("heartbeatIntervalMs").int64(heartbeatIntervalMs);
         new HeartbeatHandler<>(wire);

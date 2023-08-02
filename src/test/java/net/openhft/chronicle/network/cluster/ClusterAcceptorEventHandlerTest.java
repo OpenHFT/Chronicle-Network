@@ -26,6 +26,7 @@ import net.openhft.chronicle.network.connection.VanillaWireOutPublisher;
 import net.openhft.chronicle.threads.EventGroupBuilder;
 import net.openhft.chronicle.wire.WireType;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -38,6 +39,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class ClusterAcceptorEventHandlerTest extends NetworkTestCommon {
+    @Override
+    @BeforeEach
+    protected void threadDump() {
+        super.threadDump();
+    }
 
     @Test
     void willPopulateNetworkStatsListenerWhenNetworkStatsListenerFactorySpecified() throws IOException {

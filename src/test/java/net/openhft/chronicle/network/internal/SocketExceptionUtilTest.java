@@ -25,6 +25,7 @@ import net.openhft.chronicle.network.tcp.ChronicleServerSocketChannel;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannel;
 import net.openhft.chronicle.network.tcp.ChronicleSocketChannelFactory;
 import net.openhft.chronicle.threads.Threads;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -39,6 +40,11 @@ import static net.openhft.chronicle.network.internal.SocketExceptionUtil.isAConn
 import static org.junit.jupiter.api.Assertions.*;
 
 class SocketExceptionUtilTest extends NetworkTestCommon {
+    @Override
+    @BeforeEach
+    protected void threadDump() {
+        super.threadDump();
+    }
 
     /**
      * Original means of detection
