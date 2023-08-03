@@ -1,5 +1,8 @@
 = Chronicle Network
 Chronicle Software
+
+NOTE: Development of Chronicle-Network has been moved to closed-source, enterprise customers can access the closed-source repository link:https://github.com/ChronicleEnterprise/Chronicle-Network[here]
+
 :css-signature: demo
 :toc: macro
 :toclevels: 2
